@@ -1,0 +1,14 @@
+R3 vt30%/max8x/w20 + reel>5%                  stopaj 10%: OOS toplam x3.04  12-ay geo %9.72  13-kova geo %8.94
+R3 vt30%/max8x/w20 + reel>5%                  stopaj 0%: OOS toplam x3.32  12-ay geo %10.51  13-kova geo %9.67
+R6 vt30%/max8x/w60 + trend(60,2) + ptr63      stopaj 10%: OOS toplam x2.09  12-ay geo %6.35  13-kova geo %5.85
+R6 vt30%/max8x/w60 + trend(60,2) + ptr63      stopaj 0%: OOS toplam x2.19  12-ay geo %6.74  13-kova geo %6.21
+R2 fix5x + trend(20,1) + ptr126               stopaj 10%: OOS toplam x1.57  12-ay geo %3.84  13-kova geo %3.54
+R2 fix5x + trend(20,1) + ptr126               stopaj 0%: OOS toplam x1.60  12-ay geo %3.98  13-kova geo %3.67
+R1 fix8x + reel>5%                            stopaj 10%: OOS toplam x3.04  12-ay geo %9.72  13-kova geo %8.94
+R1 fix8x + reel>5%                            stopaj 0%: OOS toplam x3.32  12-ay geo %10.51  13-kova geo %9.67
+fix3x koşulsuz                                stopaj 10%: OOS toplam x1.96  12-ay geo %5.77  13-kova geo %5.32
+fix3x koşulsuz                                stopaj 0%: OOS toplam x2.04  12-ay geo %6.14  13-kova geo %5.65
+fix5x koşulsuz                                stopaj 10%: OOS toplam x2.53  12-ay geo %8.04  13-kova geo %7.40
+fix5x koşulsuz                                stopaj 0%: OOS toplam x2.70  12-ay geo %8.64  13-kova geo %7.95
+fix8x koşulsuz                                stopaj 10%: OOS toplam x3.68  12-ay geo %11.47  13-kova geo %10.54
+fix8x koşulsuz                                stopaj 0%: OOS toplam x4.11  12-ay geo %12.50  13-kova geo %11.49

@@ -1,0 +1,14 @@
+392 ticker fiyatlı; 72 kombinasyon
+     anchor exit    mkt   K  stop  IS_geo  IS_dd  IS_worst  IS_n  IS_trade_mean  OOS_geo  OOS_dd  OOS_worst  OOS_n  OOS_trade_mean
+63  buyback  H60  False  10  0.15    4.36  -33.5     -19.6   237          18.77     1.22   -12.7      -11.5     52           -3.04
+60  buyback  H60  False   5   NaN    4.08  -44.9      -9.8   109          27.68     0.23   -25.0      -17.2     20           -5.30
+62  buyback  H60  False  10   NaN    4.05  -40.8      -8.7   201          21.52     1.03   -25.2      -20.0     40           -1.63
+61  buyback  H60  False   5  0.15    3.82  -34.5     -14.1   134          20.59     2.21   -11.4       -4.7     27           -0.81
+64  buyback  H60  False  20   NaN    3.63  -29.1      -7.5   316          20.27     1.36   -24.2      -20.7     79           -1.12
+65  buyback  H60  False  20  0.15    3.62  -21.6     -11.0   353          17.52     0.60   -22.4      -16.5     95           -2.36
+51  buyback  H40  False  10  0.15    3.54  -18.9      -8.8   284          10.93    -0.48   -25.8      -19.0     67           -2.73
+67  buyback  H60   True   5  0.15    3.42  -26.4     -10.4    97          16.55     3.56    -9.8       -3.8     20           -3.83
+48  buyback  H40  False   5   NaN    3.40  -26.6      -8.2   148          14.62     0.54   -26.9      -15.1     31           -0.78
+53  buyback  H40  False  20  0.15    3.15  -13.2      -6.7   383          12.12     0.28   -26.3      -17.6    113           -2.18
+50  buyback  H40  False  10   NaN    3.12  -21.1      -8.8   251          11.28    -0.07   -30.3      -22.5     56           -0.88
+66  buyback  H60   True   5   NaN    3.05  -23.8     -12.4    84          19.18     5.40    -8.8       -4.6     17           -2.27

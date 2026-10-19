@@ -1,0 +1,19 @@
+set,crit,look,IS,IS_dd,IS_worst,OOS,OOS_dd,OOS_worst,OOS_neg,last_pick
+LS (dn+bn),sharpe,12,2.07,-42.7,-18.1,4.04,-27.7,-13.4,4,mom252_21|8|21|dn
+LS (dn+bn),sharpe,24,3.17,-25.1,-10.5,2.68,-27.7,-13.4,6,c_mom_lowvol|5|21|dn
+LS (dn+bn),sharpe,36,3.32,-24.0,-14.0,0.93,-26.0,-11.0,7,c_mom_lowvol|5|21|dn
+LS (dn+bn),ret,12,2.77,-51.0,-17.8,1.9,-35.7,-20.1,5,c_mom_h52|3|21|dn
+LS (dn+bn),ret,24,2.75,-40.2,-17.8,5.67,-28.8,-19.7,4,c_mom_lowvol|3|21|dn
+LS (dn+bn),ret,36,1.77,-58.6,-50.8,2.22,-37.5,-17.7,5,c_mom_lowvol|3|21|dn
+all modes,sharpe,12,3.9,-53.1,-25.9,4.04,-27.7,-13.4,4,mom252_21|8|21|dn
+all modes,sharpe,24,4.32,-56.4,-25.9,2.68,-27.7,-13.4,6,c_mom_lowvol|5|21|dn
+all modes,sharpe,36,3.38,-66.5,-27.6,0.93,-26.0,-11.0,7,c_mom_lowvol|5|21|dn
+all modes,ret,12,3.47,-61.1,-48.6,-2.39,-58.5,-23.7,7,c_mom_h52|3|21|dn
+all modes,ret,24,3.29,-65.0,-35.8,5.67,-28.8,-19.7,4,c_mom_lowvol|3|21|dn
+all modes,ret,36,1.46,-72.0,-43.3,1.17,-47.6,-17.7,5,c_mom_lowvol|3|21|dn
+"long-hedged (lx,loh,lor)",sharpe,12,3.83,-56.2,-21.8,-3.69,-48.0,-21.2,10,mom252_21|8|5|lx
+"long-hedged (lx,loh,lor)",sharpe,24,2.29,-56.4,-25.9,-1.76,-49.9,-20.1,7,mom126_21|8|5|lx
+"long-hedged (lx,loh,lor)",sharpe,36,3.41,-56.4,-27.6,-4.91,-55.9,-20.2,9,c_mom_lowvol|5|21|lx
+"long-hedged (lx,loh,lor)",ret,12,3.46,-66.4,-29.2,-6.6,-58.9,-21.6,11,mom252_21|8|5|loh
+"long-hedged (lx,loh,lor)",ret,24,3.31,-65.0,-35.8,-2.33,-53.8,-22.4,7,mom126_21|8|5|lx
+"long-hedged (lx,loh,lor)",ret,36,2.95,-61.7,-33.3,-3.71,-45.3,-15.7,7,c_all|3|21|lor

@@ -1,0 +1,25 @@
+             ay_%  ort_kaldıraç
+2025-10-31   9.07          6.98
+2025-11-30  13.85          6.90
+2025-12-31  15.34          7.54
+2026-01-31  11.86          6.84
+2026-02-28  13.02          7.62
+2026-03-31  11.92          6.82
+2026-04-30  10.44          7.61
+2026-05-31   4.13          0.73
+2026-06-30   1.61          0.00
+2026-07-31   2.47          0.00
+2026-08-31   8.71          7.06
+2026-09-30   8.98          7.21
+2026-10-31   5.87          6.84
+OOS USDTRY yıllık vol %: 1.51
+OOS kur değişimi %: 17.77
+max kaldıraç OOS: 8.23
+2018-08-10 high +22.5%  kapanış +22.5%  -> 8x kayıp: kapanış -180%, high -100% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2021-11-23 high +18.0%  kapanış +12.4%  -> 8x kayıp: kapanış -99%, high -100% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2025-03-19 high +11.4%  kapanış +3.5%  -> 8x kayıp: kapanış -28%, high -91% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2021-12-20 high +10.5%  kapanış +-18.8%  -> 8x kayıp: kapanış 151%, high -84% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2021-03-22 high +8.9%  kapanış +7.2%  -> 8x kayıp: kapanış -57%, high -71% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2021-12-17 high +8.8%  kapanış +6.1%  -> 8x kayıp: kapanış -49%, high -71% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2008-10-15 high +8.0%  kapanış +8.0%  -> 8x kayıp: kapanış -64%, high -64% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)
+2021-12-27 high +7.9%  kapanış +6.5%  -> 8x kayıp: kapanış -52%, high -63% (bakım teminatı %7.5 -> zorla kapatma eşiği +%4.7)

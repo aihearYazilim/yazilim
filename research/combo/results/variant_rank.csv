@@ -1,0 +1,11 @@
+sleeve,mode,IS_mean,OOS_mean,OOS_dd_mean,real,IS_rank_all
+KELLY,pledge,7.86,4.43,-34.27,hayır,1
+MIX_SH,pledge,7.47,4.36,-22.08,hayır,2
+KELLY,sell,7.37,4.98,-32.75,evet*,3
+MIX_IV,pledge,7.24,4.29,-19.37,hayır,4
+MIX_SH,sell,7.08,4.74,-20.8,evet*,5
+MIX_IV,sell,6.88,4.63,-17.78,evet*,6
+BIST,pledge,6.14,3.92,-16.92,kurum-bağımlı,7
+BIST,sell,5.9,4.12,-15.54,evet,8
+MM,pledge,2.91,3.86,-0.32,evet,9
+MM,cash,2.86,3.67,-0.33,evet,10

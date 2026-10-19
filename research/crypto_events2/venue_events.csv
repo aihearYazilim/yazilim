@@ -1,0 +1,516 @@
+venue,type,tok,ts,title,sym,still_live,overlap
+OKX,LIST,BAT,2020-02-28 06:04:56.000,Basic Attention Token (BAT) Now Available,BATUSDT,True,False
+UPBIT,LIST,VET,2020-04-07 07:00:00.000,Upbit KRW market first 1h candle (proxy),VETUSDT,False,False
+UPBIT,LIST,XTZ,2020-08-04 08:00:00.000,Upbit KRW market first 1h candle (proxy),XTZUSDT,False,False
+UPBIT,LIST,LINK,2020-08-04 08:00:00.000,Upbit KRW market first 1h candle (proxy),LINKUSDT,False,False
+OKX,LIST,LEND,2020-08-11 00:51:32.000,Aave (LEND) Now Available,LENDUSDT,False,False
+OKX,LIST,SOL,2020-09-29 04:23:12.000,Solana (SOL) Now Available,SOLUSDT,True,False
+OKX,LIST,EGLD,2020-09-29 07:42:42.000,Elrond Gold (EGLD) Now Available,EGLDUSDT,True,False
+UPBIT,LIST,DOT,2020-10-05 07:00:00.000,Upbit KRW market first 1h candle (proxy),DOTUSDT,False,False
+UPBIT,LIST,DOGE,2021-02-24 06:00:00.000,Upbit KRW market first 1h candle (proxy),DOGEUSDT,False,False
+OKX,LIST,SKL,2021-03-29 06:46:01.000,"OKX lists MATIC, CELR, SKL for spot trading",SKLUSDT,True,False
+OKX,LIST,MATIC,2021-03-29 06:46:01.000,"OKX lists MATIC, CELR, SKL for spot trading",MATICUSDT,False,False
+UPBIT,LIST,AXS,2021-04-05 06:00:00.000,Upbit KRW market first 1h candle (proxy),AXSUSDT,False,False
+BG,LIST,DOGE,2021-04-22 02:41:57.000,Bitget Newly Listed Coin: DOGE,DOGEUSDT,True,False
+BG,LIST,COMP,2021-04-22 06:26:46.000,Bitget Newly Listed Coin: COMP,COMPUSDT,True,False
+BG,LIST,AAVE,2021-04-23 07:08:39.000,Bitget Newly Listed Coin: AAVE,AAVEUSDT,True,False
+BG,LIST,YFI,2021-04-25 07:05:30.000,Bitget Newly Listed Coin: YFI,YFIUSDT,False,False
+BG,LIST,CHZ,2021-04-26 03:18:52.000,Bitget Newly Listed Coin: CHZ,CHZUSDT,True,False
+BG,LIST,LINA,2021-04-27 09:45:53.000,Bitget Newly Listed Coin: LINA,LINAUSDT,False,False
+BG,LIST,ENJ,2021-04-27 09:56:18.000,Bitget Newly Listed Coin: ENJ,ENJUSDT,True,False
+BG,LIST,MANA,2021-04-30 07:12:22.000,Bitget Newly Listed Coin: MANA,MANAUSDT,True,False
+BG,LIST,MATIC,2021-05-08 09:49:56.000,Bitget Newly Listed Coin: MATIC  ,MATICUSDT,False,False
+BG,LIST,1INCH,2021-05-08 09:51:36.000,Bitget Newly Listed Coin: 1INCH,1INCHUSDT,True,False
+BG,LIST,MKR,2021-05-10 07:44:37.000,Bitget Newly Listed Coin: MKR,MKRUSDT,False,False
+BG,LIST,REN,2021-05-10 07:46:27.000,Bitget Newly Listed Coin: REN,RENUSDT,False,False
+BG,LIST,BAL,2021-05-12 05:53:56.000,Bitget Newly Listed Coin: BAL,BALUSDT,False,False
+BG,LIST,ZRX,2021-05-12 05:55:39.000,Bitget Newly Listed Coin: ZRX,ZRXUSDT,True,False
+BG,LIST,LRC,2021-05-12 05:57:19.000,Bitget Newly Listed Coin: LRC,LRCUSDT,False,False
+BG,LIST,CRV,2021-05-13 06:01:09.000,Bitget Newly Listed Coin: CRV,CRVUSDT,True,False
+BG,LIST,YFII,2021-05-14 07:08:03.000,Bitget Newly Listed Coin: YFII,YFIIUSDT,False,False
+BG,LIST,BAT,2021-05-14 07:09:29.000,Bitget Newly Listed Coin: BAT,BATUSDT,True,False
+BG,LIST,STORJ,2021-05-15 05:41:59.000,Bitget Newly Listed Coin: STORJ,STORJUSDT,False,False
+BG,LIST,SNX,2021-05-15 05:43:46.000,Bitget Newly Listed Coin: SNX,SNXUSDT,True,False
+BG,LIST,BTT,2021-05-17 03:13:59.000,Bitget Newly Listed Coin: BTT,BTTUSDT,True,False
+BG,LIST,DASH,2021-05-17 03:15:10.000,Bitget Newly Listed Coin: DASH,DASHUSDT,False,False
+BG,LIST,QTUM,2021-05-18 03:23:31.000,Bitget Newly Listed Coin: QTUM,QTUMUSDT,True,False
+BG,LIST,ZEC,2021-05-18 03:24:38.000,Bitget Newly Listed Coin: ZEC,ZECUSDT,True,False
+BG,LIST,KNC,2021-05-27 09:30:24.000,Bitget Newly Listed Coin: KNC,KNCUSDT,True,False
+BG,LIST,OMG,2021-05-27 09:31:40.000,Bitget Newly Listed Coin: OMG,OMGUSDT,False,False
+BG,LIST,BAND,2021-05-27 09:33:34.000,Bitget Newly Listed Coin: BAND,BANDUSDT,False,False
+BG,LIST,GRT,2021-05-29 06:20:46.000,Bitget Newly Listed Coin: GRT,GRTUSDT,False,False
+BG,LIST,OCEAN,2021-05-29 06:21:58.000,Bitget Newly Listed Coin: OCEAN,OCEANUSDT,False,False
+BG,LIST,NKN,2021-05-29 06:24:40.000,Bitget Newly Listed Coin: NKN,NKNUSDT,False,False
+BG,LIST,RLC,2021-05-31 07:02:38.000,Bitget Newly Listed Coin: RLC,RLCUSDT,True,False
+BG,LIST,OGN,2021-05-31 07:05:06.000,Bitget Newly Listed Coin: OGN,OGNUSDT,True,False
+BG,LIST,CHR,2021-06-01 07:42:00.000,Bitget Newly Listed Coin: CHR,CHRUSDT,True,False
+BG,LIST,BNB,2021-06-01 07:43:07.000,Bitget Newly Listed Coin: BNB,BNBUSDT,True,False
+BG,LIST,RSR,2021-06-03 08:15:02.000,Bitget Newly Listed Coin: RSR,RSRUSDT,True,False
+BG,LIST,ANKR,2021-06-03 08:16:39.000,Bitget Newly Listed Coin: ANKR,ANKRUSDT,True,False
+BG,LIST,SRM,2021-06-03 08:17:52.000,Bitget Newly Listed Coin: SRM,SRMUSDT,False,False
+BG,LIST,ICP,2021-06-04 08:02:32.000,Bitget Newly Listed Coin: ICP,ICPUSDT,True,False
+BG,LIST,FIL,2021-07-06 06:55:41.000,Bitget newly listed coin: FIL,FILUSDT,True,False
+UPBIT,LIST,SOL,2021-10-15 06:00:00.000,Upbit KRW market first 1h candle (proxy),SOLUSDT,False,False
+UPBIT,LIST,1INCH,2021-10-27 08:00:00.000,Upbit KRW market first 1h candle (proxy),1INCHUSDT,False,False
+UPBIT,LIST,AAVE,2021-10-27 09:00:00.000,Upbit KRW market first 1h candle (proxy),AAVEUSDT,False,False
+BG,LIST,ATOM,2021-11-09 06:30:07.000,Bitget List Cosmos (ATOM) in Main Zone!,ATOMUSDT,True,False
+BG,LIST,AVAX,2021-11-17 13:25:48.000,Bitget List Avalanche (AVAX) in Innovation Zone,AVAXUSDT,True,False
+UPBIT,LIST,ALGO,2021-11-18 04:00:00.000,Upbit KRW market first 1h candle (proxy),ALGOUSDT,False,False
+UPBIT,LIST,NEAR,2021-12-15 04:00:00.000,Upbit KRW market first 1h candle (proxy),NEARUSDT,False,False
+BG,LIST,DENT,2021-12-21 04:01:51.000,Bitget Lists Dent (DENT) on Innovation  Zone,DENTUSDT,False,False
+BG,LIST,ZEN,2022-01-17 05:17:51.000,Bitget Lists Horizen (ZEN) in Innovation Zone,ZENUSDT,True,False
+BG,LIST,PEOPLE,2022-01-18 05:54:45.000,Bitget Lists ConstitutionDAO (PEOPLE) in Innovation Zone ,PEOPLEUSDT,True,False
+BG,LIST,ALPHA,2022-01-26 05:47:49.000,Bitget Lists Alpha Finance Lab (ALPHA) in Innovation Zone,ALPHAUSDT,False,False
+BG,LIST,C98,2022-02-08 06:27:54.000,Bitget Lists Coin98 (C98) in Innovation Zone,C98USDT,False,False
+BG,LIST,AUDIO,2022-02-08 06:51:11.000,Bitget Lists Audius (AUDIO) in Innovation Zone,AUDIOUSDT,False,False
+UPBIT,LIST,AVAX,2022-02-08 11:00:00.000,Upbit KRW market first 1h candle (proxy),AVAXUSDT,False,False
+BG,LIST,ANT,2022-02-14 07:07:18.000,Bitget Lists Aragon (ANT) in Innovation Zone,ANTUSDT,False,False
+BG,LIST,ARPA,2022-02-14 07:11:43.000,Bitget Lists ARPA Chain (ARPA) in Innovation Zone,ARPAUSDT,True,False
+BG,LIST,DUSK,2022-02-16 12:29:55.000,Bitget Lists Dusk Network (DUSK) in Innovation Zone,DUSKUSDT,False,False
+BG,LIST,FTM,2022-02-18 03:07:13.000,Bitget Lists Fantom (FTM) in Innovation Zone,FTMUSDT,False,False
+BG,LIST,LUNA,2022-03-02 02:51:21.000,Bitget Lists Terra (LUNA) & TerraUSD (UST) in Innovation Zone,LUNAUSDT,True,False
+BG,LIST,AR,2022-03-03 06:22:20.000,Bitget Lists Arweave (AR) in Innovation Zone,ARUSDT,True,False
+BG,LIST,KSM,2022-03-15 08:14:08.000,Bitget Lists Kusama(KSM) in the Main Zone,KSMUSDT,True,False
+UPBIT,LIST,CELO,2022-03-17 07:00:00.000,Upbit KRW market first 1h candle (proxy),CELOUSDT,False,False
+BG,LIST,ADA,2022-03-23 04:28:37.000,"Bitget Lists Cardano (ADA) in Innovation Zone - Participate to Share 50,000 BGB Giveaway!",ADAUSDT,True,False
+BG,LIST,EGLD,2022-03-28 10:50:19.000,Bitget Lists Elrond (EGLD) in Innovation Zone,EGLDUSDT,False,False
+BG,LIST,RUNE,2022-03-29 02:49:16.000,Bitget Lists THORChain (RUNE) in Innovation Zone,RUNEUSDT,False,False
+BG,LIST,RAY,2022-03-29 12:16:40.000,Bitget Lists Raydium (RAY) in Innovation Zone,RAYUSDT,True,False
+BG,LIST,DODO,2022-03-29 12:27:41.000,Bitget Lists DODO (DODO) in Innovation Zone,DODOUSDT,True,False
+BG,LIST,ZIL,2022-03-31 08:31:18.000,"Bitget Lists Zilliqa (ZIL) in Innovation Zone - Participate & Share 85,000 ZIL Giveaway!",ZILUSDT,True,False
+UPBIT,LIST,GMT,2022-05-04 07:00:00.000,Upbit KRW market first 1h candle (proxy),GMTUSDT,False,False
+BG,LIST,HNT,2022-05-09 03:53:19.000,Bitget Lists Helium (HNT) in Innovation Zone,HNTUSDT,True,False
+BG,LIST,SFP,2022-06-30 13:33:31.000,Bitget Lists SafePal (SFP) in Innovation Zone ,SFPUSDT,False,False
+BG,LIST,ONE,2022-09-26 02:34:03.000,"Bitget Lists Harmony (ONE) - 15,000 USDT Welcome Gift for New Users!",ONEUSDT,False,False
+BG,LIST,REEF,2022-11-02 02:16:11.000,"Bitget Lists Reef (REEF) in Innovation Zone - Trade to Share $7,000 in REEF!",REEFUSDT,False,False
+BG,LIST,ONT,2022-11-22 06:55:37.636,Bitget Lists Ontology (ONT) in Innovation Zone,ONTUSDT,True,False
+UPBIT,LIST,SHIB,2023-01-18 07:00:00.000,Upbit KRW market first 1h candle (proxy),1000SHIBUSDT,False,False
+BG,LIST,FLM,2023-03-01 06:58:48.634,Bitget Will List Neo (NEO) and Flamingo (FLM) in the Hong Kong Zone ,FLMUSDT,False,False
+BG,LIST,NEO,2023-03-01 06:58:48.634,Bitget Will List Neo (NEO) and Flamingo (FLM) in the Hong Kong Zone ,NEOUSDT,True,False
+BG,LIST,ASTR,2023-03-02 11:30:00.885,"Bitget Will List Astar (ASTR) in the Innovation Zone - Share $15,000 worth of Rewards!",ASTRUSDT,True,False
+UPBIT,LIST,MASK,2023-03-07 07:00:00.000,Upbit KRW market first 1h candle (proxy),MASKUSDT,False,False
+BG,LIST,STX,2023-03-09 11:00:47.989,Bitget Will List Stacks (STX) in the Innovation Zone !,STXUSDT,True,False
+UPBIT,LIST,ARB,2023-03-30 06:00:00.000,Upbit KRW market first 1h candle (proxy),ARBUSDT,False,False
+BG,DEL,CVC,2023-04-12 05:42:02.000,"Notice on Delisting 10 Spot Trading Pairs on April 13, 2023",CVCUSDT,False,False
+UPBIT,LIST,EGLD,2023-04-27 07:00:00.000,Upbit KRW market first 1h candle (proxy),EGLDUSDT,False,False
+UPBIT,LIST,GRT,2023-06-01 07:00:00.000,Upbit KRW market first 1h candle (proxy),GRTUSDT,False,False
+UPBIT,LIST,BLUR,2023-06-27 06:00:00.000,Upbit KRW market first 1h candle (proxy),BLURUSDT,False,False
+BG,DEL,BLZ,2023-07-06 03:00:00.000,"Notice of Delisting 15 Spot Trading Pairs on July 6, 2023",BLZUSDT,False,False
+UPBIT,LIST,IMX,2023-07-28 04:00:00.000,Upbit KRW market first 1h candle (proxy),IMXUSDT,False,False
+BG,LIST,XLM,2023-08-24 07:00:00.000,Bitget Will List Stellar (XLM) in the Innovation and Payment Zone,XLMUSDT,True,False
+BG,LIST,TOMO,2023-08-29 11:00:10.000,Bitget Will List TomoChain (TOMO) in the Innovation Zone and Public Chain Zone,TOMOUSDT,False,False
+BG,DEL,BTCST,2023-09-21 07:00:40.000,"Notice of Delisting 9 Spot Trading Pairs on September 28, 2023",BTCSTUSDT,False,False
+UPBIT,LIST,MINA,2023-10-24 07:00:00.000,Upbit KRW market first 1h candle (proxy),MINAUSDT,False,False
+BG,LIST,WAXP,2023-10-30 08:00:43.000,Bitget Will List WAX (WAXP) in the Public Chain and GameFi Zone,WAXPUSDT,False,False
+BG,LIST,FLOW,2023-11-01 07:00:00.000,Bitget Will List Flow (FLOW) in the Public Chain and GameFi Zone,FLOWUSDT,False,False
+BG,LIST,HIFI,2023-11-10 08:00:08.000,Bitget Will List Hifi Finance (HIFI) in the Innovation and DeFi Zone and GROK (GROK) in the Innovation and Meme Zone ,HIFIUSDT,False,False
+BG,LIST,SKL,2023-11-22 06:00:00.000,Bitget Will List SKALE (SKL) in the Public Chain Zone,SKLUSDT,True,False
+BG,LIST,XTZ,2023-11-24 07:00:10.000,Bitget to list Tezos (XTZ) in the Public Chain Zone,XTZUSDT,True,False
+BG,LIST,ARK,2023-12-04 08:00:00.000,Bitget Will List Ark (ARK) and Lisk (LSK) in the Innovation and Public Chain Zone,ARKUSDT,False,False
+UPBIT,LIST,ASTR,2023-12-18 10:00:00.000,Upbit KRW market first 1h candle (proxy),ASTRUSDT,False,False
+OKX,LIST,JTO,2024-01-08 02:00:00.000,OKX to list Jito (JTO) and Bonk (BONK) for spot trading,JTOUSDT,True,False
+OKX,LIST,BONK,2024-01-08 02:00:00.000,OKX to list Jito (JTO) and Bonk (BONK) for spot trading,1000BONKUSDT,True,False
+BG,LIST,IOST,2024-01-15 11:00:21.000,Bitget to list IOST (IOST) in the Public Chain Zone,IOSTUSDT,True,False
+BG,LIST,WIF,2024-01-24 06:00:00.000,Bitget Will List Dogwifhat (WIF) in the Innovation and Meme Zone,WIFUSDT,True,False
+BG,LIST,ONDO,2024-01-24 06:00:00.000,Bitget Will List Ondo (ONDO) in the Innovation and DeFi Zone,ONDOUSDT,True,False
+BG,LIST,ALT,2024-01-29 11:00:47.000,Bitget Will List ArchLoot (ALT) in the Innovation and GameFi Zone,ALTUSDT,False,False
+BG,LIST,DEFI,2024-01-29 12:00:58.000,[Initial Listing] Bitget Will List De.Fi (DEFI) in the Innovation and Web3 Zone,DEFIUSDT,False,False
+BG,LIST,API3,2024-01-30 07:00:22.000,Bitget Will List API3 (API3) in the Innovation and DeFi Zone,API3USDT,True,False
+OKX,DEL,WAVES,2024-02-02 08:00:00.000,OKX to delist WAVES spot trading pairs ,WAVESUSDT,False,False
+UPBIT,LIST,ID,2024-02-07 05:00:00.000,Upbit KRW market first 1h candle (proxy),IDUSDT,False,False
+UPBIT,LIST,PYTH,2024-02-27 09:00:00.000,Upbit KRW market first 1h candle (proxy),PYTHUSDT,False,False
+BG,LIST,CVC,2024-03-27 10:00:00.000,Bitget Will List Civic (CVC) in the Innovation and Web3 Zone.,CVCUSDT,False,False
+BG,DEL,EDU,2024-03-29 10:00:00.000,Notice of Delisting 17 Spot Trading Pairs on 1 April 2024,EDUUSDT,False,False
+OKX,LIST,WIF,2024-04-15 07:00:00.000,"OKX to list WIF, MEW for spot trading",WIFUSDT,True,False
+BG,LIST,CKB,2024-04-18 10:00:11.000,"Bitget Will List Nervos Network (CKB). Come and grab a share of $16,500 worth of CKB!",CKBUSDT,True,False
+BG,LIST,ONG,2024-04-23 09:00:52.000,"Bitget Will List Ontology Gas (ONG). Come and grab a share of $22,000 worth of ONG!",ONGUSDT,False,False
+UPBIT,LIST,ZETA,2024-05-03 09:00:00.000,Upbit KRW market first 1h candle (proxy),ZETAUSDT,False,False
+BG,LIST,VET,2024-05-20 11:00:20.000,"Bitget Will List VeChain (VET). Come and grab a share of $37,750 worth of VET!",VETUSDT,True,False
+UPBIT,LIST,AUCTION,2024-05-29 09:00:00.000,Upbit KRW market first 1h candle (proxy),AUCTIONUSDT,False,False
+UPBIT,LIST,ONDO,2024-06-14 08:00:00.000,Upbit KRW market first 1h candle (proxy),ONDOUSDT,False,False
+BG,DEL,KEY,2024-06-25 07:00:00.000,Notice of Delisting 25 Spot Trading Pairs on 28 June 2024,KEYUSDT,False,False
+UPBIT,LIST,JUP,2024-07-04 10:00:00.000,Upbit KRW market first 1h candle (proxy),JUPUSDT,False,False
+UPBIT,LIST,ENS,2024-07-09 09:00:00.000,Upbit KRW market first 1h candle (proxy),ENSUSDT,False,False
+OKX,DEL,XEM,2024-07-11 08:00:00.000,"OKX to delist ANT, XEM, DOSE, AZY, and KCAL spot trading pairs ",XEMUSDT,False,False
+OKX,DEL,SPELL,2024-07-17 08:00:00.000,"OKX to delist CEL, OMG, SPELL, APM, LHINU, POLS, and DCR spot trading pairs ",SPELLUSDT,False,False
+OKX,DEL,OMG,2024-07-17 08:00:00.000,"OKX to delist CEL, OMG, SPELL, APM, LHINU, POLS, and DCR spot trading pairs ",OMGUSDT,False,False
+OKX,LIST,ONDO,2024-07-29 07:00:00.000,OKX to list Ondo (ONDO) for spot trading,ONDOUSDT,True,False
+UPBIT,LIST,PENDLE,2024-08-06 09:00:00.000,Upbit KRW market first 1h candle (proxy),PENDLEUSDT,False,False
+BG,LIST,ICX,2024-08-13 08:00:49.000,Bitget Will List ICON (ICX) in the Innovation and Public Chain Zone!,ICXUSDT,True,False
+OKX,LIST,ARKM,2024-08-15 02:00:00.000,"OKX to list ARKM, PIXEL, BOME for spot trading",ARKMUSDT,True,False
+OKX,LIST,BOME,2024-08-15 02:00:00.000,"OKX to list ARKM, PIXEL, BOME for spot trading",BOMEUSDT,True,False
+OKX,LIST,PIXEL,2024-08-15 02:00:00.000,"OKX to list ARKM, PIXEL, BOME for spot trading",PIXELUSDT,True,False
+UPBIT,LIST,BIGTIME,2024-09-05 09:00:00.000,Upbit KRW market first 1h candle (proxy),BIGTIMEUSDT,False,False
+OKX,DEL,FRONT,2024-09-10 08:00:00.000,OKX to delist FRONT spot trading pairs ,FRONTUSDT,False,False
+UPBIT,LIST,CKB,2024-09-13 10:00:00.000,Upbit KRW market first 1h candle (proxy),CKBUSDT,False,False
+BG,DEL,OMNI,2024-09-20 09:00:18.000,Notice of Delisting 30 Spot Trading Pairs on 23 September 2024,OMNIUSDT,False,False
+BG,DEL,ONE,2024-09-20 09:00:18.000,Notice of Delisting 30 Spot Trading Pairs on 23 September 2024,ONEUSDT,False,False
+OKX,LIST,PENDLE,2024-09-27 03:00:00.000,OKX to list Pendle (PENDLE) for spot trading,PENDLEUSDT,True,False
+OKX,DEL,REN,2024-09-30 08:00:00.000,"OKX to delist REN, TAKI, LEASH, ORB, and KINE spot trading pairs",RENUSDT,False,False
+UPBIT,LIST,W,2024-10-02 10:00:00.000,Upbit KRW market first 1h candle (proxy),WUSDT,False,False
+UPBIT,LIST,INJ,2024-10-17 09:00:00.000,Upbit KRW market first 1h candle (proxy),INJUSDT,False,False
+OKX,LIST,BANANA,2024-10-18 07:00:00.000,OKX to list Banana Gun (BANANA) for spot trading,BANANAUSDT,True,False
+UPBIT,LIST,MEW,2024-10-21 07:00:00.000,Upbit KRW market first 1h candle (proxy),MEWUSDT,False,False
+OKX,LIST,NEIRO,2024-10-22 07:00:00.000,OKX to list First Neiro on Ethereum (NEIRO) for spot trading,NEIROUSDT,True,False
+UPBIT,LIST,UNI,2024-10-22 07:00:00.000,Upbit KRW market first 1h candle (proxy),UNIUSDT,False,False
+BG,DEL,ONG,2024-10-25 10:00:44.000,Notice of Delisting 31 Spot Trading Pairs on 28 October 2024,ONGUSDT,False,False
+UPBIT,LIST,AGLD,2024-11-13 07:00:00.000,Upbit KRW market first 1h candle (proxy),AGLDUSDT,False,False
+UPBIT,LIST,PEPE,2024-11-14 02:00:00.000,Upbit KRW market first 1h candle (proxy),1000PEPEUSDT,False,False
+BG,LIST,HBAR,2024-12-02 07:30:00.000,Bitget Will List Hedera (HBAR) in the Innovation and Layer1 Zone!,HBARUSDT,True,False
+BG,LIST,OM,2024-12-04 09:00:00.000,"Bitget Will List MANTRA (OM). Come and grab a share of 22,500 OM!",OMUSDT,False,False
+UPBIT,LIST,RENDER,2024-12-05 04:00:00.000,Upbit KRW market first 1h candle (proxy),RENDERUSDT,False,False
+BG,LIST,ALGO,2024-12-16 06:00:07.000,Bitget Will List Algorand (ALGO) in the Innovation and Layer1 Zone!,ALGOUSDT,True,False
+BG,DEL,REEF,2024-12-18 10:00:00.000,Notice of Delisting 44 Spot Trading Pairs on 2 January 2025,REEFUSDT,False,False
+BG,LIST,HIVE,2025-01-07 08:00:00.000,Bitget Will List Hive (HIVE) in the Innovation and Layer1 Zone.,HIVEUSDT,True,False
+BG,LIST,ZEN,2025-01-21 11:00:08.000,"Bitget Will List Horizen (ZEN). Come and grab a share of 9,599 ZEN!",ZENUSDT,True,False
+UPBIT,LIST,VIRTUAL,2025-01-31 11:00:00.000,Upbit KRW market first 1h candle (proxy),VIRTUALUSDT,False,False
+UPBIT,LIST,TRUMP,2025-02-13 09:00:00.000,Upbit KRW market first 1h candle (proxy),TRUMPUSDT,False,False
+UPBIT,LIST,JTO,2025-02-21 05:00:00.000,Upbit KRW market first 1h candle (proxy),JTOUSDT,False,False
+UPBIT,LIST,COW,2025-02-25 11:00:00.000,Upbit KRW market first 1h candle (proxy),COWUSDT,False,False
+UPBIT,LIST,KAITO,2025-03-05 06:00:00.000,Upbit KRW market first 1h candle (proxy),KAITOUSDT,False,False
+UPBIT,LIST,ARKM,2025-03-11 07:00:00.000,Upbit KRW market first 1h candle (proxy),ARKMUSDT,False,False
+BG,DEL,BOND,2025-03-11 10:00:22.000,Notice of Delisting 73 Spot Trading Pairs on 18 March 2025,BONDUSDT,False,False
+BG,DEL,KEY,2025-03-11 10:00:22.000,Notice of Delisting 73 Spot Trading Pairs on 18 March 2025,KEYUSDT,False,False
+BG,DEL,UNFI,2025-03-11 10:00:22.000,Notice of Delisting 73 Spot Trading Pairs on 18 March 2025,UNFIUSDT,False,False
+UPBIT,LIST,ORCA,2025-03-21 08:00:00.000,Upbit KRW market first 1h candle (proxy),ORCAUSDT,False,False
+BG,DEL,DEFI,2025-03-21 10:00:59.000,Notice of Delisting DEFI/USDT Spot Trading Pair on 3 April 2025,DEFIUSDT,False,False
+BG,DEL,LINA,2025-03-25 10:00:36.000,Notice of Delisting 5 Spot Trading Pairs on 1 April 2025,LINAUSDT,False,True
+BG,DEL,COMBO,2025-03-25 10:00:36.000,Notice of Delisting 5 Spot Trading Pairs on 1 April 2025,COMBOUSDT,False,True
+BG,LIST,BANANAS31,2025-03-26 12:00:30.000,Bitget Will List Banana For Scale (BANANAS31) in the Innovation and Meme Zone! ,BANANAS31USDT,True,True
+UPBIT,LIST,COMP,2025-04-01 07:00:00.000,Upbit KRW market first 1h candle (proxy),COMPUSDT,False,False
+BG,DEL,LOOM,2025-04-03 10:00:35.000,Notice of Delisting 5 Spot Trading Pairs on 10 April 2025,LOOMUSDT,False,False
+UPBIT,LIST,FIL,2025-04-04 07:00:00.000,Upbit KRW market first 1h candle (proxy),FILUSDT,False,False
+BG,LIST,BABY,2025-04-09 11:00:06.000,[Initial Listing] Bitget Will List Babylon (BABY) in the Innovation and DeFi Zone! ,BABYUSDT,True,False
+BG,LIST,INIT,2025-04-23 08:00:48.000,"[Initial Listing] Bitget Will List Initia (INIT). Come and grab a share of 412,000 INIT!",INITUSDT,True,False
+BG,DEL,REN,2025-04-23 10:00:00.000,Notice of Delisting 3 Spot Trading Pairs on 30 April 2025,RENUSDT,False,False
+BG,LIST,DEEP,2025-04-25 03:24:40.000,Bitget Will List DeepBook Protocol (DEEP) in the Innovation and DeFi Zone.,DEEPUSDT,True,False
+BG,LIST,SXT,2025-05-06 09:00:00.000,Bitget Will List Space and Time (SXT) in the Innovation and Web3 Zone! ,SXTUSDT,True,False
+UPBIT,LIST,TIA,2025-05-08 10:00:00.000,Upbit KRW market first 1h candle (proxy),TIAUSDT,False,False
+UPBIT,LIST,PENGU,2025-05-09 09:00:00.000,Upbit KRW market first 1h candle (proxy),PENGUUSDT,False,False
+BG,DEL,BLZ,2025-05-22 10:00:20.000,Notice of Delisting 5 Spot Trading Pairs on 29 May 2025,BLZUSDT,False,False
+BG,DEL,STMX,2025-05-29 10:00:00.000,Notice of Delisting 9 Spot Trading Pairs on 5 June 2025,STMXUSDT,False,False
+BG,DEL,ALPACA,2025-05-29 10:00:00.000,Notice of Delisting 9 Spot Trading Pairs on 5 June 2025,ALPACAUSDT,False,False
+UPBIT,LIST,LPT,2025-05-30 08:00:00.000,Upbit KRW market first 1h candle (proxy),LPTUSDT,False,False
+BG,LIST,RVN,2025-06-06 04:00:35.000,"Bitget Will List Ravencoin (RVN) in the Innovation, RWA and Public Chain Zone! ",RVNUSDT,False,False
+BG,LIST,B2,2025-06-09 11:00:36.000,Bitget Will List BSquared Network (B2) in the Innovation and Public Chain Zone,B2USDT,True,False
+UPBIT,LIST,AXL,2025-06-10 07:00:00.000,Upbit KRW market first 1h candle (proxy),AXLUSDT,False,False
+OKX,DEL,NULS,2025-06-16 08:30:00.000,"OKX to delist ALCX, NULS, MDT, BORA, CTXC, XNO, VENOM, RADAR spot trading pairs",NULSUSDT,False,False
+OKX,DEL,MDT,2025-06-16 08:30:00.000,"OKX to delist ALCX, NULS, MDT, BORA, CTXC, XNO, VENOM, RADAR spot trading pairs",MDTUSDT,False,False
+UPBIT,LIST,ALT,2025-06-16 10:00:00.000,Upbit KRW market first 1h candle (proxy),ALTUSDT,False,False
+UPBIT,LIST,RAY,2025-06-19 03:00:00.000,Upbit KRW market first 1h candle (proxy),RAYUSDT,False,False
+BG,LIST,NEWT,2025-06-24 03:00:03.000,[Initial Listing] Bitget Will List Newton Protocol (NEWT) in the Innovation Zone,NEWTUSDT,True,False
+UPBIT,LIST,NEWT,2025-06-24 15:00:00.000,Upbit KRW market first 1h candle (proxy),NEWTUSDT,False,False
+OKX,DEL,X,2025-06-30 08:00:00.000,"OKX to delist X, BSV, GOG, DIA, BONE and OXT spot trading pairs",1000XUSDT,False,False
+OKX,DEL,BSV,2025-06-30 08:00:00.000,"OKX to delist X, BSV, GOG, DIA, BONE and OXT spot trading pairs",BSVUSDT,False,False
+OKX,DEL,DIA,2025-06-30 08:00:00.000,"OKX to delist X, BSV, GOG, DIA, BONE and OXT spot trading pairs",DIAUSDT,False,False
+OKX,DEL,OXT,2025-06-30 08:00:00.000,"OKX to delist X, BSV, GOG, DIA, BONE and OXT spot trading pairs",OXTUSDT,False,False
+UPBIT,LIST,MOODENG,2025-07-03 08:00:00.000,Upbit KRW market first 1h candle (proxy),MOODENGUSDT,False,False
+BG,DEL,LEVER,2025-07-05 10:00:48.000,Notice of Delisting 35 Spot Trading Pairs on 12 July 2025,LEVERUSDT,False,False
+UPBIT,LIST,HYPER,2025-07-10 08:00:00.000,Upbit KRW market first 1h candle (proxy),HYPERUSDT,False,False
+UPBIT,LIST,ENA,2025-07-11 08:00:00.000,Upbit KRW market first 1h candle (proxy),ENAUSDT,False,False
+BG,LIST,PUMP,2025-07-14 17:00:15.000,[Initial Listing] Bitget Will List pump.fun (PUMP) in the Innovation and Meme Zone,PUMPUSDT,True,False
+OKX,LIST,PUMP,2025-07-18 03:00:00.000,OKX to list PUMP (Pump) for spot trading,PUMPUSDT,True,False
+UPBIT,LIST,SYRUP,2025-07-25 06:00:00.000,Upbit KRW market first 1h candle (proxy),SYRUPUSDT,False,False
+UPBIT,LIST,OP,2025-07-28 07:00:00.000,Upbit KRW market first 1h candle (proxy),OPUSDT,False,False
+BG,DEL,SIREN,2025-08-08 10:00:59.000,Notice of Delisting 2 Spot Trading Pairs on 15 August 2025,SIRENUSDT,False,False
+UPBIT,LIST,CYBER,2025-08-12 08:00:00.000,Upbit KRW market first 1h candle (proxy),CYBERUSDT,False,False
+UPBIT,LIST,API3,2025-08-19 08:00:00.000,Upbit KRW market first 1h candle (proxy),API3USDT,False,False
+UPBIT,LIST,AERO,2025-08-22 02:00:00.000,Upbit KRW market first 1h candle (proxy),AEROUSDT,False,False
+UPBIT,LIST,TREE,2025-08-28 07:00:00.000,Upbit KRW market first 1h candle (proxy),TREEUSDT,False,False
+BG,LIST,WLFI,2025-09-01 03:24:19.000,[Initial Listing]  World Liberty Financial (WLFI) will be listed in Bitget Innovation and DeFi Zone,WLFIUSDT,True,True
+OKX,DEL,JST,2025-09-01 08:00:00.000,"OKX to delist WBTC, JST, BTT, ERN, GLMR and MOVR spot trading pairs",JSTUSDT,False,False
+OKX,DEL,GLMR,2025-09-01 08:00:00.000,"OKX to delist WBTC, JST, BTT, ERN, GLMR and MOVR spot trading pairs",GLMRUSDT,False,False
+OKX,DEL,MOVR,2025-09-01 08:00:00.000,"OKX to delist WBTC, JST, BTT, ERN, GLMR and MOVR spot trading pairs",MOVRUSDT,False,False
+UPBIT,LIST,WLFI,2025-09-01 13:00:00.000,Upbit KRW market first 1h candle (proxy),WLFIUSDT,False,True
+BG,LIST,SOMI,2025-09-02 11:30:16.000,[Initial Listing] Bitget Will List Somnia (SOMI) in the Innovation and Public Chain Zone,SOMIUSDT,True,False
+UPBIT,LIST,RED,2025-09-05 08:00:00.000,Upbit KRW market first 1h candle (proxy),REDUSDT,False,False
+BG,DEL,MEMEFI,2025-09-05 10:00:11.000,Notice of Delisting 14 Spot Trading Pairs on 12 September 2025,MEMEFIUSDT,False,False
+BG,LIST,LINEA,2025-09-09 09:00:53.000,[Initial Listing]  Linea (LINEA) will be listed in Bitget Innovation and Public Chain Zone,LINEAUSDT,True,False
+UPBIT,LIST,WLD,2025-09-09 12:00:00.000,Upbit KRW market first 1h candle (proxy),WLDUSDT,False,False
+UPBIT,LIST,LINEA,2025-09-10 16:00:00.000,Upbit KRW market first 1h candle (proxy),LINEAUSDT,False,False
+UPBIT,LIST,PUMP,2025-09-11 12:00:00.000,Upbit KRW market first 1h candle (proxy),PUMPUSDT,False,True
+BG,DEL,HIFI,2025-09-12 10:00:45.000,Notice of Delisting 4 Spot Trading Pairs on 19 September 2025,HIFIUSDT,False,False
+BG,DEL,BAKE,2025-09-12 10:00:45.000,Notice of Delisting 4 Spot Trading Pairs on 19 September 2025,BAKEUSDT,False,False
+UPBIT,LIST,AVNT,2025-09-15 04:00:00.000,Upbit KRW market first 1h candle (proxy),AVNTUSDT,False,True
+UPBIT,LIST,LA,2025-09-18 10:00:00.000,Upbit KRW market first 1h candle (proxy),LAUSDT,False,False
+BG,DEL,BSW,2025-09-19 10:00:05.000,Notice of Delisting 5 Spot Trading Pairs on 28 September 2025,BSWUSDT,False,False
+UPBIT,LIST,SUN,2025-09-22 03:00:00.000,Upbit KRW market first 1h candle (proxy),SUNUSDT,False,False
+OKX,DEL,LUNC,2025-09-22 08:00:00.000,"OKX to delist FORTH, RUNECOIN, POLYDOGE, SC, USTC and LUNC spot trading pairs",1000LUNCUSDT,False,False
+OKX,DEL,USTC,2025-09-22 08:00:00.000,"OKX to delist FORTH, RUNECOIN, POLYDOGE, SC, USTC and LUNC spot trading pairs",USTCUSDT,False,False
+OKX,DEL,SC,2025-09-22 08:00:00.000,"OKX to delist FORTH, RUNECOIN, POLYDOGE, SC, USTC and LUNC spot trading pairs",SCUSDT,False,False
+OKX,DEL,FORTH,2025-09-22 08:00:00.000,"OKX to delist FORTH, RUNECOIN, POLYDOGE, SC, USTC and LUNC spot trading pairs",FORTHUSDT,False,False
+UPBIT,LIST,0G,2025-09-22 11:00:00.000,Upbit KRW market first 1h candle (proxy),0GUSDT,False,False
+BG,LIST,XPL,2025-09-23 13:30:49.000,[Initial Listing] Bitget Will List Plasma (XPL) in the Innovation Zone,XPLUSDT,True,False
+OKX,LIST,XPL,2025-09-25 07:30:00.000,OKX will launch XPL/USDⓈ for spot trading,XPLUSDT,True,False
+UPBIT,LIST,XPL,2025-09-25 13:00:00.000,Upbit KRW market first 1h candle (proxy),XPLUSDT,False,False
+UPBIT,LIST,SUPER,2025-09-29 11:00:00.000,Upbit KRW market first 1h candle (proxy),SUPERUSDT,False,False
+BG,LIST,TOSHI,2025-09-30 04:00:12.000,Toshi (TOSHI) will be listed in Bitget Innovation and Meme Zone,TOSHIUSDT,True,False
+UPBIT,LIST,SOMI,2025-10-01 06:00:00.000,Upbit KRW market first 1h candle (proxy),SOMIUSDT,False,False
+BG,LIST,ASTER,2025-10-06 10:00:06.000,Bitget Will List Aster (ASTER) in the Innovation and DeFi Zone,ASTERUSDT,True,True
+UPBIT,LIST,DOOD,2025-10-07 07:00:00.000,Upbit KRW market first 1h candle (proxy),DOODUSDT,False,False
+OKX,LIST,TOSHI,2025-10-07 10:00:00.000,"OKX to list AVNT (Avantis), TOSHI (Toshi) for spot trading",TOSHIUSDT,True,False
+OKX,LIST,AVNT,2025-10-07 10:30:00.000,OKX will launch AVNT/USDⓈ and TOSHI/USDⓈ for spot trading,AVNTUSDT,True,False
+UPBIT,LIST,IN,2025-10-10 06:00:00.000,Upbit KRW market first 1h candle (proxy),INUSDT,False,False
+OKX,LIST,LINEA,2025-10-13 03:30:00.000,OKX will launch LINEA/USDⓈ for spot trading,LINEAUSDT,True,False
+OKX,LIST,YB,2025-10-15 03:30:00.000,OKX will launch YB/USDⓈ for spot trading,YBUSDT,True,False
+UPBIT,LIST,YGG,2025-10-15 05:00:00.000,Upbit KRW market first 1h candle (proxy),YGGUSDT,False,False
+BG,LIST,YB,2025-10-15 07:00:45.000,[Initial Listing] Bitget Will List Yieldbasis (YB) in the Innovation and DeFi Zone,YBUSDT,True,False
+OKX,LIST,ENA,2025-10-16 02:00:00.000,OKX will launch ENA/USDⓈ and PAXG/USDⓈ for spot trading,ENAUSDT,True,False
+OKX,DEL,ALPHA,2025-10-16 08:00:00.000,"OKX to delist SLERF, ALPHA, BADGER, OAS, MLN and AIDOGE spot trading pairs",ALPHAUSDT,False,False
+OKX,DEL,BADGER,2025-10-16 08:00:00.000,"OKX to delist SLERF, ALPHA, BADGER, OAS, MLN and AIDOGE spot trading pairs",BADGERUSDT,False,False
+OKX,DEL,MLN,2025-10-16 08:00:00.000,"OKX to delist SLERF, ALPHA, BADGER, OAS, MLN and AIDOGE spot trading pairs",MLNUSDT,False,False
+OKX,DEL,SLERF,2025-10-16 08:00:00.000,"OKX to delist SLERF, ALPHA, BADGER, OAS, MLN and AIDOGE spot trading pairs",SLERFUSDT,False,True
+OKX,LIST,ASTER,2025-10-17 02:00:00.000,OKX to list ASTER (Aster) for spot trading,ASTERUSDT,True,False
+UPBIT,LIST,ZORA,2025-10-17 04:00:00.000,Upbit KRW market first 1h candle (proxy),ZORAUSDT,False,False
+OKX,LIST,ZORA,2025-10-17 10:00:00.000,OKX to list ZORA (Zora) for spot trading,ZORAUSDT,True,False
+BG,DEL,NEIROETH,2025-10-17 10:00:14.000,Notice of Delisting 7 Spot Trading Pairs on 24 October 2025,NEIROETHUSDT,False,False
+BG,DEL,OMG,2025-10-17 10:00:14.000,Notice of Delisting 7 Spot Trading Pairs on 24 October 2025,OMGUSDT,False,False
+UPBIT,LIST,BIO,2025-10-20 09:00:00.000,Upbit KRW market first 1h candle (proxy),BIOUSDT,False,False
+UPBIT,LIST,F,2025-10-21 07:00:00.000,Upbit KRW market first 1h candle (proxy),FUSDT,False,False
+BG,LIST,MET,2025-10-21 10:00:54.000,[Initial Listing] Bitget Will List Meteora (MET) in the Innovation and DeFi Zone,METUSDT,True,False
+OKX,DEL,KDA,2025-10-22 09:00:00.000,OKX to delist KDA spot trading pairs,KDAUSDT,False,True
+OKX,LIST,MET,2025-10-23 06:30:00.000,OKX will launch MET/USDⓈ for spot trading,METUSDT,True,False
+BG,LIST,VELVET,2025-10-23 11:00:52.000,Bitget Will List Velvet (VELVET) in the Innovation Zone,VELVETUSDT,True,False
+UPBIT,LIST,ORDER,2025-10-24 07:00:00.000,Upbit KRW market first 1h candle (proxy),ORDERUSDT,False,False
+BG,DEL,KDA,2025-10-24 10:00:20.000,Notice of Delisting 11 Spot Trading Pairs on 31 October 2025,KDAUSDT,False,True
+BG,DEL,BEL,2025-10-24 10:00:20.000,Notice of Delisting 11 Spot Trading Pairs on 31 October 2025,BELUSDT,False,False
+OKX,LIST,VIRTUAL,2025-10-28 03:00:00.000,OKX to list Virtuals Protocol (VIRTUAL) for spot trading,VIRTUALUSDT,True,False
+UPBIT,LIST,KERNEL,2025-10-28 07:00:00.000,Upbit KRW market first 1h candle (proxy),KERNELUSDT,False,False
+UPBIT,LIST,ENSO,2025-10-29 08:00:00.000,Upbit KRW market first 1h candle (proxy),ENSOUSDT,False,False
+BG,DEL,MELANIA,2025-10-31 10:00:56.000,Notice of Delisting 6 Spot Trading Pairs on 7 November 2025,MELANIAUSDT,False,False
+BG,DEL,WHY,2025-10-31 10:00:56.000,Notice of Delisting 6 Spot Trading Pairs on 7 November 2025,1000WHYUSDT,False,False
+OKX,LIST,KITE,2025-11-03 03:30:00.000,OKX will launch KITE/USDⓈ for spot trading,KITEUSDT,True,False
+BG,LIST,KITE,2025-11-03 07:00:32.000,"[Initial Listing] Bitget Will List Kite (KITE) in the Innovation, Public Chain and AI Zone",KITEUSDT,True,False
+OKX,LIST,HYPE,2025-11-03 07:30:00.000,OKX to list Hyperliquid (HYPE) for spot trading,HYPEUSDT,True,False
+UPBIT,LIST,KITE,2025-11-03 13:00:00.000,Upbit KRW market first 1h candle (proxy),KITEUSDT,False,False
+BG,DEL,FLM,2025-11-07 10:00:50.000,Notice of Delisting 14 Spot Trading Pairs on 14 November 2025,FLMUSDT,False,False
+BG,DEL,SLERF,2025-11-07 10:00:50.000,Notice of Delisting 14 Spot Trading Pairs on 14 November 2025,SLERFUSDT,False,False
+OKX,DEL,BAL,2025-11-12 08:00:00.000,"OKX to delist BAL, PERP, FLM, DEP, NC and LOOKS spot trading pairs",BALUSDT,False,False
+OKX,DEL,PERP,2025-11-12 08:00:00.000,"OKX to delist BAL, PERP, FLM, DEP, NC and LOOKS spot trading pairs",PERPUSDT,False,False
+OKX,DEL,FLM,2025-11-12 08:00:00.000,"OKX to delist BAL, PERP, FLM, DEP, NC and LOOKS spot trading pairs",FLMUSDT,False,False
+OKX,LIST,SEI,2025-11-14 03:00:00.000,"OKX to list SEI (Sei), 2Z (DoubleZero) for spot trading",SEIUSDT,True,False
+OKX,LIST,2Z,2025-11-14 05:00:00.000,OKX will launch 2Z/USDⓈ for spot trading,2ZUSDT,True,False
+OKX,LIST,ZEN,2025-11-17 13:00:00.000,OKX to list Horizen (ZEN) for spot trading,ZENUSDT,True,False
+BG,DEL,ARC,2025-11-21 10:00:25.000,Notice of Delisting 15 Spot Trading Pairs on 28 November 2025,ARCUSDT,False,False
+BG,DEL,GRIFFAIN,2025-11-21 10:00:25.000,Notice of Delisting 15 Spot Trading Pairs on 28 November 2025,GRIFFAINUSDT,False,False
+BG,DEL,PIPPIN,2025-11-21 10:00:25.000,Notice of Delisting 15 Spot Trading Pairs on 28 November 2025,PIPPINUSDT,False,False
+OKX,LIST,ZEC,2025-11-23 05:45:00.000,OKX to list Zcash (ZEC) for spot trading,ZECUSDT,True,False
+BG,LIST,MON,2025-11-24 03:30:00.000,[Initial listing] Bitget to list Monad (MON) in the Innovation and Public Chain zone,MONUSDT,True,False
+UPBIT,LIST,MON,2025-11-24 15:00:00.000,Upbit KRW market first 1h candle (proxy),MONUSDT,False,False
+OKX,LIST,DASH,2025-11-25 09:00:00.000,OKX to list Dash (DASH) for spot trading,DASHUSDT,True,False
+UPBIT,LIST,PLUME,2025-11-26 06:00:00.000,Upbit KRW market first 1h candle (proxy),PLUMEUSDT,False,False
+BG,DEL,ALPHA,2025-11-28 10:00:43.000,Notice of Delisting 10 Spot Trading Pairs on 5 December 2025,ALPHAUSDT,False,False
+BG,DEL,BADGER,2025-11-28 10:00:43.000,Notice of Delisting 10 Spot Trading Pairs on 5 December 2025,BADGERUSDT,False,False
+BG,DEL,SCR,2025-11-28 10:00:43.000,Notice of Delisting 10 Spot Trading Pairs on 5 December 2025,SCRUSDT,False,False
+BG,LIST,ZEC,2025-12-03 10:30:50.000,Bitget to list Zcash (ZEC),ZECUSDT,True,False
+BG,DEL,PONKE,2025-12-05 10:00:14.000,Notice of Delisting 15 Spot Trading Pairs on 12 December 2025,PONKEUSDT,False,False
+BG,DEL,AVAAI,2025-12-05 10:00:14.000,Notice of Delisting 15 Spot Trading Pairs on 12 December 2025,AVAAIUSDT,False,False
+BG,DEL,MAVIA,2025-12-05 10:00:14.000,Notice of Delisting 15 Spot Trading Pairs on 12 December 2025,MAVIAUSDT,False,False
+BG,DEL,XEM,2025-12-05 10:00:14.000,Notice of Delisting 15 Spot Trading Pairs on 12 December 2025,XEMUSDT,False,False
+BG,LIST,STABLE,2025-12-07 15:30:51.000,[Initial listing] Bitget to list Stable (STABLE) in the Innovation and Public Chain zone,STABLEUSDT,True,False
+BG,DEL,VOXEL,2025-12-12 10:00:11.000,Notice of Delisting 12 Spot Trading Pairs on 19 December 2025,VOXELUSDT,False,False
+BG,DEL,MDT,2025-12-12 10:00:11.000,Notice of Delisting 12 Spot Trading Pairs on 19 December 2025,MDTUSDT,False,False
+BG,DEL,FIS,2025-12-12 10:00:11.000,Notice of Delisting 12 Spot Trading Pairs on 19 December 2025,FISUSDT,False,False
+UPBIT,LIST,WET,2025-12-15 09:00:00.000,Upbit KRW market first 1h candle (proxy),WETUSDT,False,False
+BG,DEL,MYRO,2025-12-19 10:00:39.000,Notice of Delisting 12 Spot Trading Pairs on 26 December 2025,MYROUSDT,False,False
+BG,DEL,DOLO,2025-12-19 10:00:39.000,Notice of Delisting 12 Spot Trading Pairs on 26 December 2025,DOLOUSDT,False,False
+BG,DEL,SKATE,2025-12-19 10:00:39.000,Notice of Delisting 12 Spot Trading Pairs on 26 December 2025,SKATEUSDT,False,False
+BG,DEL,GTC,2025-12-19 10:00:39.000,Notice of Delisting 12 Spot Trading Pairs on 26 December 2025,GTCUSDT,False,False
+BG,DEL,RAD,2025-12-19 10:00:39.000,Notice of Delisting 12 Spot Trading Pairs on 26 December 2025,RADUSDT,False,False
+UPBIT,LIST,ZKP,2025-12-26 08:00:00.000,Upbit KRW market first 1h candle (proxy),ZKPUSDT,False,False
+BG,DEL,XCN,2025-12-26 10:00:09.000,Notice of Delisting 6 Spot Trading Pairs on 31 December 2025,XCNUSDT,False,False
+BG,DEL,PTB,2025-12-26 10:00:09.000,Notice of Delisting 6 Spot Trading Pairs on 31 December 2025,PTBUSDT,False,False
+BG,DEL,X,2025-12-31 10:00:23.000,Notice of delisting 4 spot trading pairs on 9 January 2026,1000XUSDT,False,False
+BG,LIST,BREV,2026-01-05 11:00:31.000,[Initial listing] Bitget to list Brevis (BREV) in the Innovation zone,BREVUSDT,True,False
+OKX,LIST,BREV,2026-01-06 03:30:00.000,OKX will launch BREV/USDⓈ for spot trading,BREVUSDT,True,False
+UPBIT,LIST,ZK,2026-01-06 09:00:00.000,Upbit KRW market first 1h candle (proxy),ZKUSDT,False,False
+UPBIT,LIST,BREV,2026-01-07 06:00:00.000,Upbit KRW market first 1h candle (proxy),BREVUSDT,False,False
+BG,DEL,OBOL,2026-01-09 10:00:04.000,Notice of Delisting 3 Spot Trading Pairs on 16 January 2026,OBOLUSDT,False,False
+OKX,LIST,FOGO,2026-01-13 07:00:00.000,OKX will launch FOGO/USDⓈ for spot trading,FOGOUSDT,True,False
+BG,LIST,FOGO,2026-01-14 13:00:58.000,[Initial listing] Bitget to list Fogo (FOGO) in the Innovation and Solana Ecosystem zone,FOGOUSDT,True,False
+BG,LIST,FUN,2026-01-14 14:10:00.000,[Initial listing] Bitget to list Sport.Fun (FUN) in the Innovation zone,FUNUSDT,True,False
+BG,LIST,LIT,2026-01-15 10:30:34.000,[Initial listing] Bitget to list Lighter (LIT) in the Innovation and DeFi zone,LITUSDT,True,False
+OKX,LIST,LIT,2026-01-15 11:15:00.000,OKX will launch LIT/USDⓈ for spot trading,LITUSDT,True,False
+BG,DEL,A2Z,2026-01-16 10:00:23.000,"Notice of delisting 2 spot trading pairs on January 23, 2026",A2ZUSDT,False,False
+OKX,DEL,RDNT,2026-01-20 08:00:00.000,"OKX to delist ULTI, GEAR, VRA, DAO, CXT, RDNT and ELON spot trading pairs",RDNTUSDT,False,False
+BG,LIST,SENT,2026-01-22 07:30:27.000,[Initial listing] Bitget to list Sentient (SENT) in the Innovation and AI zone,SENTUSDT,True,True
+OKX,LIST,SENT,2026-01-27 06:15:00.000,OKX will launch SENT/USDⓈ for spot trading,SENTUSDT,True,True
+UPBIT,LIST,SENT,2026-01-29 08:00:00.000,Upbit KRW market first 1h candle (proxy),SENTUSDT,False,False
+BG,DEL,PERP,2026-01-30 10:00:22.000,"Notice of delisting 4 spot trading pairs on February 6, 2026",PERPUSDT,False,False
+BG,DEL,MILK,2026-01-30 10:00:22.000,"Notice of delisting 4 spot trading pairs on February 6, 2026",MILKUSDT,False,False
+BG,LIST,ZAMA,2026-01-30 11:00:40.000,[Initial listing] Bitget to list Zama (ZAMA) in the Innovation zone,ZAMAUSDT,True,True
+OKX,LIST,ZAMA,2026-01-30 13:00:00.000,OKX will launch ZAMA/USDⓈ for spot trading,ZAMAUSDT,True,True
+UPBIT,LIST,BIRB,2026-02-03 09:00:00.000,Upbit KRW market first 1h candle (proxy),BIRBUSDT,False,False
+OKX,LIST,CC,2026-02-12 04:00:00.000,OKX will launch CC/USDⓈ for spot trading,CCUSDT,True,False
+BG,DEL,BAL,2026-02-13 10:00:03.000,"Notice of delisting 10 spot trading pairs on February 24, 2026",BALUSDT,False,False
+BG,DEL,CHESS,2026-02-13 10:00:03.000,"Notice of delisting 10 spot trading pairs on February 24, 2026",CHESSUSDT,False,False
+BG,DEL,TANSSI,2026-02-13 10:00:03.000,"Notice of delisting 10 spot trading pairs on February 24, 2026",TANSSIUSDT,False,False
+BG,DEL,GHST,2026-02-13 10:00:03.000,"Notice of delisting 10 spot trading pairs on February 24, 2026",GHSTUSDT,False,False
+BG,DEL,NKN,2026-02-13 10:00:03.000,"Notice of delisting 10 spot trading pairs on February 24, 2026",NKNUSDT,False,False
+UPBIT,LIST,TAO,2026-02-16 07:00:00.000,Upbit KRW market first 1h candle (proxy),TAOUSDT,False,False
+UPBIT,LIST,AZTEC,2026-02-20 07:00:00.000,Upbit KRW market first 1h candle (proxy),AZTECUSDT,False,False
+UPBIT,LIST,SKR,2026-02-24 07:00:00.000,Upbit KRW market first 1h candle (proxy),SKRUSDT,False,False
+UPBIT,LIST,ESP,2026-02-24 08:00:00.000,Upbit KRW market first 1h candle (proxy),ESPUSDT,False,False
+BG,DEL,QUICK,2026-02-27 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on March 6, 2026",QUICKUSDT,False,False
+BG,DEL,MAGIC,2026-02-27 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on March 6, 2026",MAGICUSDT,False,False
+BG,DEL,IDEX,2026-02-27 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on March 6, 2026",IDEXUSDT,False,False
+BG,DEL,ONG,2026-02-27 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on March 6, 2026",ONGUSDT,False,False
+BG,DEL,ZRC,2026-02-27 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on March 6, 2026",ZRCUSDT,False,False
+BG,LIST,OPN,2026-03-03 14:00:34.000,[Initial listing] Bitget to list Opinion (OPN) in the Innovation zone,OPNUSDT,True,False
+OKX,LIST,ROBO,2026-03-05 06:00:00.000,OKX will launch ROBO/USDⓈ for spot trading,ROBOUSDT,True,True
+UPBIT,LIST,ICP,2026-03-11 08:00:00.000,Upbit KRW market first 1h candle (proxy),ICPUSDT,False,False
+OKX,DEL,MEMEFI,2026-03-12 08:00:00.000,"OKX to delist RSS3, MEMEFI, GHST, RIO and SWEAT spot trading pairs",MEMEFIUSDT,False,False
+OKX,DEL,GHST,2026-03-12 08:00:00.000,"OKX to delist RSS3, MEMEFI, GHST, RIO and SWEAT spot trading pairs",GHSTUSDT,False,False
+BG,DEL,RDNT,2026-03-13 10:00:55.000,"Notice of Delisting 14 Spot Trading Pairs on March 20, 2026",RDNTUSDT,False,True
+BG,DEL,EPT,2026-03-13 10:00:55.000,"Notice of Delisting 14 Spot Trading Pairs on March 20, 2026",EPTUSDT,False,False
+BG,DEL,COMMON,2026-03-13 10:00:55.000,"Notice of Delisting 14 Spot Trading Pairs on March 20, 2026",COMMONUSDT,False,False
+BG,DEL,FLOW,2026-03-13 10:00:55.000,"Notice of Delisting 14 Spot Trading Pairs on March 20, 2026",FLOWUSDT,False,False
+BG,DEL,KOMA,2026-03-13 10:00:55.000,"Notice of Delisting 14 Spot Trading Pairs on March 20, 2026",KOMAUSDT,False,False
+BG,DEL,UXLINK,2026-03-13 10:00:55.000,"Notice of Delisting 14 Spot Trading Pairs on March 20, 2026",UXLINKUSDT,False,False
+OKX,LIST,KAT,2026-03-17 05:00:00.000,OKX will launch KAT/USDⓈ for spot trading,KATUSDT,True,True
+BG,LIST,KAT,2026-03-18 07:00:27.000,[Initial listing] Bitget to list Katana (KAT) in the Innovation and Public Chain zone,KATUSDT,True,True
+UPBIT,LIST,ETHFI,2026-03-19 03:00:00.000,Upbit KRW market first 1h candle (proxy),ETHFIUSDT,False,False
+OKX,LIST,MON,2026-03-23 02:00:00.000,OKX will launch MON/USDⓈ for spot trading,MONUSDT,True,False
+UPBIT,LIST,KAT,2026-03-26 10:00:00.000,Upbit KRW market first 1h candle (proxy),KATUSDT,False,False
+OKX,DEL,UXLINK,2026-03-27 08:00:00.000,OKX to delist UXLINK spot trading pairs,UXLINKUSDT,False,False
+BG,DEL,HIGH,2026-03-27 10:00:10.000,"Notice of Delisting 6 Spot Trading Pairs on April 3, 2026",HIGHUSDT,False,False
+BG,DEL,SXP,2026-03-27 10:00:10.000,"Notice of Delisting 6 Spot Trading Pairs on April 3, 2026",SXPUSDT,False,False
+BG,DEL,NTRN,2026-03-27 10:00:10.000,"Notice of Delisting 6 Spot Trading Pairs on April 3, 2026",NTRNUSDT,False,False
+BG,DEL,LRC,2026-03-27 10:00:10.000,"Notice of Delisting 6 Spot Trading Pairs on April 3, 2026",LRCUSDT,False,False
+BG,DEL,HOOK,2026-03-27 10:00:10.000,"Notice of Delisting 6 Spot Trading Pairs on April 3, 2026",HOOKUSDT,False,False
+UPBIT,LIST,SKY,2026-03-31 03:00:00.000,Upbit KRW market first 1h candle (proxy),SKYUSDT,False,False
+BG,LIST,EDGE,2026-03-31 03:00:31.000,[Initial Listing] Bitget to list edgeX (EDGE) in the Innovation zone,EDGEUSDT,True,False
+BG,LIST,NIGHT,2026-04-07 09:00:23.000,Bitget to list Midnight (NIGHT),NIGHTUSDT,True,False
+BG,DEL,AERGO,2026-04-10 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on April 17, 2026",AERGOUSDT,False,False
+BG,DEL,GLMR,2026-04-10 10:00:22.000,"Notice of Delisting 7 Spot Trading Pairs on April 17, 2026",GLMRUSDT,False,False
+UPBIT,LIST,ZAMA,2026-04-14 10:00:00.000,Upbit KRW market first 1h candle (proxy),ZAMAUSDT,False,False
+UPBIT,LIST,CC,2026-04-15 06:00:00.000,Upbit KRW market first 1h candle (proxy),CCUSDT,False,False
+UPBIT,LIST,SOON,2026-04-17 05:00:00.000,Upbit KRW market first 1h candle (proxy),SOONUSDT,False,False
+BG,DEL,OXT,2026-04-17 10:00:22.000,"Notice of Delisting 11 Spot Trading Pairs on April 24, 2026",OXTUSDT,False,False
+UPBIT,LIST,PIEVERSE,2026-04-20 07:00:00.000,Upbit KRW market first 1h candle (proxy),PIEVERSEUSDT,False,False
+UPBIT,LIST,CHIP,2026-04-21 13:00:00.000,Upbit KRW market first 1h candle (proxy),CHIPUSDT,False,True
+UPBIT,LIST,SPK,2026-04-23 03:00:00.000,Upbit KRW market first 1h candle (proxy),SPKUSDT,False,False
+OKX,LIST,CHIP,2026-04-24 06:30:00.000,OKX will launch CHIP/USDⓈ for spot trading,CHIPUSDT,True,True
+BG,DEL,ARK,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",ARKUSDT,False,False
+BG,DEL,TRU,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",TRUUSDT,False,False
+BG,DEL,CVC,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",CVCUSDT,False,False
+BG,DEL,LSK,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",LSKUSDT,False,False
+BG,DEL,WAXP,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",WAXPUSDT,False,False
+BG,DEL,DENT,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",DENTUSDT,False,False
+BG,DEL,MBOX,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",MBOXUSDT,False,False
+BG,DEL,SPELL,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",SPELLUSDT,False,False
+BG,DEL,ALCH,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",ALCHUSDT,False,False
+BG,DEL,ZEREBRO,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",ZEREBROUSDT,False,False
+BG,DEL,SNT,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",SNTUSDT,False,False
+BG,DEL,ETHW,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",ETHWUSDT,False,False
+BG,DEL,VINE,2026-04-24 10:00:43.000,"Notice of Delisting 22 Spot Trading Pairs on April 30, 2026",VINEUSDT,False,False
+OKX,LIST,GRASS,2026-04-24 11:00:00.000,OKX will launch GRASS/USDⓈ for spot trading,GRASSUSDT,True,False
+UPBIT,LIST,XCN,2026-04-27 07:00:00.000,Upbit KRW market first 1h candle (proxy),XCNUSDT,False,False
+UPBIT,LIST,PRL,2026-04-27 10:00:00.000,Upbit KRW market first 1h candle (proxy),PRLUSDT,False,False
+BG,LIST,SKYAI,2026-04-30 03:00:30.000,Bitget to list SKYAI (SKYAI),SKYAIUSDT,True,False
+BG,LIST,MEGA,2026-04-30 03:00:42.000,[Initial listing] Bitget to list MegaETH (MEGA) ,MEGAUSDT,True,True
+BG,DEL,THE,2026-04-30 10:00:26.000,"Notice of Delisting 4 Spot Trading Pairs on May 8, 2026",THEUSDT,False,False
+OKX,LIST,MEGA,2026-04-30 10:15:00.000,OKX will launch MEGA/USDⓈ for spot trading,MEGAUSDT,True,True
+UPBIT,LIST,MEGA,2026-04-30 11:00:00.000,Upbit KRW market first 1h candle (proxy),MEGAUSDT,False,True
+OKX,LIST,EDGE,2026-05-06 05:00:00.000,OKX will launch EDGE/USDⓈ for spot trading,EDGEUSDT,True,False
+UPBIT,LIST,WIF,2026-05-06 07:00:00.000,Upbit KRW market first 1h candle (proxy),WIFUSDT,False,False
+UPBIT,LIST,B3,2026-05-07 05:00:00.000,Upbit KRW market first 1h candle (proxy),B3USDT,False,False
+UPBIT,LIST,VVV,2026-05-12 07:00:00.000,Upbit KRW market first 1h candle (proxy),VVVUSDT,False,False
+UPBIT,LIST,IRYS,2026-05-15 11:00:00.000,Upbit KRW market first 1h candle (proxy),IRYSUSDT,False,False
+OKX,LIST,AI,2026-05-22 07:30:00.000,OKX will launch AI/USDⓈ for spot trading,AIUSDT,True,False
+BG,DEL,ONE,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",ONEUSDT,False,False
+BG,DEL,FLUX,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",FLUXUSDT,False,False
+BG,DEL,ILV,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",ILVUSDT,False,False
+BG,DEL,BNT,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",BNTUSDT,False,False
+BG,DEL,SLP,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",SLPUSDT,False,False
+BG,DEL,PUNDIX,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",PUNDIXUSDT,False,False
+BG,DEL,HOT,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",HOTUSDT,False,False
+BG,DEL,CELR,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",CELRUSDT,False,False
+BG,DEL,BAND,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",BANDUSDT,False,False
+BG,DEL,SFP,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",SFPUSDT,False,False
+BG,DEL,UMA,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",UMAUSDT,False,False
+BG,DEL,CVX,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",CVXUSDT,False,False
+BG,DEL,PROM,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",PROMUSDT,False,False
+BG,DEL,BANANA,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",BANANAUSDT,False,False
+BG,DEL,ID,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",IDUSDT,False,False
+BG,DEL,RPL,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",RPLUSDT,False,False
+BG,DEL,VELODROME,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",VELODROMEUSDT,False,False
+BG,DEL,PHB,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",PHBUSDT,False,False
+BG,DEL,LQTY,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",LQTYUSDT,False,False
+BG,DEL,YFI,2026-05-22 10:00:04.000,"Notice of Delisting 24 Spot Trading Pairs on May 29, 2026",YFIUSDT,False,False
+OKX,LIST,IRYS,2026-05-27 05:00:00.000,OKX to list IRYS/USDT (Irys) for spot trading,IRYSUSDT,True,False
+UPBIT,LIST,IO,2026-05-29 09:00:00.000,Upbit KRW market first 1h candle (proxy),IOUSDT,False,False
+BG,DEL,SWARMS,2026-05-29 10:00:04.000,"Notice of Delisting 6 Spot Trading Pairs on June 5, 2026",SWARMSUSDT,False,False
+BG,DEL,VFY,2026-05-29 10:00:04.000,"Notice of Delisting 6 Spot Trading Pairs on June 5, 2026",VFYUSDT,False,False
+BG,DEL,ESPORTS,2026-05-29 10:00:04.000,"Notice of Delisting 6 Spot Trading Pairs on June 5, 2026",ESPORTSUSDT,False,False
+BG,DEL,C98,2026-06-05 10:00:27.000,"Notice of Delisting 11 Spot Trading Pairs on June 12, 2026",C98USDT,False,False
+BG,DEL,SYS,2026-06-05 10:00:27.000,"Notice of Delisting 11 Spot Trading Pairs on June 12, 2026",SYSUSDT,False,False
+BG,DEL,POWR,2026-06-05 10:00:27.000,"Notice of Delisting 11 Spot Trading Pairs on June 12, 2026",POWRUSDT,False,False
+BG,DEL,HIPPO,2026-06-05 10:00:27.000,"Notice of Delisting 11 Spot Trading Pairs on June 12, 2026",HIPPOUSDT,False,False
+UPBIT,LIST,BABY,2026-06-05 11:00:00.000,Upbit KRW market first 1h candle (proxy),BABYUSDT,False,False
+BG,DEL,D,2026-06-12 10:00:09.000,"Notice of Delisting 12 Spot Trading Pairs on June 18, 2026",DUSDT,False,False
+BG,DEL,DEGEN,2026-06-12 10:00:09.000,"Notice of Delisting 12 Spot Trading Pairs on June 18, 2026",DEGENUSDT,False,False
+BG,DEL,IOTX,2026-06-12 10:00:09.000,"Notice of Delisting 12 Spot Trading Pairs on June 18, 2026",IOTXUSDT,False,False
+BG,DEL,SYN,2026-06-12 10:00:09.000,"Notice of Delisting 12 Spot Trading Pairs on June 18, 2026",SYNUSDT,False,False
+BG,DEL,MTL,2026-06-12 10:00:09.000,"Notice of Delisting 12 Spot Trading Pairs on June 18, 2026",MTLUSDT,False,False
+UPBIT,LIST,SPX,2026-06-16 05:00:00.000,Upbit KRW market first 1h candle (proxy),SPXUSDT,False,False
+BG,LIST,BLUAI,2026-06-17 11:00:45.000,Bitget to list Bluwhale AI (BLUAI) in the AI zone,BLUAIUSDT,True,False
+OKX,LIST,TAO,2026-06-30 03:00:00.000,OKX to list TAO/USDT (Bittensor) for spot trading,TAOUSDT,True,False
+UPBIT,LIST,AI,2026-06-30 07:00:00.000,Upbit KRW market first 1h candle (proxy),AIUSDT,False,False
+BG,DEL,NFP,2026-07-03 10:00:00.000,"Notice of Delisting 8 Spot Trading Pairs on July 10, 2026",NFPUSDT,False,False
+BG,DEL,FRAX,2026-07-03 10:00:00.000,"Notice of Delisting 8 Spot Trading Pairs on July 10, 2026",FRAXUSDT,False,False
+BG,DEL,OG,2026-07-03 10:00:00.000,"Notice of Delisting 8 Spot Trading Pairs on July 10, 2026",OGUSDT,False,False
+BG,DEL,DUSK,2026-07-03 10:00:00.000,"Notice of Delisting 8 Spot Trading Pairs on July 10, 2026",DUSKUSDT,False,False
+BG,DEL,LUMIA,2026-07-03 10:00:00.000,"Notice of Delisting 8 Spot Trading Pairs on July 10, 2026",LUMIAUSDT,False,False
+UPBIT,LIST,OPG,2026-07-07 06:00:00.000,Upbit KRW market first 1h candle (proxy),OPGUSDT,False,False
+BG,LIST,EVAA,2026-07-09 10:00:06.000,Bitget to list EVAA Protocol (EVAA) in the DeFi zone,EVAAUSDT,True,False
+OKX,LIST,SLX,2026-07-10 02:00:00.000,OKX to list SLX/USDT (Solstice) for spot trading,SLXUSDT,True,False
+UPBIT,LIST,O,2026-07-23 06:00:00.000,Upbit KRW market first 1h candle (proxy),OUSDT,False,False
+BG,DEL,SANTOS,2026-07-24 10:00:41.000,"Notice of Delisting 6 Spot Trading Pairs on July 31, 2026",SANTOSUSDT,False,False
+UPBIT,LIST,MORPHO,2026-07-25 09:00:00.000,Upbit KRW market first 1h candle (proxy),MORPHOUSDT,False,False
+UPBIT,LIST,EUL,2026-07-26 05:00:00.000,Upbit KRW market first 1h candle (proxy),EULUSDT,False,False
+UPBIT,LIST,CFX,2026-07-31 09:00:00.000,Upbit KRW market first 1h candle (proxy),CFXUSDT,False,False
+UPBIT,LIST,HOME,2026-08-04 08:00:00.000,Upbit KRW market first 1h candle (proxy),HOMEUSDT,False,False
+UPBIT,LIST,GRVT,2026-08-05 08:00:00.000,Upbit KRW market first 1h candle (proxy),GRVTUSDT,False,False
+UPBIT,LIST,CAP,2026-08-06 05:00:00.000,Upbit KRW market first 1h candle (proxy),CAPUSDT,False,False
+UPBIT,LIST,BSB,2026-08-07 07:00:00.000,Upbit KRW market first 1h candle (proxy),BSBUSDT,False,False
+UPBIT,LIST,KMNO,2026-08-07 10:00:00.000,Upbit KRW market first 1h candle (proxy),KMNOUSDT,False,False
+UPBIT,LIST,PROM,2026-08-12 03:00:00.000,Upbit KRW market first 1h candle (proxy),PROMUSDT,False,False
+BG,DEL,VANRY,2026-08-14 10:00:57.000,"Notice of Delisting 6 Spot Trading Pairs on August 21, 2026",VANRYUSDT,False,False
+BG,DEL,HFT,2026-08-14 10:00:57.000,"Notice of Delisting 6 Spot Trading Pairs on August 21, 2026",HFTUSDT,False,False
+BG,DEL,SAHARA,2026-08-14 10:00:57.000,"Notice of Delisting 6 Spot Trading Pairs on August 21, 2026",SAHARAUSDT,False,False
+BG,DEL,ACX,2026-08-14 10:00:57.000,"Notice of Delisting 6 Spot Trading Pairs on August 21, 2026",ACXUSDT,False,False
+UPBIT,LIST,CRV,2026-08-21 04:00:00.000,Upbit KRW market first 1h candle (proxy),CRVUSDT,False,False
+BG,DEL,ZKJ,2026-08-21 10:00:47.000,"Notice of Delisting 2 Spot Trading Pairs on August 28, 2026",ZKJUSDT,False,False
+BG,DEL,BTR,2026-08-21 10:00:47.000,"Notice of Delisting 2 Spot Trading Pairs on August 28, 2026",BTRUSDT,False,False
+UPBIT,LIST,LIT,2026-08-24 04:00:00.000,Upbit KRW market first 1h candle (proxy),LITUSDT,False,False
+BG,DEL,DOOD,2026-08-28 10:00:00.000,"Notice of Delisting 4 Spot Trading Pairs on September 4, 2026",DOODUSDT,False,False
+BG,DEL,STORJ,2026-08-28 10:00:00.000,"Notice of Delisting 4 Spot Trading Pairs on September 4, 2026",STORJUSDT,False,False
+BG,DEL,LPT,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",LPTUSDT,False,False
+BG,DEL,VIC,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",VICUSDT,False,False
+BG,DEL,EGLD,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",EGLDUSDT,False,False
+BG,DEL,ALT,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",ALTUSDT,False,False
+BG,DEL,SATS,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",1000SATSUSDT,False,False
+BG,DEL,FTT,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",FTTUSDT,False,False
+BG,DEL,JELLYJELLY,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",JELLYJELLYUSDT,False,False
+BG,DEL,BLUR,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",BLURUSDT,False,False
+BG,DEL,WAVES,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",WAVESUSDT,False,False
+BG,DEL,GRT,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",GRTUSDT,False,False
+BG,DEL,RUNE,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",RUNEUSDT,False,False
+BG,DEL,AIXBT,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",AIXBTUSDT,False,False
+BG,DEL,FIDA,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",FIDAUSDT,False,False
+BG,DEL,BAN,2026-09-04 10:00:53.000,"Notice of Delisting 19 Spot Trading Pairs on September 11, 2026",BANUSDT,False,False
+BG,DEL,TURBO,2026-09-11 10:00:38.000,"Notice of Delisting 4 Spot Trading Pairs on September 18, 2026",TURBOUSDT,False,False
+BG,DEL,ORBS,2026-09-11 10:00:38.000,"Notice of Delisting 4 Spot Trading Pairs on September 18, 2026",ORBSUSDT,False,False
+OKX,LIST,VVV,2026-09-15 07:00:00.000,OKX to list VVV/USDT (Venice) for spot trading,VVVUSDT,True,False
+OKX,LIST,PONS,2026-09-15 08:00:00.000,OKX to list PONS/USDT (Pons Family) for spot trading,PONSUSDT,True,False
+BG,DEL,SAGA,2026-09-18 10:00:00.000,"Notice of Delisting 3 Spot Trading Pairs on September 24, 2026",SAGAUSDT,False,False
+BG,DEL,RVN,2026-09-18 10:00:00.000,"Notice of Delisting 3 Spot Trading Pairs on September 24, 2026",RVNUSDT,False,False
+BG,DEL,COTI,2026-09-18 10:00:00.000,"Notice of Delisting 3 Spot Trading Pairs on September 24, 2026",COTIUSDT,False,False
+OKX,DEL,STORJ,2026-09-23 10:00:00.000,"OKX to delist DORA, ICX, STORJ, ZEUS and ELF spot trading pairs",STORJUSDT,False,False
+OKX,DEL,ICX,2026-09-23 10:00:00.000,"OKX to delist DORA, ICX, STORJ, ZEUS and ELF spot trading pairs",ICXUSDT,False,False
+UPBIT,LIST,NMR,2026-10-06 11:00:00.000,Upbit KRW market first 1h candle (proxy),NMRUSDT,False,False
+UPBIT,LIST,PONS,2026-10-08 05:00:00.000,Upbit KRW market first 1h candle (proxy),PONSUSDT,False,False
+UPBIT,LIST,KAIA,2026-10-09 09:00:00.000,Upbit KRW market first 1h candle (proxy),KAIAUSDT,False,False
+UPBIT,LIST,RSR,2026-10-12 05:00:00.000,Upbit KRW market first 1h candle (proxy),RSRUSDT,False,False
+UPBIT,LIST,GTC,2026-10-12 10:00:00.000,Upbit KRW market first 1h candle (proxy),GTCUSDT,False,False

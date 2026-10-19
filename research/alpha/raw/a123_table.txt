@@ -1,0 +1,454 @@
+2025-04-25 None AIOT tge None pts= 45 amt= 578 None 56  fut None None None
+2025-04-28 None SIGN  None pts= 65 amt= 1500 None 56 spot fut None None None
+2025-04-29 None HAEDAL  None pts= 80 amt= 356 None 56 spot fut None None None
+2025-04-29 None MILK tge None pts= 75 amt= 760 None 56  fut None None None
+2025-04-30 None B2 tge None pts= 82 amt= 138 None 56  fut None None None
+2025-05-05 None BOOP  None pts= 137 amt= 291 None 56   None None None
+2025-05-06 None MYX tge None pts= 142 amt= 644 None 56  fut None None None
+2025-05-07 None OBOL  None pts= 153 amt= 165 None 1  fut None None None
+2025-05-07 None ZKJ  None pts= 142 amt= 50 None 56  fut None None None
+2025-05-09 None DOOD  None pts= 168 amt= 9873 None 56  fut None None None
+2025-05-12 None PUFFER  None pts= 186 amt= 362 None 56  fut None None None
+2025-05-13 None RDAC  None pts= 205 amt= 1382 None 8453   None None None
+2025-05-14 None PRAI tge None pts= 198 amt= 940 None 56   None None None
+2025-05-15 None NXPC  None pts= 187 amt= 198 None 56 spot fut None None None
+2025-05-16 None AGT tge None pts= 186 amt= 5627 None 56  fut None None None
+2025-05-17 None REX  None pts= 196 amt= 7795 None 56   None None None
+2025-05-19 None XTER  None pts= 194 amt= 451 None 56   None None None
+2025-05-20 None MERL  None pts= 193 amt= 1530 None 56  fut None None None
+2025-05-21 None TGT  None pts= 199 amt= 940 None 56   None None None
+2025-05-22 None RWA tge None pts= 195 amt= 13570 None 56   None None None
+2025-05-23 None SOON  None pts= 190 amt= 230 None 56  fut None None None
+2025-05-24 None OBT  None pts= 200 amt= 8000 None 56   None None None
+2025-05-26 None HUMA  None pts= 200 amt= 1250 None 56 spot fut None None None
+2025-05-27 None PFVS  None pts= 204 amt= 875 None 1   None None None
+2025-05-27 None ELDE tge None pts= 198 amt= 417 None 56   None None None
+2025-05-28 None SOPH  None pts= 195 amt= 1250 None 56 spot fut None None None
+2025-05-29 None RDO tge None pts= 193 amt= 7796 None 56   None None None
+2025-05-30 None ASRR  None pts= 207 amt= 133 None 56   None None None
+2025-05-31 None TAIKO  None pts= 205 amt= 130 None 56  fut None None None
+2025-06-02 None EDGEN  None pts= 223 amt= 2971 None 56   None None None
+2025-06-02 None SQD  None pts= 210 amt= 424 None 56  fut None None None
+2025-06-03 None ZRC  None pts= 211 amt= 2666 None 56  fut None None None
+2025-06-03 None BDXN  None pts= 213 amt= 900 None 56  fut None None None
+2025-06-04 None LA  None pts= 215 amt= 160 None 56 spot fut None None None
+2025-06-05 None CUDIS tge None pts= 210 amt= 1124 None 56  fut None None None
+2025-06-06 None FLY  None pts= 223 amt= 252 None 146   None None None
+2025-06-07 None AB  None pts= 225 amt= 9882 None 56   None None None
+2025-06-08 None OL  None pts= 233 amt= 2825 None 56  fut None None None
+2025-06-09 None SKATE  None pts= 236 amt= 1209 None 56  fut None None None
+2025-06-10 None HOME  None pts= 236 amt= 2500 None 56 spot fut None None None
+2025-06-10 None RESOLV  None pts= 239 amt= 400 None 56 spot fut None None None
+2025-06-11 None IDOL tge None pts= 229 amt= 4993 None 56  fut None None None
+2025-06-12 None PUNDIAI  None pts= 237 amt= 8 None 56   None None None
+2025-06-13 None ROAM  None pts= 247 amt= 372 None 56   None None None
+2025-06-13 None SGC tge None pts= 240 amt= 9885 None 56   None None None
+2025-06-14 None DEGEN  None pts= 245 amt= 13862 None 8453  fut None None None
+2025-06-15  F   pts= 241 amt= 5000 None 56 spot fut None None None
+2025-06-16 None ULTI  None pts= 242 amt= 2543 None 56   None None None
+2025-06-16 None VELO  None pts= 242 amt= 5000 None 56   None None None
+2025-06-17 None SPK  None pts= 240 amt= 2000 None 56 spot fut None None None
+2025-06-17 None BOMB tge None pts= 240 amt= 7620 None 56   None None None
+2025-06-18 None BEE tge None pts= 234 amt= 2067 None 56   None None None
+2025-06-19 None MAT  None pts= 243 amt= 16 None 56   None None None
+2025-06-20 None LOT tge None pts= 238 amt= 2047 None 56   None None None
+2025-06-20 None AVAIL  None pts= 243 amt= 2667 None 56   None None None
+2025-06-21 None BRIC  None pts= 251 amt= 900 None 56   None None None
+2025-06-22 None BULLA  None pts= 247 amt= 750 None 56  fut None None None
+2025-06-23 None CARV  None pts= 247 amt= 250 None 56  fut None None None
+2025-06-24 None NEWT  None pts= 241 amt= 125 None 56 spot fut None None None
+2025-06-24 None DMC  None pts= 248 amt= 4800 None 784  fut None None None
+2025-06-24 None MGO grab None pts= 210 amt= 1666 None 56   None None None
+2025-06-25 None H  None pts= 230 amt= 1600 None 56  fut None None None
+2025-06-26 None XO  None pts= 239 amt= 3125 None 784   None None None
+2025-06-26 None SAHARA  None pts= 223 amt= 1000 None 56 spot fut None None None
+2025-06-27 None MORE grab None pts= 170 amt= 400 None 56   None None None
+2025-06-27 None CESS grab None pts= 170 amt= 10000 None 56   None None None
+2025-06-28 None REKT grab None pts= 170 amt= 140230000 None 56   None None None
+2025-07-01  BGSC alpha 1 pts= 210 170 amt= 7360 None 56   None None None
+2025-07-03 16:00 M grab 2 pts= 214 140 amt= 1000 None 56  fut None None None
+2025-07-03 18:00 ICNT grab 2 pts= 140 amt= 100 None 8453  fut None None None
+2025-07-04 16:00 CROSS grab 1 pts= 140 amt= 500 None 56  fut None None None
+2025-07-05 17:00 AIN grab 1 pts= 140 amt= 600 None 56  fut None None None
+2025-07-08 21:00 OIK grab 1 pts= 140 amt= 750 None 56   None None None
+2025-07-12 15:00 PEAQ grab 2 pts= 234 180 amt= 643 None 56   None None None
+2025-07-13 22:00 SPA grab 1 pts= 160 amt= 4607 None 56   None None None
+2025-07-14 20:00 C grab 1 pts= 160 amt= 750 None 56 spot fut None None None
+2025-07-15 18:00 TAC grab 2 pts= 224 140 amt= 1875 None 56  fut None None None
+2025-07-16 20:00 RION tge 1 pts= 211 amt= 500 None 56   None  
+2025-07-17 16:00 BAS tge 1 pts= 213 amt= 14384 None 56  fut True  
+2025-07-17 21:30 ERA grab 2 pts= 140 amt= 150 None 56 spot fut None None None
+2025-07-18 18:00 TAKER grab 1 pts= 165 amt= 1000 None 56   None None None
+2025-07-18 21:00 G grab 1 pts= 165 amt= 88000 None 501 spot fut None None None
+2025-07-19 17:00 ESPORTS grab 1 pts= 160 amt= 900 None 56  fut None None None
+2025-07-20 15:00 UPTOP grab 1 pts= 180 amt= 1500 None 56   None None None
+2025-07-21 15:00 TA grab 1 pts= 210 amt= 750 None 56  fut None None None
+2025-07-22 16:00 ZKWASM tge 1 pts= 225 amt= 898 None 56   None  
+2025-07-22 20:00 YALA grab 2 pts= 238 200 amt= 200 None 56  fut None None None
+2025-07-23 17:00 COA grab 1 pts= 200 amt= 1500 None 56   None None None
+2025-07-24 18:00 ASP grab 2 pts= 225 200 amt= 125 None 56   None None None
+2025-07-25 16:00 LN grab 1 pts= 200 amt= 600 None 56   None None None
+2025-07-26 16:00 PHY grab 1 pts= 200 amt= 750 None 56   None None None
+2025-07-27 16:00 VRA grab 1 pts= 200 amt= 32238 None 56   None None None
+2025-07-28 16:00 DELABS tge 1 pts= 218 amt= 3217.55 None 56   None 60000000 252.11
+2025-07-29 20:00 TREE grab 2 pts= 233 200 amt= 100 None 56 spot fut None None None
+2025-07-30 16:00 GAIA grab 2 pts= 233 200 amt= 500 None 56   None None None
+2025-07-30 21:30 RHEA grab 1 pts= 200 amt= 1000 None 56   None None None
+2025-07-31 16:00 PLAY grab 1 pts= 200 amt= 1600 None 56  fut None None None
+2025-07-31 20:00 NAORIS grab 2 pts= 125 amt= 500 None 56  fut None None None
+2025-08-01 15:00 MIA grab 1 pts= 200 amt= 500 None 56   None None None
+2025-08-01 17:00 TOSHI grab 1 pts= 200 amt= 69349 None 56   None None None
+2025-08-02 18:00 AIO grab 1 pts= 200 amt= 750 None 56  fut None None None
+2025-08-03 16:00 MM grab 1 pts= 200 amt= 24000 None 56   None None None
+2025-08-04 19:00 CYC grab 1 pts= 200 amt= 800 None 56   None None None
+2025-08-04 20:00 DARK grab 1 pts= 200 amt= 1000 None 56   None None None
+2025-08-05 18:00 SUP grab 1 pts= 200 amt= 500 None 56   None None None
+2025-08-05 20:30 TOWNS grab 2 pts= 230 200 amt= 1359 None 56 spot fut None None None
+2025-08-05 23:00 PROVE grab 2 pts= 241 200 amt= 100 None 1 spot fut None None None
+2025-08-06 19:00 FIR grab 1 pts= 200 amt= 1000 None 56   None None None
+2025-08-07 17:00 IN claim 1 pts= 200 amt= 500 None 56  fut None None None
+2025-08-07 19:00 X grab 1 pts= 200 amt= 1000 None 56   None None None
+2025-08-08 15:00 K grab 2 pts= 233 200 amt= 250 None 56   None None None
+2025-08-09 17:00 BSU grab 1 pts= 200 amt= 510 None 56   None None None
+2025-08-10 15:00 GAME grab 2 pts= 237 185 amt= 10200 None 56   None None None
+2025-08-11  SLAY grab 1 pts=  amt=  None 56   None None None
+2025-08-11 16:00 XCX grab 1 pts= 200 amt= 800 None 56   None None None
+2025-08-11 18:00 SLAY grab 2 pts= 227 125 amt= 525 None 56   None None None
+2025-08-12 16:00 WAI grab 1 pts= 200 amt= 800 None 56   None None None
+2025-08-13 16:00 BTR tge 1 pts= 222 amt= 1322.51 None 56  fut True 20000000 495.82
+2025-08-14 16:00 AIBOT tge 1 pts= 224 amt= 1666 None 56   False 20000000 247.91
+2025-08-14 16:45 OVL grab 1 pts= 200 amt= 111 None 56   None None None
+2025-08-14 19:00 REVA tge 1 pts= 224 amt= 1857.52 None 56   True 20000000 240.11
+2025-08-15  PUBLIC  1 pts=  amt=  None 56   None None None
+2025-08-15 15:30 PUBLIC grab 2 pts= 240 140 amt= 430 None 56   None None None
+2025-08-15 20:00 TCOM grab 1 pts= 200 amt= 600 None 56   None None None
+2025-08-16 16:00 MLK grab 1 pts= 200 amt= 245 None 56   None None None
+2025-08-17 20:00 WILD grab 1 pts= 200 amt= 100 None 56   None None None
+2025-08-18 16:00 RICE tge 1 pts= 230 amt= 1359 None 56   False 20000000 118.91
+2025-08-18 19:00 DAM grab 1 pts= 200 amt= 320 None 56  fut None None None
+2025-08-20 20:00 DGC grab 1 pts= 200 amt= 500000 None 56   None None None
+2025-08-21 01:00 SAPIEN grab 1 pts= 200 amt= 200 None 8453 spot fut None None None
+2025-08-21 16:00 AKE tge 1 pts= 238 amt= 100000 None 56   False  
+2025-08-21 20:00 ARIA grab 1 pts= 200 amt= 625 None 56  fut None None None
+2025-08-22 17:00 XPIN grab 1 pts= 200 amt= 80000 None 56  fut None None None
+2025-08-22 20:00 HEMI tge 1 pts= 240 amt= 4704 None 56 spot fut True 100000000 172.59
+2025-08-23 22:00 DORA grab 1 pts= 200 amt= 140 None 56   None None None
+2025-08-24 17:00 FST grab 1 pts= 200 amt= 800 None 56   None None None
+2025-08-25 16:00 TAKE tge 1 pts= 241 amt= 2000 None 56  fut False  
+2025-08-25 22:00 MTP grab 1 pts= 200 amt= 750 None 56   None None None
+2025-08-26 15:00 TOWN grab 1 pts= 200 amt= 1600 None 56   None None None
+2025-08-27 21:30 DOLO grab 2 pts= 260 230 amt= 166 None 1 spot fut None None None
+2025-08-28 18:00 BLUM grab 1 pts= 230 amt= 700 None 56   None None None
+2025-08-28 20:00 MITO tge 1 pts= 248 amt= 386 None 56 spot fut False 10000000 238.04
+2025-08-29 15:00 XLAB grab 2 pts= 254 155 amt= 1500000 None 56   None None None
+2025-08-29 17:00 CELB grab 1 pts= 220 amt= 3200 None 56   None None None
+2025-08-29 Delay XLAB  1 pts=  amt=  None 56   None None None
+2025-08-30 16:30 ZENT grab 1 pts= 230 amt= 4000 None 56   None None None
+2025-08-31 20:00 WOD grab 1 pts= 220 amt= 750 None 56   None None None
+2025-09-01 16:00 FOREST tge 1 pts= 240 amt= 878 None 56   False 20000000 116.57
+2025-09-02 15:00 Q grab 1 pts= 220 amt= 5000 None 56  fut None None None
+2025-09-02 16:00 HOLO tge 1 pts= 240 amt= 849 None 56 spot fut True 20480000 116.57
+2025-09-02 21:30 SOMI grab 2 pts= 235 220 amt= 100 None 56 spot fut None None None
+2025-09-03 16:00 BOT tge 1 pts= 231 amt= 2000 None 56   False  
+2025-09-03 19:00 MCH grab 1 pts= 220 amt= 1000 None 56   None None None
+2025-09-03 20:00 PTB grab 1 pts=  amt=  None 56  fut None None None
+2025-09-03 20:00 PTB grab 2 pts= 245 220 amt= 1320 None 56  fut None None None
+2025-09-04 17:00 U grab 1 pts= 220 amt= 2700 None 56   None None None
+2025-09-04 18:00 GATA grab 1 pts= 220 amt= 500 None 56   None None None
+2025-09-04 20:00 TRADOOR grab 1 pts= 220 amt= 50 None 56   None None None
+2025-09-05 16:00 BOOST grab 1 pts= 220 amt= 640 None 56   None None None
+2025-09-05 19:00 SHARDS grab 1 pts= 220 amt= 4000 None 56   None None None
+2025-09-06 16:00 STAR tge 1 pts= 224 amt= 774 None 56  fut False 12500000 148.13
+2025-09-07 18:00 SAROS grab 2 pts= 238 220 amt= 100 None 501   None None None
+2025-09-08 19:00 OPEN grab 2 pts= 239 220 amt= 200 None 56 spot fut None None None
+2025-09-08 20:00 MIRROR grab 1 pts= 220 amt= 800 None 8453   None None None
+2025-09-09 19:00 SWTCH grab 1 pts= 210 amt= 320 None 501   None None None
+2025-09-09 21:00 AVNT grab 1 pts= 220 amt= 180 None 8453 spot fut None None None
+2025-09-10 18:00 POP grab 1 pts= 220 amt= 6400 None 56   None None None
+2025-09-10 22:30 LINEA grab 2 pts= 220 200 amt= 7700 None 59144 spot fut None None None
+2025-09-11 20:00 PINGPONG grab 1 pts= 200 amt= 600 None 56   None None None
+2025-09-12 16:00 UB grab 1 pts= 200 amt= 4000 None 56  fut None None None
+2025-09-12 18:00 AA grab 1 pts= 200 amt= 800 None 56   None None None
+2025-09-13 22:00 ZEUS grab 1 pts= 185 amt= 250 None 56   None None None
+2025-09-14 15:00 ALEO grab 1 pts= 170 amt= 165 None 56   None None None
+2025-09-15 20:30 ZKC grab 2 pts= 206 190 amt= 90 None 56 spot fut None None None
+2025-09-16 19:00 VLR grab 1 pts= 200 amt= 1500 None 56   None None None
+2025-09-16 22:25 STBL grab 1 pts= 200 amt= 4000 None 56  fut None None None
+2025-09-17 19:00 MAIGA grab 1 pts= 200 amt= 640 None 56   None None None
+2025-09-18 16:00 AIA grab 1 pts= 200 amt= 240 None 56  fut None None None
+2025-09-18 18:00 BARD grab 2 pts= 215 200 amt= 100 None 56 spot fut None None None
+2025-09-19 15:00 RIVER tge 1 pts= 209 amt= 59.82 None 56  fut False 2000000 100.97
+2025-09-19 17:00 JOJO tge 1 pts= 210 amt= 616 None 56   False 16000000 201.95
+2025-09-19 19:30 DL grab 1 pts= 200 amt= 5000 None 56   None None None
+2025-09-19 20:00 AOP grab 1 pts= 200 amt= 1280 None 56   None None None
+2025-09-20 21:00 FROGGIE grab 1 pts= 170 amt= 800 None 56   None None None
+2025-09-21 16:00 NUMI grab 2 pts= 220 125 amt= 335 None 56   None None None
+2025-09-22 16:00 0G grab 2 pts= 227 200 amt= 20 None 56 spot fut None None None
+2025-09-23 17:00 BLESS grab 1 pts= 200 amt= 3200 None 56  fut None None None
+2025-09-24 16:00 ZBT tge 1 pts= 218 amt= 358 None 56 spot fut True 10000000 201.4
+2025-09-24 19:00 GAIN grab 1 pts= 210 amt= 800 None 56   None None None
+2025-09-25 15:00 COAI grab 1 pts= 200 amt= 250 None 56  fut None None None
+2025-09-25 19:45 XPL grab 2 pts= 200 70 amt= 180 None 56 spot fut None None None
+2025-09-26 18:00 MIRA grab 2 pts= 196 150 amt= 100 None 56 spot fut None None None
+2025-09-26 19:00 HANA grab 1 pts= 200 amt= 270 None 56  fut None None None
+2025-09-27 17:00 GOATED grab 1 pts= 175 amt= 375 None 56   None None None
+2025-09-27 19:00 LIGHT grab 1 pts= 190 amt= 150 None 56  fut None None None
+2025-09-28 15:00 SERAPH grab 1 pts= 130 amt= 200 None 56   None None None
+2025-09-29 18:00 XAN grab 1 pts= 170 amt= 1000 None 56  fut None None None
+2025-09-29 19:00 FF grab 2 pts= 175 150 amt= 500 None 56 spot fut None None None
+2025-09-30 17:00 EDEN grab 2 pts= 170 75 amt= 50 None 56 spot fut None None None
+2025-09-30 19:30 VFY grab 1 pts= 180 amt= 300 None 8453  fut None None None
+2025-10-01 16:00 STRIKE grab 1 pts= 165 amt= 1000 None 56   None None None
+2025-10-01 20:00 TRUTH grab 1 pts= 180 amt= 4000 None 784  fut None None None
+2025-10-02 20:00 2Z grab 1 pts= 190 amt= 400 None 501 spot fut None None None
+2025-10-02 21:00 BTG grab 1 pts= 190 amt= 10 None 56   None None None
+2025-10-03 16:00 EVAA grab 1 pts= 190 amt= 20 None 56  fut None None None
+2025-10-03 19:00 P grab 1 pts= 190 amt= 500 None 56   None None None
+2025-10-05 17:00 CYPR grab 1 pts= 200 amt= 400 None 8453   None None None
+2025-10-06 15:00 LYN grab 2 pts= 211 115 amt= 110 None 56  fut None None None
+2025-10-07 16:00 KLINK tge 1 pts= 211 amt= 974.4 None 56   False 20000000 257.39
+2025-10-07 22:00 KGEN grab 2 pts= 210 115 amt= 100 None 56  fut None None None
+2025-10-08 15:00 SLX(old) grab 1 pts= 200 amt= 5000  56   None None None
+2025-10-08 22:00 PIPE grab 2 pts= 211 115 amt= 160 None 501   None None None
+2025-10-09 15:00 WAL grab 2 pts= 210 180 amt= 150 None 784 spot fut None None None
+2025-10-10 21:00 EUL grab 1 pts= 200 amt= 5 None 1 spot fut None None None
+2025-10-11 16:00 CDL grab 1 pts= 200 amt= 640 None 56   None None None
+2025-10-12 19:00 CORL grab 1 pts= 210 amt= 500 None 56   None None None
+2025-10-13 16:00 YB tge 1 pts= 144 amt= 164.45 None 56 spot fut True 25000000 1918.47
+2025-10-14 15:00 ENSO grab 2 pts= 245 180 amt= 10 None 56 spot fut None None None
+2025-10-14 17:30 LAB tge 1 pts= 246 amt= 657.93 None 56  fut False 20000000 153.47
+2025-10-14 19:00 CLO grab 1 pts= 200 amt= 320 None 56  fut None None None
+2025-10-15 19:00 WBAI grab 1 pts= 220 amt= 500 None 56   None None None
+2025-10-15 20:00 RECALL grab 1 pts= 200 amt= 100 None 8453  fut None None None
+2025-10-16 16:00 RVV tge 1 pts= 256 amt= 4651.72 None 56  fut True 150000000 172.01
+2025-10-17 16:00 ANOME grab 1 pts= 220 amt= 320 None 56   None None None
+2025-10-17 18:00 SUBHUB grab 1 pts= 220 amt= 320 None 56   None None None
+2025-10-18 16:00 MERL grab 1 pts= 240 amt= 126  56  fut None None None
+2025-10-19 15:00 MYX grab 1 pts= 230 amt= 11 None 56  fut None None None
+2025-10-20 15:00 SVSA grab 1 pts= 241 amt= 500 None 56   None None None
+2025-10-21 15:00 SIGMA grab 1 pts= 245 amt= 640 None 56   None None None
+2025-10-21 19:00 BLUAI grab 1 pts= 220 amt= 1600 None 56  fut None None None
+2025-10-22 21:00 TURTLE grab 1 pts= 220 amt= 200 None 56 spot fut None None None
+2025-10-23 16:00 APR tge 1 pts= 240 amt= 201.8 None 56  fut None None None
+2025-10-23 21:00 MET grab 1 pts= 226 amt= 32 None 501  fut None None None
+2025-10-24 16:00 ON grab 1 pts= 220 amt= 200 None 56  fut None None None
+2025-10-24 18:00 AT grab 1 pts= 220 amt= 200 None 56 spot fut None None None
+2025-10-25 16:00 B2 grab 1 pts= 225 amt= 16 None 56  fut None None None
+2025-10-26 16:00 AIO grab 1 pts= 226 amt= 250 None 56  fut None None None
+2025-10-27 15:00 XNAP grab 1 pts= 230 amt= 500 None 56   None None None
+2025-10-27 18:00 42 grab 1 pts= 210 amt= 200 None 56  fut None None None
+2025-10-27 20:00 COMMON grab 2 pts= 255 235 amt= 1140 None 56  fut None None None
+2025-10-28 18:00 PIGGY grab 1 pts= 250 amt= 38 None 56   None None None
+2025-10-29 16:00 PIEVERSE tge 1 pts= 227 amt= 255  56  fut True 20000000 181.3
+2025-10-29 19:00 BOS grab 1 pts= 240 amt= 2688 None 56   None None None
+2025-10-30 20:00 BANK grab 1 pts= 240 amt= 354 None 56  fut None None None
+2025-10-31 17:00 MMT tge 1 pts= 220 amt= 200.75 None 784 spot fut True 15000000 1390.67
+2025-10-31 20:00 NB grab 1 pts= 240 amt= 250 10000000 56   None None None
+2025-11-01 16:00 BAY grab 2 pts= 245 230 amt= 400 20000000 56   None None None
+2025-11-01 17:00 BEAT grab 1 pts= 235 amt= 245 9999920 56  fut None None None
+2025-11-02 19:00 LITKEY grab 1 pts= 235 amt= 250 10000000 56   None None None
+2025-11-03  TITN  1 pts= 240 amt= 320 10000000 8453   None None None
+2025-11-03 19:00 KITE grab 2 pts= 237 215 amt= 500 50000000 56 spot fut None None None
+2025-11-04 15:00 TYCOON grab 1 pts= 230 amt= 375 9999750 56   None None None
+2025-11-05 17:00 TRUST grab 1 pts= 224 amt= 200 12000000 8453  fut None None None
+2025-11-05 20:00 SENTIS grab 1 pts= 235 amt= 640 10000000 56   None None None
+2025-11-06 18:00 LONG grab 1 pts= 225 amt= 175 7500000 56   None None None
+2025-11-06 19:00 UAI grab 1 pts= 229 amt= 320 9968000 56  fut None None None
+2025-11-06 20:00 FOLKS grab 1 pts= 226 amt= 12 499992 56  fut None None None
+2025-11-07 15:00 ARIAIP grab 1 pts= 226 amt= 200 10000000 56   None None None
+2025-11-09 21:00 TIMI grab 1 pts= 231 amt= 960 21000000 56   None None None
+2025-11-10 18:00 JCT grab 1 pts= 235 amt= 16000 500000000 56  fut None None None
+2025-11-11 19:00 ALLO grab 1 pts= 220 amt= 50 14990000 56 spot fut None None None
+2025-11-12 21:00 CROSS grab 1 pts= 230 amt= 320 10000000 56  fut None None None
+2025-11-13 21:30 PLANCK grab 1 pts= 220 amt= 200 15000000 56  fut None None None
+2025-11-15 16:00 ELIZAOS grab 1 pts= 240 amt= 4375 165000000 56   None None None
+2025-11-16 21:00 PLAYSOLANA grab 1 pts= 245 amt= 2500 50000000 501   None None None
+2025-11-18 16:00 DGRAM grab 1 pts= 245 amt= 3340 99999600 56   None None None
+2025-11-19 18:00 GAIB grab 1 pts= 245 amt= 175 4999925 56  fut None None None
+2025-11-20 20:00 BOB grab 1 pts= 240 amt= 1600 100000000 56  fut None None None
+2025-11-21 18:00 ARTX grab 1 pts= 255 amt= 200 2800000 56   None None None
+2025-11-22 18:00 DIGI grab 1 pts= 256 amt= 75000 999975000 56   None None None
+2025-11-23 17:00 KO grab 1 pts= 256 amt= 640 10000000 56   None None None
+2025-11-24 18:00 SSS grab 1 pts= 256 amt= 640 10000000 56   None None None
+2025-11-25 19:00 IRYS grab 1 pts= 241 amt= 1200 90000000 56  fut None None None
+2025-11-26 17:00 SOON grab 1 pts= 241 amt= 55 1670000 56   None None None
+2025-11-27 16:00 GUA grab 1 pts= 256 amt= 750 15000000 56  fut None None None
+2025-11-28 16:00 VSN grab 1 pts= 252 amt= 400 17203200 42161   None None None
+2025-11-29 16:00 GAIX grab 1 pts= 256 amt= 400 10000000 56   None None None
+2025-11-30 17:00 SQD grab 1 pts= 245 amt= 500 26740000 56   None None None
+2025-12-01 19:00 RLS grab 1 pts= 242 amt= 800 50000000 56  fut None None None
+2025-12-02 21:00 TAKE grab 1 pts= 253 amt= 105 1666665 56   None None None
+2025-12-03 21:00 H grab 1 pts= 242 amt= 295 8330000 56   None None None
+2025-12-04 20:00 ESPORTS grab 1 pts= 250 amt= 80 1250000 56   None None None
+2025-12-05 18:00 POWER grab 1 pts= 245 amt= 375 7500000 56  fut None None None
+2025-12-08 21:00 STABLE grab 1 pts= 250 amt= 2000 300000000 56   None None None
+2025-12-09 17:30 NIGHT grab 1 pts= 230 amt= 600 120000000 56 spot fut None None None
+2025-12-09 22:00 WET  1 pts= 230 amt= 200 1496000 501  fut None None None
+2025-12-10 18:00 LAVA grab 1 pts= 230 amt= 165 5603400 42161   None None None
+2025-12-11 16:00 CYS grab 1 pts= 226 amt= 200 10000000 56  fut None None None
+2025-12-11 18:00 BTX grab 1 pts= 241 amt= 1200 15000000 56   None None None
+2025-12-11 20:20 US grab 1 pts= 236 amt= 2000 49999990 784  fut None None None
+2025-12-12 20:00 RAVE grab 1 pts= 230 amt= 400 10000000 56  fut None None None
+2025-12-15 21:00 AIOT grab 1 pts= 230 amt= 160 5000000 56   None None None
+2025-12-16 18:00 MAGMA grab 1 pts= 226 amt= 250 9999900 784  fut None None None
+2025-12-16 22:00 THQ grab 1 pts= 220 amt= 400 10000000 8453   None None None
+2025-12-17 16:00 IR tge 1 pts= 225 amt= 179 7500000 56  fut False 7500000 174.71
+2025-12-18 18:00 LISA grab 1 pts= 235 amt= 230 10000000 56   None None None
+2025-12-18 19:00 VOOI  1 pts= 225 amt= 335 10000000 56   None None None
+2025-12-19 17:00 RTX grab 1 pts= 226 amt= 25 1000000 56   None None None
+2025-12-19 19:00 ZKP grab 1 pts= 233 amt= 200 5000000 56  fut None None None
+2025-12-20 16:00 TTD grab 1 pts= 226 amt= 670 9999750 56   None None None
+2025-12-22 16:00 BTW tge 1 pts= 216 amt= 3212 100000000 56  fut True 100000000 58.28
+2025-12-23 21:00 BEAT grab 1 pts= 225 amt= 9 285710 56   None None None
+2025-12-24 21:00 UB grab 1 pts= 226 amt= 1000 28570000 56   None None None
+2025-12-25 21:00 KGEN grab 1 pts= 240 amt= 180 5560000 56   None None None
+2025-12-26 21:00 SENTIS grab 1 pts= 240 amt= 320 9090000 56   None None None
+2025-12-27 16:00 COLLECT tge 1 pts= 240 amt= 2079 60000000 56  fut False 60000000 241.13
+2025-12-29 21:00 TIMI grab 1 pts= 241 amt= 1000 28570000 56   None None None
+2025-12-30 16:00 OOOO grab 1 pts= 241 amt= 500 10000000 56   None None None
+2025-12-31 15:00 Q grab 1 pts= 240 amt= 2500 89000000 56   None None None
+2026-01-02 17:00 AIAV grab 1 pts= 256 amt= 305 4043995 56   None None None
+2026-01-05 20:00 ESIM grab 1 pts= 257 amt= 375 9999750 56   None None None
+2026-01-06 20:00 BREV  1 pts= 245 amt= 175 9982350 56 spot fut None None None
+2026-01-07 16:00 ZTC tge 1 pts= 241 amt= 4548.99 210000000 56   False 210000000 54.897
+2026-01-08 20:00 BLESS grab 1 pts= 251 amt= 2500 71430000 56   None None None
+2026-01-09 16:00 DN grab 1 pts= 246 amt= 40 1000000 56   None None None
+2026-01-12 16:00 CAI grab 1 pts= 252 amt= 40 1000000 56   None None None
+2026-01-13 16:00 FOGO tge 1 pts= 200 amt= 3792 200000000 56 spot fut True 200000000 7754.08
+2026-01-14 16:00 SIGHT grab 1 pts= 245 amt= 800 24000000 56   None None None
+2026-01-15 18:00 OWL grab 1 pts= 241 amt= 667 20000000 56   None None None
+2026-01-15 22:00 FUN grab 1 pts= 245 amt= 300 6000000 8453   None None None
+2026-01-16 18:00 ROLL grab 1 pts= 242 amt= 355 9999995 8453   None None None
+2026-01-19 20:00 SENT tge 1 pts= 225 amt= 11849 687194767 1 spot fut True 687194767 8025
+2026-01-20 16:00 ELSA grab 1 pts= 235 amt= 200 10000000 8453  fut None None None
+2026-01-20 18:00 ACU grab 1 pts= 241 amt= 320 5000000 56  fut None None None
+2026-01-21 20:00 GWEI grab 1 pts= 230 amt= 2400 75000000 56  fut None None None
+2026-01-22 19:00 FIGHT grab 1 pts= 231 amt= 2000 100000000 56  fut None None None
+2026-01-23 18:00 SPACE grab 1 pts= 227 amt= 6720 482865600 56  fut None None None
+2026-01-26 17:00 WMTX grab 1 pts= 241 amt= 580 9940000 56   None None None
+2026-01-27 17:00 XPIN grab 1 pts= 233 amt= 14600 454540000 56   None None None
+2026-01-28 19:00 BIRB grab 1 pts= 230 amt= 200 6000000 501   None None None
+2026-01-29 16:00 ZAMA tge 1 pts= 220 amt= 5861 440000000 56   True 440000000 12254
+2026-01-30 19:00 KIN grab 1 pts= 241 amt= 600 10000000 56   None None None
+2026-01-31 03:00 INX grab 1 pts= 240 amt= 1500 29970000 56  fut None None None
+2026-02-02 22:00 ELON grab 1 pts= 241 amt= 50 1000000 56   None None None
+2026-02-03 16:00 TRIA grab 1 pts= 232 amt= 2500 75000000 56  fut None None None
+2026-02-04 20:00 WARD grab 1 pts= 231 amt= 200 10000000 56   None None None
+2026-02-06 01:00 RNBW grab 1 pts= 241 amt= 430 4999610 8453   None None None
+2026-02-06 17:00 STABLE grab 1 pts= 240 amt= 1845 52630000 56   None None None
+2026-02-09 21:00 COAI grab 1 pts= 241 amt= 100 1720000 56   None None None
+2026-02-10 20:00 ESP tge 1 pts= 240 amt= 2520 53850000  spot fut True 53850000 5857.45
+2026-02-11 18:00 BTG grab 1 pts= 242 amt= 7.5 52080 56   None None None
+2026-02-11 18:00 ARTX grab 1 pts= 242 amt= 157 1086911 56   None None None
+2026-02-11 18:00 NAORIS grab 1 pts= 242 amt= 1640 11363560 56   None None None
+2026-02-12 21:00 IP grab 1 pts= 240 amt= 30 1022940 56   None None None
+2026-02-18 18:00 VELVET grab 1 pts= 242 amt= 400 6250000 56   None None None
+2026-02-19 18:00 JCT grab 1 pts= 242 amt= 20600 147042800 56   None None None
+2026-02-19 18:00 ICNT grab 1 pts= 242 amt= 95 675640 8453   None None None
+2026-02-20 18:00 TRUTH grab 1 pts= 251 amt= 3333 52081458 784   None None None
+2026-02-24 18:00 GUA grab 1 pts= 256 amt= 200 3120000 56   None None None
+2026-02-25 18:00 LYN grab 1 pts= 256 amt= 95 1562465 56   None None None
+2026-02-27 16:00 ROBO grab 1 pts= 245 amt= 888 49955328 56 spot fut None None None
+2026-03-04 18:00 BSB grab 1 pts= 245 amt= 320 10000000 56  fut None None None
+2026-03-04 20:00 ROBO grab 1 pts= 240 amt= 600 20000000 56 spot fut None None None
+2026-03-05 19:00 OPN grab 1 pts= 235 amt= 100 4995000 56   True None None
+2026-03-06 18:30 MAGMA grab 1 pts= 241 amt= 320 5000000 784   None None None
+2026-03-10 18:00 LAB grab 1 pts= 241 amt= 207 3450000 56   None None None
+2026-03-11 16:00 SN3 grab 1 pts= 241 amt= 1000 10000000 56   None None None
+2026-03-13 16:00 UP tge 1 pts= 226 amt= 327 10000000 56   False 10000000 78.8
+2026-03-16 20:00 KAT tge 1 pts= 241 amt= 6814 100000000 56   True 100000000 1368.15
+2026-03-19 18:00 IN grab 1 pts= 240 amt= 470 3906170 56   None None None
+2026-03-19 18:00 BLUAI grab 1 pts= 240 amt= 5000 41665000 56   None None None
+2026-03-20 16:00 CYS grab 1 pts= 240 amt= 60 1040000 56   None None None
+2026-03-24 18:00 AIA grab 1 pts= 251 amt= 335 2777485 56   None None None
+2026-03-24 18:00 SIGMA grab 1 pts= 251 amt= 375 3124875 56   None None None
+2026-03-25 16:00 PRL tge 1 pts= 242 amt= 485 10000000 56  fut False 10000000 159.59
+2026-03-26 16:00 TRADOOR grab 1 pts= 242 amt= 14 232550 56   None None None
+2026-03-30 16:00 BASED grab 1 pts= 241 amt= 320 9999866 56  fut None None None
+2026-03-30 18:00 R2 grab 1 pts= 252 amt= 750 9999750 56   None None None
+2026-03-31 20:30 EDGE grab 1 pts= 242 amt= 66 998580 56   None None None
+2026-04-02 16:00 CHECK grab 1 pts= 242 amt= 500 8000000 8453   None None None
+2026-04-07 16:00 ST tge 1 pts= 243 amt= 528 10000000 56   True 10000000 332.47996808
+2026-04-09 17:00 SOON grab 1 pts= 242 amt= 280 4550000 56   None None None
+2026-04-10 17:00 AOP grab 1 pts= 240 amt= 715 7142370 56   None None None
+2026-04-10 17:00 CLO grab 1 pts= 240 amt= 335 3333225 56   None None None
+2026-04-10 17:00 REKT grab 1 pts= 240 amt= 192307700 1922923120930 56   None None None
+2026-04-13 23:30 GENIUS grab 1 pts= 230 amt= 240 7500000 56 spot fut None None None
+2026-04-14 17:00 ANOME grab 1 pts= 235 amt= 824 2941020 56   None None None
+2026-04-14 17:00 VELO grab 1 pts= 235 amt= 8750 62502928 56   None None None
+2026-04-14 17:00 POWER grab 1 pts= 235 amt= 315 2222180 56   None None None
+2026-04-17 17:00 HANA grab 1 pts= 242 amt= 700 2499400 56   None None None
+2026-04-17 17:00 DAM grab 1 pts= 242 amt= 700 3884800 56   None None None
+2026-04-17 17:00 AGT grab 1 pts= 242 amt= 2800 19998700 56   None None None
+2026-04-21 17:00 OPG tge 1 pts= 226 amt= 254 10000000 56 spot fut False 10000000 162.2
+2026-04-21 20:20 CHIP grab 1 pts= 230 amt= 750 24984750 42161 spot fut None None None
+2026-04-24 17:00 EVAA grab 1 pts= 228 amt= 46 246796 56   None None None
+2026-04-24 17:00 ROLL grab 1 pts= 228 amt= 466 3328955 8453   None None None
+2026-04-24 17:00 RION grab 1 pts= 228 amt= 93 498532 56   None None None
+2026-04-29 17:00 AIGENSYN grab 1 pts= 227 amt= 715 20000001 1 spot fut None None None
+2026-04-30 18:00 TAC grab 1 pts= 240 amt= 1870 13332310 56   None None None
+2026-04-30 18:00 RECALL grab 1 pts= 240 amt= 575 4081390 8453   None None None
+2026-04-30 18:00 CARV grab 1 pts= 240 amt= 510  56   None None None
+2026-05-01 15:00 UAI grab 1 pts= 237 amt= 95 1060580 56   None None None
+2026-05-04 15:00 BILL grab 1 pts= 220 amt= 2000 80000000 56  fut None None None
+2026-05-07 18:00 PLAY grab 1 pts= 245 amt= 360 3888720 8453   None None None
+2026-05-08 18:00 SHARE grab 1 pts= 230 amt= 40 1000000 56   None None None
+2026-05-11 17:00 BR grab 1 pts= 241 amt= 225 2684475 56   None None None
+2026-05-13 23:00 PHAROS grab 1 pts= 200 amt= 45 1999980 8453  fut None None None
+2026-05-14 17:00 B2 grab 1 pts= 225 amt= 50 833300 56   None None None
+2026-05-19 21:00 ZEST grab 1 pts= 240 amt= 800 10000000 56  fut None None None
+2026-05-20 22:00 NEX grab 1 pts= 210 amt= 20000250 999992499750 56   None None None
+2026-05-21 20:00 GWEI grab 1 pts= 230 amt= 250 4170000 56   None None None
+2026-05-25 20:00 SLX grab 1 pts= 215 amt= 250 10000000 56  fut None None None
+2026-05-26 21:00 CTR grab 1 pts= 211 amt= 1090 39998640 8453  fut None None None
+2026-05-28 23:00 QAIT grab 1 pts= 241 amt= 31111 99990754 56   None None None
+2026-06-02 15:00 RTX grab 1 pts= 240 amt= 26 318162 56   None None None
+2026-06-03 15:00 FOLKS grab 1 pts= 230 amt= 21 185188 56   None None None
+2026-06-03 15:00 FOREST grab 1 pts= 230 amt= 590 5207955 56   None None None
+2026-06-05 15:00 TRIA grab 1 pts= 241 amt= 1000 15490000 56   None None None
+2026-06-09 17:00 KGEN grab 1 pts= 241 amt= 160 2780000 56   None None None
+2026-06-10 17:00 TRUST grab 1 pts= 245 amt= 585 2083355 8453   None None None
+2026-06-10 17:00 BLESS grab 1 pts= 245 amt= 4670 24997930 56   None None None
+2026-06-17 20:00 RE tge 1 pts= 255 amt= 388.7 10000000 1   True 10000000 809.82151533
+2026-06-17 22:00 O grab 1 pts= 225 amt= 200 10000000 56  fut None None None
+2026-06-22 18:00 ARX grab 1 pts= 225 amt= 172 8499896 56  fut None None None
+2026-06-24 20:00 NES grab 1 pts= 200 amt= 160 10000000 56   None None None
+2026-06-26 18:00 CAP tge 1 pts= 225 amt= 3192 100000000 56  fut False 100000000 605.96
+2026-06-30 18:00 COLLECT grab 1 pts= 224 amt= 800 12500000 56   None None None
+2026-07-02 18:00 ACU grab 1 pts= 226 amt= 355 1899075 56   None None None
+2026-07-02 18:00 WMTX grab 1 pts= 226 amt= 737 3947592 56   None None None
+2026-07-08 17:00 AKE grab 1 pts= 245 amt= 155555 833208403 56   None None None
+2026-07-08 17:00 ARTX grab 1 pts= 245 amt= 235 1249900 56   None None None
+2026-07-10 17:00 IRYS grab 1 pts= 245 amt= 2900 44880000 56   None None None
+2026-07-14 19:00 MPLX grab 1 pts= 251 amt= 1038 5555387 56   None None None
+2026-07-14 19:00 ON grab 1 pts= 251 amt= 315 2247035 56   None None None
+2026-07-16 19:00 BSB grab 1 pts= 250 amt= 245 2692307 56   None None None
+2026-07-21 19:00 EDGE grab 1 pts= 256 amt= 69 487814 56   None None None
+2026-07-21 19:00 BEE grab 1 pts= 256 amt= 584 3124931 56   None None None
+2026-07-23 19:00 TRUTH grab 1 pts= 256 amt= 2501 29166662 784   None None None
+2026-07-27 18:00 AEON grab 1 pts= 245 amt= 250 9999750 56   None None None
+2026-07-30 20:00 GRVT grab 1 pts= 245 amt= 100 3000000 56  fut None None None
+2026-08-04 21:00 QUID grab 1 pts= 243 amt= 550 10000000 8453   None None None
+2026-08-06 19:00 AIA grab 1 pts= 245 amt= 432 3076928 56   None None None
+2026-08-06 19:00 AGT grab 1 pts= 245 amt= 1870 13333720 56   None None None
+2026-08-10 17:00 DOS grab 1 pts= 200 amt= 200 10000000 56  fut None None None
+2026-08-14 21:00 KII grab 1 pts= 230 amt= 360 17999640 56   None None None
+2026-08-19 19:00 STABLE grab 1 pts= 243 amt= 1053 11524032 56   None None None
+2026-08-21 19:00 COAI grab 1 pts= 242 amt= 105  56   None None None
+2026-08-25 18:00 TMX grab 1 pts= 225 amt= 200 10000000 56   None None None
+2026-08-26 18:00 DEBIT grab 1 pts= 240 amt= 50 1000000 56   None None None
+2026-09-01 19:00 TMX grab 1 pts= 250 amt= 300 1827000 56   None None None
+2026-09-01 19:00 SOON grab 1 pts= 250 amt= 166 1842102 56   None None None
+2026-09-04 15:00 CP grab 1 pts= 235 amt= 860 49999540 8453   None None None
+2026-09-07 20:00 CNPY grab 1 pts= 235 amt= 180 4311900 56   None None None
+2026-09-10 19:00 BSB grab 1 pts= 246 amt= 342 3888882 56   None None None
+2026-09-16 16:00 DGAI grab 1 pts= 240 amt= 44 1322816 56   None None None
+2026-09-17 21:00 APM grab 1 pts= 235 amt= 5000 150000000 56   None None None
+2026-09-23 18:00 CYS grab 1 pts= 250 amt= 180 2058660 56   None None None
+2026-09-28 22:30 XDP grab 1 pts= 230 amt= 1666 99999984 8453   None None None
+2026-09-30 16:00 CT grab 1 pts= 223 amt= 200 10000000 56  fut None None None
+2026-10-07 17:00 US grab 1 pts= 246 amt= 2280 25000200 784   None None None
+2026-10-09 17:00 CLO grab 1 pts= 245 amt= 467 3333735 56   None None None
+2026-10-09 17:00 BTR grab 1 pts= 245 amt= 560 3000400 56   None None None
+2026-10-14 18:00 DRV grab 1 pts= 245 amt= 70 1675940 8453   None None None
+2026-10-16 16:00 DNA grab 1 pts= 245 amt= 400 10000000 56   None None None

@@ -1,0 +1,246 @@
+type,tok,ts,title,sym
+FDEL,SRM,2022-11-14 07:00:04.880,Binance Futures Will Delist RAYUSDT and SRMUSDT Perpetual Futures Contracts,SRMUSDT
+FDEL,RAY,2022-11-14 07:00:04.880,Binance Futures Will Delist RAYUSDT and SRMUSDT Perpetual Futures Contracts,RAYUSDT
+DEL,SRM,2022-11-17 01:58:36.774,Binance Will Delist SRM and RAY Margin Pairs and Binance Earn Products,SRMUSDT
+FDEL,CVC,2022-11-28 03:30:27.750,Binance Futures Will Delist and Update the Leverage & Margin Tiers of CVCUSDT Perpetual Futures Contract,CVCUSDT
+DEL,BTCST,2022-12-15 04:00:04.887,"Binance Will Delist MITH, TRIBE, REP and BTCST on 2022-12-22",BTCSTUSDT
+DEL,HNT,2023-03-17 07:01:15.726,Binance Will Delist HNT and WABI on 2023-03-24,HNTUSDT
+DEL,SRM,2023-08-15 07:01:08.922,"Binance Will Delist SNM, SRM and YFII on 2023-08-22",SRMUSDT
+MON,XEM,2023-10-04 06:00:16.946,"Binance Will Extend the Monitoring Tag to Include BETA, BOND, WTC and XEM on 2023-10-04",XEMUSDT
+LIST,BLUR,2023-11-24 06:09:47.186,Binance Will List Blur (BLUR) with Seed Tag Applied,BLURUSDT
+DEL,BTS,2023-11-27 06:00:26.207,"Binance Will Delist BTS, PERL, TORN, WTC on 2023-12-07",BTSUSDT
+LIST,BONK,2023-12-15 03:58:33.180,Binance Will List Bonk (BONK) with Seed Tag Applied,1000BONKUSDT
+MON,ANT,2024-01-04 07:00:09.013,"Binance Will Extend the Monitoring Tag to Include ANT, FIRO, KP3R, MDX, MOB, REEF, VAI, XMR, ZEC & ZEN, and Remove the Seed Tag for GMX & SUSHI on 2024-01-04",ANTUSDT
+MON,REEF,2024-01-04 07:00:09.013,"Binance Will Extend the Monitoring Tag to Include ANT, FIRO, KP3R, MDX, MOB, REEF, VAI, XMR, ZEC & ZEN, and Remove the Seed Tag for GMX & SUSHI on 2024-01-04",REEFUSDT
+MON,XMR,2024-01-04 07:00:09.013,"Binance Will Extend the Monitoring Tag to Include ANT, FIRO, KP3R, MDX, MOB, REEF, VAI, XMR, ZEC & ZEN, and Remove the Seed Tag for GMX & SUSHI on 2024-01-04",XMRUSDT
+MON,ZEC,2024-01-04 07:00:09.013,"Binance Will Extend the Monitoring Tag to Include ANT, FIRO, KP3R, MDX, MOB, REEF, VAI, XMR, ZEC & ZEN, and Remove the Seed Tag for GMX & SUSHI on 2024-01-04",ZECUSDT
+MON,ZEN,2024-01-04 07:00:09.013,"Binance Will Extend the Monitoring Tag to Include ANT, FIRO, KP3R, MDX, MOB, REEF, VAI, XMR, ZEC & ZEN, and Remove the Seed Tag for GMX & SUSHI on 2024-01-04",ZENUSDT
+LIST,PYTH,2024-02-02 07:50:07.072,Binance Will List Pyth Network (PYTH) with Seed Tag Applied,PYTHUSDT
+DEL,ANT,2024-02-06 07:00:12.575,"Binance Will Delist ANT, MULTI, VAI, XMR on 2024-02-20",ANTUSDT
+DEL,XMR,2024-02-06 07:00:12.575,"Binance Will Delist ANT, MULTI, VAI, XMR on 2024-02-20",XMRUSDT
+LIST,WIF,2024-03-05 10:01:37.364,Binance Will List Dogwifhat (WIF) with Seed Tag Applied,WIFUSDT
+FDEL,FOOTBALL,2024-03-19 05:05:02.006,Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M FOOTBALLUSDT and BLUEBIRDUSDT Perpetual Contracts,FOOTBALLUSDT
+FDEL,BLUEBIRD,2024-03-19 05:05:02.006,Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M FOOTBALLUSDT and BLUEBIRDUSDT Perpetual Contracts,BLUEBIRDUSDT
+FDEL,CTK,2024-03-25 04:40:12.437,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M ANTUSDT, DGBUSDT and CTKUSDT Perpetual Contracts",CTKUSDT
+FDEL,ANT,2024-03-25 04:40:12.437,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M ANTUSDT, DGBUSDT and CTKUSDT Perpetual Contracts",ANTUSDT
+FDEL,DGB,2024-03-25 04:40:12.437,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M ANTUSDT, DGBUSDT and CTKUSDT Perpetual Contracts",DGBUSDT
+MON,UNFI,2024-04-03 06:00:16.944,"Binance Will Extend the Monitoring Tag to Include EPX, FOR, UNFI, WAVES & WNXM on 2024-04-03",UNFIUSDT
+MON,WAVES,2024-04-03 06:00:16.944,"Binance Will Extend the Monitoring Tag to Include EPX, FOR, UNFI, WAVES & WNXM on 2024-04-03",WAVESUSDT
+FDEL,STPT,2024-05-06 05:00:17.942,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M STPTUSDT, SNTUSDT, MBLUSDT, RADUSDT and CVXUSDT Perpetual Contracts",STPTUSDT
+FDEL,MBL,2024-05-06 05:00:17.942,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M STPTUSDT, SNTUSDT, MBLUSDT, RADUSDT and CVXUSDT Perpetual Contracts",MBLUSDT
+FDEL,RAD,2024-05-06 05:00:17.942,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M STPTUSDT, SNTUSDT, MBLUSDT, RADUSDT and CVXUSDT Perpetual Contracts",RADUSDT
+FDEL,CVX,2024-05-06 05:00:17.942,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M STPTUSDT, SNTUSDT, MBLUSDT, RADUSDT and CVXUSDT Perpetual Contracts",CVXUSDT
+FDEL,SNT,2024-05-06 05:00:17.942,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M STPTUSDT, SNTUSDT, MBLUSDT, RADUSDT and CVXUSDT Perpetual Contracts",SNTUSDT
+FDEL,AUDIO,2024-05-08 05:00:26.574,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M IDEXUSDT, SLPUSDT, GLMRUSDT, MDTUSDT and AUDIOUSDT Perpetual Contracts",AUDIOUSDT
+FDEL,MDT,2024-05-08 05:00:26.574,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M IDEXUSDT, SLPUSDT, GLMRUSDT, MDTUSDT and AUDIOUSDT Perpetual Contracts",MDTUSDT
+FDEL,GLMR,2024-05-08 05:00:26.574,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M IDEXUSDT, SLPUSDT, GLMRUSDT, MDTUSDT and AUDIOUSDT Perpetual Contracts",GLMRUSDT
+FDEL,SLP,2024-05-08 05:00:26.574,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M IDEXUSDT, SLPUSDT, GLMRUSDT, MDTUSDT and AUDIOUSDT Perpetual Contracts",SLPUSDT
+FDEL,IDEX,2024-05-08 05:00:26.574,"Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M IDEXUSDT, SLPUSDT, GLMRUSDT, MDTUSDT and AUDIOUSDT Perpetual Contracts",IDEXUSDT
+DEL,XEM,2024-06-03 03:00:20.294,"Binance Will Delist OMG, WAVES, WNXM, XEM on 2024-06-17",XEMUSDT
+DEL,OMG,2024-06-03 03:00:20.294,"Binance Will Delist OMG, WAVES, WNXM, XEM on 2024-06-17",OMGUSDT
+DEL,WAVES,2024-06-03 03:00:20.294,"Binance Will Delist OMG, WAVES, WNXM, XEM on 2024-06-17",WAVESUSDT
+MON,ZEN,2024-07-01 07:00:03.584,"Binance Will Extend the Monitoring Tag to Include BAL, CTXC, CVP, CVX, DOCK, HARD, IRIS, MBL, POLS, SNT & SUN and Remove the Monitoring Tag for MLN & ZEN on 2024-07-01",ZENUSDT
+MON,SNT,2024-07-01 07:00:03.584,"Binance Will Extend the Monitoring Tag to Include BAL, CTXC, CVP, CVX, DOCK, HARD, IRIS, MBL, POLS, SNT & SUN and Remove the Monitoring Tag for MLN & ZEN on 2024-07-01",SNTUSDT
+MON,CVX,2024-07-01 07:00:03.584,"Binance Will Extend the Monitoring Tag to Include BAL, CTXC, CVP, CVX, DOCK, HARD, IRIS, MBL, POLS, SNT & SUN and Remove the Monitoring Tag for MLN & ZEN on 2024-07-01",CVXUSDT
+MON,BAL,2024-07-01 07:00:03.584,"Binance Will Extend the Monitoring Tag to Include BAL, CTXC, CVP, CVX, DOCK, HARD, IRIS, MBL, POLS, SNT & SUN and Remove the Monitoring Tag for MLN & ZEN on 2024-07-01",BALUSDT
+DEL,BOND,2024-07-08 07:01:09.631,"Binance Will Delist BOND, DOCK, MDX, POLS on 2024-07-22",BONDUSDT
+LIST,TON,2024-08-08 05:39:28.744,Binance Will List Toncoin (TON) with Seed Tag Applied,TONUSDT
+DEL,REEF,2024-08-12 07:00:11.329,"Binance Will Delist CVP, EPX, FOR, LOOM, REEF, VGX on 2024-08-26",REEFUSDT
+DEL,LOOM,2024-08-12 07:00:11.329,"Binance Will Delist CVP, EPX, FOR, LOOM, REEF, VGX on 2024-08-26",LOOMUSDT
+LIST,TURBO,2024-09-16 05:45:02.167,"Binance Will List First Neiro on Ethereum (NEIRO), Turbo (TURBO), and Baby Doge Coin (1MBABYDOGE) with Seed Tag Applied",TURBOUSDT
+MON,SEI,2024-10-03 07:00:05.269,"Binance Will Extend the Monitoring Tag to Include BLZ, CLV, KEY, PROS & VITE and Remove the Seed Tag for PENDLE & SEI on 2024-10-03",SEIUSDT
+MON,KEY,2024-10-03 07:00:05.269,"Binance Will Extend the Monitoring Tag to Include BLZ, CLV, KEY, PROS & VITE and Remove the Seed Tag for PENDLE & SEI on 2024-10-03",KEYUSDT
+MON,BLZ,2024-10-03 07:00:05.269,"Binance Will Extend the Monitoring Tag to Include BLZ, CLV, KEY, PROS & VITE and Remove the Seed Tag for PENDLE & SEI on 2024-10-03",BLZUSDT
+DEL,UNFI,2024-10-23 07:00:37.062,"Binance Will Delist IDRT, KP3R, OOKI, UNFI on 2024-11-06",UNFIUSDT
+DEL,REN,2024-11-26 08:30:14.278,"Binance Will Delist GFT, IRIS, KEY, OAX, REN on 2024-12-10",RENUSDT
+DEL,KEY,2024-11-26 08:30:14.278,"Binance Will Delist GFT, IRIS, KEY, OAX, REN on 2024-12-10",KEYUSDT
+FDEL,LOOM,2024-11-29 04:00:01.809,"Binance Futures Will Delist USDⓈ-M XEMUSDT, ORBSUSDT and LOOMUSDT Perpetual Contracts (2024-12-09)",LOOMUSDT
+FDEL,ORBS,2024-11-29 04:00:01.809,"Binance Futures Will Delist USDⓈ-M XEMUSDT, ORBSUSDT and LOOMUSDT Perpetual Contracts (2024-12-09)",ORBSUSDT
+FDEL,XEM,2024-11-29 04:00:01.809,"Binance Futures Will Delist USDⓈ-M XEMUSDT, ORBSUSDT and LOOMUSDT Perpetual Contracts (2024-12-09)",XEMUSDT
+FDEL,OMG,2024-12-06 03:00:04.185,"Binance Futures Will Delist USDⓈ-M MAVIAUSDT, OMGUSDT, and BONDUSDT Perpetual Contracts (2024-12-16)",OMGUSDT
+FDEL,MAVIA,2024-12-06 03:00:04.185,"Binance Futures Will Delist USDⓈ-M MAVIAUSDT, OMGUSDT, and BONDUSDT Perpetual Contracts (2024-12-16)",MAVIAUSDT
+FDEL,BOND,2024-12-06 03:00:04.185,"Binance Futures Will Delist USDⓈ-M MAVIAUSDT, OMGUSDT, and BONDUSDT Perpetual Contracts (2024-12-16)",BONDUSDT
+DEL,BLZ,2024-12-18 08:01:12.939,"Binance Will Delist AKRO, BLZ, WRX on 2024-12-25",BLZUSDT
+MON,STMX,2025-01-02 09:00:19.305,"Binance Will Extend the Monitoring Tag to Include STMX & TROY, Remove the Monitoring Tag for CVX & SUN, and Remove the Seed Tag for ARKM, BLUR, JTO & TIA on 2025-01-02",STMXUSDT
+MON,TROY,2025-01-02 09:00:19.305,"Binance Will Extend the Monitoring Tag to Include STMX & TROY, Remove the Monitoring Tag for CVX & SUN, and Remove the Seed Tag for ARKM, BLUR, JTO & TIA on 2025-01-02",TROYUSDT
+LIST,AIXBT,2025-01-10 08:55:27.639,"Binance Will List aixbt by Virtuals (AIXBT), ChainGPT(CGPT), Cookie DAO(COOKIE) with Seed Tag Applied",AIXBTUSDT
+LIST,CGPT,2025-01-10 08:55:27.639,"Binance Will List aixbt by Virtuals (AIXBT), ChainGPT(CGPT), Cookie DAO(COOKIE) with Seed Tag Applied",CGPTUSDT
+LIST,COOKIE,2025-01-10 08:55:27.639,"Binance Will List aixbt by Virtuals (AIXBT), ChainGPT(CGPT), Cookie DAO(COOKIE) with Seed Tag Applied",COOKIEUSDT
+FDEL,REEF,2025-01-15 08:00:06.723,Binance Futures Will Delist and Update the Leverage & Margin Tiers of USDⓈ-M REEFUSDT Perpetual Contract (2025-01-22),REEFUSDT
+LIST,1000CHEEMS,2025-02-09 07:10:31.264,Binance Will List Cheems (1000CHEEMS) and Test (TST) with Seed Tag Applied,1000CHEEMSUSDT
+DEL,AMB,2025-02-17 07:00:24.287,"Binance Will Delist AMB, CLV, STMX, VITE on 2025-02-24",AMBUSDT
+DEL,STMX,2025-02-17 07:00:24.287,"Binance Will Delist AMB, CLV, STMX, VITE on 2025-02-24",STMXUSDT
+MON,ALPACA,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",ALPACAUSDT
+MON,COMBO,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",COMBOUSDT
+MON,NULS,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",NULSUSDT
+MON,STPT,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",STPTUSDT
+MON,BADGER,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",BADGERUSDT
+MON,AERGO,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",AERGOUSDT
+MON,VIDT,2025-03-04 08:01:22.062,"Binance Will Change the Monitoring Tag Inclusion Frequency to Monthly and Extend the Monitoring Tag to Include AERGO, ALPACA, AST, BADGER, BURGER, COMBO, NULS, STPT, UFT & VIDT on 2025-03-04",VIDTUSDT
+MON,GPS,2025-03-07 09:00:45.829,Binance Will Extend the Monitoring Tag to GPS on 2025-03-07,GPSUSDT
+DEL,LINA,2025-03-21 05:50:20.352,"Binance Will Delist AERGO, AST, BURGER, COMBO, LINA on 2025-03-28",LINAUSDT
+DEL,COMBO,2025-03-21 05:50:20.352,"Binance Will Delist AERGO, AST, BURGER, COMBO, LINA on 2025-03-28",COMBOUSDT
+DEL,AERGO,2025-03-21 05:50:20.352,"Binance Will Delist AERGO, AST, BURGER, COMBO, LINA on 2025-03-28",AERGOUSDT
+LIST,MUBARAK,2025-03-27 17:27:12.114,"Binance Announced the First Batch of Vote to List Results and Will List Mubarak (MUBARAK), CZ'S Dog (BROCCOLI714), Tutorial (TUT), and Banana For Scale (BANANAS31) With Seed Tags Applied",MUBARAKUSDT
+LIST,BANANAS31,2025-03-27 17:27:12.114,"Binance Announced the First Batch of Vote to List Results and Will List Mubarak (MUBARAK), CZ'S Dog (BROCCOLI714), Tutorial (TUT), and Banana For Scale (BANANAS31) With Seed Tags Applied",BANANAS31USDT
+LIST,BROCCOLI714,2025-03-27 17:27:12.114,"Binance Announced the First Batch of Vote to List Results and Will List Mubarak (MUBARAK), CZ'S Dog (BROCCOLI714), Tutorial (TUT), and Banana For Scale (BANANAS31) With Seed Tags Applied",BROCCOLI714USDT
+LIST,TUT,2025-03-27 17:27:12.114,"Binance Announced the First Batch of Vote to List Results and Will List Mubarak (MUBARAK), CZ'S Dog (BROCCOLI714), Tutorial (TUT), and Banana For Scale (BANANAS31) With Seed Tags Applied",TUTUSDT
+MON,BSW,2025-04-03 07:00:36.245,"Binance Will Extend the Monitoring Tag to Include ARDR, BSW, FLM, LTO, NKN, PDA, PERP, VIB, VOXEL & WING, and Remove the Seed Tag for JUP, STRK & TON on 2025-04-03",BSWUSDT
+MON,VOXEL,2025-04-03 07:00:36.245,"Binance Will Extend the Monitoring Tag to Include ARDR, BSW, FLM, LTO, NKN, PDA, PERP, VIB, VOXEL & WING, and Remove the Seed Tag for JUP, STRK & TON on 2025-04-03",VOXELUSDT
+MON,FLM,2025-04-03 07:00:36.245,"Binance Will Extend the Monitoring Tag to Include ARDR, BSW, FLM, LTO, NKN, PDA, PERP, VIB, VOXEL & WING, and Remove the Seed Tag for JUP, STRK & TON on 2025-04-03",FLMUSDT
+MON,PERP,2025-04-03 07:00:36.245,"Binance Will Extend the Monitoring Tag to Include ARDR, BSW, FLM, LTO, NKN, PDA, PERP, VIB, VOXEL & WING, and Remove the Seed Tag for JUP, STRK & TON on 2025-04-03",PERPUSDT
+MON,NKN,2025-04-03 07:00:36.245,"Binance Will Extend the Monitoring Tag to Include ARDR, BSW, FLM, LTO, NKN, PDA, PERP, VIB, VOXEL & WING, and Remove the Seed Tag for JUP, STRK & TON on 2025-04-03",NKNUSDT
+LIST,BIGTIME,2025-04-11 10:08:34.456,"Binance Announced the Second Batch of Vote to List Results and Will List Ondo (ONDO), Big Time (BIGTIME), and Virtuals Protocol (VIRTUAL) With Seed Tags Applied",BIGTIMEUSDT
+LIST,ONDO,2025-04-11 10:08:34.456,"Binance Announced the Second Batch of Vote to List Results and Will List Ondo (ONDO), Big Time (BIGTIME), and Virtuals Protocol (VIRTUAL) With Seed Tags Applied",ONDOUSDT
+LIST,VIRTUAL,2025-04-11 10:08:34.456,"Binance Announced the Second Batch of Vote to List Results and Will List Ondo (ONDO), Big Time (BIGTIME), and Virtuals Protocol (VIRTUAL) With Seed Tags Applied",VIRTUALUSDT
+DEL,ALPACA,2025-04-24 04:00:05.257,"Binance Will Delist ALPACA, PDA, VIB, WING on 2025-05-02",ALPACAUSDT
+LIST,KMNO,2025-05-06 11:25:20.814,Binance Will List Maple Finance (SYRUP) and Kamino Finance (KMNO) with Seed Tag Applied,KMNOUSDT
+MON,ALPHA,2025-05-07 08:00:33.736,"Binance Will Extend the Monitoring Tag to Include ALPHA, HIFI, LEVER, MOVE, PORTAL & REI on 2025-05-07",ALPHAUSDT
+MON,HIFI,2025-05-07 08:00:33.736,"Binance Will Extend the Monitoring Tag to Include ALPHA, HIFI, LEVER, MOVE, PORTAL & REI on 2025-05-07",HIFIUSDT
+MON,LEVER,2025-05-07 08:00:33.736,"Binance Will Extend the Monitoring Tag to Include ALPHA, HIFI, LEVER, MOVE, PORTAL & REI on 2025-05-07",LEVERUSDT
+MON,MOVE,2025-05-07 08:00:33.736,"Binance Will Extend the Monitoring Tag to Include ALPHA, HIFI, LEVER, MOVE, PORTAL & REI on 2025-05-07",MOVEUSDT
+MON,PORTAL,2025-05-07 08:00:33.736,"Binance Will Extend the Monitoring Tag to Include ALPHA, HIFI, LEVER, MOVE, PORTAL & REI on 2025-05-07",PORTALUSDT
+MON,REI,2025-05-07 08:00:33.736,"Binance Will Extend the Monitoring Tag to Include ALPHA, HIFI, LEVER, MOVE, PORTAL & REI on 2025-05-07",REIUSDT
+MON,FIS,2025-06-05 05:00:18.433,"Binance Will Extend the Monitoring Tag to Include BIFI, FIS, KMD & MDT on 2025-06-05",FISUSDT
+MON,MDT,2025-06-05 05:00:18.433,"Binance Will Extend the Monitoring Tag to Include BIFI, FIS, KMD & MDT on 2025-06-05",MDTUSDT
+DEL,BSW,2025-06-26 07:00:09.887,"Binance Will Delist ALPHA, BSW, KMD, LEVER, LTO on 2025-07-04",BSWUSDT
+DEL,ALPHA,2025-06-26 07:00:09.887,"Binance Will Delist ALPHA, BSW, KMD, LEVER, LTO on 2025-07-04",ALPHAUSDT
+DEL,LEVER,2025-06-26 07:00:09.887,"Binance Will Delist ALPHA, BSW, KMD, LEVER, LTO on 2025-07-04",LEVERUSDT
+MON,IDEX,2025-07-07 03:29:57.414,"Binance Will Extend the Monitoring Tag to Include BAKE, IDEX & SLF on 2025-07-07",IDEXUSDT
+MON,BAKE,2025-07-07 03:29:57.414,"Binance Will Extend the Monitoring Tag to Include BAKE, IDEX & SLF on 2025-07-07",BAKEUSDT
+FDEL,DEFI,2025-08-06 07:30:06.291,Binance Futures Will Delist USDⓈ-M DEFIUSDT and MEMEFI Perpetual Contracts (2025-08-11),DEFIUSDT
+FDEL,LEVER,2025-08-29 11:00:12.480,Binance Futures Will Delist USDⓈ-M LEVERUSDT Perpetual Contract (2025-09-03),LEVERUSDT
+LIST,WLFI,2025-09-01 01:49:05.082,Binance Will List  World Liberty Financial (WLFI) with Seed Tag Applied,WLFIUSDT
+DEL,HIFI,2025-09-03 02:59:54.550,"Binance Will Delist BAKE, HIFI, SLF on 2025-09-17",HIFIUSDT
+DEL,BAKE,2025-09-03 02:59:54.550,"Binance Will Delist BAKE, HIFI, SLF on 2025-09-17",BAKEUSDT
+FDEL,BSW,2025-09-10 10:14:43.992,Binance Futures Will Delist USDⓈ-M BSWUSDT Perpetual Contract (2025-09-15),BSWUSDT
+LIST,PUMP,2025-09-11 11:37:53.797,Binance Will List Pump.fun (PUMP) with Seed Tag Applied,PUMPUSDT
+LIST,AVNT,2025-09-15 03:47:01.934,Binance Will List Avantis (AVNT) with Seed Tag Applied,AVNTUSDT
+FDEL,ALPHA,2025-09-17 08:45:27.976,Binance Futures Will Delist USDⓈ-M ALPHAUSDT Perpetual Contract (2025-09-23),ALPHAUSDT
+FDEL,NEIROETH,2025-09-22 07:30:02.610,Binance Futures Will Delist USDⓈ-M NEIROETHUSDT Perpetual Contract (2025-09-26),NEIROETHUSDT
+FDEL,UXLINK,2025-09-24 12:00:05.980,Binance Futures Will Delist USDⓈ-M UXLINKUSDT Perpetual Contract (2025-09-26),UXLINKUSDT
+FDEL,BAKE,2025-09-29 11:45:19.511,Binance Futures Will Delist USDⓈ-M HIFIUSDT and BAKEUSDT Perpetual Contracts (2025-10-03),BAKEUSDT
+FDEL,HIFI,2025-09-29 11:45:19.511,Binance Futures Will Delist USDⓈ-M HIFIUSDT and BAKEUSDT Perpetual Contracts (2025-10-03),HIFIUSDT
+LIST,ASTER,2025-10-06 07:48:49.954,Binance Will List Aster (ASTER) with Seed Tag Applied,ASTERUSDT
+FDEL,SLERF,2025-10-18 03:58:50.952,Binance Futures Will Delist USDⓈ-M SLERFUSDT and COIN-M CHZUSD Perpetual Contracts (2025-10-20 & 2025-10-21),SLERFUSDT
+DEL,PERP,2025-10-29 03:00:04.123,"Binance Will Delist FLM, KDA, PERP on 2025-11-12",PERPUSDT
+DEL,KDA,2025-10-29 03:00:04.123,"Binance Will Delist FLM, KDA, PERP on 2025-11-12",KDAUSDT
+DEL,FLM,2025-10-29 03:00:04.123,"Binance Will Delist FLM, KDA, PERP on 2025-11-12",FLMUSDT
+FDEL,1000X,2025-11-10 13:45:00.002,Binance Futures Will Delist USDⓈ-M MYROUSDT and 1000XUSDT Perpetual Contracts (2025-11-14),1000XUSDT
+FDEL,MYRO,2025-11-10 13:45:00.002,Binance Futures Will Delist USDⓈ-M MYROUSDT and 1000XUSDT Perpetual Contracts (2025-11-14),MYROUSDT
+LIST,BANK,2025-11-13 10:00:26.501,Binance Will List Lorenzo Protocol (BANK) and Meteora (MET) with Seed Tag Applied,BANKUSDT
+LIST,MET,2025-11-13 10:00:26.501,Binance Will List Lorenzo Protocol (BANK) and Meteora (MET) with Seed Tag Applied,METUSDT
+FDEL,PORT3,2025-11-23 05:57:34.108,Binance Futures Will Delist USDⓈ-M PORT3USDT Perpetual Contract (2025-11-23),PORT3USDT
+MON,CHESS,2025-12-01 04:30:24.832,"Binance Will Extend the Monitoring Tag to Include CHESS, DENT, DF, GHST & SXP on 2025-12-01",CHESSUSDT
+MON,DENT,2025-12-01 04:30:24.832,"Binance Will Extend the Monitoring Tag to Include CHESS, DENT, DF, GHST & SXP on 2025-12-01",DENTUSDT
+MON,SXP,2025-12-01 04:30:24.832,"Binance Will Extend the Monitoring Tag to Include CHESS, DENT, DF, GHST & SXP on 2025-12-01",SXPUSDT
+MON,GHST,2025-12-01 04:30:24.832,"Binance Will Extend the Monitoring Tag to Include CHESS, DENT, DF, GHST & SXP on 2025-12-01",GHSTUSDT
+MON,DF,2025-12-01 04:30:24.832,"Binance Will Extend the Monitoring Tag to Include CHESS, DENT, DF, GHST & SXP on 2025-12-01",DFUSDT
+DEL,VOXEL,2025-12-03 06:29:56.380,"Binance Will Delist FIS, REI, VOXEL on 2025-12-17",VOXELUSDT
+DEL,FIS,2025-12-03 06:29:56.380,"Binance Will Delist FIS, REI, VOXEL on 2025-12-17",FISUSDT
+DEL,REI,2025-12-03 06:29:56.380,"Binance Will Delist FIS, REI, VOXEL on 2025-12-17",REIUSDT
+FDEL,AIA,2025-12-11 11:43:46.582,Binance Futures Will Delist AIAUSDT USDⓈ-M Perpetual Contract (2025-12-11),AIAUSDT
+MON,FLOW,2026-01-02 10:59:57.739,"Binance Will Extend the Monitoring Tag to Include ACA, D, DATA & FLOW on 2026-01-02",FLOWUSDT
+MON,D,2026-01-02 10:59:57.739,"Binance Will Extend the Monitoring Tag to Include ACA, D, DATA & FLOW on 2026-01-02",DUSDT
+LIST,ZKP,2026-01-07 10:39:06.580,Binance Will List 币安人生 (币安人生) and zkPass (ZKP) with Seed Tag Applied,ZKPUSDT
+LIST,SENT,2026-01-22 05:25:54.238,Binance Will List Sentient (SENT) with Seed Tag Applied,SENTUSDT
+LIST,ZAMA,2026-02-02 04:28:43.224,Binance Will List Zama (ZAMA) with Seed Tag Applied,ZAMAUSDT
+DEL,NKN,2026-02-02 08:59:52.762,"Binance Will Delist ACA, CHESS, DATA, DF, GHST, NKN on 2026-02-13",NKNUSDT
+DEL,GHST,2026-02-02 08:59:52.762,"Binance Will Delist ACA, CHESS, DATA, DF, GHST, NKN on 2026-02-13",GHSTUSDT
+DEL,DF,2026-02-02 08:59:52.762,"Binance Will Delist ACA, CHESS, DATA, DF, GHST, NKN on 2026-02-13",DFUSDT
+DEL,CHESS,2026-02-02 08:59:52.762,"Binance Will Delist ACA, CHESS, DATA, DF, GHST, NKN on 2026-02-13",CHESSUSDT
+FDEL,YALA,2026-02-05 07:14:19.503,Binance Futures Will Delist USDⓈ-M RVVUSDT and YALAUSDT Perpetual Contracts (2026-02-10),YALAUSDT
+FDEL,RVV,2026-02-05 07:14:19.503,Binance Futures Will Delist USDⓈ-M RVVUSDT and YALAUSDT Perpetual Contracts (2026-02-10),RVVUSDT
+LIST,ROBO,2026-03-04 13:13:14.452,Binance Will List Fabric Protocol (ROBO) with Seed Tag Applied,ROBOUSDT
+MON,WIF,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",WIFUSDT
+MON,OXT,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",OXTUSDT
+MON,MBOX,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",MBOXUSDT
+MON,LRC,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",LRCUSDT
+MON,FUN,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",FUNUSDT
+MON,FORTH,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",FORTHUSDT
+MON,DEGO,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",DEGOUSDT
+MON,COS,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",COSUSDT
+MON,HOOK,2026-03-06 08:29:56.086,"Binance Will Extend the Monitoring Tag to Include COS, DEGO, FORTH, FUN, HOOK, LRC, MBOX, OXT & WIF, Remove the Monitoring Tag for FLOW, and Remove the Seed Tag for ONDO & VIRTUAL on 2026-03-06",HOOKUSDT
+LIST,KAT,2026-03-13 01:45:36.337,Binance Will List Katana (KAT) with Seed Tag Applied,KATUSDT
+MON,NTRN,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",NTRNUSDT
+MON,RDNT,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",RDNTUSDT
+MON,PHB,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",PHBUSDT
+MON,GTC,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",GTCUSDT
+MON,FIO,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",FIOUSDT
+MON,A2Z,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",A2ZUSDT
+MON,ATA,2026-03-13 09:00:23.060,"Binance Will Extend the Monitoring Tag to Include ATA, A2Z, FIO, GTC, NTRN, PHB, QI & RDNT on 2026-03-13",ATAUSDT
+DEL,NTRN,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",NTRNUSDT
+DEL,LRC,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",LRCUSDT
+DEL,IDEX,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",IDEXUSDT
+DEL,HOOK,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",HOOKUSDT
+DEL,FORTH,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",FORTHUSDT
+DEL,A2Z,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",A2ZUSDT
+DEL,SXP,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",SXPUSDT
+DEL,RDNT,2026-03-18 09:00:08.667,"Binance Will Delist A2Z, FORTH, HOOK, IDEX, LRC, NTRN, RDNT, SXP on 2026-04-01",RDNTUSDT
+DEL,FUN,2026-04-09 06:00:05.744,"Binance Will Delist BIFI, FIO, FUN, MDT, OXT, WAN on 2026-04-23",FUNUSDT
+DEL,MDT,2026-04-09 06:00:05.744,"Binance Will Delist BIFI, FIO, FUN, MDT, OXT, WAN on 2026-04-23",MDTUSDT
+DEL,FIO,2026-04-09 06:00:05.744,"Binance Will Delist BIFI, FIO, FUN, MDT, OXT, WAN on 2026-04-23",FIOUSDT
+DEL,OXT,2026-04-09 06:00:05.744,"Binance Will Delist BIFI, FIO, FUN, MDT, OXT, WAN on 2026-04-23",OXTUSDT
+MON,RESOLV,2026-04-14 02:30:06.111,"Binance Will Extend the Monitoring Tag to Include FARM, HIGH, MLN, RESOLV, SYS, TRU & VELODROME, Remove the Seed Tag for XAUT on 2026-04-14",RESOLVUSDT
+MON,SYS,2026-04-14 02:30:06.111,"Binance Will Extend the Monitoring Tag to Include FARM, HIGH, MLN, RESOLV, SYS, TRU & VELODROME, Remove the Seed Tag for XAUT on 2026-04-14",SYSUSDT
+MON,TRU,2026-04-14 02:30:06.111,"Binance Will Extend the Monitoring Tag to Include FARM, HIGH, MLN, RESOLV, SYS, TRU & VELODROME, Remove the Seed Tag for XAUT on 2026-04-14",TRUUSDT
+MON,VELODROME,2026-04-14 02:30:06.111,"Binance Will Extend the Monitoring Tag to Include FARM, HIGH, MLN, RESOLV, SYS, TRU & VELODROME, Remove the Seed Tag for XAUT on 2026-04-14",VELODROMEUSDT
+MON,HIGH,2026-04-14 02:30:06.111,"Binance Will Extend the Monitoring Tag to Include FARM, HIGH, MLN, RESOLV, SYS, TRU & VELODROME, Remove the Seed Tag for XAUT on 2026-04-14",HIGHUSDT
+MON,MLN,2026-04-14 02:30:06.111,"Binance Will Extend the Monitoring Tag to Include FARM, HIGH, MLN, RESOLV, SYS, TRU & VELODROME, Remove the Seed Tag for XAUT on 2026-04-14",MLNUSDT
+DEL,DENT,2026-04-17 09:00:06.263,"Binance Will Delist DEGO, DENT, TRU on 2026-04-28",DENTUSDT
+DEL,DEGO,2026-04-17 09:00:06.263,"Binance Will Delist DEGO, DENT, TRU on 2026-04-28",DEGOUSDT
+DEL,TRU,2026-04-17 09:00:06.263,"Binance Will Delist DEGO, DENT, TRU on 2026-04-28",TRUUSDT
+LIST,CHIP,2026-04-21 12:00:32.132,Binance Will List Chip (CHIP) with Seed Tag Applied,CHIPUSDT
+MON,VIC,2026-04-30 07:00:05.981,"Binance Will Extend the Monitoring Tag to Include NFP, NOM, POND, QUICK & VIC on 2026-04-30",VICUSDT
+MON,QUICK,2026-04-30 07:00:05.981,"Binance Will Extend the Monitoring Tag to Include NFP, NOM, POND, QUICK & VIC on 2026-04-30",QUICKUSDT
+MON,NFP,2026-04-30 07:00:05.981,"Binance Will Extend the Monitoring Tag to Include NFP, NOM, POND, QUICK & VIC on 2026-04-30",NFPUSDT
+MON,NOM,2026-04-30 07:00:05.981,"Binance Will Extend the Monitoring Tag to Include NFP, NOM, POND, QUICK & VIC on 2026-04-30",NOMUSDT
+LIST,MEGA,2026-04-30 09:07:29.704,Binance Will List MegaETH (MEGA) with Seed Tag Applied,MEGAUSDT
+DEL,ATA,2026-05-13 08:00:04.681,"Binance Will Delist ATA, FARM, MLN, PHB, SYS on 2026-05-27",ATAUSDT
+DEL,MLN,2026-05-13 08:00:04.681,"Binance Will Delist ATA, FARM, MLN, PHB, SYS on 2026-05-27",MLNUSDT
+DEL,PHB,2026-05-13 08:00:04.681,"Binance Will Delist ATA, FARM, MLN, PHB, SYS on 2026-05-27",PHBUSDT
+DEL,SYS,2026-05-13 08:00:04.681,"Binance Will Delist ATA, FARM, MLN, PHB, SYS on 2026-05-27",SYSUSDT
+LIST,AIGENSYN,2026-05-14 10:00:03.676,Binance Will List Gensyn (AIGENSYN) with Seed Tag Applied,AIGENSYNUSDT
+LIST,GENIUS,2026-05-22 07:18:35.961,Binance Will List Genius Terminal (GENIUS) and OpenGradient (OPG) with Seed Tag Applied,GENIUSUSDT
+LIST,OPG,2026-05-22 07:18:35.961,Binance Will List Genius Terminal (GENIUS) and OpenGradient (OPG) with Seed Tag Applied,OPGUSDT
+MON,COOKIE,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",COOKIEUSDT
+MON,SYN,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",SYNUSDT
+MON,TLM,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",TLMUSDT
+MON,HEI,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",HEIUSDT
+MON,HFT,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",HFTUSDT
+MON,STORJ,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",STORJUSDT
+MON,EPIC,2026-05-22 08:00:04.004,"Binance Will Extend the Monitoring Tag to Include ALCX, COOKIE, DODO, EPIC, HEI, HFT, STORJ, SYN & TLM on 2026-05-22",EPICUSDT
+DEL,HIGH,2026-06-05 07:00:07.472,"Binance Will Delist COS, D, HIGH, MBOX on 2026-06-19",HIGHUSDT
+DEL,MBOX,2026-06-05 07:00:07.472,"Binance Will Delist COS, D, HIGH, MBOX on 2026-06-19",MBOXUSDT
+DEL,D,2026-06-05 07:00:07.472,"Binance Will Delist COS, D, HIGH, MBOX on 2026-06-19",DUSDT
+DEL,COS,2026-06-05 07:00:07.472,"Binance Will Delist COS, D, HIGH, MBOX on 2026-06-19",COSUSDT
+MON,BLUR,2026-06-18 07:00:18.693,"Binance Will Extend the Monitoring Tag to Include ACT, BLUR, PIVX & QKC on 2026-06-18",BLURUSDT
+MON,ACT,2026-06-18 07:00:18.693,"Binance Will Extend the Monitoring Tag to Include ACT, BLUR, PIVX & QKC on 2026-06-18",ACTUSDT
+FDEL,IP,2026-06-25 17:00:06.669,Binance Futures Will Delist USDⓈ-Margined IPUSDT and IPUSDC Perpetual Contracts (2026-06-28),IPUSDT
+DEL,NFP,2026-06-26 09:00:15.053,"Binance Will Delist ALCX, ARDR, NFP, POND on 2026-07-10",NFPUSDT
+MON,VANRY,2026-07-03 06:00:11.367,"Binance Will Extend the Monitoring Tag to Include AEUR, PYR, SCRT & VANRY on 2026-07-03",VANRYUSDT
+MON,SCRT,2026-07-03 06:00:11.367,"Binance Will Extend the Monitoring Tag to Include AEUR, PYR, SCRT & VANRY on 2026-07-03",SCRTUSDT
+LIST,AERO,2026-07-17 07:30:01.964,Binance Will List Aerodrome (AERO) with Seed Tag Applied,AEROUSDT
+MON,STX,2026-07-24 03:00:06.343,"Binance Will Extend the Monitoring Tag to Include ACX, LSK & STX on 2026-07-24",STXUSDT
+MON,LSK,2026-07-24 03:00:06.343,"Binance Will Extend the Monitoring Tag to Include ACX, LSK & STX on 2026-07-24",LSKUSDT
+MON,ACX,2026-07-24 03:00:06.343,"Binance Will Extend the Monitoring Tag to Include ACX, LSK & STX on 2026-07-24",ACXUSDT
+DEL,VANRY,2026-08-03 03:30:10.683,"Binance Will Delist ACX, HFT, PIVX, PYR, VANRY, VIC on 2026-08-17",VANRYUSDT
+DEL,ACX,2026-08-03 03:30:10.683,"Binance Will Delist ACX, HFT, PIVX, PYR, VANRY, VIC on 2026-08-17",ACXUSDT
+DEL,VIC,2026-08-03 03:30:10.683,"Binance Will Delist ACX, HFT, PIVX, PYR, VANRY, VIC on 2026-08-17",VICUSDT
+DEL,HFT,2026-08-03 03:30:10.683,"Binance Will Delist ACX, HFT, PIVX, PYR, VANRY, VIC on 2026-08-17",HFTUSDT
+MON,GLMR,2026-08-11 09:00:12.289,"Binance Will Extend the Monitoring Tag to Include GLMR, ICX, MOVR, RARE & SOPH on 2026-08-11",GLMRUSDT
+MON,ICX,2026-08-11 09:00:12.289,"Binance Will Extend the Monitoring Tag to Include GLMR, ICX, MOVR, RARE & SOPH on 2026-08-11",ICXUSDT
+MON,MOVR,2026-08-11 09:00:12.289,"Binance Will Extend the Monitoring Tag to Include GLMR, ICX, MOVR, RARE & SOPH on 2026-08-11",MOVRUSDT
+MON,RARE,2026-08-11 09:00:12.289,"Binance Will Extend the Monitoring Tag to Include GLMR, ICX, MOVR, RARE & SOPH on 2026-08-11",RAREUSDT
+MON,SOPH,2026-08-11 09:00:12.289,"Binance Will Extend the Monitoring Tag to Include GLMR, ICX, MOVR, RARE & SOPH on 2026-08-11",SOPHUSDT
+DEL,SCRT,2026-08-20 06:00:06.608,"Binance Will Delist ICX, SCRT, STORJ on 2026-09-03",SCRTUSDT
+DEL,ICX,2026-08-20 06:00:06.608,"Binance Will Delist ICX, SCRT, STORJ on 2026-09-03",ICXUSDT
+DEL,STORJ,2026-08-20 06:00:06.608,"Binance Will Delist ICX, SCRT, STORJ on 2026-09-03",STORJUSDT
+MON,AVA,2026-09-04 08:00:06.500,"Binance Will Extend the Monitoring Tag to Include AVA, GNS, SCR & TOWNS on 2026-09-04",AVAUSDT
+MON,TOWNS,2026-09-04 08:00:06.500,"Binance Will Extend the Monitoring Tag to Include AVA, GNS, SCR & TOWNS on 2026-09-04",TOWNSUSDT
+MON,SCR,2026-09-04 08:00:06.500,"Binance Will Extend the Monitoring Tag to Include AVA, GNS, SCR & TOWNS on 2026-09-04",SCRUSDT
+LIST,MARSCOIN,2026-09-04 10:15:01.870,Binance Will List MarsCoin (MARSCOIN) with Seed Tag Applied,MARSCOINUSDT
+LIST,HYPE,2026-09-24 07:30:38.608,Binance Will List Hyperliquid (HYPE) with Seed Tag Applied,HYPEUSDT
+MON,CVC,2026-10-09 07:00:14.078,Binance Will Extend the Monitoring Tag to Include BICO & CVC on 2026-10-09,CVCUSDT
+MON,BICO,2026-10-09 07:00:14.078,Binance Will Extend the Monitoring Tag to Include BICO & CVC on 2026-10-09,BICOUSDT
+DEL,EPIC,2026-10-14 06:00:08.049,"Binance Will Delist EPIC, QUICK on 2026-10-28",EPICUSDT

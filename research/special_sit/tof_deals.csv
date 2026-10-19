@@ -1,0 +1,60 @@
+target,start,first_ts,end,price,price_last,kind,fund_cap,record,n,classes,related,summary
+ACSEL,2023-08-31,2023-08-29 18:12:37,2023-09-13,65.45,65.45,Zorunlu,False,2023-06-22,11,1.0,"ACSEL,VERUS",Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu
+AKCNS,2026-09-23,2026-09-22 19:17:12,2026-10-06,274.24,274.24,Zorunlu,False,2026-06-18,11,1.0,AKCNS,AKÇANSA Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sürecine İlişkin Açıklama
+ANELT,2019-04-29,2019-04-29 18:32:59,2019-05-27,1.26,1.26,Gönüllü,True,,22,1.0,"ANELT,ANELE",ANELT Paylarında Yapılan Gönüllü Pay Alım Teklifi 
+ANELT,2020-03-20,2020-03-20 17:53:29,2020-04-02,1.40939,1.40939,Zorunlu,False,,12,1.0,"ANELT,ANELE",ANELT Zorunlu Pay Alım Teklifi Bilgilendirmesi 
+ARMDA,2021-08-31,2021-08-31 20:18:10,2021-09-13,57.7824,57.7824,Zorunlu,False,,11,1.0,ARMDA,Pay Alım Teklifi Sonuç Bildirimi
+ATSYH,2026-09-10,2026-09-10 18:12:25,2026-09-23,104.0,104.0,Gönüllü,False,2026-06-15,7,1.0,ATSYH,Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi
+BAYRK,2024-03-19,2024-03-19 18:10:16,2024-04-01,27.3619,27.3619,Zorunlu,False,2023-12-18,10,1.0,BAYRK,Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.
+BMELK,2020-11-23,2020-11-23 12:48:26,2020-12-07,5.06,5.06,Zorunlu,False,,11,1.0,BMELK,BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi
+BMSCH,2023-09-13,2023-09-13 09:17:10,2023-09-26,15.02,15.02,Zorunlu,False,2023-05-30,11,1.0,BMSCH,BMS Çelik Hasır Sanayi ve Ticaret A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay Alım T
+BMSTL,2023-12-25,2023-12-25 08:51:17,2024-01-08,24.08,24.08,Gönüllü,False,2023-10-23,11,1.0,BMSTL,BMSTL Gönüllü Pay Alım Teklifi Sürecinin Başlaması Hakkında.
+BOYP,2019-01-10,2019-01-10 10:25:48,2019-01-23,4.03,4.03,Zorunlu,False,,11,1.0,,09.01.2019-18:20 tarihli bildirimde pay alım teklifine konu pay bilgileri düzeltilmiştir.
+CELHA,2023-01-30,2023-01-27 19:44:38,2023-02-15,18.4084,18.4084,Zorunlu,False,2022-11-29,14,1.0,CELHA,Çelik Halat ve Tel Sanayii A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay Alım Teklifi 
+CELHA,2026-09-02,2026-09-02 18:57:48,2026-09-16,19.55,19.55,Zorunlu,False,2026-06-02,11,1.0,CELHA,Çelik Halat ve Tel Sanayii A.Ş Paylarına Yönelik Zorunlu Pay Alım Teklifi
+DENGE,2021-03-02,2021-03-15 18:26:41,2021-03-15,3.2384,3.2384,Zorunlu,False,,1,1.0,DENGE,DENGE Zorunlu Pay Alım Teklifi Bilgilendirmesi
+DERAS,2021-03-12,2021-03-15 17:18:30,2021-03-25,6.45,6.45,Zorunlu,False,,6,1.0,,DERAS
+DITAS,2025-08-26,2025-08-26 18:24:29,2025-09-08,15.2538,15.2538,Zorunlu,False,2025-07-16,10,1.0,DITAS,Pay Alım Teklifi Sonuç Bildirimi
+DOBUR,2024-11-26,2024-11-26 18:10:11,2024-12-09,152.44,152.44,Zorunlu,False,2024-09-18,10,1.0,DOBUR,Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+ETILR,2021-11-11,2021-11-12 09:43:45,2021-11-24,5.33,5.33,Gönüllü,False,,10,1.0,ETILR,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim
+GARAN,2022-04-04,2022-04-04 12:02:16,2022-05-18,12.2,15.0,Gönüllü,False,,32,1.0,GARAN,Gönüllü Pay Alım Teklifi Onaylı Bilgi Formu ve Talep Formu
+HUBVC,2024-06-20,2024-06-20 19:07:01,2024-07-03,10.692,10.692,Zorunlu,False,2024-04-25,10,1.0,HUBVC,HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk. 
+HURGZ,2022-01-28,2022-01-28 11:05:39,2022-02-10,7.40111,7.40111,Zorunlu,False,,11,1.0,HURGZ,Hürriyet Pay Alım Teklifi
+IDGYO,2020-07-27,2020-07-27 18:12:10,2020-08-11,2.9592,2.9592,Zorunlu,False,,11,1.0,IDGYO,IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi 
+INFO,2019-08-15,2019-08-15 18:26:54,2019-08-28,1.91,1.91,Zorunlu,False,,11,1.0,,İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi 
+IZTAR,2021-03-08,2021-03-15 18:36:09,2021-03-19,7.6056,7.6056,Zorunlu,False,,5,1.0,IZTAR,İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi
+KAPLM,2026-01-15,2026-01-13 20:02:20,2026-01-28,212.42,212.42,Zorunlu,False,2025-09-03,12,1.0,KAPLM,Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+KAREL,2022-08-22,2022-08-19 21:22:11,2022-09-05,11.4727,11.4727,Zorunlu,False,2022-06-30,12,1.0,"KAREL,DOHOL",Karel Elektronik Sanayi Ticaret A.Ş.  payları zorunlu pay alım teklifine ilişkin Zorunlu Pay Alım Te
+KARYE,2024-05-13,2024-05-13 18:14:45,2024-05-24,27.7714,27.7714,Zorunlu,False,2024-03-06,10,1.0,"KARYE,RTALB,PRDGS,A1CAP",Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+KERVN,2019-10-01,2019-10-01 20:39:46,2019-10-14,0.3,0.3,Zorunlu,False,,10,1.0,KERVN,Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi
+KZGYO,2026-03-26,2026-03-25 12:29:57,2026-04-08,22.89,22.89,Zorunlu,False,2025-12-26,12,1.0,KZGYO,Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+LINK,2024-03-27,2024-03-27 18:11:59,2024-04-15,103.3852,103.3852,Zorunlu,False,2023-12-01,11,1.0,LINK,Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.
+MIPAZ,2023-10-09,2023-10-09 18:41:38,2023-10-20,8.9002,8.9002,Zorunlu,False,2023-08-22,11,1.0,MIPAZ,MIPAZ Zorunlu Pay Alım Teklifi Hk.
+MIPAZ,2024-03-19,2024-03-19 18:10:30,2024-04-01,41.02,41.02,Zorunlu,False,2024-01-19,10,1.0,MIPAZ,Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.
+MRSHL,2020-01-24,2020-01-24 17:12:47,2020-03-05,40.0,53.0,Gönüllü,False,,34,1.0,MRSHL,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim
+NIBAS,2019-05-20,2019-05-20 17:24:35,2019-05-31,6.7,6.7,Zorunlu,False,,11,1.0,NIBAS,NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi 
+OLMK,2021-07-05,2021-07-05 10:48:03,2021-07-26,7.7003,7.7003,Zorunlu,False,,12,1.0,OLMK,"Şirket sermayesinin %90,38?ini temsil eden ve yönetim kontrolü sağlayan payların 31 Mayıs 2021 tarih"
+OYAKC,2024-07-16,2024-07-16 18:23:47,2024-07-29,73.18,73.18,Zorunlu,False,2024-03-06,11,1.0,OYAKC,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim
+OZRDN,2022-07-25,2022-07-22 18:47:51,2022-08-05,7.36,7.36,Zorunlu,False,2022-05-04,11,1.0,OZRDN,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi
+OZRDN,2026-05-22,2026-05-22 18:58:28,2026-06-09,12.32,12.32,Zorunlu,False,2026-02-11,11,1.0,OZRDN,Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+PEGYO,2024-04-30,2024-04-29 20:05:04,2024-05-14,10.3516,10.3516,Zorunlu,False,2024-04-28,11,1.0,PEGYO,Pera Gayrimenkul Yatırım Ortaklığı A.Ş. payları pay alım teklifine ilişkin Pay Alım Teklifi Bilgi Fo
+PEKGY,2026-09-16,2026-09-14 19:32:26,2026-09-29,18.77,18.77,Zorunlu,False,2026-02-27,2,1.0,PEKGY,Peker Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+PENGD,2019-03-08,2019-03-07 17:33:51,2019-03-21,1.2989,1.2989,Zorunlu,False,,12,1.0,PENGD,Penguen Gıda Sanayi A.Ş.?nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak
+PSDTC,2025-09-25,2025-09-25 17:35:28,2025-10-08,78.8124,78.8124,Zorunlu,False,2025-05-14,10,1.0,"PSDTC,HEDEF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+RHEAG,2023-02-02,2023-02-02 11:57:41,2023-02-22,1.8,1.8,Zorunlu,False,2022-12-09,14,1.0,RHEAG,"RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. 
+ZORUNLU PAY ALIM TEKLİFİ"
+SAMAT,2025-12-03,2025-12-03 17:41:25,2025-12-16,6.09,6.09,Zorunlu,False,2025-05-13,11,1.0,SAMAT,Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım 
+SELGD,2024-04-08,2024-04-08 17:27:38,2024-04-25,18.0512,18.0512,Zorunlu,False,2024-02-15,10,1.0,SELGD,Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+SNKRN,2025-11-28,2025-11-28 18:01:01,2025-12-11,221.81,221.81,Zorunlu,False,2025-10-03,10,1.0,SNKRN,Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+TACTR,2021-04-28,2021-04-28 17:18:05,2021-05-11,11.8734,11.8734,Zorunlu,False,,12,1.0,TACTR,Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi
+TETMT,2023-10-17,2023-10-17 18:40:53,2023-10-30,267.9523,267.9523,Zorunlu,False,2023-08-31,10,1.0,TETMT,TETMT Zorunlu Pay Alım Teklifi Hk.
+TETMT,2024-03-19,2024-03-19 17:03:51,2024-04-01,2514.8227,2514.8227,Zorunlu,False,2024-01-31,10,1.0,TETMT,"Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+"
+TGSAS,2026-08-28,2026-08-28 18:27:35,2026-09-11,247.0,247.0,Zorunlu,False,2025-09-01,11,1.0,TGSAS,TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+TKURU,2020-07-06,2020-07-06 18:19:26,2020-07-20,8.05,8.05,Zorunlu,False,,11,1.0,TKURU,21 Mayıs 2020?de KAP'ta açıklandığı üzere Hüseyin Avni METİNKALE?nin Taze Kuru San. ve Tic. A.Ş.?nin
+UFUK,2025-02-11,2025-02-11 18:10:11,2025-02-24,280.72,280.72,Zorunlu,False,2024-12-09,10,1.0,UFUK,Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+ULUSE,2019-06-11,2019-06-10 18:08:15,2019-07-08,20.7409,20.7409,Zorunlu,False,,21,1.0,ULUSE,"Şirket sermayesinin %82,275?ini, oy haklarının %90,153?ünü temsil eden payların 15.04.2019 tarihinde"
+UZERB,2023-02-21,2023-02-20 18:34:42,2023-03-06,39.15,39.15,Zorunlu,False,2022-11-17,12,1.0,UZERB,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay A
+YKBNK,2022-05-16,2022-05-13 19:34:37,2022-05-30,2.2757,2.2757,Zorunlu,False,2022-04-01,11,1.0,"YKBNK,KCHOL","Yapı ve Kredi Bankası A.Ş. payları zorunlu pay alım teklifi için SPK onayının alınması, Zorunlu Pay "
+YKGYO,2021-06-21,2021-06-21 19:14:05,2021-07-02,4.6587,4.6587,Zorunlu,False,,10,1.0,YKGYO,YKGYO Zorunlu Pay Alım Teklifi Bildirimi
+YUNSA,2020-01-06,2020-01-03 16:56:27,2020-01-24,4.34,4.34,Zorunlu,False,,16,1.0,YUNSA,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha

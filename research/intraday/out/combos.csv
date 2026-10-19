@@ -1,0 +1,1935 @@
+name,freq,family,universe,mode,params
+"1h|boll|ALL19|LO|n=168,k=1.5",1h,boll,ALL19,LO,"{'n': 168, 'k': 1.5}"
+"1h|boll|ALL19|LO|n=168,k=2.0",1h,boll,ALL19,LO,"{'n': 168, 'k': 2.0}"
+"1h|boll|ALL19|LO|n=168,k=2.5",1h,boll,ALL19,LO,"{'n': 168, 'k': 2.5}"
+"1h|boll|ALL19|LO|n=24,k=1.5",1h,boll,ALL19,LO,"{'n': 24, 'k': 1.5}"
+"1h|boll|ALL19|LO|n=24,k=2.0",1h,boll,ALL19,LO,"{'n': 24, 'k': 2.0}"
+"1h|boll|ALL19|LO|n=24,k=2.5",1h,boll,ALL19,LO,"{'n': 24, 'k': 2.5}"
+"1h|boll|ALL19|LO|n=48,k=1.5",1h,boll,ALL19,LO,"{'n': 48, 'k': 1.5}"
+"1h|boll|ALL19|LO|n=48,k=2.0",1h,boll,ALL19,LO,"{'n': 48, 'k': 2.0}"
+"1h|boll|ALL19|LO|n=48,k=2.5",1h,boll,ALL19,LO,"{'n': 48, 'k': 2.5}"
+"1h|boll|ALL19|LS|n=168,k=1.5",1h,boll,ALL19,LS,"{'n': 168, 'k': 1.5}"
+"1h|boll|ALL19|LS|n=168,k=2.0",1h,boll,ALL19,LS,"{'n': 168, 'k': 2.0}"
+"1h|boll|ALL19|LS|n=168,k=2.5",1h,boll,ALL19,LS,"{'n': 168, 'k': 2.5}"
+"1h|boll|ALL19|LS|n=24,k=1.5",1h,boll,ALL19,LS,"{'n': 24, 'k': 1.5}"
+"1h|boll|ALL19|LS|n=24,k=2.0",1h,boll,ALL19,LS,"{'n': 24, 'k': 2.0}"
+"1h|boll|ALL19|LS|n=24,k=2.5",1h,boll,ALL19,LS,"{'n': 24, 'k': 2.5}"
+"1h|boll|ALL19|LS|n=48,k=1.5",1h,boll,ALL19,LS,"{'n': 48, 'k': 1.5}"
+"1h|boll|ALL19|LS|n=48,k=2.0",1h,boll,ALL19,LS,"{'n': 48, 'k': 2.0}"
+"1h|boll|ALL19|LS|n=48,k=2.5",1h,boll,ALL19,LS,"{'n': 48, 'k': 2.5}"
+"1h|boll|ALL19|SO|n=168,k=1.5",1h,boll,ALL19,SO,"{'n': 168, 'k': 1.5}"
+"1h|boll|ALL19|SO|n=168,k=2.0",1h,boll,ALL19,SO,"{'n': 168, 'k': 2.0}"
+"1h|boll|ALL19|SO|n=168,k=2.5",1h,boll,ALL19,SO,"{'n': 168, 'k': 2.5}"
+"1h|boll|ALL19|SO|n=24,k=1.5",1h,boll,ALL19,SO,"{'n': 24, 'k': 1.5}"
+"1h|boll|ALL19|SO|n=24,k=2.0",1h,boll,ALL19,SO,"{'n': 24, 'k': 2.0}"
+"1h|boll|ALL19|SO|n=24,k=2.5",1h,boll,ALL19,SO,"{'n': 24, 'k': 2.5}"
+"1h|boll|ALL19|SO|n=48,k=1.5",1h,boll,ALL19,SO,"{'n': 48, 'k': 1.5}"
+"1h|boll|ALL19|SO|n=48,k=2.0",1h,boll,ALL19,SO,"{'n': 48, 'k': 2.0}"
+"1h|boll|ALL19|SO|n=48,k=2.5",1h,boll,ALL19,SO,"{'n': 48, 'k': 2.5}"
+"1h|boll|BTC|LO|n=168,k=1.5",1h,boll,BTC,LO,"{'n': 168, 'k': 1.5}"
+"1h|boll|BTC|LO|n=168,k=2.0",1h,boll,BTC,LO,"{'n': 168, 'k': 2.0}"
+"1h|boll|BTC|LO|n=168,k=2.5",1h,boll,BTC,LO,"{'n': 168, 'k': 2.5}"
+"1h|boll|BTC|LO|n=24,k=1.5",1h,boll,BTC,LO,"{'n': 24, 'k': 1.5}"
+"1h|boll|BTC|LO|n=24,k=2.0",1h,boll,BTC,LO,"{'n': 24, 'k': 2.0}"
+"1h|boll|BTC|LO|n=24,k=2.5",1h,boll,BTC,LO,"{'n': 24, 'k': 2.5}"
+"1h|boll|BTC|LO|n=48,k=1.5",1h,boll,BTC,LO,"{'n': 48, 'k': 1.5}"
+"1h|boll|BTC|LO|n=48,k=2.0",1h,boll,BTC,LO,"{'n': 48, 'k': 2.0}"
+"1h|boll|BTC|LO|n=48,k=2.5",1h,boll,BTC,LO,"{'n': 48, 'k': 2.5}"
+"1h|boll|BTC|LS|n=168,k=1.5",1h,boll,BTC,LS,"{'n': 168, 'k': 1.5}"
+"1h|boll|BTC|LS|n=168,k=2.0",1h,boll,BTC,LS,"{'n': 168, 'k': 2.0}"
+"1h|boll|BTC|LS|n=168,k=2.5",1h,boll,BTC,LS,"{'n': 168, 'k': 2.5}"
+"1h|boll|BTC|LS|n=24,k=1.5",1h,boll,BTC,LS,"{'n': 24, 'k': 1.5}"
+"1h|boll|BTC|LS|n=24,k=2.0",1h,boll,BTC,LS,"{'n': 24, 'k': 2.0}"
+"1h|boll|BTC|LS|n=24,k=2.5",1h,boll,BTC,LS,"{'n': 24, 'k': 2.5}"
+"1h|boll|BTC|LS|n=48,k=1.5",1h,boll,BTC,LS,"{'n': 48, 'k': 1.5}"
+"1h|boll|BTC|LS|n=48,k=2.0",1h,boll,BTC,LS,"{'n': 48, 'k': 2.0}"
+"1h|boll|BTC|LS|n=48,k=2.5",1h,boll,BTC,LS,"{'n': 48, 'k': 2.5}"
+"1h|boll|BTC|SO|n=168,k=1.5",1h,boll,BTC,SO,"{'n': 168, 'k': 1.5}"
+"1h|boll|BTC|SO|n=168,k=2.0",1h,boll,BTC,SO,"{'n': 168, 'k': 2.0}"
+"1h|boll|BTC|SO|n=168,k=2.5",1h,boll,BTC,SO,"{'n': 168, 'k': 2.5}"
+"1h|boll|BTC|SO|n=24,k=1.5",1h,boll,BTC,SO,"{'n': 24, 'k': 1.5}"
+"1h|boll|BTC|SO|n=24,k=2.0",1h,boll,BTC,SO,"{'n': 24, 'k': 2.0}"
+"1h|boll|BTC|SO|n=24,k=2.5",1h,boll,BTC,SO,"{'n': 24, 'k': 2.5}"
+"1h|boll|BTC|SO|n=48,k=1.5",1h,boll,BTC,SO,"{'n': 48, 'k': 1.5}"
+"1h|boll|BTC|SO|n=48,k=2.0",1h,boll,BTC,SO,"{'n': 48, 'k': 2.0}"
+"1h|boll|BTC|SO|n=48,k=2.5",1h,boll,BTC,SO,"{'n': 48, 'k': 2.5}"
+"1h|boll|ETH|LO|n=168,k=1.5",1h,boll,ETH,LO,"{'n': 168, 'k': 1.5}"
+"1h|boll|ETH|LO|n=168,k=2.0",1h,boll,ETH,LO,"{'n': 168, 'k': 2.0}"
+"1h|boll|ETH|LO|n=168,k=2.5",1h,boll,ETH,LO,"{'n': 168, 'k': 2.5}"
+"1h|boll|ETH|LO|n=24,k=1.5",1h,boll,ETH,LO,"{'n': 24, 'k': 1.5}"
+"1h|boll|ETH|LO|n=24,k=2.0",1h,boll,ETH,LO,"{'n': 24, 'k': 2.0}"
+"1h|boll|ETH|LO|n=24,k=2.5",1h,boll,ETH,LO,"{'n': 24, 'k': 2.5}"
+"1h|boll|ETH|LO|n=48,k=1.5",1h,boll,ETH,LO,"{'n': 48, 'k': 1.5}"
+"1h|boll|ETH|LO|n=48,k=2.0",1h,boll,ETH,LO,"{'n': 48, 'k': 2.0}"
+"1h|boll|ETH|LO|n=48,k=2.5",1h,boll,ETH,LO,"{'n': 48, 'k': 2.5}"
+"1h|boll|ETH|LS|n=168,k=1.5",1h,boll,ETH,LS,"{'n': 168, 'k': 1.5}"
+"1h|boll|ETH|LS|n=168,k=2.0",1h,boll,ETH,LS,"{'n': 168, 'k': 2.0}"
+"1h|boll|ETH|LS|n=168,k=2.5",1h,boll,ETH,LS,"{'n': 168, 'k': 2.5}"
+"1h|boll|ETH|LS|n=24,k=1.5",1h,boll,ETH,LS,"{'n': 24, 'k': 1.5}"
+"1h|boll|ETH|LS|n=24,k=2.0",1h,boll,ETH,LS,"{'n': 24, 'k': 2.0}"
+"1h|boll|ETH|LS|n=24,k=2.5",1h,boll,ETH,LS,"{'n': 24, 'k': 2.5}"
+"1h|boll|ETH|LS|n=48,k=1.5",1h,boll,ETH,LS,"{'n': 48, 'k': 1.5}"
+"1h|boll|ETH|LS|n=48,k=2.0",1h,boll,ETH,LS,"{'n': 48, 'k': 2.0}"
+"1h|boll|ETH|LS|n=48,k=2.5",1h,boll,ETH,LS,"{'n': 48, 'k': 2.5}"
+"1h|boll|ETH|SO|n=168,k=1.5",1h,boll,ETH,SO,"{'n': 168, 'k': 1.5}"
+"1h|boll|ETH|SO|n=168,k=2.0",1h,boll,ETH,SO,"{'n': 168, 'k': 2.0}"
+"1h|boll|ETH|SO|n=168,k=2.5",1h,boll,ETH,SO,"{'n': 168, 'k': 2.5}"
+"1h|boll|ETH|SO|n=24,k=1.5",1h,boll,ETH,SO,"{'n': 24, 'k': 1.5}"
+"1h|boll|ETH|SO|n=24,k=2.0",1h,boll,ETH,SO,"{'n': 24, 'k': 2.0}"
+"1h|boll|ETH|SO|n=24,k=2.5",1h,boll,ETH,SO,"{'n': 24, 'k': 2.5}"
+"1h|boll|ETH|SO|n=48,k=1.5",1h,boll,ETH,SO,"{'n': 48, 'k': 1.5}"
+"1h|boll|ETH|SO|n=48,k=2.0",1h,boll,ETH,SO,"{'n': 48, 'k': 2.0}"
+"1h|boll|ETH|SO|n=48,k=2.5",1h,boll,ETH,SO,"{'n': 48, 'k': 2.5}"
+"1h|boll|MAJ3|LO|n=168,k=1.5",1h,boll,MAJ3,LO,"{'n': 168, 'k': 1.5}"
+"1h|boll|MAJ3|LO|n=168,k=2.0",1h,boll,MAJ3,LO,"{'n': 168, 'k': 2.0}"
+"1h|boll|MAJ3|LO|n=168,k=2.5",1h,boll,MAJ3,LO,"{'n': 168, 'k': 2.5}"
+"1h|boll|MAJ3|LO|n=24,k=1.5",1h,boll,MAJ3,LO,"{'n': 24, 'k': 1.5}"
+"1h|boll|MAJ3|LO|n=24,k=2.0",1h,boll,MAJ3,LO,"{'n': 24, 'k': 2.0}"
+"1h|boll|MAJ3|LO|n=24,k=2.5",1h,boll,MAJ3,LO,"{'n': 24, 'k': 2.5}"
+"1h|boll|MAJ3|LO|n=48,k=1.5",1h,boll,MAJ3,LO,"{'n': 48, 'k': 1.5}"
+"1h|boll|MAJ3|LO|n=48,k=2.0",1h,boll,MAJ3,LO,"{'n': 48, 'k': 2.0}"
+"1h|boll|MAJ3|LO|n=48,k=2.5",1h,boll,MAJ3,LO,"{'n': 48, 'k': 2.5}"
+"1h|boll|MAJ3|LS|n=168,k=1.5",1h,boll,MAJ3,LS,"{'n': 168, 'k': 1.5}"
+"1h|boll|MAJ3|LS|n=168,k=2.0",1h,boll,MAJ3,LS,"{'n': 168, 'k': 2.0}"
+"1h|boll|MAJ3|LS|n=168,k=2.5",1h,boll,MAJ3,LS,"{'n': 168, 'k': 2.5}"
+"1h|boll|MAJ3|LS|n=24,k=1.5",1h,boll,MAJ3,LS,"{'n': 24, 'k': 1.5}"
+"1h|boll|MAJ3|LS|n=24,k=2.0",1h,boll,MAJ3,LS,"{'n': 24, 'k': 2.0}"
+"1h|boll|MAJ3|LS|n=24,k=2.5",1h,boll,MAJ3,LS,"{'n': 24, 'k': 2.5}"
+"1h|boll|MAJ3|LS|n=48,k=1.5",1h,boll,MAJ3,LS,"{'n': 48, 'k': 1.5}"
+"1h|boll|MAJ3|LS|n=48,k=2.0",1h,boll,MAJ3,LS,"{'n': 48, 'k': 2.0}"
+"1h|boll|MAJ3|LS|n=48,k=2.5",1h,boll,MAJ3,LS,"{'n': 48, 'k': 2.5}"
+"1h|boll|MAJ3|SO|n=168,k=1.5",1h,boll,MAJ3,SO,"{'n': 168, 'k': 1.5}"
+"1h|boll|MAJ3|SO|n=168,k=2.0",1h,boll,MAJ3,SO,"{'n': 168, 'k': 2.0}"
+"1h|boll|MAJ3|SO|n=168,k=2.5",1h,boll,MAJ3,SO,"{'n': 168, 'k': 2.5}"
+"1h|boll|MAJ3|SO|n=24,k=1.5",1h,boll,MAJ3,SO,"{'n': 24, 'k': 1.5}"
+"1h|boll|MAJ3|SO|n=24,k=2.0",1h,boll,MAJ3,SO,"{'n': 24, 'k': 2.0}"
+"1h|boll|MAJ3|SO|n=24,k=2.5",1h,boll,MAJ3,SO,"{'n': 24, 'k': 2.5}"
+"1h|boll|MAJ3|SO|n=48,k=1.5",1h,boll,MAJ3,SO,"{'n': 48, 'k': 1.5}"
+"1h|boll|MAJ3|SO|n=48,k=2.0",1h,boll,MAJ3,SO,"{'n': 48, 'k': 2.0}"
+"1h|boll|MAJ3|SO|n=48,k=2.5",1h,boll,MAJ3,SO,"{'n': 48, 'k': 2.5}"
+"1h|boll|SOL|LO|n=168,k=1.5",1h,boll,SOL,LO,"{'n': 168, 'k': 1.5}"
+"1h|boll|SOL|LO|n=168,k=2.0",1h,boll,SOL,LO,"{'n': 168, 'k': 2.0}"
+"1h|boll|SOL|LO|n=168,k=2.5",1h,boll,SOL,LO,"{'n': 168, 'k': 2.5}"
+"1h|boll|SOL|LO|n=24,k=1.5",1h,boll,SOL,LO,"{'n': 24, 'k': 1.5}"
+"1h|boll|SOL|LO|n=24,k=2.0",1h,boll,SOL,LO,"{'n': 24, 'k': 2.0}"
+"1h|boll|SOL|LO|n=24,k=2.5",1h,boll,SOL,LO,"{'n': 24, 'k': 2.5}"
+"1h|boll|SOL|LO|n=48,k=1.5",1h,boll,SOL,LO,"{'n': 48, 'k': 1.5}"
+"1h|boll|SOL|LO|n=48,k=2.0",1h,boll,SOL,LO,"{'n': 48, 'k': 2.0}"
+"1h|boll|SOL|LO|n=48,k=2.5",1h,boll,SOL,LO,"{'n': 48, 'k': 2.5}"
+"1h|boll|SOL|LS|n=168,k=1.5",1h,boll,SOL,LS,"{'n': 168, 'k': 1.5}"
+"1h|boll|SOL|LS|n=168,k=2.0",1h,boll,SOL,LS,"{'n': 168, 'k': 2.0}"
+"1h|boll|SOL|LS|n=168,k=2.5",1h,boll,SOL,LS,"{'n': 168, 'k': 2.5}"
+"1h|boll|SOL|LS|n=24,k=1.5",1h,boll,SOL,LS,"{'n': 24, 'k': 1.5}"
+"1h|boll|SOL|LS|n=24,k=2.0",1h,boll,SOL,LS,"{'n': 24, 'k': 2.0}"
+"1h|boll|SOL|LS|n=24,k=2.5",1h,boll,SOL,LS,"{'n': 24, 'k': 2.5}"
+"1h|boll|SOL|LS|n=48,k=1.5",1h,boll,SOL,LS,"{'n': 48, 'k': 1.5}"
+"1h|boll|SOL|LS|n=48,k=2.0",1h,boll,SOL,LS,"{'n': 48, 'k': 2.0}"
+"1h|boll|SOL|LS|n=48,k=2.5",1h,boll,SOL,LS,"{'n': 48, 'k': 2.5}"
+"1h|boll|SOL|SO|n=168,k=1.5",1h,boll,SOL,SO,"{'n': 168, 'k': 1.5}"
+"1h|boll|SOL|SO|n=168,k=2.0",1h,boll,SOL,SO,"{'n': 168, 'k': 2.0}"
+"1h|boll|SOL|SO|n=168,k=2.5",1h,boll,SOL,SO,"{'n': 168, 'k': 2.5}"
+"1h|boll|SOL|SO|n=24,k=1.5",1h,boll,SOL,SO,"{'n': 24, 'k': 1.5}"
+"1h|boll|SOL|SO|n=24,k=2.0",1h,boll,SOL,SO,"{'n': 24, 'k': 2.0}"
+"1h|boll|SOL|SO|n=24,k=2.5",1h,boll,SOL,SO,"{'n': 24, 'k': 2.5}"
+"1h|boll|SOL|SO|n=48,k=1.5",1h,boll,SOL,SO,"{'n': 48, 'k': 1.5}"
+"1h|boll|SOL|SO|n=48,k=2.0",1h,boll,SOL,SO,"{'n': 48, 'k': 2.0}"
+"1h|boll|SOL|SO|n=48,k=2.5",1h,boll,SOL,SO,"{'n': 48, 'k': 2.5}"
+1h|donchian|ALL19|LO|n=168,1h,donchian,ALL19,LO,{'n': 168}
+1h|donchian|ALL19|LO|n=24,1h,donchian,ALL19,LO,{'n': 24}
+1h|donchian|ALL19|LO|n=336,1h,donchian,ALL19,LO,{'n': 336}
+1h|donchian|ALL19|LO|n=48,1h,donchian,ALL19,LO,{'n': 48}
+1h|donchian|ALL19|LO|n=720,1h,donchian,ALL19,LO,{'n': 720}
+1h|donchian|ALL19|LO|n=96,1h,donchian,ALL19,LO,{'n': 96}
+1h|donchian|ALL19|LS|n=168,1h,donchian,ALL19,LS,{'n': 168}
+1h|donchian|ALL19|LS|n=24,1h,donchian,ALL19,LS,{'n': 24}
+1h|donchian|ALL19|LS|n=336,1h,donchian,ALL19,LS,{'n': 336}
+1h|donchian|ALL19|LS|n=48,1h,donchian,ALL19,LS,{'n': 48}
+1h|donchian|ALL19|LS|n=720,1h,donchian,ALL19,LS,{'n': 720}
+1h|donchian|ALL19|LS|n=96,1h,donchian,ALL19,LS,{'n': 96}
+1h|donchian|ALL19|SO|n=168,1h,donchian,ALL19,SO,{'n': 168}
+1h|donchian|ALL19|SO|n=24,1h,donchian,ALL19,SO,{'n': 24}
+1h|donchian|ALL19|SO|n=336,1h,donchian,ALL19,SO,{'n': 336}
+1h|donchian|ALL19|SO|n=48,1h,donchian,ALL19,SO,{'n': 48}
+1h|donchian|ALL19|SO|n=720,1h,donchian,ALL19,SO,{'n': 720}
+1h|donchian|ALL19|SO|n=96,1h,donchian,ALL19,SO,{'n': 96}
+1h|donchian|BTC|LO|n=168,1h,donchian,BTC,LO,{'n': 168}
+1h|donchian|BTC|LO|n=24,1h,donchian,BTC,LO,{'n': 24}
+1h|donchian|BTC|LO|n=336,1h,donchian,BTC,LO,{'n': 336}
+1h|donchian|BTC|LO|n=48,1h,donchian,BTC,LO,{'n': 48}
+1h|donchian|BTC|LO|n=720,1h,donchian,BTC,LO,{'n': 720}
+1h|donchian|BTC|LO|n=96,1h,donchian,BTC,LO,{'n': 96}
+1h|donchian|BTC|LS|n=168,1h,donchian,BTC,LS,{'n': 168}
+1h|donchian|BTC|LS|n=24,1h,donchian,BTC,LS,{'n': 24}
+1h|donchian|BTC|LS|n=336,1h,donchian,BTC,LS,{'n': 336}
+1h|donchian|BTC|LS|n=48,1h,donchian,BTC,LS,{'n': 48}
+1h|donchian|BTC|LS|n=720,1h,donchian,BTC,LS,{'n': 720}
+1h|donchian|BTC|LS|n=96,1h,donchian,BTC,LS,{'n': 96}
+1h|donchian|BTC|SO|n=168,1h,donchian,BTC,SO,{'n': 168}
+1h|donchian|BTC|SO|n=24,1h,donchian,BTC,SO,{'n': 24}
+1h|donchian|BTC|SO|n=336,1h,donchian,BTC,SO,{'n': 336}
+1h|donchian|BTC|SO|n=48,1h,donchian,BTC,SO,{'n': 48}
+1h|donchian|BTC|SO|n=720,1h,donchian,BTC,SO,{'n': 720}
+1h|donchian|BTC|SO|n=96,1h,donchian,BTC,SO,{'n': 96}
+1h|donchian|ETH|LO|n=168,1h,donchian,ETH,LO,{'n': 168}
+1h|donchian|ETH|LO|n=24,1h,donchian,ETH,LO,{'n': 24}
+1h|donchian|ETH|LO|n=336,1h,donchian,ETH,LO,{'n': 336}
+1h|donchian|ETH|LO|n=48,1h,donchian,ETH,LO,{'n': 48}
+1h|donchian|ETH|LO|n=720,1h,donchian,ETH,LO,{'n': 720}
+1h|donchian|ETH|LO|n=96,1h,donchian,ETH,LO,{'n': 96}
+1h|donchian|ETH|LS|n=168,1h,donchian,ETH,LS,{'n': 168}
+1h|donchian|ETH|LS|n=24,1h,donchian,ETH,LS,{'n': 24}
+1h|donchian|ETH|LS|n=336,1h,donchian,ETH,LS,{'n': 336}
+1h|donchian|ETH|LS|n=48,1h,donchian,ETH,LS,{'n': 48}
+1h|donchian|ETH|LS|n=720,1h,donchian,ETH,LS,{'n': 720}
+1h|donchian|ETH|LS|n=96,1h,donchian,ETH,LS,{'n': 96}
+1h|donchian|ETH|SO|n=168,1h,donchian,ETH,SO,{'n': 168}
+1h|donchian|ETH|SO|n=24,1h,donchian,ETH,SO,{'n': 24}
+1h|donchian|ETH|SO|n=336,1h,donchian,ETH,SO,{'n': 336}
+1h|donchian|ETH|SO|n=48,1h,donchian,ETH,SO,{'n': 48}
+1h|donchian|ETH|SO|n=720,1h,donchian,ETH,SO,{'n': 720}
+1h|donchian|ETH|SO|n=96,1h,donchian,ETH,SO,{'n': 96}
+1h|donchian|MAJ3|LO|n=168,1h,donchian,MAJ3,LO,{'n': 168}
+1h|donchian|MAJ3|LO|n=24,1h,donchian,MAJ3,LO,{'n': 24}
+1h|donchian|MAJ3|LO|n=336,1h,donchian,MAJ3,LO,{'n': 336}
+1h|donchian|MAJ3|LO|n=48,1h,donchian,MAJ3,LO,{'n': 48}
+1h|donchian|MAJ3|LO|n=720,1h,donchian,MAJ3,LO,{'n': 720}
+1h|donchian|MAJ3|LO|n=96,1h,donchian,MAJ3,LO,{'n': 96}
+1h|donchian|MAJ3|LS|n=168,1h,donchian,MAJ3,LS,{'n': 168}
+1h|donchian|MAJ3|LS|n=24,1h,donchian,MAJ3,LS,{'n': 24}
+1h|donchian|MAJ3|LS|n=336,1h,donchian,MAJ3,LS,{'n': 336}
+1h|donchian|MAJ3|LS|n=48,1h,donchian,MAJ3,LS,{'n': 48}
+1h|donchian|MAJ3|LS|n=720,1h,donchian,MAJ3,LS,{'n': 720}
+1h|donchian|MAJ3|LS|n=96,1h,donchian,MAJ3,LS,{'n': 96}
+1h|donchian|MAJ3|SO|n=168,1h,donchian,MAJ3,SO,{'n': 168}
+1h|donchian|MAJ3|SO|n=24,1h,donchian,MAJ3,SO,{'n': 24}
+1h|donchian|MAJ3|SO|n=336,1h,donchian,MAJ3,SO,{'n': 336}
+1h|donchian|MAJ3|SO|n=48,1h,donchian,MAJ3,SO,{'n': 48}
+1h|donchian|MAJ3|SO|n=720,1h,donchian,MAJ3,SO,{'n': 720}
+1h|donchian|MAJ3|SO|n=96,1h,donchian,MAJ3,SO,{'n': 96}
+1h|donchian|SOL|LO|n=168,1h,donchian,SOL,LO,{'n': 168}
+1h|donchian|SOL|LO|n=24,1h,donchian,SOL,LO,{'n': 24}
+1h|donchian|SOL|LO|n=336,1h,donchian,SOL,LO,{'n': 336}
+1h|donchian|SOL|LO|n=48,1h,donchian,SOL,LO,{'n': 48}
+1h|donchian|SOL|LO|n=720,1h,donchian,SOL,LO,{'n': 720}
+1h|donchian|SOL|LO|n=96,1h,donchian,SOL,LO,{'n': 96}
+1h|donchian|SOL|LS|n=168,1h,donchian,SOL,LS,{'n': 168}
+1h|donchian|SOL|LS|n=24,1h,donchian,SOL,LS,{'n': 24}
+1h|donchian|SOL|LS|n=336,1h,donchian,SOL,LS,{'n': 336}
+1h|donchian|SOL|LS|n=48,1h,donchian,SOL,LS,{'n': 48}
+1h|donchian|SOL|LS|n=720,1h,donchian,SOL,LS,{'n': 720}
+1h|donchian|SOL|LS|n=96,1h,donchian,SOL,LS,{'n': 96}
+1h|donchian|SOL|SO|n=168,1h,donchian,SOL,SO,{'n': 168}
+1h|donchian|SOL|SO|n=24,1h,donchian,SOL,SO,{'n': 24}
+1h|donchian|SOL|SO|n=336,1h,donchian,SOL,SO,{'n': 336}
+1h|donchian|SOL|SO|n=48,1h,donchian,SOL,SO,{'n': 48}
+1h|donchian|SOL|SO|n=720,1h,donchian,SOL,SO,{'n': 720}
+1h|donchian|SOL|SO|n=96,1h,donchian,SOL,SO,{'n': 96}
+"1h|ema|ALL19|LO|f=12,s=48",1h,ema,ALL19,LO,"{'f': 12, 's': 48}"
+"1h|ema|ALL19|LO|f=168,s=672",1h,ema,ALL19,LO,"{'f': 168, 's': 672}"
+"1h|ema|ALL19|LO|f=24,s=96",1h,ema,ALL19,LO,"{'f': 24, 's': 96}"
+"1h|ema|ALL19|LO|f=48,s=192",1h,ema,ALL19,LO,"{'f': 48, 's': 192}"
+"1h|ema|ALL19|LO|f=6,s=24",1h,ema,ALL19,LO,"{'f': 6, 's': 24}"
+"1h|ema|ALL19|LO|f=96,s=384",1h,ema,ALL19,LO,"{'f': 96, 's': 384}"
+"1h|ema|ALL19|LS|f=12,s=48",1h,ema,ALL19,LS,"{'f': 12, 's': 48}"
+"1h|ema|ALL19|LS|f=168,s=672",1h,ema,ALL19,LS,"{'f': 168, 's': 672}"
+"1h|ema|ALL19|LS|f=24,s=96",1h,ema,ALL19,LS,"{'f': 24, 's': 96}"
+"1h|ema|ALL19|LS|f=48,s=192",1h,ema,ALL19,LS,"{'f': 48, 's': 192}"
+"1h|ema|ALL19|LS|f=6,s=24",1h,ema,ALL19,LS,"{'f': 6, 's': 24}"
+"1h|ema|ALL19|LS|f=96,s=384",1h,ema,ALL19,LS,"{'f': 96, 's': 384}"
+"1h|ema|ALL19|SO|f=12,s=48",1h,ema,ALL19,SO,"{'f': 12, 's': 48}"
+"1h|ema|ALL19|SO|f=168,s=672",1h,ema,ALL19,SO,"{'f': 168, 's': 672}"
+"1h|ema|ALL19|SO|f=24,s=96",1h,ema,ALL19,SO,"{'f': 24, 's': 96}"
+"1h|ema|ALL19|SO|f=48,s=192",1h,ema,ALL19,SO,"{'f': 48, 's': 192}"
+"1h|ema|ALL19|SO|f=6,s=24",1h,ema,ALL19,SO,"{'f': 6, 's': 24}"
+"1h|ema|ALL19|SO|f=96,s=384",1h,ema,ALL19,SO,"{'f': 96, 's': 384}"
+"1h|ema|BTC|LO|f=12,s=48",1h,ema,BTC,LO,"{'f': 12, 's': 48}"
+"1h|ema|BTC|LO|f=168,s=672",1h,ema,BTC,LO,"{'f': 168, 's': 672}"
+"1h|ema|BTC|LO|f=24,s=96",1h,ema,BTC,LO,"{'f': 24, 's': 96}"
+"1h|ema|BTC|LO|f=48,s=192",1h,ema,BTC,LO,"{'f': 48, 's': 192}"
+"1h|ema|BTC|LO|f=6,s=24",1h,ema,BTC,LO,"{'f': 6, 's': 24}"
+"1h|ema|BTC|LO|f=96,s=384",1h,ema,BTC,LO,"{'f': 96, 's': 384}"
+"1h|ema|BTC|LS|f=12,s=48",1h,ema,BTC,LS,"{'f': 12, 's': 48}"
+"1h|ema|BTC|LS|f=168,s=672",1h,ema,BTC,LS,"{'f': 168, 's': 672}"
+"1h|ema|BTC|LS|f=24,s=96",1h,ema,BTC,LS,"{'f': 24, 's': 96}"
+"1h|ema|BTC|LS|f=48,s=192",1h,ema,BTC,LS,"{'f': 48, 's': 192}"
+"1h|ema|BTC|LS|f=6,s=24",1h,ema,BTC,LS,"{'f': 6, 's': 24}"
+"1h|ema|BTC|LS|f=96,s=384",1h,ema,BTC,LS,"{'f': 96, 's': 384}"
+"1h|ema|BTC|SO|f=12,s=48",1h,ema,BTC,SO,"{'f': 12, 's': 48}"
+"1h|ema|BTC|SO|f=168,s=672",1h,ema,BTC,SO,"{'f': 168, 's': 672}"
+"1h|ema|BTC|SO|f=24,s=96",1h,ema,BTC,SO,"{'f': 24, 's': 96}"
+"1h|ema|BTC|SO|f=48,s=192",1h,ema,BTC,SO,"{'f': 48, 's': 192}"
+"1h|ema|BTC|SO|f=6,s=24",1h,ema,BTC,SO,"{'f': 6, 's': 24}"
+"1h|ema|BTC|SO|f=96,s=384",1h,ema,BTC,SO,"{'f': 96, 's': 384}"
+"1h|ema|ETH|LO|f=12,s=48",1h,ema,ETH,LO,"{'f': 12, 's': 48}"
+"1h|ema|ETH|LO|f=168,s=672",1h,ema,ETH,LO,"{'f': 168, 's': 672}"
+"1h|ema|ETH|LO|f=24,s=96",1h,ema,ETH,LO,"{'f': 24, 's': 96}"
+"1h|ema|ETH|LO|f=48,s=192",1h,ema,ETH,LO,"{'f': 48, 's': 192}"
+"1h|ema|ETH|LO|f=6,s=24",1h,ema,ETH,LO,"{'f': 6, 's': 24}"
+"1h|ema|ETH|LO|f=96,s=384",1h,ema,ETH,LO,"{'f': 96, 's': 384}"
+"1h|ema|ETH|LS|f=12,s=48",1h,ema,ETH,LS,"{'f': 12, 's': 48}"
+"1h|ema|ETH|LS|f=168,s=672",1h,ema,ETH,LS,"{'f': 168, 's': 672}"
+"1h|ema|ETH|LS|f=24,s=96",1h,ema,ETH,LS,"{'f': 24, 's': 96}"
+"1h|ema|ETH|LS|f=48,s=192",1h,ema,ETH,LS,"{'f': 48, 's': 192}"
+"1h|ema|ETH|LS|f=6,s=24",1h,ema,ETH,LS,"{'f': 6, 's': 24}"
+"1h|ema|ETH|LS|f=96,s=384",1h,ema,ETH,LS,"{'f': 96, 's': 384}"
+"1h|ema|ETH|SO|f=12,s=48",1h,ema,ETH,SO,"{'f': 12, 's': 48}"
+"1h|ema|ETH|SO|f=168,s=672",1h,ema,ETH,SO,"{'f': 168, 's': 672}"
+"1h|ema|ETH|SO|f=24,s=96",1h,ema,ETH,SO,"{'f': 24, 's': 96}"
+"1h|ema|ETH|SO|f=48,s=192",1h,ema,ETH,SO,"{'f': 48, 's': 192}"
+"1h|ema|ETH|SO|f=6,s=24",1h,ema,ETH,SO,"{'f': 6, 's': 24}"
+"1h|ema|ETH|SO|f=96,s=384",1h,ema,ETH,SO,"{'f': 96, 's': 384}"
+"1h|ema|MAJ3|LO|f=12,s=48",1h,ema,MAJ3,LO,"{'f': 12, 's': 48}"
+"1h|ema|MAJ3|LO|f=168,s=672",1h,ema,MAJ3,LO,"{'f': 168, 's': 672}"
+"1h|ema|MAJ3|LO|f=24,s=96",1h,ema,MAJ3,LO,"{'f': 24, 's': 96}"
+"1h|ema|MAJ3|LO|f=48,s=192",1h,ema,MAJ3,LO,"{'f': 48, 's': 192}"
+"1h|ema|MAJ3|LO|f=6,s=24",1h,ema,MAJ3,LO,"{'f': 6, 's': 24}"
+"1h|ema|MAJ3|LO|f=96,s=384",1h,ema,MAJ3,LO,"{'f': 96, 's': 384}"
+"1h|ema|MAJ3|LS|f=12,s=48",1h,ema,MAJ3,LS,"{'f': 12, 's': 48}"
+"1h|ema|MAJ3|LS|f=168,s=672",1h,ema,MAJ3,LS,"{'f': 168, 's': 672}"
+"1h|ema|MAJ3|LS|f=24,s=96",1h,ema,MAJ3,LS,"{'f': 24, 's': 96}"
+"1h|ema|MAJ3|LS|f=48,s=192",1h,ema,MAJ3,LS,"{'f': 48, 's': 192}"
+"1h|ema|MAJ3|LS|f=6,s=24",1h,ema,MAJ3,LS,"{'f': 6, 's': 24}"
+"1h|ema|MAJ3|LS|f=96,s=384",1h,ema,MAJ3,LS,"{'f': 96, 's': 384}"
+"1h|ema|MAJ3|SO|f=12,s=48",1h,ema,MAJ3,SO,"{'f': 12, 's': 48}"
+"1h|ema|MAJ3|SO|f=168,s=672",1h,ema,MAJ3,SO,"{'f': 168, 's': 672}"
+"1h|ema|MAJ3|SO|f=24,s=96",1h,ema,MAJ3,SO,"{'f': 24, 's': 96}"
+"1h|ema|MAJ3|SO|f=48,s=192",1h,ema,MAJ3,SO,"{'f': 48, 's': 192}"
+"1h|ema|MAJ3|SO|f=6,s=24",1h,ema,MAJ3,SO,"{'f': 6, 's': 24}"
+"1h|ema|MAJ3|SO|f=96,s=384",1h,ema,MAJ3,SO,"{'f': 96, 's': 384}"
+"1h|ema|SOL|LO|f=12,s=48",1h,ema,SOL,LO,"{'f': 12, 's': 48}"
+"1h|ema|SOL|LO|f=168,s=672",1h,ema,SOL,LO,"{'f': 168, 's': 672}"
+"1h|ema|SOL|LO|f=24,s=96",1h,ema,SOL,LO,"{'f': 24, 's': 96}"
+"1h|ema|SOL|LO|f=48,s=192",1h,ema,SOL,LO,"{'f': 48, 's': 192}"
+"1h|ema|SOL|LO|f=6,s=24",1h,ema,SOL,LO,"{'f': 6, 's': 24}"
+"1h|ema|SOL|LO|f=96,s=384",1h,ema,SOL,LO,"{'f': 96, 's': 384}"
+"1h|ema|SOL|LS|f=12,s=48",1h,ema,SOL,LS,"{'f': 12, 's': 48}"
+"1h|ema|SOL|LS|f=168,s=672",1h,ema,SOL,LS,"{'f': 168, 's': 672}"
+"1h|ema|SOL|LS|f=24,s=96",1h,ema,SOL,LS,"{'f': 24, 's': 96}"
+"1h|ema|SOL|LS|f=48,s=192",1h,ema,SOL,LS,"{'f': 48, 's': 192}"
+"1h|ema|SOL|LS|f=6,s=24",1h,ema,SOL,LS,"{'f': 6, 's': 24}"
+"1h|ema|SOL|LS|f=96,s=384",1h,ema,SOL,LS,"{'f': 96, 's': 384}"
+"1h|ema|SOL|SO|f=12,s=48",1h,ema,SOL,SO,"{'f': 12, 's': 48}"
+"1h|ema|SOL|SO|f=168,s=672",1h,ema,SOL,SO,"{'f': 168, 's': 672}"
+"1h|ema|SOL|SO|f=24,s=96",1h,ema,SOL,SO,"{'f': 24, 's': 96}"
+"1h|ema|SOL|SO|f=48,s=192",1h,ema,SOL,SO,"{'f': 48, 's': 192}"
+"1h|ema|SOL|SO|f=6,s=24",1h,ema,SOL,SO,"{'f': 6, 's': 24}"
+"1h|ema|SOL|SO|f=96,s=384",1h,ema,SOL,SO,"{'f': 96, 's': 384}"
+1h|ensemble|ALL19|LO|kind=E1,1h,ensemble,ALL19,LO,{'kind': 'E1'}
+1h|ensemble|ALL19|LO|kind=E2,1h,ensemble,ALL19,LO,{'kind': 'E2'}
+1h|ensemble|ALL19|LO|kind=E3,1h,ensemble,ALL19,LO,{'kind': 'E3'}
+1h|ensemble|ALL19|LS|kind=E1,1h,ensemble,ALL19,LS,{'kind': 'E1'}
+1h|ensemble|ALL19|LS|kind=E2,1h,ensemble,ALL19,LS,{'kind': 'E2'}
+1h|ensemble|ALL19|LS|kind=E3,1h,ensemble,ALL19,LS,{'kind': 'E3'}
+1h|ensemble|ALL19|SO|kind=E1,1h,ensemble,ALL19,SO,{'kind': 'E1'}
+1h|ensemble|ALL19|SO|kind=E2,1h,ensemble,ALL19,SO,{'kind': 'E2'}
+1h|ensemble|ALL19|SO|kind=E3,1h,ensemble,ALL19,SO,{'kind': 'E3'}
+1h|ensemble|BTC|LO|kind=E1,1h,ensemble,BTC,LO,{'kind': 'E1'}
+1h|ensemble|BTC|LO|kind=E2,1h,ensemble,BTC,LO,{'kind': 'E2'}
+1h|ensemble|BTC|LO|kind=E3,1h,ensemble,BTC,LO,{'kind': 'E3'}
+1h|ensemble|BTC|LS|kind=E1,1h,ensemble,BTC,LS,{'kind': 'E1'}
+1h|ensemble|BTC|LS|kind=E2,1h,ensemble,BTC,LS,{'kind': 'E2'}
+1h|ensemble|BTC|LS|kind=E3,1h,ensemble,BTC,LS,{'kind': 'E3'}
+1h|ensemble|BTC|SO|kind=E1,1h,ensemble,BTC,SO,{'kind': 'E1'}
+1h|ensemble|BTC|SO|kind=E2,1h,ensemble,BTC,SO,{'kind': 'E2'}
+1h|ensemble|BTC|SO|kind=E3,1h,ensemble,BTC,SO,{'kind': 'E3'}
+1h|ensemble|ETH|LO|kind=E1,1h,ensemble,ETH,LO,{'kind': 'E1'}
+1h|ensemble|ETH|LO|kind=E2,1h,ensemble,ETH,LO,{'kind': 'E2'}
+1h|ensemble|ETH|LO|kind=E3,1h,ensemble,ETH,LO,{'kind': 'E3'}
+1h|ensemble|ETH|LS|kind=E1,1h,ensemble,ETH,LS,{'kind': 'E1'}
+1h|ensemble|ETH|LS|kind=E2,1h,ensemble,ETH,LS,{'kind': 'E2'}
+1h|ensemble|ETH|LS|kind=E3,1h,ensemble,ETH,LS,{'kind': 'E3'}
+1h|ensemble|ETH|SO|kind=E1,1h,ensemble,ETH,SO,{'kind': 'E1'}
+1h|ensemble|ETH|SO|kind=E2,1h,ensemble,ETH,SO,{'kind': 'E2'}
+1h|ensemble|ETH|SO|kind=E3,1h,ensemble,ETH,SO,{'kind': 'E3'}
+1h|ensemble|MAJ3|LO|kind=E1,1h,ensemble,MAJ3,LO,{'kind': 'E1'}
+1h|ensemble|MAJ3|LO|kind=E2,1h,ensemble,MAJ3,LO,{'kind': 'E2'}
+1h|ensemble|MAJ3|LO|kind=E3,1h,ensemble,MAJ3,LO,{'kind': 'E3'}
+1h|ensemble|MAJ3|LS|kind=E1,1h,ensemble,MAJ3,LS,{'kind': 'E1'}
+1h|ensemble|MAJ3|LS|kind=E2,1h,ensemble,MAJ3,LS,{'kind': 'E2'}
+1h|ensemble|MAJ3|LS|kind=E3,1h,ensemble,MAJ3,LS,{'kind': 'E3'}
+1h|ensemble|MAJ3|SO|kind=E1,1h,ensemble,MAJ3,SO,{'kind': 'E1'}
+1h|ensemble|MAJ3|SO|kind=E2,1h,ensemble,MAJ3,SO,{'kind': 'E2'}
+1h|ensemble|MAJ3|SO|kind=E3,1h,ensemble,MAJ3,SO,{'kind': 'E3'}
+1h|ensemble|SOL|LO|kind=E1,1h,ensemble,SOL,LO,{'kind': 'E1'}
+1h|ensemble|SOL|LO|kind=E2,1h,ensemble,SOL,LO,{'kind': 'E2'}
+1h|ensemble|SOL|LO|kind=E3,1h,ensemble,SOL,LO,{'kind': 'E3'}
+1h|ensemble|SOL|LS|kind=E1,1h,ensemble,SOL,LS,{'kind': 'E1'}
+1h|ensemble|SOL|LS|kind=E2,1h,ensemble,SOL,LS,{'kind': 'E2'}
+1h|ensemble|SOL|LS|kind=E3,1h,ensemble,SOL,LS,{'kind': 'E3'}
+1h|ensemble|SOL|SO|kind=E1,1h,ensemble,SOL,SO,{'kind': 'E1'}
+1h|ensemble|SOL|SO|kind=E2,1h,ensemble,SOL,SO,{'kind': 'E2'}
+1h|ensemble|SOL|SO|kind=E3,1h,ensemble,SOL,SO,{'kind': 'E3'}
+1h|reversal|ALL19|LO|k=1,1h,reversal,ALL19,LO,{'k': 1}
+1h|reversal|ALL19|LO|k=12,1h,reversal,ALL19,LO,{'k': 12}
+1h|reversal|ALL19|LO|k=24,1h,reversal,ALL19,LO,{'k': 24}
+1h|reversal|ALL19|LO|k=4,1h,reversal,ALL19,LO,{'k': 4}
+1h|reversal|ALL19|LS|k=1,1h,reversal,ALL19,LS,{'k': 1}
+1h|reversal|ALL19|LS|k=12,1h,reversal,ALL19,LS,{'k': 12}
+1h|reversal|ALL19|LS|k=24,1h,reversal,ALL19,LS,{'k': 24}
+1h|reversal|ALL19|LS|k=4,1h,reversal,ALL19,LS,{'k': 4}
+1h|reversal|ALL19|SO|k=1,1h,reversal,ALL19,SO,{'k': 1}
+1h|reversal|ALL19|SO|k=12,1h,reversal,ALL19,SO,{'k': 12}
+1h|reversal|ALL19|SO|k=24,1h,reversal,ALL19,SO,{'k': 24}
+1h|reversal|ALL19|SO|k=4,1h,reversal,ALL19,SO,{'k': 4}
+1h|reversal|BTC|LO|k=1,1h,reversal,BTC,LO,{'k': 1}
+1h|reversal|BTC|LO|k=12,1h,reversal,BTC,LO,{'k': 12}
+1h|reversal|BTC|LO|k=24,1h,reversal,BTC,LO,{'k': 24}
+1h|reversal|BTC|LO|k=4,1h,reversal,BTC,LO,{'k': 4}
+1h|reversal|BTC|LS|k=1,1h,reversal,BTC,LS,{'k': 1}
+1h|reversal|BTC|LS|k=12,1h,reversal,BTC,LS,{'k': 12}
+1h|reversal|BTC|LS|k=24,1h,reversal,BTC,LS,{'k': 24}
+1h|reversal|BTC|LS|k=4,1h,reversal,BTC,LS,{'k': 4}
+1h|reversal|BTC|SO|k=1,1h,reversal,BTC,SO,{'k': 1}
+1h|reversal|BTC|SO|k=12,1h,reversal,BTC,SO,{'k': 12}
+1h|reversal|BTC|SO|k=24,1h,reversal,BTC,SO,{'k': 24}
+1h|reversal|BTC|SO|k=4,1h,reversal,BTC,SO,{'k': 4}
+1h|reversal|ETH|LO|k=1,1h,reversal,ETH,LO,{'k': 1}
+1h|reversal|ETH|LO|k=12,1h,reversal,ETH,LO,{'k': 12}
+1h|reversal|ETH|LO|k=24,1h,reversal,ETH,LO,{'k': 24}
+1h|reversal|ETH|LO|k=4,1h,reversal,ETH,LO,{'k': 4}
+1h|reversal|ETH|LS|k=1,1h,reversal,ETH,LS,{'k': 1}
+1h|reversal|ETH|LS|k=12,1h,reversal,ETH,LS,{'k': 12}
+1h|reversal|ETH|LS|k=24,1h,reversal,ETH,LS,{'k': 24}
+1h|reversal|ETH|LS|k=4,1h,reversal,ETH,LS,{'k': 4}
+1h|reversal|ETH|SO|k=1,1h,reversal,ETH,SO,{'k': 1}
+1h|reversal|ETH|SO|k=12,1h,reversal,ETH,SO,{'k': 12}
+1h|reversal|ETH|SO|k=24,1h,reversal,ETH,SO,{'k': 24}
+1h|reversal|ETH|SO|k=4,1h,reversal,ETH,SO,{'k': 4}
+1h|reversal|MAJ3|LO|k=1,1h,reversal,MAJ3,LO,{'k': 1}
+1h|reversal|MAJ3|LO|k=12,1h,reversal,MAJ3,LO,{'k': 12}
+1h|reversal|MAJ3|LO|k=24,1h,reversal,MAJ3,LO,{'k': 24}
+1h|reversal|MAJ3|LO|k=4,1h,reversal,MAJ3,LO,{'k': 4}
+1h|reversal|MAJ3|LS|k=1,1h,reversal,MAJ3,LS,{'k': 1}
+1h|reversal|MAJ3|LS|k=12,1h,reversal,MAJ3,LS,{'k': 12}
+1h|reversal|MAJ3|LS|k=24,1h,reversal,MAJ3,LS,{'k': 24}
+1h|reversal|MAJ3|LS|k=4,1h,reversal,MAJ3,LS,{'k': 4}
+1h|reversal|MAJ3|SO|k=1,1h,reversal,MAJ3,SO,{'k': 1}
+1h|reversal|MAJ3|SO|k=12,1h,reversal,MAJ3,SO,{'k': 12}
+1h|reversal|MAJ3|SO|k=24,1h,reversal,MAJ3,SO,{'k': 24}
+1h|reversal|MAJ3|SO|k=4,1h,reversal,MAJ3,SO,{'k': 4}
+1h|reversal|SOL|LO|k=1,1h,reversal,SOL,LO,{'k': 1}
+1h|reversal|SOL|LO|k=12,1h,reversal,SOL,LO,{'k': 12}
+1h|reversal|SOL|LO|k=24,1h,reversal,SOL,LO,{'k': 24}
+1h|reversal|SOL|LO|k=4,1h,reversal,SOL,LO,{'k': 4}
+1h|reversal|SOL|LS|k=1,1h,reversal,SOL,LS,{'k': 1}
+1h|reversal|SOL|LS|k=12,1h,reversal,SOL,LS,{'k': 12}
+1h|reversal|SOL|LS|k=24,1h,reversal,SOL,LS,{'k': 24}
+1h|reversal|SOL|LS|k=4,1h,reversal,SOL,LS,{'k': 4}
+1h|reversal|SOL|SO|k=1,1h,reversal,SOL,SO,{'k': 1}
+1h|reversal|SOL|SO|k=12,1h,reversal,SOL,SO,{'k': 12}
+1h|reversal|SOL|SO|k=24,1h,reversal,SOL,SO,{'k': 24}
+1h|reversal|SOL|SO|k=4,1h,reversal,SOL,SO,{'k': 4}
+"1h|rsi|ALL19|LO|n=14,lo=20,hi=80",1h,rsi,ALL19,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|LO|n=14,lo=30,hi=70",1h,rsi,ALL19,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|LO|n=24,lo=20,hi=80",1h,rsi,ALL19,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|LO|n=24,lo=30,hi=70",1h,rsi,ALL19,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|LO|n=6,lo=20,hi=80",1h,rsi,ALL19,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|LO|n=6,lo=30,hi=70",1h,rsi,ALL19,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|LS|n=14,lo=20,hi=80",1h,rsi,ALL19,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|LS|n=14,lo=30,hi=70",1h,rsi,ALL19,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|LS|n=24,lo=20,hi=80",1h,rsi,ALL19,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|LS|n=24,lo=30,hi=70",1h,rsi,ALL19,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|LS|n=6,lo=20,hi=80",1h,rsi,ALL19,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|LS|n=6,lo=30,hi=70",1h,rsi,ALL19,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|SO|n=14,lo=20,hi=80",1h,rsi,ALL19,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|SO|n=14,lo=30,hi=70",1h,rsi,ALL19,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|SO|n=24,lo=20,hi=80",1h,rsi,ALL19,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|SO|n=24,lo=30,hi=70",1h,rsi,ALL19,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|ALL19|SO|n=6,lo=20,hi=80",1h,rsi,ALL19,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|ALL19|SO|n=6,lo=30,hi=70",1h,rsi,ALL19,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|LO|n=14,lo=20,hi=80",1h,rsi,BTC,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|LO|n=14,lo=30,hi=70",1h,rsi,BTC,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|LO|n=24,lo=20,hi=80",1h,rsi,BTC,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|LO|n=24,lo=30,hi=70",1h,rsi,BTC,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|LO|n=6,lo=20,hi=80",1h,rsi,BTC,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|LO|n=6,lo=30,hi=70",1h,rsi,BTC,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|LS|n=14,lo=20,hi=80",1h,rsi,BTC,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|LS|n=14,lo=30,hi=70",1h,rsi,BTC,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|LS|n=24,lo=20,hi=80",1h,rsi,BTC,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|LS|n=24,lo=30,hi=70",1h,rsi,BTC,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|LS|n=6,lo=20,hi=80",1h,rsi,BTC,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|LS|n=6,lo=30,hi=70",1h,rsi,BTC,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|SO|n=14,lo=20,hi=80",1h,rsi,BTC,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|SO|n=14,lo=30,hi=70",1h,rsi,BTC,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|SO|n=24,lo=20,hi=80",1h,rsi,BTC,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|SO|n=24,lo=30,hi=70",1h,rsi,BTC,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|BTC|SO|n=6,lo=20,hi=80",1h,rsi,BTC,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|BTC|SO|n=6,lo=30,hi=70",1h,rsi,BTC,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|LO|n=14,lo=20,hi=80",1h,rsi,ETH,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|LO|n=14,lo=30,hi=70",1h,rsi,ETH,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|LO|n=24,lo=20,hi=80",1h,rsi,ETH,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|LO|n=24,lo=30,hi=70",1h,rsi,ETH,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|LO|n=6,lo=20,hi=80",1h,rsi,ETH,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|LO|n=6,lo=30,hi=70",1h,rsi,ETH,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|LS|n=14,lo=20,hi=80",1h,rsi,ETH,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|LS|n=14,lo=30,hi=70",1h,rsi,ETH,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|LS|n=24,lo=20,hi=80",1h,rsi,ETH,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|LS|n=24,lo=30,hi=70",1h,rsi,ETH,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|LS|n=6,lo=20,hi=80",1h,rsi,ETH,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|LS|n=6,lo=30,hi=70",1h,rsi,ETH,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|SO|n=14,lo=20,hi=80",1h,rsi,ETH,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|SO|n=14,lo=30,hi=70",1h,rsi,ETH,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|SO|n=24,lo=20,hi=80",1h,rsi,ETH,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|SO|n=24,lo=30,hi=70",1h,rsi,ETH,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|ETH|SO|n=6,lo=20,hi=80",1h,rsi,ETH,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|ETH|SO|n=6,lo=30,hi=70",1h,rsi,ETH,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|LO|n=14,lo=20,hi=80",1h,rsi,MAJ3,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|LO|n=14,lo=30,hi=70",1h,rsi,MAJ3,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|LO|n=24,lo=20,hi=80",1h,rsi,MAJ3,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|LO|n=24,lo=30,hi=70",1h,rsi,MAJ3,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|LO|n=6,lo=20,hi=80",1h,rsi,MAJ3,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|LO|n=6,lo=30,hi=70",1h,rsi,MAJ3,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|LS|n=14,lo=20,hi=80",1h,rsi,MAJ3,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|LS|n=14,lo=30,hi=70",1h,rsi,MAJ3,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|LS|n=24,lo=20,hi=80",1h,rsi,MAJ3,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|LS|n=24,lo=30,hi=70",1h,rsi,MAJ3,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|LS|n=6,lo=20,hi=80",1h,rsi,MAJ3,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|LS|n=6,lo=30,hi=70",1h,rsi,MAJ3,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|SO|n=14,lo=20,hi=80",1h,rsi,MAJ3,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|SO|n=14,lo=30,hi=70",1h,rsi,MAJ3,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|SO|n=24,lo=20,hi=80",1h,rsi,MAJ3,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|SO|n=24,lo=30,hi=70",1h,rsi,MAJ3,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|MAJ3|SO|n=6,lo=20,hi=80",1h,rsi,MAJ3,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|MAJ3|SO|n=6,lo=30,hi=70",1h,rsi,MAJ3,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|LO|n=14,lo=20,hi=80",1h,rsi,SOL,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|LO|n=14,lo=30,hi=70",1h,rsi,SOL,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|LO|n=24,lo=20,hi=80",1h,rsi,SOL,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|LO|n=24,lo=30,hi=70",1h,rsi,SOL,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|LO|n=6,lo=20,hi=80",1h,rsi,SOL,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|LO|n=6,lo=30,hi=70",1h,rsi,SOL,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|LS|n=14,lo=20,hi=80",1h,rsi,SOL,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|LS|n=14,lo=30,hi=70",1h,rsi,SOL,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|LS|n=24,lo=20,hi=80",1h,rsi,SOL,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|LS|n=24,lo=30,hi=70",1h,rsi,SOL,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|LS|n=6,lo=20,hi=80",1h,rsi,SOL,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|LS|n=6,lo=30,hi=70",1h,rsi,SOL,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|SO|n=14,lo=20,hi=80",1h,rsi,SOL,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|SO|n=14,lo=30,hi=70",1h,rsi,SOL,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|SO|n=24,lo=20,hi=80",1h,rsi,SOL,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|SO|n=24,lo=30,hi=70",1h,rsi,SOL,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"1h|rsi|SOL|SO|n=6,lo=20,hi=80",1h,rsi,SOL,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"1h|rsi|SOL|SO|n=6,lo=30,hi=70",1h,rsi,SOL,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"1h|season|ALL19|LO|bucket=dow,W=180,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=dow,W=180,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=dow,W=180,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=dow,W=365,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=dow,W=365,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=dow,W=365,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=dow,W=730,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=dow,W=730,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=dow,W=730,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=hod,W=180,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=hod,W=180,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=hod,W=180,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=hod,W=365,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=hod,W=365,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=hod,W=365,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=hod,W=730,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=hod,W=730,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=hod,W=730,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=how,W=180,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=how,W=180,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=how,W=180,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=how,W=365,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=how,W=365,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=how,W=365,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|LO|bucket=how,W=730,thr=1.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|LO|bucket=how,W=730,thr=2.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|LO|bucket=how,W=730,thr=3.0",1h,season,ALL19,LO,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=dow,W=180,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=dow,W=180,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=dow,W=180,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=dow,W=365,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=dow,W=365,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=dow,W=365,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=dow,W=730,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=dow,W=730,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=dow,W=730,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=hod,W=180,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=hod,W=180,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=hod,W=180,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=hod,W=365,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=hod,W=365,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=hod,W=365,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=hod,W=730,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=hod,W=730,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=hod,W=730,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=how,W=180,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=how,W=180,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=how,W=180,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=how,W=365,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=how,W=365,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=how,W=365,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|LS|bucket=how,W=730,thr=1.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|LS|bucket=how,W=730,thr=2.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|LS|bucket=how,W=730,thr=3.0",1h,season,ALL19,LS,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=dow,W=180,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=dow,W=180,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=dow,W=180,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=dow,W=365,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=dow,W=365,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=dow,W=365,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=dow,W=730,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=dow,W=730,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=dow,W=730,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=hod,W=180,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=hod,W=180,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=hod,W=180,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=hod,W=365,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=hod,W=365,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=hod,W=365,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=hod,W=730,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=hod,W=730,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=hod,W=730,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=how,W=180,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=how,W=180,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=how,W=180,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=how,W=365,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=how,W=365,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=how,W=365,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|ALL19|SO|bucket=how,W=730,thr=1.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|ALL19|SO|bucket=how,W=730,thr=2.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|ALL19|SO|bucket=how,W=730,thr=3.0",1h,season,ALL19,SO,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=dow,W=180,thr=1.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=dow,W=180,thr=2.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=dow,W=180,thr=3.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=dow,W=365,thr=1.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=dow,W=365,thr=2.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=dow,W=365,thr=3.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=dow,W=730,thr=1.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=dow,W=730,thr=2.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=dow,W=730,thr=3.0",1h,season,BTC,LO,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=hod,W=180,thr=1.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=hod,W=180,thr=2.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=hod,W=180,thr=3.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=hod,W=365,thr=1.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=hod,W=365,thr=2.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=hod,W=365,thr=3.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=hod,W=730,thr=1.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=hod,W=730,thr=2.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=hod,W=730,thr=3.0",1h,season,BTC,LO,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=how,W=180,thr=1.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=how,W=180,thr=2.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=how,W=180,thr=3.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=how,W=365,thr=1.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=how,W=365,thr=2.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=how,W=365,thr=3.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|LO|bucket=how,W=730,thr=1.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|LO|bucket=how,W=730,thr=2.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|LO|bucket=how,W=730,thr=3.0",1h,season,BTC,LO,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=dow,W=180,thr=1.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=dow,W=180,thr=2.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=dow,W=180,thr=3.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=dow,W=365,thr=1.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=dow,W=365,thr=2.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=dow,W=365,thr=3.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=dow,W=730,thr=1.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=dow,W=730,thr=2.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=dow,W=730,thr=3.0",1h,season,BTC,LS,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=hod,W=180,thr=1.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=hod,W=180,thr=2.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=hod,W=180,thr=3.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=hod,W=365,thr=1.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=hod,W=365,thr=2.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=hod,W=365,thr=3.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=hod,W=730,thr=1.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=hod,W=730,thr=2.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=hod,W=730,thr=3.0",1h,season,BTC,LS,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=how,W=180,thr=1.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=how,W=180,thr=2.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=how,W=180,thr=3.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=how,W=365,thr=1.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=how,W=365,thr=2.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=how,W=365,thr=3.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|LS|bucket=how,W=730,thr=1.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|LS|bucket=how,W=730,thr=2.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|LS|bucket=how,W=730,thr=3.0",1h,season,BTC,LS,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=dow,W=180,thr=1.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=dow,W=180,thr=2.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=dow,W=180,thr=3.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=dow,W=365,thr=1.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=dow,W=365,thr=2.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=dow,W=365,thr=3.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=dow,W=730,thr=1.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=dow,W=730,thr=2.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=dow,W=730,thr=3.0",1h,season,BTC,SO,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=hod,W=180,thr=1.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=hod,W=180,thr=2.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=hod,W=180,thr=3.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=hod,W=365,thr=1.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=hod,W=365,thr=2.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=hod,W=365,thr=3.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=hod,W=730,thr=1.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=hod,W=730,thr=2.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=hod,W=730,thr=3.0",1h,season,BTC,SO,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=how,W=180,thr=1.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=how,W=180,thr=2.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=how,W=180,thr=3.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=how,W=365,thr=1.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=how,W=365,thr=2.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=how,W=365,thr=3.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|BTC|SO|bucket=how,W=730,thr=1.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|BTC|SO|bucket=how,W=730,thr=2.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|BTC|SO|bucket=how,W=730,thr=3.0",1h,season,BTC,SO,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=180,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=180,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=180,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=365,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=365,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=365,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=730,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=730,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=dow,W=730,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=180,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=180,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=180,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=365,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=365,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=365,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=730,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=730,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=hod,W=730,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=how,W=180,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=how,W=180,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=how,W=180,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=how,W=365,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=how,W=365,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=how,W=365,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|LO|bucket=how,W=730,thr=1.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|LO|bucket=how,W=730,thr=2.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|LO|bucket=how,W=730,thr=3.0",1h,season,MAJ3,LO,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=180,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=180,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=180,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=365,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=365,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=365,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=730,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=730,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=dow,W=730,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=180,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=180,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=180,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=365,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=365,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=365,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=730,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=730,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=hod,W=730,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=how,W=180,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=how,W=180,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=how,W=180,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=how,W=365,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=how,W=365,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=how,W=365,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|LS|bucket=how,W=730,thr=1.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|LS|bucket=how,W=730,thr=2.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|LS|bucket=how,W=730,thr=3.0",1h,season,MAJ3,LS,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=180,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=180,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=180,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=365,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=365,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=365,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=730,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=730,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=dow,W=730,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'dow', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=180,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=180,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=180,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=365,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=365,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=365,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=730,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=730,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=hod,W=730,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'hod', 'W': 730, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=how,W=180,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 180, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=how,W=180,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 180, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=how,W=180,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 180, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=how,W=365,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 365, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=how,W=365,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 365, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=how,W=365,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 365, 'thr': 3.0}"
+"1h|season|MAJ3|SO|bucket=how,W=730,thr=1.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 730, 'thr': 1.0}"
+"1h|season|MAJ3|SO|bucket=how,W=730,thr=2.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 730, 'thr': 2.0}"
+"1h|season|MAJ3|SO|bucket=how,W=730,thr=3.0",1h,season,MAJ3,SO,"{'bucket': 'how', 'W': 730, 'thr': 3.0}"
+1h|tsmom|ALL19|LO|lb=12,1h,tsmom,ALL19,LO,{'lb': 12}
+1h|tsmom|ALL19|LO|lb=168,1h,tsmom,ALL19,LO,{'lb': 168}
+1h|tsmom|ALL19|LO|lb=24,1h,tsmom,ALL19,LO,{'lb': 24}
+1h|tsmom|ALL19|LO|lb=336,1h,tsmom,ALL19,LO,{'lb': 336}
+1h|tsmom|ALL19|LO|lb=48,1h,tsmom,ALL19,LO,{'lb': 48}
+1h|tsmom|ALL19|LO|lb=720,1h,tsmom,ALL19,LO,{'lb': 720}
+1h|tsmom|ALL19|LO|lb=96,1h,tsmom,ALL19,LO,{'lb': 96}
+1h|tsmom|ALL19|LS|lb=12,1h,tsmom,ALL19,LS,{'lb': 12}
+1h|tsmom|ALL19|LS|lb=168,1h,tsmom,ALL19,LS,{'lb': 168}
+1h|tsmom|ALL19|LS|lb=24,1h,tsmom,ALL19,LS,{'lb': 24}
+1h|tsmom|ALL19|LS|lb=336,1h,tsmom,ALL19,LS,{'lb': 336}
+1h|tsmom|ALL19|LS|lb=48,1h,tsmom,ALL19,LS,{'lb': 48}
+1h|tsmom|ALL19|LS|lb=720,1h,tsmom,ALL19,LS,{'lb': 720}
+1h|tsmom|ALL19|LS|lb=96,1h,tsmom,ALL19,LS,{'lb': 96}
+1h|tsmom|ALL19|SO|lb=12,1h,tsmom,ALL19,SO,{'lb': 12}
+1h|tsmom|ALL19|SO|lb=168,1h,tsmom,ALL19,SO,{'lb': 168}
+1h|tsmom|ALL19|SO|lb=24,1h,tsmom,ALL19,SO,{'lb': 24}
+1h|tsmom|ALL19|SO|lb=336,1h,tsmom,ALL19,SO,{'lb': 336}
+1h|tsmom|ALL19|SO|lb=48,1h,tsmom,ALL19,SO,{'lb': 48}
+1h|tsmom|ALL19|SO|lb=720,1h,tsmom,ALL19,SO,{'lb': 720}
+1h|tsmom|ALL19|SO|lb=96,1h,tsmom,ALL19,SO,{'lb': 96}
+1h|tsmom|BTC|LO|lb=12,1h,tsmom,BTC,LO,{'lb': 12}
+1h|tsmom|BTC|LO|lb=168,1h,tsmom,BTC,LO,{'lb': 168}
+1h|tsmom|BTC|LO|lb=24,1h,tsmom,BTC,LO,{'lb': 24}
+1h|tsmom|BTC|LO|lb=336,1h,tsmom,BTC,LO,{'lb': 336}
+1h|tsmom|BTC|LO|lb=48,1h,tsmom,BTC,LO,{'lb': 48}
+1h|tsmom|BTC|LO|lb=720,1h,tsmom,BTC,LO,{'lb': 720}
+1h|tsmom|BTC|LO|lb=96,1h,tsmom,BTC,LO,{'lb': 96}
+1h|tsmom|BTC|LS|lb=12,1h,tsmom,BTC,LS,{'lb': 12}
+1h|tsmom|BTC|LS|lb=168,1h,tsmom,BTC,LS,{'lb': 168}
+1h|tsmom|BTC|LS|lb=24,1h,tsmom,BTC,LS,{'lb': 24}
+1h|tsmom|BTC|LS|lb=336,1h,tsmom,BTC,LS,{'lb': 336}
+1h|tsmom|BTC|LS|lb=48,1h,tsmom,BTC,LS,{'lb': 48}
+1h|tsmom|BTC|LS|lb=720,1h,tsmom,BTC,LS,{'lb': 720}
+1h|tsmom|BTC|LS|lb=96,1h,tsmom,BTC,LS,{'lb': 96}
+1h|tsmom|BTC|SO|lb=12,1h,tsmom,BTC,SO,{'lb': 12}
+1h|tsmom|BTC|SO|lb=168,1h,tsmom,BTC,SO,{'lb': 168}
+1h|tsmom|BTC|SO|lb=24,1h,tsmom,BTC,SO,{'lb': 24}
+1h|tsmom|BTC|SO|lb=336,1h,tsmom,BTC,SO,{'lb': 336}
+1h|tsmom|BTC|SO|lb=48,1h,tsmom,BTC,SO,{'lb': 48}
+1h|tsmom|BTC|SO|lb=720,1h,tsmom,BTC,SO,{'lb': 720}
+1h|tsmom|BTC|SO|lb=96,1h,tsmom,BTC,SO,{'lb': 96}
+1h|tsmom|ETH|LO|lb=12,1h,tsmom,ETH,LO,{'lb': 12}
+1h|tsmom|ETH|LO|lb=168,1h,tsmom,ETH,LO,{'lb': 168}
+1h|tsmom|ETH|LO|lb=24,1h,tsmom,ETH,LO,{'lb': 24}
+1h|tsmom|ETH|LO|lb=336,1h,tsmom,ETH,LO,{'lb': 336}
+1h|tsmom|ETH|LO|lb=48,1h,tsmom,ETH,LO,{'lb': 48}
+1h|tsmom|ETH|LO|lb=720,1h,tsmom,ETH,LO,{'lb': 720}
+1h|tsmom|ETH|LO|lb=96,1h,tsmom,ETH,LO,{'lb': 96}
+1h|tsmom|ETH|LS|lb=12,1h,tsmom,ETH,LS,{'lb': 12}
+1h|tsmom|ETH|LS|lb=168,1h,tsmom,ETH,LS,{'lb': 168}
+1h|tsmom|ETH|LS|lb=24,1h,tsmom,ETH,LS,{'lb': 24}
+1h|tsmom|ETH|LS|lb=336,1h,tsmom,ETH,LS,{'lb': 336}
+1h|tsmom|ETH|LS|lb=48,1h,tsmom,ETH,LS,{'lb': 48}
+1h|tsmom|ETH|LS|lb=720,1h,tsmom,ETH,LS,{'lb': 720}
+1h|tsmom|ETH|LS|lb=96,1h,tsmom,ETH,LS,{'lb': 96}
+1h|tsmom|ETH|SO|lb=12,1h,tsmom,ETH,SO,{'lb': 12}
+1h|tsmom|ETH|SO|lb=168,1h,tsmom,ETH,SO,{'lb': 168}
+1h|tsmom|ETH|SO|lb=24,1h,tsmom,ETH,SO,{'lb': 24}
+1h|tsmom|ETH|SO|lb=336,1h,tsmom,ETH,SO,{'lb': 336}
+1h|tsmom|ETH|SO|lb=48,1h,tsmom,ETH,SO,{'lb': 48}
+1h|tsmom|ETH|SO|lb=720,1h,tsmom,ETH,SO,{'lb': 720}
+1h|tsmom|ETH|SO|lb=96,1h,tsmom,ETH,SO,{'lb': 96}
+1h|tsmom|MAJ3|LO|lb=12,1h,tsmom,MAJ3,LO,{'lb': 12}
+1h|tsmom|MAJ3|LO|lb=168,1h,tsmom,MAJ3,LO,{'lb': 168}
+1h|tsmom|MAJ3|LO|lb=24,1h,tsmom,MAJ3,LO,{'lb': 24}
+1h|tsmom|MAJ3|LO|lb=336,1h,tsmom,MAJ3,LO,{'lb': 336}
+1h|tsmom|MAJ3|LO|lb=48,1h,tsmom,MAJ3,LO,{'lb': 48}
+1h|tsmom|MAJ3|LO|lb=720,1h,tsmom,MAJ3,LO,{'lb': 720}
+1h|tsmom|MAJ3|LO|lb=96,1h,tsmom,MAJ3,LO,{'lb': 96}
+1h|tsmom|MAJ3|LS|lb=12,1h,tsmom,MAJ3,LS,{'lb': 12}
+1h|tsmom|MAJ3|LS|lb=168,1h,tsmom,MAJ3,LS,{'lb': 168}
+1h|tsmom|MAJ3|LS|lb=24,1h,tsmom,MAJ3,LS,{'lb': 24}
+1h|tsmom|MAJ3|LS|lb=336,1h,tsmom,MAJ3,LS,{'lb': 336}
+1h|tsmom|MAJ3|LS|lb=48,1h,tsmom,MAJ3,LS,{'lb': 48}
+1h|tsmom|MAJ3|LS|lb=720,1h,tsmom,MAJ3,LS,{'lb': 720}
+1h|tsmom|MAJ3|LS|lb=96,1h,tsmom,MAJ3,LS,{'lb': 96}
+1h|tsmom|MAJ3|SO|lb=12,1h,tsmom,MAJ3,SO,{'lb': 12}
+1h|tsmom|MAJ3|SO|lb=168,1h,tsmom,MAJ3,SO,{'lb': 168}
+1h|tsmom|MAJ3|SO|lb=24,1h,tsmom,MAJ3,SO,{'lb': 24}
+1h|tsmom|MAJ3|SO|lb=336,1h,tsmom,MAJ3,SO,{'lb': 336}
+1h|tsmom|MAJ3|SO|lb=48,1h,tsmom,MAJ3,SO,{'lb': 48}
+1h|tsmom|MAJ3|SO|lb=720,1h,tsmom,MAJ3,SO,{'lb': 720}
+1h|tsmom|MAJ3|SO|lb=96,1h,tsmom,MAJ3,SO,{'lb': 96}
+1h|tsmom|SOL|LO|lb=12,1h,tsmom,SOL,LO,{'lb': 12}
+1h|tsmom|SOL|LO|lb=168,1h,tsmom,SOL,LO,{'lb': 168}
+1h|tsmom|SOL|LO|lb=24,1h,tsmom,SOL,LO,{'lb': 24}
+1h|tsmom|SOL|LO|lb=336,1h,tsmom,SOL,LO,{'lb': 336}
+1h|tsmom|SOL|LO|lb=48,1h,tsmom,SOL,LO,{'lb': 48}
+1h|tsmom|SOL|LO|lb=720,1h,tsmom,SOL,LO,{'lb': 720}
+1h|tsmom|SOL|LO|lb=96,1h,tsmom,SOL,LO,{'lb': 96}
+1h|tsmom|SOL|LS|lb=12,1h,tsmom,SOL,LS,{'lb': 12}
+1h|tsmom|SOL|LS|lb=168,1h,tsmom,SOL,LS,{'lb': 168}
+1h|tsmom|SOL|LS|lb=24,1h,tsmom,SOL,LS,{'lb': 24}
+1h|tsmom|SOL|LS|lb=336,1h,tsmom,SOL,LS,{'lb': 336}
+1h|tsmom|SOL|LS|lb=48,1h,tsmom,SOL,LS,{'lb': 48}
+1h|tsmom|SOL|LS|lb=720,1h,tsmom,SOL,LS,{'lb': 720}
+1h|tsmom|SOL|LS|lb=96,1h,tsmom,SOL,LS,{'lb': 96}
+1h|tsmom|SOL|SO|lb=12,1h,tsmom,SOL,SO,{'lb': 12}
+1h|tsmom|SOL|SO|lb=168,1h,tsmom,SOL,SO,{'lb': 168}
+1h|tsmom|SOL|SO|lb=24,1h,tsmom,SOL,SO,{'lb': 24}
+1h|tsmom|SOL|SO|lb=336,1h,tsmom,SOL,SO,{'lb': 336}
+1h|tsmom|SOL|SO|lb=48,1h,tsmom,SOL,SO,{'lb': 48}
+1h|tsmom|SOL|SO|lb=720,1h,tsmom,SOL,SO,{'lb': 720}
+1h|tsmom|SOL|SO|lb=96,1h,tsmom,SOL,SO,{'lb': 96}
+"1h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|BTC|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|ETH|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"1h|volregime|SOL|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",1h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"1h|xs|ALL19|MN|lb=1,direction=mom",1h,xs,ALL19,MN,"{'lb': 1, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=1,direction=rev",1h,xs,ALL19,MN,"{'lb': 1, 'direction': 'rev'}"
+"1h|xs|ALL19|MN|lb=12,direction=mom",1h,xs,ALL19,MN,"{'lb': 12, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=12,direction=rev",1h,xs,ALL19,MN,"{'lb': 12, 'direction': 'rev'}"
+"1h|xs|ALL19|MN|lb=168,direction=mom",1h,xs,ALL19,MN,"{'lb': 168, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=168,direction=rev",1h,xs,ALL19,MN,"{'lb': 168, 'direction': 'rev'}"
+"1h|xs|ALL19|MN|lb=24,direction=mom",1h,xs,ALL19,MN,"{'lb': 24, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=24,direction=rev",1h,xs,ALL19,MN,"{'lb': 24, 'direction': 'rev'}"
+"1h|xs|ALL19|MN|lb=336,direction=mom",1h,xs,ALL19,MN,"{'lb': 336, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=336,direction=rev",1h,xs,ALL19,MN,"{'lb': 336, 'direction': 'rev'}"
+"1h|xs|ALL19|MN|lb=4,direction=mom",1h,xs,ALL19,MN,"{'lb': 4, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=4,direction=rev",1h,xs,ALL19,MN,"{'lb': 4, 'direction': 'rev'}"
+"1h|xs|ALL19|MN|lb=72,direction=mom",1h,xs,ALL19,MN,"{'lb': 72, 'direction': 'mom'}"
+"1h|xs|ALL19|MN|lb=72,direction=rev",1h,xs,ALL19,MN,"{'lb': 72, 'direction': 'rev'}"
+"4h|boll|ALL19|LO|n=168,k=1.5",4h,boll,ALL19,LO,"{'n': 168, 'k': 1.5}"
+"4h|boll|ALL19|LO|n=168,k=2.0",4h,boll,ALL19,LO,"{'n': 168, 'k': 2.0}"
+"4h|boll|ALL19|LO|n=168,k=2.5",4h,boll,ALL19,LO,"{'n': 168, 'k': 2.5}"
+"4h|boll|ALL19|LO|n=24,k=1.5",4h,boll,ALL19,LO,"{'n': 24, 'k': 1.5}"
+"4h|boll|ALL19|LO|n=24,k=2.0",4h,boll,ALL19,LO,"{'n': 24, 'k': 2.0}"
+"4h|boll|ALL19|LO|n=24,k=2.5",4h,boll,ALL19,LO,"{'n': 24, 'k': 2.5}"
+"4h|boll|ALL19|LO|n=48,k=1.5",4h,boll,ALL19,LO,"{'n': 48, 'k': 1.5}"
+"4h|boll|ALL19|LO|n=48,k=2.0",4h,boll,ALL19,LO,"{'n': 48, 'k': 2.0}"
+"4h|boll|ALL19|LO|n=48,k=2.5",4h,boll,ALL19,LO,"{'n': 48, 'k': 2.5}"
+"4h|boll|ALL19|LS|n=168,k=1.5",4h,boll,ALL19,LS,"{'n': 168, 'k': 1.5}"
+"4h|boll|ALL19|LS|n=168,k=2.0",4h,boll,ALL19,LS,"{'n': 168, 'k': 2.0}"
+"4h|boll|ALL19|LS|n=168,k=2.5",4h,boll,ALL19,LS,"{'n': 168, 'k': 2.5}"
+"4h|boll|ALL19|LS|n=24,k=1.5",4h,boll,ALL19,LS,"{'n': 24, 'k': 1.5}"
+"4h|boll|ALL19|LS|n=24,k=2.0",4h,boll,ALL19,LS,"{'n': 24, 'k': 2.0}"
+"4h|boll|ALL19|LS|n=24,k=2.5",4h,boll,ALL19,LS,"{'n': 24, 'k': 2.5}"
+"4h|boll|ALL19|LS|n=48,k=1.5",4h,boll,ALL19,LS,"{'n': 48, 'k': 1.5}"
+"4h|boll|ALL19|LS|n=48,k=2.0",4h,boll,ALL19,LS,"{'n': 48, 'k': 2.0}"
+"4h|boll|ALL19|LS|n=48,k=2.5",4h,boll,ALL19,LS,"{'n': 48, 'k': 2.5}"
+"4h|boll|ALL19|SO|n=168,k=1.5",4h,boll,ALL19,SO,"{'n': 168, 'k': 1.5}"
+"4h|boll|ALL19|SO|n=168,k=2.0",4h,boll,ALL19,SO,"{'n': 168, 'k': 2.0}"
+"4h|boll|ALL19|SO|n=168,k=2.5",4h,boll,ALL19,SO,"{'n': 168, 'k': 2.5}"
+"4h|boll|ALL19|SO|n=24,k=1.5",4h,boll,ALL19,SO,"{'n': 24, 'k': 1.5}"
+"4h|boll|ALL19|SO|n=24,k=2.0",4h,boll,ALL19,SO,"{'n': 24, 'k': 2.0}"
+"4h|boll|ALL19|SO|n=24,k=2.5",4h,boll,ALL19,SO,"{'n': 24, 'k': 2.5}"
+"4h|boll|ALL19|SO|n=48,k=1.5",4h,boll,ALL19,SO,"{'n': 48, 'k': 1.5}"
+"4h|boll|ALL19|SO|n=48,k=2.0",4h,boll,ALL19,SO,"{'n': 48, 'k': 2.0}"
+"4h|boll|ALL19|SO|n=48,k=2.5",4h,boll,ALL19,SO,"{'n': 48, 'k': 2.5}"
+"4h|boll|BTC|LO|n=168,k=1.5",4h,boll,BTC,LO,"{'n': 168, 'k': 1.5}"
+"4h|boll|BTC|LO|n=168,k=2.0",4h,boll,BTC,LO,"{'n': 168, 'k': 2.0}"
+"4h|boll|BTC|LO|n=168,k=2.5",4h,boll,BTC,LO,"{'n': 168, 'k': 2.5}"
+"4h|boll|BTC|LO|n=24,k=1.5",4h,boll,BTC,LO,"{'n': 24, 'k': 1.5}"
+"4h|boll|BTC|LO|n=24,k=2.0",4h,boll,BTC,LO,"{'n': 24, 'k': 2.0}"
+"4h|boll|BTC|LO|n=24,k=2.5",4h,boll,BTC,LO,"{'n': 24, 'k': 2.5}"
+"4h|boll|BTC|LO|n=48,k=1.5",4h,boll,BTC,LO,"{'n': 48, 'k': 1.5}"
+"4h|boll|BTC|LO|n=48,k=2.0",4h,boll,BTC,LO,"{'n': 48, 'k': 2.0}"
+"4h|boll|BTC|LO|n=48,k=2.5",4h,boll,BTC,LO,"{'n': 48, 'k': 2.5}"
+"4h|boll|BTC|LS|n=168,k=1.5",4h,boll,BTC,LS,"{'n': 168, 'k': 1.5}"
+"4h|boll|BTC|LS|n=168,k=2.0",4h,boll,BTC,LS,"{'n': 168, 'k': 2.0}"
+"4h|boll|BTC|LS|n=168,k=2.5",4h,boll,BTC,LS,"{'n': 168, 'k': 2.5}"
+"4h|boll|BTC|LS|n=24,k=1.5",4h,boll,BTC,LS,"{'n': 24, 'k': 1.5}"
+"4h|boll|BTC|LS|n=24,k=2.0",4h,boll,BTC,LS,"{'n': 24, 'k': 2.0}"
+"4h|boll|BTC|LS|n=24,k=2.5",4h,boll,BTC,LS,"{'n': 24, 'k': 2.5}"
+"4h|boll|BTC|LS|n=48,k=1.5",4h,boll,BTC,LS,"{'n': 48, 'k': 1.5}"
+"4h|boll|BTC|LS|n=48,k=2.0",4h,boll,BTC,LS,"{'n': 48, 'k': 2.0}"
+"4h|boll|BTC|LS|n=48,k=2.5",4h,boll,BTC,LS,"{'n': 48, 'k': 2.5}"
+"4h|boll|BTC|SO|n=168,k=1.5",4h,boll,BTC,SO,"{'n': 168, 'k': 1.5}"
+"4h|boll|BTC|SO|n=168,k=2.0",4h,boll,BTC,SO,"{'n': 168, 'k': 2.0}"
+"4h|boll|BTC|SO|n=168,k=2.5",4h,boll,BTC,SO,"{'n': 168, 'k': 2.5}"
+"4h|boll|BTC|SO|n=24,k=1.5",4h,boll,BTC,SO,"{'n': 24, 'k': 1.5}"
+"4h|boll|BTC|SO|n=24,k=2.0",4h,boll,BTC,SO,"{'n': 24, 'k': 2.0}"
+"4h|boll|BTC|SO|n=24,k=2.5",4h,boll,BTC,SO,"{'n': 24, 'k': 2.5}"
+"4h|boll|BTC|SO|n=48,k=1.5",4h,boll,BTC,SO,"{'n': 48, 'k': 1.5}"
+"4h|boll|BTC|SO|n=48,k=2.0",4h,boll,BTC,SO,"{'n': 48, 'k': 2.0}"
+"4h|boll|BTC|SO|n=48,k=2.5",4h,boll,BTC,SO,"{'n': 48, 'k': 2.5}"
+"4h|boll|ETH|LO|n=168,k=1.5",4h,boll,ETH,LO,"{'n': 168, 'k': 1.5}"
+"4h|boll|ETH|LO|n=168,k=2.0",4h,boll,ETH,LO,"{'n': 168, 'k': 2.0}"
+"4h|boll|ETH|LO|n=168,k=2.5",4h,boll,ETH,LO,"{'n': 168, 'k': 2.5}"
+"4h|boll|ETH|LO|n=24,k=1.5",4h,boll,ETH,LO,"{'n': 24, 'k': 1.5}"
+"4h|boll|ETH|LO|n=24,k=2.0",4h,boll,ETH,LO,"{'n': 24, 'k': 2.0}"
+"4h|boll|ETH|LO|n=24,k=2.5",4h,boll,ETH,LO,"{'n': 24, 'k': 2.5}"
+"4h|boll|ETH|LO|n=48,k=1.5",4h,boll,ETH,LO,"{'n': 48, 'k': 1.5}"
+"4h|boll|ETH|LO|n=48,k=2.0",4h,boll,ETH,LO,"{'n': 48, 'k': 2.0}"
+"4h|boll|ETH|LO|n=48,k=2.5",4h,boll,ETH,LO,"{'n': 48, 'k': 2.5}"
+"4h|boll|ETH|LS|n=168,k=1.5",4h,boll,ETH,LS,"{'n': 168, 'k': 1.5}"
+"4h|boll|ETH|LS|n=168,k=2.0",4h,boll,ETH,LS,"{'n': 168, 'k': 2.0}"
+"4h|boll|ETH|LS|n=168,k=2.5",4h,boll,ETH,LS,"{'n': 168, 'k': 2.5}"
+"4h|boll|ETH|LS|n=24,k=1.5",4h,boll,ETH,LS,"{'n': 24, 'k': 1.5}"
+"4h|boll|ETH|LS|n=24,k=2.0",4h,boll,ETH,LS,"{'n': 24, 'k': 2.0}"
+"4h|boll|ETH|LS|n=24,k=2.5",4h,boll,ETH,LS,"{'n': 24, 'k': 2.5}"
+"4h|boll|ETH|LS|n=48,k=1.5",4h,boll,ETH,LS,"{'n': 48, 'k': 1.5}"
+"4h|boll|ETH|LS|n=48,k=2.0",4h,boll,ETH,LS,"{'n': 48, 'k': 2.0}"
+"4h|boll|ETH|LS|n=48,k=2.5",4h,boll,ETH,LS,"{'n': 48, 'k': 2.5}"
+"4h|boll|ETH|SO|n=168,k=1.5",4h,boll,ETH,SO,"{'n': 168, 'k': 1.5}"
+"4h|boll|ETH|SO|n=168,k=2.0",4h,boll,ETH,SO,"{'n': 168, 'k': 2.0}"
+"4h|boll|ETH|SO|n=168,k=2.5",4h,boll,ETH,SO,"{'n': 168, 'k': 2.5}"
+"4h|boll|ETH|SO|n=24,k=1.5",4h,boll,ETH,SO,"{'n': 24, 'k': 1.5}"
+"4h|boll|ETH|SO|n=24,k=2.0",4h,boll,ETH,SO,"{'n': 24, 'k': 2.0}"
+"4h|boll|ETH|SO|n=24,k=2.5",4h,boll,ETH,SO,"{'n': 24, 'k': 2.5}"
+"4h|boll|ETH|SO|n=48,k=1.5",4h,boll,ETH,SO,"{'n': 48, 'k': 1.5}"
+"4h|boll|ETH|SO|n=48,k=2.0",4h,boll,ETH,SO,"{'n': 48, 'k': 2.0}"
+"4h|boll|ETH|SO|n=48,k=2.5",4h,boll,ETH,SO,"{'n': 48, 'k': 2.5}"
+"4h|boll|MAJ3|LO|n=168,k=1.5",4h,boll,MAJ3,LO,"{'n': 168, 'k': 1.5}"
+"4h|boll|MAJ3|LO|n=168,k=2.0",4h,boll,MAJ3,LO,"{'n': 168, 'k': 2.0}"
+"4h|boll|MAJ3|LO|n=168,k=2.5",4h,boll,MAJ3,LO,"{'n': 168, 'k': 2.5}"
+"4h|boll|MAJ3|LO|n=24,k=1.5",4h,boll,MAJ3,LO,"{'n': 24, 'k': 1.5}"
+"4h|boll|MAJ3|LO|n=24,k=2.0",4h,boll,MAJ3,LO,"{'n': 24, 'k': 2.0}"
+"4h|boll|MAJ3|LO|n=24,k=2.5",4h,boll,MAJ3,LO,"{'n': 24, 'k': 2.5}"
+"4h|boll|MAJ3|LO|n=48,k=1.5",4h,boll,MAJ3,LO,"{'n': 48, 'k': 1.5}"
+"4h|boll|MAJ3|LO|n=48,k=2.0",4h,boll,MAJ3,LO,"{'n': 48, 'k': 2.0}"
+"4h|boll|MAJ3|LO|n=48,k=2.5",4h,boll,MAJ3,LO,"{'n': 48, 'k': 2.5}"
+"4h|boll|MAJ3|LS|n=168,k=1.5",4h,boll,MAJ3,LS,"{'n': 168, 'k': 1.5}"
+"4h|boll|MAJ3|LS|n=168,k=2.0",4h,boll,MAJ3,LS,"{'n': 168, 'k': 2.0}"
+"4h|boll|MAJ3|LS|n=168,k=2.5",4h,boll,MAJ3,LS,"{'n': 168, 'k': 2.5}"
+"4h|boll|MAJ3|LS|n=24,k=1.5",4h,boll,MAJ3,LS,"{'n': 24, 'k': 1.5}"
+"4h|boll|MAJ3|LS|n=24,k=2.0",4h,boll,MAJ3,LS,"{'n': 24, 'k': 2.0}"
+"4h|boll|MAJ3|LS|n=24,k=2.5",4h,boll,MAJ3,LS,"{'n': 24, 'k': 2.5}"
+"4h|boll|MAJ3|LS|n=48,k=1.5",4h,boll,MAJ3,LS,"{'n': 48, 'k': 1.5}"
+"4h|boll|MAJ3|LS|n=48,k=2.0",4h,boll,MAJ3,LS,"{'n': 48, 'k': 2.0}"
+"4h|boll|MAJ3|LS|n=48,k=2.5",4h,boll,MAJ3,LS,"{'n': 48, 'k': 2.5}"
+"4h|boll|MAJ3|SO|n=168,k=1.5",4h,boll,MAJ3,SO,"{'n': 168, 'k': 1.5}"
+"4h|boll|MAJ3|SO|n=168,k=2.0",4h,boll,MAJ3,SO,"{'n': 168, 'k': 2.0}"
+"4h|boll|MAJ3|SO|n=168,k=2.5",4h,boll,MAJ3,SO,"{'n': 168, 'k': 2.5}"
+"4h|boll|MAJ3|SO|n=24,k=1.5",4h,boll,MAJ3,SO,"{'n': 24, 'k': 1.5}"
+"4h|boll|MAJ3|SO|n=24,k=2.0",4h,boll,MAJ3,SO,"{'n': 24, 'k': 2.0}"
+"4h|boll|MAJ3|SO|n=24,k=2.5",4h,boll,MAJ3,SO,"{'n': 24, 'k': 2.5}"
+"4h|boll|MAJ3|SO|n=48,k=1.5",4h,boll,MAJ3,SO,"{'n': 48, 'k': 1.5}"
+"4h|boll|MAJ3|SO|n=48,k=2.0",4h,boll,MAJ3,SO,"{'n': 48, 'k': 2.0}"
+"4h|boll|MAJ3|SO|n=48,k=2.5",4h,boll,MAJ3,SO,"{'n': 48, 'k': 2.5}"
+"4h|boll|SOL|LO|n=168,k=1.5",4h,boll,SOL,LO,"{'n': 168, 'k': 1.5}"
+"4h|boll|SOL|LO|n=168,k=2.0",4h,boll,SOL,LO,"{'n': 168, 'k': 2.0}"
+"4h|boll|SOL|LO|n=168,k=2.5",4h,boll,SOL,LO,"{'n': 168, 'k': 2.5}"
+"4h|boll|SOL|LO|n=24,k=1.5",4h,boll,SOL,LO,"{'n': 24, 'k': 1.5}"
+"4h|boll|SOL|LO|n=24,k=2.0",4h,boll,SOL,LO,"{'n': 24, 'k': 2.0}"
+"4h|boll|SOL|LO|n=24,k=2.5",4h,boll,SOL,LO,"{'n': 24, 'k': 2.5}"
+"4h|boll|SOL|LO|n=48,k=1.5",4h,boll,SOL,LO,"{'n': 48, 'k': 1.5}"
+"4h|boll|SOL|LO|n=48,k=2.0",4h,boll,SOL,LO,"{'n': 48, 'k': 2.0}"
+"4h|boll|SOL|LO|n=48,k=2.5",4h,boll,SOL,LO,"{'n': 48, 'k': 2.5}"
+"4h|boll|SOL|LS|n=168,k=1.5",4h,boll,SOL,LS,"{'n': 168, 'k': 1.5}"
+"4h|boll|SOL|LS|n=168,k=2.0",4h,boll,SOL,LS,"{'n': 168, 'k': 2.0}"
+"4h|boll|SOL|LS|n=168,k=2.5",4h,boll,SOL,LS,"{'n': 168, 'k': 2.5}"
+"4h|boll|SOL|LS|n=24,k=1.5",4h,boll,SOL,LS,"{'n': 24, 'k': 1.5}"
+"4h|boll|SOL|LS|n=24,k=2.0",4h,boll,SOL,LS,"{'n': 24, 'k': 2.0}"
+"4h|boll|SOL|LS|n=24,k=2.5",4h,boll,SOL,LS,"{'n': 24, 'k': 2.5}"
+"4h|boll|SOL|LS|n=48,k=1.5",4h,boll,SOL,LS,"{'n': 48, 'k': 1.5}"
+"4h|boll|SOL|LS|n=48,k=2.0",4h,boll,SOL,LS,"{'n': 48, 'k': 2.0}"
+"4h|boll|SOL|LS|n=48,k=2.5",4h,boll,SOL,LS,"{'n': 48, 'k': 2.5}"
+"4h|boll|SOL|SO|n=168,k=1.5",4h,boll,SOL,SO,"{'n': 168, 'k': 1.5}"
+"4h|boll|SOL|SO|n=168,k=2.0",4h,boll,SOL,SO,"{'n': 168, 'k': 2.0}"
+"4h|boll|SOL|SO|n=168,k=2.5",4h,boll,SOL,SO,"{'n': 168, 'k': 2.5}"
+"4h|boll|SOL|SO|n=24,k=1.5",4h,boll,SOL,SO,"{'n': 24, 'k': 1.5}"
+"4h|boll|SOL|SO|n=24,k=2.0",4h,boll,SOL,SO,"{'n': 24, 'k': 2.0}"
+"4h|boll|SOL|SO|n=24,k=2.5",4h,boll,SOL,SO,"{'n': 24, 'k': 2.5}"
+"4h|boll|SOL|SO|n=48,k=1.5",4h,boll,SOL,SO,"{'n': 48, 'k': 1.5}"
+"4h|boll|SOL|SO|n=48,k=2.0",4h,boll,SOL,SO,"{'n': 48, 'k': 2.0}"
+"4h|boll|SOL|SO|n=48,k=2.5",4h,boll,SOL,SO,"{'n': 48, 'k': 2.5}"
+4h|donchian|ALL19|LO|n=168,4h,donchian,ALL19,LO,{'n': 168}
+4h|donchian|ALL19|LO|n=24,4h,donchian,ALL19,LO,{'n': 24}
+4h|donchian|ALL19|LO|n=336,4h,donchian,ALL19,LO,{'n': 336}
+4h|donchian|ALL19|LO|n=48,4h,donchian,ALL19,LO,{'n': 48}
+4h|donchian|ALL19|LO|n=720,4h,donchian,ALL19,LO,{'n': 720}
+4h|donchian|ALL19|LO|n=96,4h,donchian,ALL19,LO,{'n': 96}
+4h|donchian|ALL19|LS|n=168,4h,donchian,ALL19,LS,{'n': 168}
+4h|donchian|ALL19|LS|n=24,4h,donchian,ALL19,LS,{'n': 24}
+4h|donchian|ALL19|LS|n=336,4h,donchian,ALL19,LS,{'n': 336}
+4h|donchian|ALL19|LS|n=48,4h,donchian,ALL19,LS,{'n': 48}
+4h|donchian|ALL19|LS|n=720,4h,donchian,ALL19,LS,{'n': 720}
+4h|donchian|ALL19|LS|n=96,4h,donchian,ALL19,LS,{'n': 96}
+4h|donchian|ALL19|SO|n=168,4h,donchian,ALL19,SO,{'n': 168}
+4h|donchian|ALL19|SO|n=24,4h,donchian,ALL19,SO,{'n': 24}
+4h|donchian|ALL19|SO|n=336,4h,donchian,ALL19,SO,{'n': 336}
+4h|donchian|ALL19|SO|n=48,4h,donchian,ALL19,SO,{'n': 48}
+4h|donchian|ALL19|SO|n=720,4h,donchian,ALL19,SO,{'n': 720}
+4h|donchian|ALL19|SO|n=96,4h,donchian,ALL19,SO,{'n': 96}
+4h|donchian|BTC|LO|n=168,4h,donchian,BTC,LO,{'n': 168}
+4h|donchian|BTC|LO|n=24,4h,donchian,BTC,LO,{'n': 24}
+4h|donchian|BTC|LO|n=336,4h,donchian,BTC,LO,{'n': 336}
+4h|donchian|BTC|LO|n=48,4h,donchian,BTC,LO,{'n': 48}
+4h|donchian|BTC|LO|n=720,4h,donchian,BTC,LO,{'n': 720}
+4h|donchian|BTC|LO|n=96,4h,donchian,BTC,LO,{'n': 96}
+4h|donchian|BTC|LS|n=168,4h,donchian,BTC,LS,{'n': 168}
+4h|donchian|BTC|LS|n=24,4h,donchian,BTC,LS,{'n': 24}
+4h|donchian|BTC|LS|n=336,4h,donchian,BTC,LS,{'n': 336}
+4h|donchian|BTC|LS|n=48,4h,donchian,BTC,LS,{'n': 48}
+4h|donchian|BTC|LS|n=720,4h,donchian,BTC,LS,{'n': 720}
+4h|donchian|BTC|LS|n=96,4h,donchian,BTC,LS,{'n': 96}
+4h|donchian|BTC|SO|n=168,4h,donchian,BTC,SO,{'n': 168}
+4h|donchian|BTC|SO|n=24,4h,donchian,BTC,SO,{'n': 24}
+4h|donchian|BTC|SO|n=336,4h,donchian,BTC,SO,{'n': 336}
+4h|donchian|BTC|SO|n=48,4h,donchian,BTC,SO,{'n': 48}
+4h|donchian|BTC|SO|n=720,4h,donchian,BTC,SO,{'n': 720}
+4h|donchian|BTC|SO|n=96,4h,donchian,BTC,SO,{'n': 96}
+4h|donchian|ETH|LO|n=168,4h,donchian,ETH,LO,{'n': 168}
+4h|donchian|ETH|LO|n=24,4h,donchian,ETH,LO,{'n': 24}
+4h|donchian|ETH|LO|n=336,4h,donchian,ETH,LO,{'n': 336}
+4h|donchian|ETH|LO|n=48,4h,donchian,ETH,LO,{'n': 48}
+4h|donchian|ETH|LO|n=720,4h,donchian,ETH,LO,{'n': 720}
+4h|donchian|ETH|LO|n=96,4h,donchian,ETH,LO,{'n': 96}
+4h|donchian|ETH|LS|n=168,4h,donchian,ETH,LS,{'n': 168}
+4h|donchian|ETH|LS|n=24,4h,donchian,ETH,LS,{'n': 24}
+4h|donchian|ETH|LS|n=336,4h,donchian,ETH,LS,{'n': 336}
+4h|donchian|ETH|LS|n=48,4h,donchian,ETH,LS,{'n': 48}
+4h|donchian|ETH|LS|n=720,4h,donchian,ETH,LS,{'n': 720}
+4h|donchian|ETH|LS|n=96,4h,donchian,ETH,LS,{'n': 96}
+4h|donchian|ETH|SO|n=168,4h,donchian,ETH,SO,{'n': 168}
+4h|donchian|ETH|SO|n=24,4h,donchian,ETH,SO,{'n': 24}
+4h|donchian|ETH|SO|n=336,4h,donchian,ETH,SO,{'n': 336}
+4h|donchian|ETH|SO|n=48,4h,donchian,ETH,SO,{'n': 48}
+4h|donchian|ETH|SO|n=720,4h,donchian,ETH,SO,{'n': 720}
+4h|donchian|ETH|SO|n=96,4h,donchian,ETH,SO,{'n': 96}
+4h|donchian|MAJ3|LO|n=168,4h,donchian,MAJ3,LO,{'n': 168}
+4h|donchian|MAJ3|LO|n=24,4h,donchian,MAJ3,LO,{'n': 24}
+4h|donchian|MAJ3|LO|n=336,4h,donchian,MAJ3,LO,{'n': 336}
+4h|donchian|MAJ3|LO|n=48,4h,donchian,MAJ3,LO,{'n': 48}
+4h|donchian|MAJ3|LO|n=720,4h,donchian,MAJ3,LO,{'n': 720}
+4h|donchian|MAJ3|LO|n=96,4h,donchian,MAJ3,LO,{'n': 96}
+4h|donchian|MAJ3|LS|n=168,4h,donchian,MAJ3,LS,{'n': 168}
+4h|donchian|MAJ3|LS|n=24,4h,donchian,MAJ3,LS,{'n': 24}
+4h|donchian|MAJ3|LS|n=336,4h,donchian,MAJ3,LS,{'n': 336}
+4h|donchian|MAJ3|LS|n=48,4h,donchian,MAJ3,LS,{'n': 48}
+4h|donchian|MAJ3|LS|n=720,4h,donchian,MAJ3,LS,{'n': 720}
+4h|donchian|MAJ3|LS|n=96,4h,donchian,MAJ3,LS,{'n': 96}
+4h|donchian|MAJ3|SO|n=168,4h,donchian,MAJ3,SO,{'n': 168}
+4h|donchian|MAJ3|SO|n=24,4h,donchian,MAJ3,SO,{'n': 24}
+4h|donchian|MAJ3|SO|n=336,4h,donchian,MAJ3,SO,{'n': 336}
+4h|donchian|MAJ3|SO|n=48,4h,donchian,MAJ3,SO,{'n': 48}
+4h|donchian|MAJ3|SO|n=720,4h,donchian,MAJ3,SO,{'n': 720}
+4h|donchian|MAJ3|SO|n=96,4h,donchian,MAJ3,SO,{'n': 96}
+4h|donchian|SOL|LO|n=168,4h,donchian,SOL,LO,{'n': 168}
+4h|donchian|SOL|LO|n=24,4h,donchian,SOL,LO,{'n': 24}
+4h|donchian|SOL|LO|n=336,4h,donchian,SOL,LO,{'n': 336}
+4h|donchian|SOL|LO|n=48,4h,donchian,SOL,LO,{'n': 48}
+4h|donchian|SOL|LO|n=720,4h,donchian,SOL,LO,{'n': 720}
+4h|donchian|SOL|LO|n=96,4h,donchian,SOL,LO,{'n': 96}
+4h|donchian|SOL|LS|n=168,4h,donchian,SOL,LS,{'n': 168}
+4h|donchian|SOL|LS|n=24,4h,donchian,SOL,LS,{'n': 24}
+4h|donchian|SOL|LS|n=336,4h,donchian,SOL,LS,{'n': 336}
+4h|donchian|SOL|LS|n=48,4h,donchian,SOL,LS,{'n': 48}
+4h|donchian|SOL|LS|n=720,4h,donchian,SOL,LS,{'n': 720}
+4h|donchian|SOL|LS|n=96,4h,donchian,SOL,LS,{'n': 96}
+4h|donchian|SOL|SO|n=168,4h,donchian,SOL,SO,{'n': 168}
+4h|donchian|SOL|SO|n=24,4h,donchian,SOL,SO,{'n': 24}
+4h|donchian|SOL|SO|n=336,4h,donchian,SOL,SO,{'n': 336}
+4h|donchian|SOL|SO|n=48,4h,donchian,SOL,SO,{'n': 48}
+4h|donchian|SOL|SO|n=720,4h,donchian,SOL,SO,{'n': 720}
+4h|donchian|SOL|SO|n=96,4h,donchian,SOL,SO,{'n': 96}
+"4h|ema|ALL19|LO|f=12,s=48",4h,ema,ALL19,LO,"{'f': 12, 's': 48}"
+"4h|ema|ALL19|LO|f=168,s=672",4h,ema,ALL19,LO,"{'f': 168, 's': 672}"
+"4h|ema|ALL19|LO|f=24,s=96",4h,ema,ALL19,LO,"{'f': 24, 's': 96}"
+"4h|ema|ALL19|LO|f=48,s=192",4h,ema,ALL19,LO,"{'f': 48, 's': 192}"
+"4h|ema|ALL19|LO|f=96,s=384",4h,ema,ALL19,LO,"{'f': 96, 's': 384}"
+"4h|ema|ALL19|LS|f=12,s=48",4h,ema,ALL19,LS,"{'f': 12, 's': 48}"
+"4h|ema|ALL19|LS|f=168,s=672",4h,ema,ALL19,LS,"{'f': 168, 's': 672}"
+"4h|ema|ALL19|LS|f=24,s=96",4h,ema,ALL19,LS,"{'f': 24, 's': 96}"
+"4h|ema|ALL19|LS|f=48,s=192",4h,ema,ALL19,LS,"{'f': 48, 's': 192}"
+"4h|ema|ALL19|LS|f=96,s=384",4h,ema,ALL19,LS,"{'f': 96, 's': 384}"
+"4h|ema|ALL19|SO|f=12,s=48",4h,ema,ALL19,SO,"{'f': 12, 's': 48}"
+"4h|ema|ALL19|SO|f=168,s=672",4h,ema,ALL19,SO,"{'f': 168, 's': 672}"
+"4h|ema|ALL19|SO|f=24,s=96",4h,ema,ALL19,SO,"{'f': 24, 's': 96}"
+"4h|ema|ALL19|SO|f=48,s=192",4h,ema,ALL19,SO,"{'f': 48, 's': 192}"
+"4h|ema|ALL19|SO|f=96,s=384",4h,ema,ALL19,SO,"{'f': 96, 's': 384}"
+"4h|ema|BTC|LO|f=12,s=48",4h,ema,BTC,LO,"{'f': 12, 's': 48}"
+"4h|ema|BTC|LO|f=168,s=672",4h,ema,BTC,LO,"{'f': 168, 's': 672}"
+"4h|ema|BTC|LO|f=24,s=96",4h,ema,BTC,LO,"{'f': 24, 's': 96}"
+"4h|ema|BTC|LO|f=48,s=192",4h,ema,BTC,LO,"{'f': 48, 's': 192}"
+"4h|ema|BTC|LO|f=96,s=384",4h,ema,BTC,LO,"{'f': 96, 's': 384}"
+"4h|ema|BTC|LS|f=12,s=48",4h,ema,BTC,LS,"{'f': 12, 's': 48}"
+"4h|ema|BTC|LS|f=168,s=672",4h,ema,BTC,LS,"{'f': 168, 's': 672}"
+"4h|ema|BTC|LS|f=24,s=96",4h,ema,BTC,LS,"{'f': 24, 's': 96}"
+"4h|ema|BTC|LS|f=48,s=192",4h,ema,BTC,LS,"{'f': 48, 's': 192}"
+"4h|ema|BTC|LS|f=96,s=384",4h,ema,BTC,LS,"{'f': 96, 's': 384}"
+"4h|ema|BTC|SO|f=12,s=48",4h,ema,BTC,SO,"{'f': 12, 's': 48}"
+"4h|ema|BTC|SO|f=168,s=672",4h,ema,BTC,SO,"{'f': 168, 's': 672}"
+"4h|ema|BTC|SO|f=24,s=96",4h,ema,BTC,SO,"{'f': 24, 's': 96}"
+"4h|ema|BTC|SO|f=48,s=192",4h,ema,BTC,SO,"{'f': 48, 's': 192}"
+"4h|ema|BTC|SO|f=96,s=384",4h,ema,BTC,SO,"{'f': 96, 's': 384}"
+"4h|ema|ETH|LO|f=12,s=48",4h,ema,ETH,LO,"{'f': 12, 's': 48}"
+"4h|ema|ETH|LO|f=168,s=672",4h,ema,ETH,LO,"{'f': 168, 's': 672}"
+"4h|ema|ETH|LO|f=24,s=96",4h,ema,ETH,LO,"{'f': 24, 's': 96}"
+"4h|ema|ETH|LO|f=48,s=192",4h,ema,ETH,LO,"{'f': 48, 's': 192}"
+"4h|ema|ETH|LO|f=96,s=384",4h,ema,ETH,LO,"{'f': 96, 's': 384}"
+"4h|ema|ETH|LS|f=12,s=48",4h,ema,ETH,LS,"{'f': 12, 's': 48}"
+"4h|ema|ETH|LS|f=168,s=672",4h,ema,ETH,LS,"{'f': 168, 's': 672}"
+"4h|ema|ETH|LS|f=24,s=96",4h,ema,ETH,LS,"{'f': 24, 's': 96}"
+"4h|ema|ETH|LS|f=48,s=192",4h,ema,ETH,LS,"{'f': 48, 's': 192}"
+"4h|ema|ETH|LS|f=96,s=384",4h,ema,ETH,LS,"{'f': 96, 's': 384}"
+"4h|ema|ETH|SO|f=12,s=48",4h,ema,ETH,SO,"{'f': 12, 's': 48}"
+"4h|ema|ETH|SO|f=168,s=672",4h,ema,ETH,SO,"{'f': 168, 's': 672}"
+"4h|ema|ETH|SO|f=24,s=96",4h,ema,ETH,SO,"{'f': 24, 's': 96}"
+"4h|ema|ETH|SO|f=48,s=192",4h,ema,ETH,SO,"{'f': 48, 's': 192}"
+"4h|ema|ETH|SO|f=96,s=384",4h,ema,ETH,SO,"{'f': 96, 's': 384}"
+"4h|ema|MAJ3|LO|f=12,s=48",4h,ema,MAJ3,LO,"{'f': 12, 's': 48}"
+"4h|ema|MAJ3|LO|f=168,s=672",4h,ema,MAJ3,LO,"{'f': 168, 's': 672}"
+"4h|ema|MAJ3|LO|f=24,s=96",4h,ema,MAJ3,LO,"{'f': 24, 's': 96}"
+"4h|ema|MAJ3|LO|f=48,s=192",4h,ema,MAJ3,LO,"{'f': 48, 's': 192}"
+"4h|ema|MAJ3|LO|f=96,s=384",4h,ema,MAJ3,LO,"{'f': 96, 's': 384}"
+"4h|ema|MAJ3|LS|f=12,s=48",4h,ema,MAJ3,LS,"{'f': 12, 's': 48}"
+"4h|ema|MAJ3|LS|f=168,s=672",4h,ema,MAJ3,LS,"{'f': 168, 's': 672}"
+"4h|ema|MAJ3|LS|f=24,s=96",4h,ema,MAJ3,LS,"{'f': 24, 's': 96}"
+"4h|ema|MAJ3|LS|f=48,s=192",4h,ema,MAJ3,LS,"{'f': 48, 's': 192}"
+"4h|ema|MAJ3|LS|f=96,s=384",4h,ema,MAJ3,LS,"{'f': 96, 's': 384}"
+"4h|ema|MAJ3|SO|f=12,s=48",4h,ema,MAJ3,SO,"{'f': 12, 's': 48}"
+"4h|ema|MAJ3|SO|f=168,s=672",4h,ema,MAJ3,SO,"{'f': 168, 's': 672}"
+"4h|ema|MAJ3|SO|f=24,s=96",4h,ema,MAJ3,SO,"{'f': 24, 's': 96}"
+"4h|ema|MAJ3|SO|f=48,s=192",4h,ema,MAJ3,SO,"{'f': 48, 's': 192}"
+"4h|ema|MAJ3|SO|f=96,s=384",4h,ema,MAJ3,SO,"{'f': 96, 's': 384}"
+"4h|ema|SOL|LO|f=12,s=48",4h,ema,SOL,LO,"{'f': 12, 's': 48}"
+"4h|ema|SOL|LO|f=168,s=672",4h,ema,SOL,LO,"{'f': 168, 's': 672}"
+"4h|ema|SOL|LO|f=24,s=96",4h,ema,SOL,LO,"{'f': 24, 's': 96}"
+"4h|ema|SOL|LO|f=48,s=192",4h,ema,SOL,LO,"{'f': 48, 's': 192}"
+"4h|ema|SOL|LO|f=96,s=384",4h,ema,SOL,LO,"{'f': 96, 's': 384}"
+"4h|ema|SOL|LS|f=12,s=48",4h,ema,SOL,LS,"{'f': 12, 's': 48}"
+"4h|ema|SOL|LS|f=168,s=672",4h,ema,SOL,LS,"{'f': 168, 's': 672}"
+"4h|ema|SOL|LS|f=24,s=96",4h,ema,SOL,LS,"{'f': 24, 's': 96}"
+"4h|ema|SOL|LS|f=48,s=192",4h,ema,SOL,LS,"{'f': 48, 's': 192}"
+"4h|ema|SOL|LS|f=96,s=384",4h,ema,SOL,LS,"{'f': 96, 's': 384}"
+"4h|ema|SOL|SO|f=12,s=48",4h,ema,SOL,SO,"{'f': 12, 's': 48}"
+"4h|ema|SOL|SO|f=168,s=672",4h,ema,SOL,SO,"{'f': 168, 's': 672}"
+"4h|ema|SOL|SO|f=24,s=96",4h,ema,SOL,SO,"{'f': 24, 's': 96}"
+"4h|ema|SOL|SO|f=48,s=192",4h,ema,SOL,SO,"{'f': 48, 's': 192}"
+"4h|ema|SOL|SO|f=96,s=384",4h,ema,SOL,SO,"{'f': 96, 's': 384}"
+4h|ensemble|ALL19|LO|kind=E1,4h,ensemble,ALL19,LO,{'kind': 'E1'}
+4h|ensemble|ALL19|LO|kind=E2,4h,ensemble,ALL19,LO,{'kind': 'E2'}
+4h|ensemble|ALL19|LO|kind=E3,4h,ensemble,ALL19,LO,{'kind': 'E3'}
+4h|ensemble|ALL19|LS|kind=E1,4h,ensemble,ALL19,LS,{'kind': 'E1'}
+4h|ensemble|ALL19|LS|kind=E2,4h,ensemble,ALL19,LS,{'kind': 'E2'}
+4h|ensemble|ALL19|LS|kind=E3,4h,ensemble,ALL19,LS,{'kind': 'E3'}
+4h|ensemble|ALL19|SO|kind=E1,4h,ensemble,ALL19,SO,{'kind': 'E1'}
+4h|ensemble|ALL19|SO|kind=E2,4h,ensemble,ALL19,SO,{'kind': 'E2'}
+4h|ensemble|ALL19|SO|kind=E3,4h,ensemble,ALL19,SO,{'kind': 'E3'}
+4h|ensemble|BTC|LO|kind=E1,4h,ensemble,BTC,LO,{'kind': 'E1'}
+4h|ensemble|BTC|LO|kind=E2,4h,ensemble,BTC,LO,{'kind': 'E2'}
+4h|ensemble|BTC|LO|kind=E3,4h,ensemble,BTC,LO,{'kind': 'E3'}
+4h|ensemble|BTC|LS|kind=E1,4h,ensemble,BTC,LS,{'kind': 'E1'}
+4h|ensemble|BTC|LS|kind=E2,4h,ensemble,BTC,LS,{'kind': 'E2'}
+4h|ensemble|BTC|LS|kind=E3,4h,ensemble,BTC,LS,{'kind': 'E3'}
+4h|ensemble|BTC|SO|kind=E1,4h,ensemble,BTC,SO,{'kind': 'E1'}
+4h|ensemble|BTC|SO|kind=E2,4h,ensemble,BTC,SO,{'kind': 'E2'}
+4h|ensemble|BTC|SO|kind=E3,4h,ensemble,BTC,SO,{'kind': 'E3'}
+4h|ensemble|ETH|LO|kind=E1,4h,ensemble,ETH,LO,{'kind': 'E1'}
+4h|ensemble|ETH|LO|kind=E2,4h,ensemble,ETH,LO,{'kind': 'E2'}
+4h|ensemble|ETH|LO|kind=E3,4h,ensemble,ETH,LO,{'kind': 'E3'}
+4h|ensemble|ETH|LS|kind=E1,4h,ensemble,ETH,LS,{'kind': 'E1'}
+4h|ensemble|ETH|LS|kind=E2,4h,ensemble,ETH,LS,{'kind': 'E2'}
+4h|ensemble|ETH|LS|kind=E3,4h,ensemble,ETH,LS,{'kind': 'E3'}
+4h|ensemble|ETH|SO|kind=E1,4h,ensemble,ETH,SO,{'kind': 'E1'}
+4h|ensemble|ETH|SO|kind=E2,4h,ensemble,ETH,SO,{'kind': 'E2'}
+4h|ensemble|ETH|SO|kind=E3,4h,ensemble,ETH,SO,{'kind': 'E3'}
+4h|ensemble|MAJ3|LO|kind=E1,4h,ensemble,MAJ3,LO,{'kind': 'E1'}
+4h|ensemble|MAJ3|LO|kind=E2,4h,ensemble,MAJ3,LO,{'kind': 'E2'}
+4h|ensemble|MAJ3|LO|kind=E3,4h,ensemble,MAJ3,LO,{'kind': 'E3'}
+4h|ensemble|MAJ3|LS|kind=E1,4h,ensemble,MAJ3,LS,{'kind': 'E1'}
+4h|ensemble|MAJ3|LS|kind=E2,4h,ensemble,MAJ3,LS,{'kind': 'E2'}
+4h|ensemble|MAJ3|LS|kind=E3,4h,ensemble,MAJ3,LS,{'kind': 'E3'}
+4h|ensemble|MAJ3|SO|kind=E1,4h,ensemble,MAJ3,SO,{'kind': 'E1'}
+4h|ensemble|MAJ3|SO|kind=E2,4h,ensemble,MAJ3,SO,{'kind': 'E2'}
+4h|ensemble|MAJ3|SO|kind=E3,4h,ensemble,MAJ3,SO,{'kind': 'E3'}
+4h|ensemble|SOL|LO|kind=E1,4h,ensemble,SOL,LO,{'kind': 'E1'}
+4h|ensemble|SOL|LO|kind=E2,4h,ensemble,SOL,LO,{'kind': 'E2'}
+4h|ensemble|SOL|LO|kind=E3,4h,ensemble,SOL,LO,{'kind': 'E3'}
+4h|ensemble|SOL|LS|kind=E1,4h,ensemble,SOL,LS,{'kind': 'E1'}
+4h|ensemble|SOL|LS|kind=E2,4h,ensemble,SOL,LS,{'kind': 'E2'}
+4h|ensemble|SOL|LS|kind=E3,4h,ensemble,SOL,LS,{'kind': 'E3'}
+4h|ensemble|SOL|SO|kind=E1,4h,ensemble,SOL,SO,{'kind': 'E1'}
+4h|ensemble|SOL|SO|kind=E2,4h,ensemble,SOL,SO,{'kind': 'E2'}
+4h|ensemble|SOL|SO|kind=E3,4h,ensemble,SOL,SO,{'kind': 'E3'}
+4h|reversal|ALL19|LO|k=12,4h,reversal,ALL19,LO,{'k': 12}
+4h|reversal|ALL19|LO|k=24,4h,reversal,ALL19,LO,{'k': 24}
+4h|reversal|ALL19|LO|k=4,4h,reversal,ALL19,LO,{'k': 4}
+4h|reversal|ALL19|LS|k=12,4h,reversal,ALL19,LS,{'k': 12}
+4h|reversal|ALL19|LS|k=24,4h,reversal,ALL19,LS,{'k': 24}
+4h|reversal|ALL19|LS|k=4,4h,reversal,ALL19,LS,{'k': 4}
+4h|reversal|ALL19|SO|k=12,4h,reversal,ALL19,SO,{'k': 12}
+4h|reversal|ALL19|SO|k=24,4h,reversal,ALL19,SO,{'k': 24}
+4h|reversal|ALL19|SO|k=4,4h,reversal,ALL19,SO,{'k': 4}
+4h|reversal|BTC|LO|k=12,4h,reversal,BTC,LO,{'k': 12}
+4h|reversal|BTC|LO|k=24,4h,reversal,BTC,LO,{'k': 24}
+4h|reversal|BTC|LO|k=4,4h,reversal,BTC,LO,{'k': 4}
+4h|reversal|BTC|LS|k=12,4h,reversal,BTC,LS,{'k': 12}
+4h|reversal|BTC|LS|k=24,4h,reversal,BTC,LS,{'k': 24}
+4h|reversal|BTC|LS|k=4,4h,reversal,BTC,LS,{'k': 4}
+4h|reversal|BTC|SO|k=12,4h,reversal,BTC,SO,{'k': 12}
+4h|reversal|BTC|SO|k=24,4h,reversal,BTC,SO,{'k': 24}
+4h|reversal|BTC|SO|k=4,4h,reversal,BTC,SO,{'k': 4}
+4h|reversal|ETH|LO|k=12,4h,reversal,ETH,LO,{'k': 12}
+4h|reversal|ETH|LO|k=24,4h,reversal,ETH,LO,{'k': 24}
+4h|reversal|ETH|LO|k=4,4h,reversal,ETH,LO,{'k': 4}
+4h|reversal|ETH|LS|k=12,4h,reversal,ETH,LS,{'k': 12}
+4h|reversal|ETH|LS|k=24,4h,reversal,ETH,LS,{'k': 24}
+4h|reversal|ETH|LS|k=4,4h,reversal,ETH,LS,{'k': 4}
+4h|reversal|ETH|SO|k=12,4h,reversal,ETH,SO,{'k': 12}
+4h|reversal|ETH|SO|k=24,4h,reversal,ETH,SO,{'k': 24}
+4h|reversal|ETH|SO|k=4,4h,reversal,ETH,SO,{'k': 4}
+4h|reversal|MAJ3|LO|k=12,4h,reversal,MAJ3,LO,{'k': 12}
+4h|reversal|MAJ3|LO|k=24,4h,reversal,MAJ3,LO,{'k': 24}
+4h|reversal|MAJ3|LO|k=4,4h,reversal,MAJ3,LO,{'k': 4}
+4h|reversal|MAJ3|LS|k=12,4h,reversal,MAJ3,LS,{'k': 12}
+4h|reversal|MAJ3|LS|k=24,4h,reversal,MAJ3,LS,{'k': 24}
+4h|reversal|MAJ3|LS|k=4,4h,reversal,MAJ3,LS,{'k': 4}
+4h|reversal|MAJ3|SO|k=12,4h,reversal,MAJ3,SO,{'k': 12}
+4h|reversal|MAJ3|SO|k=24,4h,reversal,MAJ3,SO,{'k': 24}
+4h|reversal|MAJ3|SO|k=4,4h,reversal,MAJ3,SO,{'k': 4}
+4h|reversal|SOL|LO|k=12,4h,reversal,SOL,LO,{'k': 12}
+4h|reversal|SOL|LO|k=24,4h,reversal,SOL,LO,{'k': 24}
+4h|reversal|SOL|LO|k=4,4h,reversal,SOL,LO,{'k': 4}
+4h|reversal|SOL|LS|k=12,4h,reversal,SOL,LS,{'k': 12}
+4h|reversal|SOL|LS|k=24,4h,reversal,SOL,LS,{'k': 24}
+4h|reversal|SOL|LS|k=4,4h,reversal,SOL,LS,{'k': 4}
+4h|reversal|SOL|SO|k=12,4h,reversal,SOL,SO,{'k': 12}
+4h|reversal|SOL|SO|k=24,4h,reversal,SOL,SO,{'k': 24}
+4h|reversal|SOL|SO|k=4,4h,reversal,SOL,SO,{'k': 4}
+"4h|rsi|ALL19|LO|n=14,lo=20,hi=80",4h,rsi,ALL19,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|LO|n=14,lo=30,hi=70",4h,rsi,ALL19,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|LO|n=24,lo=20,hi=80",4h,rsi,ALL19,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|LO|n=24,lo=30,hi=70",4h,rsi,ALL19,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|LO|n=6,lo=20,hi=80",4h,rsi,ALL19,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|LO|n=6,lo=30,hi=70",4h,rsi,ALL19,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|LS|n=14,lo=20,hi=80",4h,rsi,ALL19,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|LS|n=14,lo=30,hi=70",4h,rsi,ALL19,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|LS|n=24,lo=20,hi=80",4h,rsi,ALL19,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|LS|n=24,lo=30,hi=70",4h,rsi,ALL19,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|LS|n=6,lo=20,hi=80",4h,rsi,ALL19,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|LS|n=6,lo=30,hi=70",4h,rsi,ALL19,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|SO|n=14,lo=20,hi=80",4h,rsi,ALL19,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|SO|n=14,lo=30,hi=70",4h,rsi,ALL19,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|SO|n=24,lo=20,hi=80",4h,rsi,ALL19,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|SO|n=24,lo=30,hi=70",4h,rsi,ALL19,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|ALL19|SO|n=6,lo=20,hi=80",4h,rsi,ALL19,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|ALL19|SO|n=6,lo=30,hi=70",4h,rsi,ALL19,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|LO|n=14,lo=20,hi=80",4h,rsi,BTC,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|LO|n=14,lo=30,hi=70",4h,rsi,BTC,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|LO|n=24,lo=20,hi=80",4h,rsi,BTC,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|LO|n=24,lo=30,hi=70",4h,rsi,BTC,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|LO|n=6,lo=20,hi=80",4h,rsi,BTC,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|LO|n=6,lo=30,hi=70",4h,rsi,BTC,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|LS|n=14,lo=20,hi=80",4h,rsi,BTC,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|LS|n=14,lo=30,hi=70",4h,rsi,BTC,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|LS|n=24,lo=20,hi=80",4h,rsi,BTC,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|LS|n=24,lo=30,hi=70",4h,rsi,BTC,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|LS|n=6,lo=20,hi=80",4h,rsi,BTC,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|LS|n=6,lo=30,hi=70",4h,rsi,BTC,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|SO|n=14,lo=20,hi=80",4h,rsi,BTC,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|SO|n=14,lo=30,hi=70",4h,rsi,BTC,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|SO|n=24,lo=20,hi=80",4h,rsi,BTC,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|SO|n=24,lo=30,hi=70",4h,rsi,BTC,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|BTC|SO|n=6,lo=20,hi=80",4h,rsi,BTC,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|BTC|SO|n=6,lo=30,hi=70",4h,rsi,BTC,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|LO|n=14,lo=20,hi=80",4h,rsi,ETH,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|LO|n=14,lo=30,hi=70",4h,rsi,ETH,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|LO|n=24,lo=20,hi=80",4h,rsi,ETH,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|LO|n=24,lo=30,hi=70",4h,rsi,ETH,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|LO|n=6,lo=20,hi=80",4h,rsi,ETH,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|LO|n=6,lo=30,hi=70",4h,rsi,ETH,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|LS|n=14,lo=20,hi=80",4h,rsi,ETH,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|LS|n=14,lo=30,hi=70",4h,rsi,ETH,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|LS|n=24,lo=20,hi=80",4h,rsi,ETH,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|LS|n=24,lo=30,hi=70",4h,rsi,ETH,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|LS|n=6,lo=20,hi=80",4h,rsi,ETH,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|LS|n=6,lo=30,hi=70",4h,rsi,ETH,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|SO|n=14,lo=20,hi=80",4h,rsi,ETH,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|SO|n=14,lo=30,hi=70",4h,rsi,ETH,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|SO|n=24,lo=20,hi=80",4h,rsi,ETH,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|SO|n=24,lo=30,hi=70",4h,rsi,ETH,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|ETH|SO|n=6,lo=20,hi=80",4h,rsi,ETH,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|ETH|SO|n=6,lo=30,hi=70",4h,rsi,ETH,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|LO|n=14,lo=20,hi=80",4h,rsi,MAJ3,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|LO|n=14,lo=30,hi=70",4h,rsi,MAJ3,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|LO|n=24,lo=20,hi=80",4h,rsi,MAJ3,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|LO|n=24,lo=30,hi=70",4h,rsi,MAJ3,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|LO|n=6,lo=20,hi=80",4h,rsi,MAJ3,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|LO|n=6,lo=30,hi=70",4h,rsi,MAJ3,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|LS|n=14,lo=20,hi=80",4h,rsi,MAJ3,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|LS|n=14,lo=30,hi=70",4h,rsi,MAJ3,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|LS|n=24,lo=20,hi=80",4h,rsi,MAJ3,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|LS|n=24,lo=30,hi=70",4h,rsi,MAJ3,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|LS|n=6,lo=20,hi=80",4h,rsi,MAJ3,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|LS|n=6,lo=30,hi=70",4h,rsi,MAJ3,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|SO|n=14,lo=20,hi=80",4h,rsi,MAJ3,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|SO|n=14,lo=30,hi=70",4h,rsi,MAJ3,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|SO|n=24,lo=20,hi=80",4h,rsi,MAJ3,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|SO|n=24,lo=30,hi=70",4h,rsi,MAJ3,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|MAJ3|SO|n=6,lo=20,hi=80",4h,rsi,MAJ3,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|MAJ3|SO|n=6,lo=30,hi=70",4h,rsi,MAJ3,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|LO|n=14,lo=20,hi=80",4h,rsi,SOL,LO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|LO|n=14,lo=30,hi=70",4h,rsi,SOL,LO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|LO|n=24,lo=20,hi=80",4h,rsi,SOL,LO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|LO|n=24,lo=30,hi=70",4h,rsi,SOL,LO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|LO|n=6,lo=20,hi=80",4h,rsi,SOL,LO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|LO|n=6,lo=30,hi=70",4h,rsi,SOL,LO,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|LS|n=14,lo=20,hi=80",4h,rsi,SOL,LS,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|LS|n=14,lo=30,hi=70",4h,rsi,SOL,LS,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|LS|n=24,lo=20,hi=80",4h,rsi,SOL,LS,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|LS|n=24,lo=30,hi=70",4h,rsi,SOL,LS,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|LS|n=6,lo=20,hi=80",4h,rsi,SOL,LS,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|LS|n=6,lo=30,hi=70",4h,rsi,SOL,LS,"{'n': 6, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|SO|n=14,lo=20,hi=80",4h,rsi,SOL,SO,"{'n': 14, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|SO|n=14,lo=30,hi=70",4h,rsi,SOL,SO,"{'n': 14, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|SO|n=24,lo=20,hi=80",4h,rsi,SOL,SO,"{'n': 24, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|SO|n=24,lo=30,hi=70",4h,rsi,SOL,SO,"{'n': 24, 'lo': 30, 'hi': 70}"
+"4h|rsi|SOL|SO|n=6,lo=20,hi=80",4h,rsi,SOL,SO,"{'n': 6, 'lo': 20, 'hi': 80}"
+"4h|rsi|SOL|SO|n=6,lo=30,hi=70",4h,rsi,SOL,SO,"{'n': 6, 'lo': 30, 'hi': 70}"
+4h|tsmom|ALL19|LO|lb=168,4h,tsmom,ALL19,LO,{'lb': 168}
+4h|tsmom|ALL19|LO|lb=24,4h,tsmom,ALL19,LO,{'lb': 24}
+4h|tsmom|ALL19|LO|lb=336,4h,tsmom,ALL19,LO,{'lb': 336}
+4h|tsmom|ALL19|LO|lb=48,4h,tsmom,ALL19,LO,{'lb': 48}
+4h|tsmom|ALL19|LO|lb=720,4h,tsmom,ALL19,LO,{'lb': 720}
+4h|tsmom|ALL19|LO|lb=96,4h,tsmom,ALL19,LO,{'lb': 96}
+4h|tsmom|ALL19|LS|lb=168,4h,tsmom,ALL19,LS,{'lb': 168}
+4h|tsmom|ALL19|LS|lb=24,4h,tsmom,ALL19,LS,{'lb': 24}
+4h|tsmom|ALL19|LS|lb=336,4h,tsmom,ALL19,LS,{'lb': 336}
+4h|tsmom|ALL19|LS|lb=48,4h,tsmom,ALL19,LS,{'lb': 48}
+4h|tsmom|ALL19|LS|lb=720,4h,tsmom,ALL19,LS,{'lb': 720}
+4h|tsmom|ALL19|LS|lb=96,4h,tsmom,ALL19,LS,{'lb': 96}
+4h|tsmom|ALL19|SO|lb=168,4h,tsmom,ALL19,SO,{'lb': 168}
+4h|tsmom|ALL19|SO|lb=24,4h,tsmom,ALL19,SO,{'lb': 24}
+4h|tsmom|ALL19|SO|lb=336,4h,tsmom,ALL19,SO,{'lb': 336}
+4h|tsmom|ALL19|SO|lb=48,4h,tsmom,ALL19,SO,{'lb': 48}
+4h|tsmom|ALL19|SO|lb=720,4h,tsmom,ALL19,SO,{'lb': 720}
+4h|tsmom|ALL19|SO|lb=96,4h,tsmom,ALL19,SO,{'lb': 96}
+4h|tsmom|BTC|LO|lb=168,4h,tsmom,BTC,LO,{'lb': 168}
+4h|tsmom|BTC|LO|lb=24,4h,tsmom,BTC,LO,{'lb': 24}
+4h|tsmom|BTC|LO|lb=336,4h,tsmom,BTC,LO,{'lb': 336}
+4h|tsmom|BTC|LO|lb=48,4h,tsmom,BTC,LO,{'lb': 48}
+4h|tsmom|BTC|LO|lb=720,4h,tsmom,BTC,LO,{'lb': 720}
+4h|tsmom|BTC|LO|lb=96,4h,tsmom,BTC,LO,{'lb': 96}
+4h|tsmom|BTC|LS|lb=168,4h,tsmom,BTC,LS,{'lb': 168}
+4h|tsmom|BTC|LS|lb=24,4h,tsmom,BTC,LS,{'lb': 24}
+4h|tsmom|BTC|LS|lb=336,4h,tsmom,BTC,LS,{'lb': 336}
+4h|tsmom|BTC|LS|lb=48,4h,tsmom,BTC,LS,{'lb': 48}
+4h|tsmom|BTC|LS|lb=720,4h,tsmom,BTC,LS,{'lb': 720}
+4h|tsmom|BTC|LS|lb=96,4h,tsmom,BTC,LS,{'lb': 96}
+4h|tsmom|BTC|SO|lb=168,4h,tsmom,BTC,SO,{'lb': 168}
+4h|tsmom|BTC|SO|lb=24,4h,tsmom,BTC,SO,{'lb': 24}
+4h|tsmom|BTC|SO|lb=336,4h,tsmom,BTC,SO,{'lb': 336}
+4h|tsmom|BTC|SO|lb=48,4h,tsmom,BTC,SO,{'lb': 48}
+4h|tsmom|BTC|SO|lb=720,4h,tsmom,BTC,SO,{'lb': 720}
+4h|tsmom|BTC|SO|lb=96,4h,tsmom,BTC,SO,{'lb': 96}
+4h|tsmom|ETH|LO|lb=168,4h,tsmom,ETH,LO,{'lb': 168}
+4h|tsmom|ETH|LO|lb=24,4h,tsmom,ETH,LO,{'lb': 24}
+4h|tsmom|ETH|LO|lb=336,4h,tsmom,ETH,LO,{'lb': 336}
+4h|tsmom|ETH|LO|lb=48,4h,tsmom,ETH,LO,{'lb': 48}
+4h|tsmom|ETH|LO|lb=720,4h,tsmom,ETH,LO,{'lb': 720}
+4h|tsmom|ETH|LO|lb=96,4h,tsmom,ETH,LO,{'lb': 96}
+4h|tsmom|ETH|LS|lb=168,4h,tsmom,ETH,LS,{'lb': 168}
+4h|tsmom|ETH|LS|lb=24,4h,tsmom,ETH,LS,{'lb': 24}
+4h|tsmom|ETH|LS|lb=336,4h,tsmom,ETH,LS,{'lb': 336}
+4h|tsmom|ETH|LS|lb=48,4h,tsmom,ETH,LS,{'lb': 48}
+4h|tsmom|ETH|LS|lb=720,4h,tsmom,ETH,LS,{'lb': 720}
+4h|tsmom|ETH|LS|lb=96,4h,tsmom,ETH,LS,{'lb': 96}
+4h|tsmom|ETH|SO|lb=168,4h,tsmom,ETH,SO,{'lb': 168}
+4h|tsmom|ETH|SO|lb=24,4h,tsmom,ETH,SO,{'lb': 24}
+4h|tsmom|ETH|SO|lb=336,4h,tsmom,ETH,SO,{'lb': 336}
+4h|tsmom|ETH|SO|lb=48,4h,tsmom,ETH,SO,{'lb': 48}
+4h|tsmom|ETH|SO|lb=720,4h,tsmom,ETH,SO,{'lb': 720}
+4h|tsmom|ETH|SO|lb=96,4h,tsmom,ETH,SO,{'lb': 96}
+4h|tsmom|MAJ3|LO|lb=168,4h,tsmom,MAJ3,LO,{'lb': 168}
+4h|tsmom|MAJ3|LO|lb=24,4h,tsmom,MAJ3,LO,{'lb': 24}
+4h|tsmom|MAJ3|LO|lb=336,4h,tsmom,MAJ3,LO,{'lb': 336}
+4h|tsmom|MAJ3|LO|lb=48,4h,tsmom,MAJ3,LO,{'lb': 48}
+4h|tsmom|MAJ3|LO|lb=720,4h,tsmom,MAJ3,LO,{'lb': 720}
+4h|tsmom|MAJ3|LO|lb=96,4h,tsmom,MAJ3,LO,{'lb': 96}
+4h|tsmom|MAJ3|LS|lb=168,4h,tsmom,MAJ3,LS,{'lb': 168}
+4h|tsmom|MAJ3|LS|lb=24,4h,tsmom,MAJ3,LS,{'lb': 24}
+4h|tsmom|MAJ3|LS|lb=336,4h,tsmom,MAJ3,LS,{'lb': 336}
+4h|tsmom|MAJ3|LS|lb=48,4h,tsmom,MAJ3,LS,{'lb': 48}
+4h|tsmom|MAJ3|LS|lb=720,4h,tsmom,MAJ3,LS,{'lb': 720}
+4h|tsmom|MAJ3|LS|lb=96,4h,tsmom,MAJ3,LS,{'lb': 96}
+4h|tsmom|MAJ3|SO|lb=168,4h,tsmom,MAJ3,SO,{'lb': 168}
+4h|tsmom|MAJ3|SO|lb=24,4h,tsmom,MAJ3,SO,{'lb': 24}
+4h|tsmom|MAJ3|SO|lb=336,4h,tsmom,MAJ3,SO,{'lb': 336}
+4h|tsmom|MAJ3|SO|lb=48,4h,tsmom,MAJ3,SO,{'lb': 48}
+4h|tsmom|MAJ3|SO|lb=720,4h,tsmom,MAJ3,SO,{'lb': 720}
+4h|tsmom|MAJ3|SO|lb=96,4h,tsmom,MAJ3,SO,{'lb': 96}
+4h|tsmom|SOL|LO|lb=168,4h,tsmom,SOL,LO,{'lb': 168}
+4h|tsmom|SOL|LO|lb=24,4h,tsmom,SOL,LO,{'lb': 24}
+4h|tsmom|SOL|LO|lb=336,4h,tsmom,SOL,LO,{'lb': 336}
+4h|tsmom|SOL|LO|lb=48,4h,tsmom,SOL,LO,{'lb': 48}
+4h|tsmom|SOL|LO|lb=720,4h,tsmom,SOL,LO,{'lb': 720}
+4h|tsmom|SOL|LO|lb=96,4h,tsmom,SOL,LO,{'lb': 96}
+4h|tsmom|SOL|LS|lb=168,4h,tsmom,SOL,LS,{'lb': 168}
+4h|tsmom|SOL|LS|lb=24,4h,tsmom,SOL,LS,{'lb': 24}
+4h|tsmom|SOL|LS|lb=336,4h,tsmom,SOL,LS,{'lb': 336}
+4h|tsmom|SOL|LS|lb=48,4h,tsmom,SOL,LS,{'lb': 48}
+4h|tsmom|SOL|LS|lb=720,4h,tsmom,SOL,LS,{'lb': 720}
+4h|tsmom|SOL|LS|lb=96,4h,tsmom,SOL,LS,{'lb': 96}
+4h|tsmom|SOL|SO|lb=168,4h,tsmom,SOL,SO,{'lb': 168}
+4h|tsmom|SOL|SO|lb=24,4h,tsmom,SOL,SO,{'lb': 24}
+4h|tsmom|SOL|SO|lb=336,4h,tsmom,SOL,SO,{'lb': 336}
+4h|tsmom|SOL|SO|lb=48,4h,tsmom,SOL,SO,{'lb': 48}
+4h|tsmom|SOL|SO|lb=720,4h,tsmom,SOL,SO,{'lb': 720}
+4h|tsmom|SOL|SO|lb=96,4h,tsmom,SOL,SO,{'lb': 96}
+"4h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ALL19,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ALL19|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ALL19,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,BTC,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,BTC,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|BTC|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,BTC,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ETH,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ETH,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|ETH|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,ETH,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|MAJ3|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,MAJ3,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,SOL,LO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|LS|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,SOL,LS,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=168,low_action=MR,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=168,low_action=MR,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=168,low_action=flat,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=168,low_action=flat,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=48,low_action=MR,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=48,low_action=MR,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=48,low_action=flat,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.0,lb=48,low_action=flat,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.0, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=168,low_action=MR,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=168,low_action=MR,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=168,low_action=flat,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=168,low_action=flat,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 168, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=48,low_action=MR,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=48,low_action=MR,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'MR', 'orient': 'trend_lo'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=48,low_action=flat,orient=trend_hi",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_hi'}"
+"4h|volregime|SOL|SO|thr=1.3,lb=48,low_action=flat,orient=trend_lo",4h,volregime,SOL,SO,"{'thr': 1.3, 'lb': 48, 'low_action': 'flat', 'orient': 'trend_lo'}"
+"4h|xs|ALL19|MN|lb=12,direction=mom",4h,xs,ALL19,MN,"{'lb': 12, 'direction': 'mom'}"
+"4h|xs|ALL19|MN|lb=12,direction=rev",4h,xs,ALL19,MN,"{'lb': 12, 'direction': 'rev'}"
+"4h|xs|ALL19|MN|lb=168,direction=mom",4h,xs,ALL19,MN,"{'lb': 168, 'direction': 'mom'}"
+"4h|xs|ALL19|MN|lb=168,direction=rev",4h,xs,ALL19,MN,"{'lb': 168, 'direction': 'rev'}"
+"4h|xs|ALL19|MN|lb=24,direction=mom",4h,xs,ALL19,MN,"{'lb': 24, 'direction': 'mom'}"
+"4h|xs|ALL19|MN|lb=24,direction=rev",4h,xs,ALL19,MN,"{'lb': 24, 'direction': 'rev'}"
+"4h|xs|ALL19|MN|lb=336,direction=mom",4h,xs,ALL19,MN,"{'lb': 336, 'direction': 'mom'}"
+"4h|xs|ALL19|MN|lb=336,direction=rev",4h,xs,ALL19,MN,"{'lb': 336, 'direction': 'rev'}"
+"4h|xs|ALL19|MN|lb=4,direction=mom",4h,xs,ALL19,MN,"{'lb': 4, 'direction': 'mom'}"
+"4h|xs|ALL19|MN|lb=4,direction=rev",4h,xs,ALL19,MN,"{'lb': 4, 'direction': 'rev'}"
+"4h|xs|ALL19|MN|lb=72,direction=mom",4h,xs,ALL19,MN,"{'lb': 72, 'direction': 'mom'}"
+"4h|xs|ALL19|MN|lb=72,direction=rev",4h,xs,ALL19,MN,"{'lb': 72, 'direction': 'rev'}"

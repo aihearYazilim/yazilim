@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/home/user/yazilim/research/index_options/analysis.py", line 101, in <module>
+    n = walkforward(L, look)
+  File "/home/user/yazilim/research/index_options/analysis.py", line 88, in walkforward
+    print(f"WF L={L} look={look}: IS geo {g(is_)*100:.2f}%/m, IS maxDD(month-end) {(eq.loc[:'2025-09']/eq.loc[:'2025-09'].cummax()-1).min()*100:.1f}%, "
+                                         ^^^^^^^^^^^^^^^^
+TypeError: unsupported format string passed to Series.__format__

@@ -1,0 +1,2394 @@
+[
+ {
+  "type": "launchpool",
+  "title": "Introducing Hashflow (HFT) on Binance Launchpool! Farm HFT by Staking BNB and BUSD",
+  "announce": "2022-10-31 09:30",
+  "syms": [
+   "HFT"
+  ],
+  "rewards": {
+   "HFT": 15000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "73d44e64598c446cb4ec2f83b776c2f0"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Radiant Capital (RDNT) on Binance Launchpool! Farm RDNT by Staking BNB and TUSD",
+  "announce": "2023-03-30 07:50",
+  "syms": [
+   "RDNT"
+  ],
+  "rewards": {
+   "RDNT": 15000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "5a2799614fe74897aa1c77d1100805c6"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Sui (SUI) on Binance Launchpool! Farm SUI by Staking BNB and TUSD",
+  "announce": "2023-04-30 16:00",
+  "syms": [
+   "SUI"
+  ],
+  "rewards": {
+   "SUI": 40000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "f76980d5d5e54d80b1348fd446e8f5d3"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Maverick Protocol (MAV) on Binance Launchpool! Farm MAV by Staking BNB and TUSD",
+  "announce": "2023-06-13 11:55",
+  "syms": [
+   "MAV"
+  ],
+  "rewards": {
+   "MAV": 30000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "a28d005ed545464cbb9a3661c26e6b38"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Pendle (PENDLE) on Binance Launchpool! Farm PENDLE by Staking BNB and TUSD",
+  "announce": "2023-07-03 10:00",
+  "syms": [
+   "PENDLE"
+  ],
+  "rewards": {
+   "PENDLE": 5021222.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "8baee8ca20d64074ba503aa3963e952e"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing CyberConnect (CYBER) on Binance Launchpool! Farm CYBER by Staking BNB, TUSD and FDUSD",
+  "announce": "2023-08-01 07:03",
+  "syms": [
+   "CYBER"
+  ],
+  "rewards": {
+   "CYBER": 3000000.0
+  },
+  "listing": [
+   [
+    "CYBER",
+    "2023-08-15 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "7d1f62e7483d406584a754a38094358a"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Sei (SEI) on Binance Launchpool! Farm SEI by Staking BNB, TUSD and FDUSD",
+  "announce": "2023-08-01 07:03",
+  "syms": [
+   "SEI"
+  ],
+  "rewards": {
+   "SEI": 300000000.0
+  },
+  "listing": [
+   [
+    "SEI",
+    "2023-08-15 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "b1d3b4df9cb34f679783a4fdb891f643"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Neutron (NTRN) on Binance Launchpool! Farm NTRN by Staking BNB, TUSD and FDUSD",
+  "announce": "2023-10-10 09:52",
+  "syms": [
+   "NTRN"
+  ],
+  "rewards": {
+   "NTRN": 20000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "ae2def9640ef49c1979e1d995d32cd77"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Memecoin (MEME) on Binance Launchpool! Farm MEME by Staking BNB, TUSD and FDUSD",
+  "announce": "2023-10-27 14:09",
+  "syms": [
+   "MEME"
+  ],
+  "rewards": {
+   "MEME": 1380000000.0
+  },
+  "listing": [
+   [
+    "MEME",
+    "2023-11-03 08:00"
+   ]
+  ],
+  "snap": [],
+  "code": "90ccca2c5d6946ef9439dae41a517578"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Fusionist (ACE) on Binance Launchpool! Farm ACE by Staking BNB and FDUSD",
+  "announce": "2023-12-11 12:05",
+  "syms": [
+   "ACE"
+  ],
+  "rewards": {
+   "ACE": 10290000.0
+  },
+  "listing": [
+   [
+    "ACE",
+    "2023-12-18 06:00"
+   ]
+  ],
+  "snap": [],
+  "code": "2cb7b8a617b548e5b765bcb0f3beb680"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing NFPrompt (NFP) on Binance Launchpool Fair Mode! Farm NFP by Staking BNB, FDUSD and TUSD",
+  "announce": "2023-12-19 10:37",
+  "syms": [
+   "NFP"
+  ],
+  "rewards": {
+   "NFP": 110000000.0
+  },
+  "listing": [
+   [
+    "NFP",
+    "2023-12-27 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "a5cb4da2b55b401fb0a9c32ca15e9ebd"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Sleepless AI (AI) on Binance Launchpool! Farm AI by Staking BNB, FDUSD and TUSD",
+  "announce": "2023-12-26 10:03",
+  "syms": [
+   "AI"
+  ],
+  "rewards": {
+   "AI": 70000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "1c5f644e22b44e0f90404e0aea216525"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Xai (XAI) on Binance Launchpool! Farm XAI by Staking BNB, FDUSD and TUSD",
+  "announce": "2024-01-03 09:36",
+  "syms": [
+   "XAI"
+  ],
+  "rewards": {
+   "XAI": 75000000.0
+  },
+  "listing": [
+   [
+    "XAI",
+    "2024-01-09 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "dae94618815044679412f00409625d0a"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Manta (MANTA) on Binance Launchpool! Farm MANTA by Staking BNB and FDUSD",
+  "announce": "2024-01-15 12:24",
+  "syms": [
+   "MANTA"
+  ],
+  "rewards": {
+   "MANTA": 30000000.0
+  },
+  "listing": [
+   [
+    "MANTA",
+    "2024-01-18 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "d408406a0b594b2d82206f7ea9ca60bc"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing AltLayer (ALT) on Binance Launchpool! Farm ALT by Staking BNB and FDUSD",
+  "announce": "2024-01-17 11:36",
+  "syms": [
+   "ALT"
+  ],
+  "rewards": {
+   "ALT": 500000000.0
+  },
+  "listing": [
+   [
+    "ALT",
+    "2024-01-25 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "8415d71c5cce481fb8bdec3651972366"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Pixels (PIXEL) on Binance Launchpool! Farm PIXEL by Staking BNB and FDUSD",
+  "announce": "2024-02-08 02:35",
+  "syms": [
+   "PIXEL"
+  ],
+  "rewards": {
+   "PIXEL": 350000000.0
+  },
+  "listing": [
+   [
+    "PIXEL",
+    "2024-02-19 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "c055fa89dda84402b7b662f13b80fffe"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Portal (PORTAL) on Binance Launchpool! Farm PORTAL by Staking BNB and FDUSD",
+  "announce": "2024-02-21 07:50",
+  "syms": [
+   "PORTAL"
+  ],
+  "rewards": {
+   "PORTAL": 50000000.0
+  },
+  "listing": [
+   [
+    "PORTAL",
+    "2024-02-29 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "0620f90f55f2420b89158808380b6c9d"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing AEVO (AEVO) on Binance Launchpool! Farm AEVO by Staking BNB and FDUSD",
+  "announce": "2024-03-06 10:25",
+  "syms": [
+   "AEVO"
+  ],
+  "rewards": {
+   "AEVO": 45000000.0
+  },
+  "listing": [
+   [
+    "AEVO",
+    "2024-03-13 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "3ff4cb81f21346a4a6b1c966e0b797f0"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing ether.fi (ETHFI) on Binance Launchpool! Farm ETHFI by Staking BNB and FDUSD",
+  "announce": "2024-03-12 14:30",
+  "syms": [
+   "ETHFI"
+  ],
+  "rewards": {
+   "ETHFI": 20000000.0
+  },
+  "listing": [
+   [
+    "ETHFI",
+    "2024-03-18 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "043436c6551d4f67bf1565a253039b39"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Ethena (ENA) on Binance Launchpool! Farm ENA by Staking BNB and FDUSD",
+  "announce": "2024-03-29 04:26",
+  "syms": [
+   "ENA"
+  ],
+  "rewards": {
+   "ENA": 300000000.0
+  },
+  "listing": [
+   [
+    "ENA",
+    "2024-04-02 08:00"
+   ]
+  ],
+  "snap": [],
+  "code": "6c216f219f0e42adb1849759dee3fbd9"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Saga (SAGA) on Binance Launchpool! Farm SAGA by Staking BNB and FDUSD",
+  "announce": "2024-04-04 02:32",
+  "syms": [
+   "SAGA"
+  ],
+  "rewards": {
+   "SAGA": 45000000.0
+  },
+  "listing": [
+   [
+    "SAGA",
+    "2024-04-09 08:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2024-04-09",
+    "2024-04-09"
+   ]
+  ],
+  "code": "22674210af2b4d35b7ddc62c243d66fa"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Omni Network (OMNI) on Binance Launchpool! Farm OMNI by Staking BNB and FDUSD",
+  "announce": "2024-04-12 05:52",
+  "syms": [
+   "OMNI"
+  ],
+  "rewards": {
+   "OMNI": 3500000.0
+  },
+  "listing": [
+   [
+    "OMNI",
+    "2024-04-17 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "3954d04933da443ab539ca38616013de"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Renzo (REZ) on Binance Launchpool! Farm REZ by Staking BNB and FDUSD",
+  "announce": "2024-04-23 10:22",
+  "syms": [
+   "REZ"
+  ],
+  "rewards": {
+   "REZ": 250000000.0
+  },
+  "listing": [
+   [
+    "REZ",
+    "2024-04-30 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "b1e64410cc9c4ab29687392f5581a61b"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Notcoin (NOT) on Binance Launchpool! Farm NOT by Staking BNB and FDUSD",
+  "announce": "2024-05-09 15:25",
+  "syms": [
+   "NOT"
+  ],
+  "rewards": {
+   "NOT": 3081576651.0
+  },
+  "listing": [
+   [
+    "NOT",
+    "2024-05-16 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "b78921ecf7c94e50973850fc47f497b9"
+ },
+ {
+  "type": "megadrop",
+  "title": "Introducing Lista (LISTA) on Binance Megadrop! Lock Your BNB and Complete Web3 Quests for Airdrop",
+  "announce": "2024-05-23 04:36",
+  "syms": [
+   "LISTA"
+  ],
+  "rewards": {
+   "LISTA": 100000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "1d721573862848678686e1b310ba80fc"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing IO.NET (IO) on Binance Launchpool! Farm IO by Staking BNB and FDUSD",
+  "announce": "2024-06-06 04:36",
+  "syms": [
+   "IO"
+  ],
+  "rewards": {
+   "IO": 20000000.0
+  },
+  "listing": [
+   [
+    "IO",
+    "2024-06-11 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "6556e3b5aae54c76adb0fd267b105a15"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Banana Gun (BANANA) on Binance HODLer Airdrops! Subscribe your BNB to Simple Earn",
+  "announce": "2024-07-18 16:46",
+  "syms": [
+   "BANANA"
+  ],
+  "rewards": {
+   "BANANA": 800000.0
+  },
+  "listing": [
+   [
+    "BANANA",
+    "2024-07-20 09:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2024-06-23",
+    "2024-07-05"
+   ]
+  ],
+  "code": "252eaa5e7a8646e6a4461f6057a06af4"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Toncoin (TON) on Binance Launchpool and Super Earn! Farm TON by Staking BNB, FDUSD, and TON",
+  "announce": "2024-08-13 12:12",
+  "syms": [
+   "TON"
+  ],
+  "rewards": {
+   "TON": 7650000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "94400db7b1934344aadf944166015715"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Dogs (DOGS) on Binance Launchpool! Farm DOGS by Staking BNB and FDUSD",
+  "announce": "2024-08-20 16:42",
+  "syms": [
+   "DOGS"
+  ],
+  "rewards": {
+   "DOGS": 22000000000.0
+  },
+  "listing": [
+   [
+    "DOGS",
+    "2024-08-26 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "fc967d5825774984829b96943a42fadf"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Hamster Kombat (HMSTR) on Binance Launchpool and Super Earn!",
+  "announce": "2024-09-12 15:01",
+  "syms": [
+   "HMSTR"
+  ],
+  "rewards": {
+   "HMSTR": 3000000000.0
+  },
+  "listing": [
+   [
+    "HMSTR",
+    "2024-09-26 12:00"
+   ]
+  ],
+  "snap": [],
+  "code": "4ff1ed79c8e44acfba1d8f4e5a23dd64"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Catizen (CATI) on Binance Launchpool! Farm CATI by Locking BNB and FDUSD",
+  "announce": "2024-09-13 12:32",
+  "syms": [
+   "CATI"
+  ],
+  "rewards": {
+   "CATI": 90000000.0
+  },
+  "listing": [
+   [
+    "CATI",
+    "2024-09-20 11:00"
+   ]
+  ],
+  "snap": [],
+  "code": "03b4921a44644da2880a290c0e254140"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Scroll (SCR) on Binance Launchpool and Pre-Market!",
+  "announce": "2024-10-08 08:15",
+  "syms": [
+   "SCR"
+  ],
+  "rewards": {
+   "SCR": 55000000.0
+  },
+  "listing": [
+   [
+    "SCR",
+    "2024-10-11 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "22df1ba38f4a4033924a1adecf93735e"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Usual (USUAL) on Binance Launchpool and Pre-Market!",
+  "announce": "2024-11-14 07:32",
+  "syms": [
+   "USUAL"
+  ],
+  "rewards": {
+   "USUAL": 300000000.0
+  },
+  "listing": [
+   [
+    "USUAL",
+    "2024-11-19 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "7c4bf0dac2de4842984fc7c066204b05"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Thena (THE) on Binance HODLer Airdrops! Subscribe your BNB to Simple Earn",
+  "announce": "2024-11-26 07:57",
+  "syms": [
+   "THE"
+  ],
+  "rewards": {
+   "THE": 21750000.0
+  },
+  "listing": [
+   [
+    "THE",
+    "2024-11-27 10:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2024-11-06",
+    "2024-11-13"
+   ]
+  ],
+  "code": "7c06e61804694408b3401e0a380f954f"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Movement (MOVE) on Binance HODLer Airdrops! Subscribe your BNB to Simple Earn",
+  "announce": "2024-12-09 08:29",
+  "syms": [
+   "MOVE"
+  ],
+  "rewards": {
+   "MOVE": 200000000.0
+  },
+  "listing": [
+   [
+    "MOVE",
+    "2024-12-09 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2024-12-02",
+    "2024-12-05"
+   ]
+  ],
+  "code": "8a585286abc547d293e269beeb6b9bf3"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Vana (VANA) on Binance Launchpool! Farm VANA by Locking BNB and FDUSD",
+  "announce": "2024-12-13 08:59",
+  "syms": [
+   "VANA"
+  ],
+  "rewards": {
+   "VANA": 4800000.0
+  },
+  "listing": [
+   [
+    "VANA",
+    "2024-12-16 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "f6c4a4567f5c42d2b0f632bfcdf89093"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Simon's Cat (1000CAT) and Pudgy Penguins (PENGU) on Binance HODLer Airdrops!",
+  "announce": "2024-12-16 12:36",
+  "syms": [
+   "1000CAT",
+   "PENGU"
+  ],
+  "rewards": {
+   "CAT": 1143000000000.0,
+   "PENGU": 2666666666.64
+  },
+  "listing": [
+   [
+    "1000CAT",
+    "2024-12-17 09:00"
+   ],
+   [
+    "PENGU",
+    "2024-12-17 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2024-12-09",
+    "2024-12-12"
+   ]
+  ],
+  "code": "b60b629a7396476ba3c3391b016074e1"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing BIO Protocol (BIO) on Binance Launchpool! Farm BIO by Locking BNB and FDUSD",
+  "announce": "2024-12-23 10:19",
+  "syms": [
+   "BIO"
+  ],
+  "rewards": {
+   "BIO": 99600000.0
+  },
+  "listing": [
+   [
+    "BIO",
+    "2025-01-03 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "f4717985d5d549c8adf284ef4fbd9107"
+ },
+ {
+  "type": "megadrop",
+  "title": "Introducing Solv Protocol (SOLV) on Binance Megadrop! Lock Your BNB and Complete Web3 Quests for Airdrop",
+  "announce": "2024-12-30 10:22",
+  "syms": [
+   "SOLV"
+  ],
+  "rewards": {
+   "SOLV": 588000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "9b675da32bea4c7d96e999e450e8a229"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Animecoin (ANIME) on Binance HODLer Airdrops! Earn ANIME With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-01-22 10:02",
+  "syms": [
+   "ANIME"
+  ],
+  "rewards": {
+   "ANIME": 500000000.0
+  },
+  "listing": [
+   [
+    "ANIME",
+    "2025-01-23 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-01-17",
+    "2025-01-20"
+   ]
+  ],
+  "code": "fe1f135ebcfd4668af8b4b8c629fbaf8"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Berachain (BERA) on Binance HODLer Airdrops! Earn BERA With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-02-05 12:19",
+  "syms": [
+   "BERA"
+  ],
+  "rewards": {
+   "BERA": 10000000.0
+  },
+  "listing": [
+   [
+    "BERA",
+    "2025-02-06 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-01-22",
+    "2025-01-26"
+   ]
+  ],
+  "code": "5a3a946a51674cc09132696645b42d79"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Solayer (LAYER) on Binance HODLer Airdrops! Subscribe your BNB to Simple Earn",
+  "announce": "2025-02-11 06:43",
+  "syms": [
+   "LAYER"
+  ],
+  "rewards": {
+   "LAYER": 30000000.0
+  },
+  "listing": [
+   [
+    "LAYER",
+    "2025-02-11 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-02-01",
+    "2025-02-05"
+   ]
+  ],
+  "code": "f039547b84974b688a549d14779cebc4"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing KAITO (KAITO) on Binance HODLer Airdrops! Earn KAITO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-02-19 10:31",
+  "syms": [
+   "KAITO"
+  ],
+  "rewards": {
+   "KAITO": 20000000.0
+  },
+  "listing": [
+   [
+    "KAITO",
+    "2025-02-20 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-02-06",
+    "2025-02-10"
+   ]
+  ],
+  "code": "270d00295b854230a4fae344b64f36b4"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing RedStone (RED) on Binance Launchpool and Price Cap Mechanism for Binance Pre-Market",
+  "announce": "2025-02-25 09:11",
+  "syms": [
+   "RED"
+  ],
+  "rewards": {
+   "RED": 40000000.0
+  },
+  "listing": [
+   [
+    "RED",
+    "2025-02-28 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "5e1eb05676a0492f889db144b46d439b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing MyShell (SHELL) on Binance HODLer Airdrops! Earn SHELL With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-02-27 05:15",
+  "syms": [
+   "SHELL"
+  ],
+  "rewards": {
+   "SHELL": 25000000.0
+  },
+  "listing": [
+   [
+    "SHELL",
+    "2025-02-27 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-02-14",
+    "2025-02-18"
+   ]
+  ],
+  "code": "ad59b678944f4f83a45119b984fa28db"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing GoPlus Security (GPS) on Binance HODLer Airdrops! Earn GPS With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-03-04 05:18",
+  "syms": [
+   "GPS"
+  ],
+  "rewards": {
+   "GPS": 300000000.0
+  },
+  "listing": [
+   [
+    "GPS",
+    "2025-03-04 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-02-19",
+    "2025-02-24"
+   ]
+  ],
+  "code": "63c1fcf1009e4bf08dc486c0ef10917b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Bubblemaps (BMT) on Binance HODLer Airdrops! Earn BMT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-03-18 09:52",
+  "syms": [
+   "BMT"
+  ],
+  "rewards": {
+   "BMT": 30000000.0
+  },
+  "listing": [
+   [
+    "BMT",
+    "2025-03-18 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-03-02",
+    "2025-03-06"
+   ]
+  ],
+  "code": "6539265e571540298fa4b7943140469d"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Nillion (NIL) on Binance Launchpool! Farm NIL by Locking BNB, FDUSD, and USDC",
+  "announce": "2025-03-20 10:14",
+  "syms": [
+   "NIL"
+  ],
+  "rewards": {
+   "NIL": 35000000.0
+  },
+  "listing": [
+   [
+    "NIL",
+    "2025-03-24 13:00"
+   ]
+  ],
+  "snap": [],
+  "code": "2608d3a348a44a33b04a133b90d45dc2"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing  Particle Network (PARTI) on Binance HODLer Airdrops! Earn PARTI With Retroactive BNB Simple Earn Subscripti",
+  "announce": "2025-03-24 15:56",
+  "syms": [
+   "PARTI"
+  ],
+  "rewards": {
+   "PARTI": 30000000.0
+  },
+  "listing": [
+   [
+    "PARTI",
+    "2025-03-25 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-03-07",
+    "2025-03-11"
+   ]
+  ],
+  "code": "3ec6cdfea3394ffa9ce6bfeabe8191e5"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing GUNZ (GUN) on Binance Launchpool! Farm GUN by Locking BNB, FDUSD and USDC",
+  "announce": "2025-03-27 13:29",
+  "syms": [
+   "GUN"
+  ],
+  "rewards": {
+   "GUN": 400000000.0
+  },
+  "listing": [
+   [
+    "GUN",
+    "2025-03-31 13:00"
+   ]
+  ],
+  "snap": [],
+  "code": "d9d307783a144d9b81772bc690454ba3"
+ },
+ {
+  "type": "megadrop",
+  "title": "Introducing KernelDAO (KERNEL) on Binance Megadrop! Lock Your BNB and Complete Web3 Quests for Airdrop",
+  "announce": "2025-04-01 08:42",
+  "syms": [
+   "KERNEL"
+  ],
+  "rewards": {
+   "KERNEL": 40000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "fcb0aca70fe7458197d653f63117d8ff"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Babylon (BABY) on Binance HODLer Airdrops! Earn BABY With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-04-09 08:42",
+  "syms": [
+   "BABY"
+  ],
+  "rewards": {
+   "BABY": 75000000.0
+  },
+  "listing": [
+   [
+    "BABY",
+    "2025-04-10 10:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-03-07",
+    "2025-03-12"
+   ]
+  ],
+  "code": "a2a116f48c0d412b9001d29ddf876464"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing WalletConnect (WCT) on Binance Launchpool! Farm WCT by Locking BNB, FDUSD and USDC",
+  "announce": "2025-04-10 10:15",
+  "syms": [
+   "WCT"
+  ],
+  "rewards": {
+   "WCT": 40000000.0
+  },
+  "listing": [
+   [
+    "WCT",
+    "2025-04-15 11:00"
+   ]
+  ],
+  "snap": [],
+  "code": "5a1eedebf6e54c418c326e44df8775b2"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Initia (INIT) on Binance Launchpool! Farm INIT by Locking BNB, FDUSD and USDC",
+  "announce": "2025-04-17 08:59",
+  "syms": [
+   "INIT"
+  ],
+  "rewards": {
+   "INIT": 30000000.0
+  },
+  "listing": [
+   [
+    "INIT",
+    "2025-04-24 11:00"
+   ]
+  ],
+  "snap": [],
+  "code": "c288d0d677304b9e9246eceae0237ff3"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Hyperlane (HYPER) on Binance HODLer Airdrops! Earn HYPER With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-04-21 15:11",
+  "syms": [
+   "HYPER"
+  ],
+  "rewards": {
+   "HYPER": 20000000.0
+  },
+  "listing": [
+   [
+    "HYPER",
+    "2025-04-22 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-04-14",
+    "2025-04-17"
+   ]
+  ],
+  "code": "cd31b4166f3047fe91889f1e83a99a79"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Sign (SIGN) on Binance HODLer Airdrops! Earn SIGN With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-04-25 09:35",
+  "syms": [
+   "SIGN"
+  ],
+  "rewards": {
+   "SIGN": 200000000.0
+  },
+  "listing": [
+   [
+    "SIGN",
+    "2025-04-28 11:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-04-15",
+    "2025-04-19"
+   ]
+  ],
+  "code": "4ed7b66008e247329bf255a383699ef4"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing StakeStone (STO) on Binance HODLer Airdrops! Earn STO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-05-02 10:21",
+  "syms": [
+   "STO"
+  ],
+  "rewards": {
+   "STO": 15000000.0
+  },
+  "listing": [
+   [
+    "STO",
+    "2025-05-02 16:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-04-27",
+    "2025-04-29"
+   ]
+  ],
+  "code": "6c74537a512e4668bc731e8fb1a293da"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Space and Time (SXT) on Binance Launchpool! Farm SXT by Locking BNB, FDUSD and USDC",
+  "announce": "2025-05-05 14:14",
+  "syms": [
+   "SXT"
+  ],
+  "rewards": {
+   "SXT": 125000000.0
+  },
+  "listing": [
+   [
+    "SXT",
+    "2025-05-08 13:00"
+   ]
+  ],
+  "snap": [],
+  "code": "7d695afee5c14c789dd8accb05cda42a"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Nexpace (NXPC) on Binance HODLer Airdrops! Earn NXPC With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-05-15 04:36",
+  "syms": [
+   "NXPC"
+  ],
+  "rewards": {
+   "NXPC": 30000000.0
+  },
+  "listing": [
+   [
+    "NXPC",
+    "2025-05-15 07:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-05-06",
+    "2025-05-09"
+   ]
+  ],
+  "code": "07c88538531d40d49492b314994bf6c5"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Haedal Protocol (HAEDAL) on Binance HODLer Airdrops! Earn HAEDAL With Retroactive BNB Simple Earn Subscripti",
+  "announce": "2025-05-21 10:04",
+  "syms": [
+   "HAEDAL"
+  ],
+  "rewards": {
+   "HAEDAL": 30000000.0
+  },
+  "listing": [
+   [
+    "HAEDAL",
+    "2025-05-21 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-05-10",
+    "2025-05-13"
+   ]
+  ],
+  "code": "3e9a3673851341399455718549796f49"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Huma Finance (HUMA) on Binance Launchpool! Farm HUMA by Locking BNB, FDUSD, and USDC",
+  "announce": "2025-05-22 10:46",
+  "syms": [
+   "HUMA"
+  ],
+  "rewards": {
+   "HUMA": 250000000.0
+  },
+  "listing": [
+   [
+    "HUMA",
+    "2025-05-26 13:00"
+   ]
+  ],
+  "snap": [],
+  "code": "515c45c283ea44c59b7f4623a3512666"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Sophon (SOPH) on Binance HODLer Airdrops! Earn SOPH With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-05-28 07:16",
+  "syms": [
+   "SOPH"
+  ],
+  "rewards": {
+   "SOPH": 150000000.0
+  },
+  "listing": [
+   [
+    "SOPH",
+    "2025-05-28 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-05-14",
+    "2025-05-17"
+   ]
+  ],
+  "code": "8ef18cf913ce42278b67f4cbe161a062"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Resolv (RESOLV) on Binance HODLer Airdrops! Earn RESOLV With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-06-11 10:24",
+  "syms": [
+   "RESOLV"
+  ],
+  "rewards": {
+   "RESOLV": 20000000.0
+  },
+  "listing": [
+   [
+    "RESOLV",
+    "2025-06-11 14:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-05-28",
+    "2025-05-31"
+   ]
+  ],
+  "code": "0a07cb5db68b41598cdc0f13f1606028"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Defi App (HOME) on Binance HODLer Airdrops! Earn HOME With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-06-12 11:04",
+  "syms": [
+   "HOME"
+  ],
+  "rewards": {
+   "HOME": 200000000.0
+  },
+  "listing": [
+   [
+    "HOME",
+    "2025-06-12 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-06-06",
+    "2025-06-09"
+   ]
+  ],
+  "code": "b5210fb7261e46dba5b4a9a7a5f0cff6"
+ },
+ {
+  "type": "hodler",
+  "title": "Solayer (LAYER) Airdrop Continues: Second Binance HODLer Airdrops Announced \u2013 Earn LAYER With Retroactive BNB Simple Ear",
+  "announce": "2025-06-16 06:30",
+  "syms": [
+   "LAYER"
+  ],
+  "rewards": {
+   "LAYER": 6000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "4faf095125404d75b5a742e758a5df32"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Spark (SPK) on Binance HODLer Airdrops! Earn SPK With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-06-16 11:33",
+  "syms": [
+   "SPK"
+  ],
+  "rewards": {
+   "SPK": 200000000.0
+  },
+  "listing": [
+   [
+    "SPK",
+    "2025-06-17 09:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-06-10",
+    "2025-06-13"
+   ]
+  ],
+  "code": "6ff0fe8602d845488bd6a43aef3bbc0c"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Newton Protocol (NEWT) on Binance HODLer Airdrops! Earn NEWT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-06-23 14:08",
+  "syms": [
+   "NEWT"
+  ],
+  "rewards": {
+   "NEWT": 12500000.0
+  },
+  "listing": [
+   [
+    "NEWT",
+    "2025-06-24 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-06-14",
+    "2025-06-17"
+   ]
+  ],
+  "code": "a77caa5645b94c6b8a421d96357bbb0b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Sahara AI (SAHARA) on Binance HODLer Airdrops! Earn SAHARA With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-06-24 14:29",
+  "syms": [
+   "SAHARA"
+  ],
+  "rewards": {
+   "SAHARA": 125000000.0
+  },
+  "listing": [
+   [
+    "SAHARA",
+    "2025-06-26 12:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-06-18",
+    "2025-06-21"
+   ]
+  ],
+  "code": "c50d3bc55dc34b2984703b70aa344446"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Lagrange (LA) on Binance HODLer Airdrops! Earn LA With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-07-09 09:58",
+  "syms": [
+   "LA"
+  ],
+  "rewards": {
+   "LA": 15000000.0
+  },
+  "listing": [
+   [
+    "LA",
+    "2025-07-09 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-06-22",
+    "2025-06-25"
+   ]
+  ],
+  "code": "396441b6cb6d46b983d6475b0b77daf9"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Caldera (ERA) on Binance HODLer Airdrops! Earn ERA With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-07-16 08:58",
+  "syms": [
+   "ERA"
+  ],
+  "rewards": {
+   "ERA": 20000000.0
+  },
+  "listing": [
+   [
+    "ERA",
+    "2025-07-17 15:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-07-01",
+    "2025-07-05"
+   ]
+  ],
+  "code": "5511fc0281c1459bbb8b9f0d2f1297dc"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Chainbase (C) on Binance HODLer Airdrops! Earn C With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-07-18 07:47",
+  "syms": [
+   "C"
+  ],
+  "rewards": {
+   "C": 20000000.0
+  },
+  "listing": [
+   [
+    "C",
+    "2025-07-18 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-07-06",
+    "2025-07-09"
+   ]
+  ],
+  "code": "b27427d0ed9e483da07deab9d5f1f211"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Treehouse (TREE) on Binance HODLer Airdrops! Earn TREE With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-07-28 13:30",
+  "syms": [
+   "TREE"
+  ],
+  "rewards": {
+   "TREE": 12500000.0
+  },
+  "listing": [
+   [
+    "TREE",
+    "2025-07-29 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-07-10",
+    "2025-07-13"
+   ]
+  ],
+  "code": "76da2c4b79994a27aa65725505a7bb23"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Towns (TOWNS) on Binance HODLer Airdrops! Earn TOWNS With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-08-04 09:12",
+  "syms": [
+   "TOWNS"
+  ],
+  "rewards": {
+   "TOWNS": 305848461.0
+  },
+  "listing": [
+   [
+    "TOWNS",
+    "2025-08-05 14:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-07-14",
+    "2025-07-17"
+   ]
+  ],
+  "code": "48614824082b4a7e99478827bdbadbc7"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Succinct (PROVE) on Binance HODLer Airdrops! Earn PROVE With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-08-05 01:59",
+  "syms": [
+   "PROVE"
+  ],
+  "rewards": {
+   "PROVE": 15000000.0
+  },
+  "listing": [
+   [
+    "PROVE",
+    "2025-08-05 17:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-07-09",
+    "2025-07-12"
+   ]
+  ],
+  "code": "bbd0a134905646d485e35af4fdda3ee7"
+ },
+ {
+  "type": "hodler",
+  "title": "Solayer (LAYER) Airdrop Continues: Third Binance HODLer Airdrops Announced \u2013 Earn LAYER With Retroactive BNB Simple Earn",
+  "announce": "2025-08-18 09:00",
+  "syms": [
+   "LAYER"
+  ],
+  "rewards": {
+   "LAYER": 6000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "d87096b85cc5423da72851bd742927bc"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Plume (PLUME) on Binance HODLer Airdrops! Earn PLUME With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-08-18 09:36",
+  "syms": [
+   "PLUME"
+  ],
+  "rewards": {
+   "PLUME": 150000000.0
+  },
+  "listing": [
+   [
+    "PLUME",
+    "2025-08-18 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-07-24",
+    "2025-07-27"
+   ]
+  ],
+  "code": "82264d448a4e4c1abc29ec1df14509f7"
+ },
+ {
+  "type": "hodler",
+  "title": "MyShell (SHELL) Airdrop Continues: Second Binance HODLer Airdrops Announced \u2013 Earn SHELL With Retroactive BNB Simple Ear",
+  "announce": "2025-08-27 06:30",
+  "syms": [
+   "SHELL"
+  ],
+  "rewards": {
+   "SHELL": 25000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "75e8540f968948068a157fa665668b72"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Dolomite (DOLO) on Binance HODLer Airdrops! Earn DOLO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-08-27 10:43",
+  "syms": [
+   "DOLO"
+  ],
+  "rewards": {
+   "DOLO": 15000000.0
+  },
+  "listing": [
+   [
+    "DOLO",
+    "2025-08-27 16:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-08-03",
+    "2025-08-06"
+   ]
+  ],
+  "code": "2742ed6ae1034444875f397c7d4e6781"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Mitosis (MITO) on Binance HODLer Airdrops! Earn MITO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-08-29 09:15",
+  "syms": [
+   "MITO"
+  ],
+  "rewards": {
+   "MITO": 15000000.0
+  },
+  "listing": [
+   [
+    "MITO",
+    "2025-08-29 15:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-08-03",
+    "2025-08-06"
+   ]
+  ],
+  "code": "292f47e6254144caa207a79d9edf2072"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Somnia (SOMI) on Binance HODLer Airdrops! Earn SOMI With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-01 08:59",
+  "syms": [
+   "SOMI"
+  ],
+  "rewards": {
+   "SOMI": 30000000.0
+  },
+  "listing": [
+   [
+    "SOMI",
+    "2025-09-02 14:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-08-12",
+    "2025-08-15"
+   ]
+  ],
+  "code": "cea79d16737f4ae8960645c50cfef442"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing OpenLedger (OPEN) on Binance HODLer Airdrops! Earn OPEN With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-05 07:18",
+  "syms": [
+   "OPEN"
+  ],
+  "rewards": {
+   "OPEN": 10000000.0
+  },
+  "listing": [
+   [
+    "OPEN",
+    "2025-09-08 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-08-18",
+    "2025-08-21"
+   ]
+  ],
+  "code": "e2faef7fe18f4da68451b311973da10a"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Linea (LINEA) on Binance HODLer Airdrops! Earn LINEA With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-08 14:26",
+  "syms": [
+   "LINEA"
+  ],
+  "rewards": {
+   "LINEA": 720099900.0
+  },
+  "listing": [
+   [
+    "LINEA",
+    "2025-09-10 16:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-08-25",
+    "2025-08-28"
+   ]
+  ],
+  "code": "366ed788034d439fb59be294a59126ab"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Holoworld AI (HOLO) on Binance HODLer Airdrops! Earn HOLO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-10 05:11",
+  "syms": [
+   "HOLO"
+  ],
+  "rewards": {
+   "HOLO": 30720000.0
+  },
+  "listing": [
+   [
+    "HOLO",
+    "2025-09-11 12:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-08-29",
+    "2025-09-01"
+   ]
+  ],
+  "code": "0bb3a75e5f724419a91cad5f7b6c5e6d"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Boundless (ZKC) on Binance HODLer Airdrops! Earn ZKC With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-12 09:57",
+  "syms": [
+   "ZKC"
+  ],
+  "rewards": {
+   "ZKC": 15000000.0
+  },
+  "listing": [
+   [
+    "ZKC",
+    "2025-09-15 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-02",
+    "2025-09-05"
+   ]
+  ],
+  "code": "51d8b9b9675a4bbdb5f963a09accd9e6"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Avantis (AVNT) on Binance HODLer Airdrops! Earn AVNT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-16 09:30",
+  "syms": [
+   "AVNT"
+  ],
+  "rewards": {
+   "AVNT": 10000000.0
+  },
+  "listing": [],
+  "snap": [
+   [
+    "2025-09-06",
+    "2025-09-08"
+   ]
+  ],
+  "code": "68e23ead0784422489a53e96ddd4e038"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Lombard (BARD) on Binance HODLer Airdrops! Earn BARD With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-17 09:57",
+  "syms": [
+   "BARD"
+  ],
+  "rewards": {
+   "BARD": 10000000.0
+  },
+  "listing": [
+   [
+    "BARD",
+    "2025-09-18 11:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-09",
+    "2025-09-12"
+   ]
+  ],
+  "code": "d309275c430f4b59b66736783fe1c2cd"
+ },
+ {
+  "type": "hodler",
+  "title": "Solayer (LAYER) Airdrop Continues: Fourth Binance HODLer Airdrops Announced \u2013 Earn LAYER With Retroactive BNB Simple Ear",
+  "announce": "2025-09-19 04:00",
+  "syms": [
+   "LAYER"
+  ],
+  "rewards": {
+   "LAYER": 6000000.0
+  },
+  "listing": [],
+  "snap": [],
+  "code": "2367baa4db2241f796eabd455c13ca0f"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing 0G (0G) on Binance HODLer Airdrops! Earn 0G With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-21 08:58",
+  "syms": [
+   "0G"
+  ],
+  "rewards": {
+   "0G": 3000000.0
+  },
+  "listing": [
+   [
+    "0G",
+    "2025-09-22 10:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-15",
+    "2025-09-17"
+   ]
+  ],
+  "code": "e7b441acff484d25a1120f8ae7ce6e54"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Hemi (HEMI) on Binance HODLer Airdrops! Earn HEMI With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-23 05:09",
+  "syms": [
+   "HEMI"
+  ],
+  "rewards": {
+   "HEMI": 100000000.0
+  },
+  "listing": [
+   [
+    "HEMI",
+    "2025-09-23 12:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-17",
+    "2025-09-19"
+   ]
+  ],
+  "code": "b978b48e31ef4b33886ef59c4d15c733"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Plasma (XPL) on Binance HODLer Airdrops! Earn XPL With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-24 08:00",
+  "syms": [
+   "XPL"
+  ],
+  "rewards": {
+   "XPL": 75000000.0
+  },
+  "listing": [
+   [
+    "XPL",
+    "2025-09-25 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-10",
+    "2025-09-13"
+   ]
+  ],
+  "code": "b00f28d55c924614b1953484c64dd6f9"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Mira (MIRA) on Binance HODLer Airdrops! Earn MIRA With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-25 10:00",
+  "syms": [
+   "MIRA"
+  ],
+  "rewards": {
+   "MIRA": 20000000.0
+  },
+  "listing": [
+   [
+    "MIRA",
+    "2025-09-26 12:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-20",
+    "2025-09-22"
+   ]
+  ],
+  "code": "149617ae89a64ca4ac71ed2d296ab4e6"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Falcon Finance (FF) on Binance HODLer Airdrops! Earn FF With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-26 07:52",
+  "syms": [
+   "FF"
+  ],
+  "rewards": {
+   "FF": 150000000.0
+  },
+  "listing": [
+   [
+    "FF",
+    "2025-09-29 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-14",
+    "2025-09-16"
+   ]
+  ],
+  "code": "91b1298d151a4803b99720518751a95b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing OpenEden (EDEN) on Binance HODLer Airdrops! Earn EDEN With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-09-29 08:30",
+  "syms": [
+   "EDEN"
+  ],
+  "rewards": {
+   "EDEN": 15000000.0
+  },
+  "listing": [
+   [
+    "EDEN",
+    "2025-09-30 11:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-23",
+    "2025-09-25"
+   ]
+  ],
+  "code": "feec6071453d4433bf251e8e17438c7c"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing DoubleZero (2Z) on Binance HODLer Airdrops! Earn 2Z With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-02 03:18",
+  "syms": [
+   "2Z"
+  ],
+  "rewards": {
+   "2Z": 35000000.0
+  },
+  "listing": [
+   [
+    "2Z",
+    "2025-10-02 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-26",
+    "2025-09-28"
+   ]
+  ],
+  "code": "ce383a4cd22743109da5c7f050457089"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Morpho (MORPHO) on Binance HODLer Airdrops! Earn MORPHO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-03 09:51",
+  "syms": [
+   "MORPHO"
+  ],
+  "rewards": {
+   "MORPHO": 6500000.0
+  },
+  "listing": [
+   [
+    "MORPHO",
+    "2025-10-03 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-09-28",
+    "2025-09-30"
+   ]
+  ],
+  "code": "d625623188cf455ea2fea7cc48dcabfb"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Walrus (WAL) on Binance HODLer Airdrops! Earn WAL With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-10 02:21",
+  "syms": [
+   "WAL"
+  ],
+  "rewards": {
+   "WAL": 32500000.0
+  },
+  "listing": [
+   [
+    "WAL",
+    "2025-10-10 07:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-01",
+    "2025-10-03"
+   ]
+  ],
+  "code": "0c86561f0863419ca441b2a4c96e790d"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Euler (EUL) on Binance HODLer Airdrops! Earn EUL With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-13 09:22",
+  "syms": [
+   "EUL"
+  ],
+  "rewards": {
+   "EUL": 543657.0
+  },
+  "listing": [
+   [
+    "EUL",
+    "2025-10-13 14:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-04",
+    "2025-10-06"
+   ]
+  ],
+  "code": "7d38f20e2d1e456dba84352d9284699e"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Enso (ENSO) on Binance HODLer Airdrops! Earn ENSO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-14 02:58",
+  "syms": [
+   "ENSO"
+  ],
+  "rewards": {
+   "ENSO": 1750000.0
+  },
+  "listing": [
+   [
+    "ENSO",
+    "2025-10-14 09:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-07",
+    "2025-10-09"
+   ]
+  ],
+  "code": "79ea046281db4d478a5f95049bd6546b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Yield Basis (YB) on Binance HODLer Airdrops! Earn YB With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-14 09:46",
+  "syms": [
+   "YB"
+  ],
+  "rewards": {
+   "YB": 10000000.0
+  },
+  "listing": [
+   [
+    "YB",
+    "2025-10-15 11:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-09",
+    "2025-10-11"
+   ]
+  ],
+  "code": "8b48c0db0eeb472ab0314377938af2dc"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing ZEROBASE (ZBT) on Binance HODLer Airdrops! Earn ZBT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-17 09:53",
+  "syms": [
+   "ZBT"
+  ],
+  "rewards": {
+   "ZBT": 15000000.0
+  },
+  "listing": [
+   [
+    "ZBT",
+    "2025-10-17 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-11",
+    "2025-10-13"
+   ]
+  ],
+  "code": "a6d3aaf1f6af443fb99386104551f5ad"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Turtle (TURTLE) on Binance HODLer Airdrops! Earn TURTLE With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-10-21 07:56",
+  "syms": [
+   "TURTLE"
+  ],
+  "rewards": {
+   "TURTLE": 10000000.0
+  },
+  "listing": [
+   [
+    "TURTLE",
+    "2025-10-22 15:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-14",
+    "2025-10-16"
+   ]
+  ],
+  "code": "d5e4381605934bb98919bf542d3d6afe"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Kite (KITE) on Binance Launchpool! Farm KITE by Locking BNB, FDUSD and USDC",
+  "announce": "2025-10-31 08:09",
+  "syms": [
+   "KITE"
+  ],
+  "rewards": {
+   "KITE": 150000000.0
+  },
+  "listing": [
+   [
+    "KITE",
+    "2025-11-03 13:00"
+   ]
+  ],
+  "snap": [],
+  "code": "48da65d095eb44e093d856948552c402"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Momentum (MMT) on Binance HODLer Airdrops! Earn MMT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-11-03 08:14",
+  "syms": [
+   "MMT"
+  ],
+  "rewards": {
+   "MMT": 7500000.0
+  },
+  "listing": [
+   [
+    "MMT",
+    "2025-11-04 12:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-17",
+    "2025-10-19"
+   ]
+  ],
+  "code": "105591654043469c97c4d545cbed182e"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Sapien (SAPIEN) on Binance HODLer Airdrops! Earn SAPIEN With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-11-06 04:45",
+  "syms": [
+   "SAPIEN"
+  ],
+  "rewards": {
+   "SAPIEN": 15000000.0
+  },
+  "listing": [
+   [
+    "SAPIEN",
+    "2025-11-06 10:00"
+   ]
+  ],
+  "snap": [],
+  "code": "55ba4e6b3da34b50a637a6000a13a46b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Allora (ALLO) on Binance HODLer Airdrops! Earn ALLO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-11-11 04:58",
+  "syms": [
+   "ALLO"
+  ],
+  "rewards": {
+   "ALLO": 15000000.0
+  },
+  "listing": [
+   [
+    "ALLO",
+    "2025-11-11 13:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-10-23",
+    "2025-10-25"
+   ]
+  ],
+  "code": "ea6c4d237ad14eb38169221c01fbd992"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing APRO (AT) on Binance HODLer Airdrops! Earn AT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2025-11-27 08:38",
+  "syms": [
+   "AT"
+  ],
+  "rewards": {
+   "AT": 20000000.0
+  },
+  "listing": [
+   [
+    "AT",
+    "2025-11-27 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-11-04",
+    "2025-11-06"
+   ]
+  ],
+  "code": "b0c65316e2bc4878838852b16291d07b"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Brevis (BREV) on Binance HODLer Airdrops! Earn BREV With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2026-01-05 10:04",
+  "syms": [
+   "BREV"
+  ],
+  "rewards": {
+   "BREV": 15000000.0
+  },
+  "listing": [
+   [
+    "BREV",
+    "2026-01-06 14:00"
+   ]
+  ],
+  "snap": [
+   [
+    "2025-12-17",
+    "2025-12-19"
+   ]
+  ],
+  "code": "59a69279ee4148d5b267934a92319d33"
+ },
+ {
+  "type": "launchpool",
+  "title": "Introducing Opinion (OPN) on Binance Launchpool! Farm OPN by Locking BNB, USDC, U, and USD1",
+  "announce": "2026-03-02 12:45",
+  "syms": [
+   "OPN"
+  ],
+  "rewards": {
+   "OPN": 20000000.0
+  },
+  "listing": [
+   [
+    "OPN",
+    "2026-03-05 13:00"
+   ]
+  ],
+  "snap": [],
+  "code": "d5810276f8c44fa7ade2b93746cd6a0a"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Midnight (NIGHT) on Binance HODLer Airdrops! Earn NIGHT With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2026-03-11 11:31",
+  "syms": [
+   "NIGHT"
+  ],
+  "rewards": {
+   "NIGHT": 240000000.0
+  },
+  "listing": [
+   [
+    "NIGHT",
+    "2026-03-11 15:30"
+   ]
+  ],
+  "snap": [
+   [
+    "2026-02-16",
+    "2026-02-18"
+   ]
+  ],
+  "code": "e4af642d375846d793615f1a51f6ad77"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Fabric Protocol (ROBO) on Binance HODLer Airdrops! Earn ROBO With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2026-03-18 03:30",
+  "syms": [
+   "ROBO"
+  ],
+  "rewards": {
+   "ROBO": 100000000.0
+  },
+  "listing": [],
+  "snap": [
+   [
+    "2026-03-04",
+    "2026-03-06"
+   ]
+  ],
+  "code": "20ac487755434d559568552e9812cbf0"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing USD.AI (CHIP) on Binance HODLer Airdrops! Earn CHIP With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2026-04-28 08:00",
+  "syms": [
+   "CHIP"
+  ],
+  "rewards": {
+   "CHIP": 25000000.0
+  },
+  "listing": [],
+  "snap": [
+   [
+    "2026-04-13",
+    "2026-04-15"
+   ]
+  ],
+  "code": "c8d2380a71ee4b56980cf7798d2e3d8f"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Gensyn (AIGENSYN) on Binance HODLer Airdrops! Earn AIGENSYN With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2026-05-21 11:00",
+  "syms": [
+   "AIGENSYN"
+  ],
+  "rewards": {
+   "AIGENSYN": 100000000.0
+  },
+  "listing": [],
+  "snap": [
+   [
+    "2026-05-04",
+    "2026-05-06"
+   ]
+  ],
+  "code": "8c6cfaeddbd04f1595f658ac1dfbd0e7"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing Genius Terminal (GENIUS) on Binance HODLer Airdrops! Earn GENIUS With Retroactive BNB Simple Earn Subscripti",
+  "announce": "2026-05-29 08:00",
+  "syms": [
+   "GENIUS"
+  ],
+  "rewards": {
+   "GENIUS": 10000000.0
+  },
+  "listing": [],
+  "snap": [
+   [
+    "2026-05-11",
+    "2026-05-13"
+   ]
+  ],
+  "code": "455eedc320bd43e28e2326f58d4aac2a"
+ },
+ {
+  "type": "hodler",
+  "title": "Introducing OpenGradient (OPG) on Binance HODLer Airdrops! Earn OPG With Retroactive BNB Simple Earn Subscriptions",
+  "announce": "2026-06-30 05:00",
+  "syms": [
+   "OPG"
+  ],
+  "rewards": {
+   "OPG": 6400000.0
+  },
+  "listing": [],
+  "snap": [
+   [
+    "2026-06-22",
+    "2026-06-24"
+   ]
+  ],
+  "code": "b026c9829d28459cb1f1a95000960a08"
+ }
+]

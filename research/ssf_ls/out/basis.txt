@@ -1,0 +1,15 @@
+implied annual simple rate in front SSF (median of liquid names), yearly means of monthly medians
+      implied  deposit_gross  policy
+2017    0.139          0.095   0.080
+2018    0.191          0.173   0.158
+2019    0.203          0.215   0.200
+2020    0.118          0.120   0.105
+2021    0.210          0.191   0.176
+2022    0.317          0.186   0.126
+2023    0.348          0.330   0.207
+2024    0.452          0.468   0.490
+2025    0.379          0.414   0.428
+2026    0.326          0.376   0.370
+OOS mean implied 0.333 deposit 0.381
+realised spot-minus-futures drag, annualised: {2017: 0.125, 2018: 0.187, 2019: 0.205, 2020: 0.14, 2021: 0.195, 2022: 0.295, 2023: 0.166, 2024: 0.423, 2025: 0.339, 2026: 0.301}
+OOS drag annualised: 0.305

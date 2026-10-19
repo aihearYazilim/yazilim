@@ -1,0 +1,73 @@
+target,nego_idx,ann_idx,tp,tp_cur,closed_at_ann,outcome,out_idx,tof_target,tof_start,note
+DENGE,,739094.0,,,0,none,,,,A grubu %12.45 + B devri; SPK zorunlu teklif kararı dava ile ertelendi; teklif yapılmadı
+INFO,,756985.0,1.91,TL,0,tender,,INFO,2019-08-15,
+IDGYO,,817422.0,,,0,tender,,IDGYO,2020-07-27,
+KUVVA,830994.0,833178.0,,,0,exempt,851584.0,,,SPK muafiyet
+GATEG,,858094.0,,,0,none,,,,A grubu imtiyazlı devir; muafiyet talebi
+DENGE,858890.0,876435.0,,,0,tender,,DENGE,2021-03-02,
+PAMEL,,877566.0,,,1,tender,,BMELK,2020-11-23,
+IZINV,,893097.0,5.8,TL,0,tender,,IZTAR,2021-03-08,
+OTTO,,915539.0,,,1,tender,,TACTR,2021-04-28,ilk açıklama (08.02.2021) listede yok; geç açıklama kullanıldı
+KGYO,,912505.0,,,0,tender,,YKGYO,2021-06-21,
+AGESA,,912019.0,,,0,none,,,,ortak kontrol; teklif yok
+ETILR,,939326.0,,,1,tender,,ETILR,2021-11-11,ilk açıklama 24.05.2020 listede yok; gönüllü teklif
+INGRM,,950274.0,,,1,tender,,ARMDA,2021-08-31,dolaylı (Imola) ; ilk açıklama 12.2020 listede yok
+POLTK,,961356.0,,,1,exempt,968401.0,,,dolaylı; SPK muafiyet
+TTKOM,984472.0,1009265.0,,,0,exempt,1014802.0,,,TVF alıcı; muaf
+KNFRT,,986753.0,,,0,none,,,,teklif bulunamadı
+YUNSA,991145.0,992636.0,,,0,exempt,1004709.0,,,hakim ortak ortakları arası; çağrı yükümlülüğü başvuru sonucu
+YKBNK,,981314.0,,,0,tender,,YKBNK,2022-05-16,
+KAREL,,1013897.0,9.11,TL,0,tender,,KAREL,2022-08-22,
+OZRDN,,1025206.0,,,0,tender,,OZRDN,2022-07-25,
+CELHA,,1071313.0,,,0,tender,,CELHA,2023-01-30,ertelenmiş açıklama + görüşmeler
+INTEK,,1080998.0,,,0,tender,,UZERB,2023-02-21,kayıt=duyuru günü
+ICUGS,,1086448.0,,,1,tender,,RHEAG,2023-02-02,
+TURSG,803495.0,817797.0,,,0,exempt,839996.0,,,kamu alıcı; muaf
+BMSCH,,1154726.0,15.0,TL,1,tender,,BMSCH,2023-09-13,
+BMSTL,,1208711.0,24.0,TL,1,tender,,BMSTL,2023-12-25,
+BRSAN,,1161433.0,,,0,none,,,,dolaylı (Salzgitter çıkışı)
+ACSEL,,1162041.0,,,1,tender,,ACSEL,2023-08-31,alıcı (VERUS) bildirimi
+LYDYE,,1190620.0,,,1,tender,,TETMT,2023-10-17,
+HUBVC,,1192848.0,,,0,tender,,HUBVC,2024-06-20,
+OYAKC,1220316.0,1256038.0,,,1,tender,,OYAKC,2024-07-16,
+LINK,,1221688.0,,,0,tender,,LINK,2024-03-27,kayıt=duyuru günü
+BAYRK,,1226106.0,11.0,TL,1,tender,,BAYRK,2024-03-19,
+LYDHO,,1245140.0,,,1,tender,,TETMT,2024-03-19,
+LYDHO,,1241773.0,,,1,tender,,MIPAZ,2024-03-19,
+DUNYH,,1249646.0,,,1,tender,,SELGD,2024-04-08,
+A1YEN,,1246985.0,,,0,tender,,KARYE,2024-05-13,
+UFUK,,1299815.0,,,0,tender,,UFUK,2025-02-11,
+BIGTK,,1307677.0,,,0,tender,,DOBUR,2024-11-26,
+SAMAT,,1393056.0,,,1,tender,,SAMAT,2025-12-03,A grubu %28.6 oy
+GATEG,1426918.0,1496114.0,,,1,tender,,SNKRN,2025-11-28,
+PSDTC,1437659.0,1438998.0,50.50530909,TL,0,tender,,PSDTC,2025-09-25,kayıt=SPA günü
+DITAS,,1452504.0,0.25,USD,0,tender,,DITAS,2025-08-26,
+POLHO,1450023.0,1452981.0,,,0,pending,,,,kapanış 08.07.2026; teklif OOS sonunda bekliyor
+PEKGY,,1467461.0,,,0,tender,,PEKGY,2026-09-16,
+CEOEM,,1472563.0,,,1,none,,,,dolaylı
+TGSAS,,1471989.0,,,0,tender,,TGSAS,2026-08-28,
+KAPLM,,1486109.0,,,0,tender,,KAPLM,2026-01-15,kayıt=SPA günü
+KZGYO,,1507539.0,,,0,tender,,KZGYO,2026-03-26,
+BURVA,,1533206.0,,,0,pending,,,,dolaylı; teklif fiyatı 635.90 açıklandı 07.05.2026
+BURCE,,1533204.0,,,0,none,,,,dolaylı %47
+SEGMN,1551606.0,1603966.0,,,0,pending,,,,ön protokol 02.02.2026
+OZRDN,,1555958.0,,,1,tender,,OZRDN,2026-05-22,
+ESCAR,1577191.0,1596382.0,0.36592,USD,0,pending,,,,
+AKCNS,,1595082.0,,,0,tender,,AKCNS,2026-09-23,
+CRFSA,,1595019.0,,,0,exempt,1647387.0,,,muafiyet başvurusu 10.08.2026
+EDATA,,1594906.0,,,0,pending,,,,ön protokol ertelenmiş
+PRZMA,1598916.0,1621173.0,,,0,pending,,,,%29.9 + imtiyaz
+KARTN,,1625589.0,,,0,pending,,,,
+TKFEN,1615576.0,1636692.0,,,0,pending,,,,
+HKTM,1651008.0,1654193.0,,,0,pending,,,,
+CELHA,,1612217.0,,,1,tender,,CELHA,2026-09-02,
+ICUGS,1602045.0,1637942.0,,,0,pending,,,,
+KERVN,1643205.0,,,,0,none,,,,sadece görüşme
+ATSYH,,1617515.0,,,1,tender,,ATSYH,2026-09-10,gönüllü
+MMCAS,1477018.0,,,,0,none,,,,sadece görüşme
+ARZUM,1583159.0,,,,0,none,,,,sadece görüşme
+BORLS,1594482.0,,,,0,none,,,,sadece görüşme
+SAYAS,803150.0,,,,0,none,,,,sadece görüşme
+OLMK,877881.0,896926.0,2.69,TL,0,tender,,OLMK,2021-07-05,pasif üye; 0.0269 TL/0.01 nominal
+ANELE,,804673.0,,,0,tender,,ANELT,2020-03-20,alıcı (ANELE) bildirimi
+ARTI,839627.0,839838.0,,,0,tender,,ARTI,2020-07-20,teklif bilgileri bildirimlerden elle (tof_extra.csv)

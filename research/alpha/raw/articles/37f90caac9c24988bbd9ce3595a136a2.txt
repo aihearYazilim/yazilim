@@ -1,0 +1,74 @@
+(Ended) Binance Alpha Points Promotion: Earn Extra Points for BSC Alpha Token Purchases or Limit Orders
+1746018466399
+Note: The content in this announcement is outdated. Please refer to the latest announcement on Binance Alpha Points Rules Adjustment.
+This is a general announcement. Products and services mentioned may not be available in all regions.
+Fellow Binancians,
+To celebrate the growing Alpha token ecosystem and reward our most active traders, we’re launching a limited-time Binance Alpha Points Promotion starting 2025-05-01 00:00 (UTC).
+Promotion Period: From 2025-05-01 00:00 (UTC) - 2025-09-04 00:00 (UTC)
+During the Promotion Period, users can earn extra Alpha Points through eligible trades. Specifically:
+BSC Alpha token purchases or
+
+Limit order purchases of Alpha tokens (on any network) on Alpha 2.0
+
+will be double-counted toward users’ Alpha trading volume.
+If purchased with:&nbsp;
+both BSC Alpha token and limit buy orders on Alpha 2.0
+
+will be counted four times toward users’ Alpha trading volume.
+Alpha Volume Formula:
+Alpha Volume is calculated based on the type of purchase, with different weights applied:
+* 4x purchases that use BOTH the BSC Alpha token and the Alpha 2.0 limit order feature
+* 2x purchases that use EITHER the BSC Alpha token or the Alpha 2.0 limit order feature
+* 1x all other eligible purchases
+Example:
+Instant buy $100 of non-BSC token ABC
+
+Instant buy $110 of BSC token XYZ
+
+Limit buy $120 of non-BSC token ABC
+
+Limit buy $130 of BSC token XYZ
+
+Alpha Volume = 100 + 110*2 + 120*2 + 130*4 = 1080
+User can earn 10 points.
+Learn more about the calculation of Alpha Points here: Frequently Asked Questions on Binance Alpha Points
+Terms &amp; Conditions:
+These terms and conditions (“Activity Terms”) govern your participation in this activity (“Activity”). By participating in this Activity, users agree to these Activity Terms, and the following additional terms: (a) Binance Terms and Conditions for Prize Promotions (b) Binance Terms of Use; and (c) Binance Privacy Policy; all of which are incorporated by reference into these terms and conditions.&nbsp;
+
+In the case of any inconsistency or conflict between these Activity Terms, and any other incorporated terms, the provisions of these Activity Terms shall prevail, followed by the following in this order of precedence, and to the extent of such conflict: (a) Binance Terms and Conditions for Prize Promotions (b) Binance Terms of Use; and (c) Binance Privacy Policy.&nbsp;
+
+Only users from qualified regions who complete account verification (KYC) and hold an active Binance Wallet shall be eligible.&nbsp;
+
+Users are responsible for informing themselves about and observing any restrictions and/or requirements imposed with respect to the access to and use of Binance services in each country from which the services are accessed. Tokens will not be distributed to users who delete or deactivate their Binance Wallets.
+
+Binance reserves the right to disqualify a user’s reward eligibility if the account is involved in any dishonest behavior (e.g., wash trading, illegally bulk account registrations/logins, self dealing, or market manipulation).
+
+Binance reserves the right, at its sole discretion, to determine the denomination in which a token will be paid.
+
+Binance reserves the right at any time in its sole and absolute discretion to determine and/or amend or vary these Activity Terms without prior notice, including but not limited to canceling, extending, terminating or suspending this Activity, its eligibility terms and criteria, the selection and number of winners, and the timing of any act to be done, and all users shall be bound by these amendments.
+
+There may be discrepancies between this original content in English and any translated versions. Please refer to the original English version for the most accurate information, in case any discrepancies arise.
+
+Thank you for your support!
+Binance Team
+2025-04-30
+Note: This announcement was amended on 2025-09-04 to clarify the promotion has ended on 2025-09-04 00:00 (UTC). Previously, it was amended on 2025-07-21 to clarify users can earn extra Alpha Points through BSC Alpha token purchases and limit order purchases, on 2025-05-06 to clarify users can earn extra Alpha Points through BSC Alpha token purchases or limit order purchases of Alpha tokens (on any network), on 2025-05-02 to add more clarifications under Alpha Volume Formula, and on 2025-04-30 to clarify the Promotion Period begins from 2025-05-01 00:00 (UTC).
+Trade on-the-go with Binance’s crypto trading app (iOS/Android)
+Find us on&nbsp;
+Telegram
+
+WhatsApp
+
+X
+
+Facebook
+
+Instagram
+
+Discord
+
+Disclaimer: Products and services referred to here may not be available in your region.
+Binance reserves the right to change, modify or impose additional restrictions with respect to user’s eligibility for Token Generation Event (TGE) participation and Alpha token airdrops including the criteria for calculation of Alpha points, in its sole discretion at any time, without prior notification. Calculations of Alpha points in accordance with the stated methodology, in the good faith discretion of Binance shall be final and binding on the user.
+Binance Wallet is an optional product. It is your responsibility to determine if this product is suitable for you. Binance is not responsible for your access or use of third-party applications (including functionality embedded within the Binance Wallet) and shall have no liability whatsoever in connection with your use of such third-party applications, including, without limitation, any transactions you dispute. Please carefully review the Binance Wallet Terms of Use and always do your own research.
+Binance Alpha features emerging digital assets which are not listed on the Binance Exchange and which are generally expected to have a low market capitalisation and unique or novel characteristics. The inclusion of a digital asset as a Binance Alpha asset does not in any way imply, directly or indirectly, that such digital asset will be listed on Binance Exchange in the future. As digital asset prices can be volatile, the value of any investment that you make in Alpha Assets may go down or up and you may lose all or part of the value of the amount that you invest. Please note that in relation to Binance Alpha (i) the risk of loss of all or part of your investment is magnified with Binance Alpha assets as they are subject to increased price volatility (ii) by purchasing Alpha Assets, you are exposed to price slippage and blockchain fees, which can have a negative impact of the price of Alpha Assets (iii) Alpha Assets cannot be withdrawn from the Binance Exchange, and you will only be able to access Alpha Assets from your Alpha Account only. You are solely responsible for your investment decisions. Binance will not in any circumstances be responsible or liable for any losses that you may incur arising directly or indirectly from an investment in Binance Alpha Assets.
+

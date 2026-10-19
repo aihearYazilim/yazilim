@@ -1,0 +1,51 @@
+0 742
+50 742
+100 742
+150 742
+200 742
+250 742
+300 742
+350 742
+retry 1192238 [Errno 104] Connection reset by peer
+400 742
+450 742
+500 742
+550 742
+600 742
+retry 1663193 HTTP Error 429: Request Limit Exceeded
+retry 1662037 HTTP Error 429: Request Limit Exceeded
+retry 1661635 HTTP Error 429: Request Limit Exceeded
+retry 1661202 HTTP Error 429: Request Limit Exceeded
+retry 1660436 HTTP Error 429: Request Limit Exceeded
+retry 1661635 HTTP Error 429: Request Limit Exceeded
+retry 1660436 HTTP Error 429: Request Limit Exceeded
+retry 1655930 HTTP Error 429: Request Limit Exceeded
+retry 1670958 HTTP Error 429: Request Limit Exceeded
+retry 767357 HTTP Error 429: Request Limit Exceeded
+retry 1660436 HTTP Error 429: Request Limit Exceeded
+retry 757336 HTTP Error 429: Request Limit Exceeded
+retry 767357 HTTP Error 429: Request Limit Exceeded
+retry 813587 HTTP Error 429: Request Limit Exceeded
+retry 861700 HTTP Error 429: Request Limit Exceeded
+retry 914864 HTTP Error 429: Request Limit Exceeded
+retry 960867 HTTP Error 429: Request Limit Exceeded
+650 742
+retry 914864 HTTP Error 429: Request Limit Exceeded
+retry 1057286 HTTP Error 429: Request Limit Exceeded
+retry 1115325 HTTP Error 429: Request Limit Exceeded
+retry 1108020 HTTP Error 429: Request Limit Exceeded
+retry 1108002 HTTP Error 429: Request Limit Exceeded
+retry 1107824 HTTP Error 429: Request Limit Exceeded
+retry 1105530 HTTP Error 429: Request Limit Exceeded
+retry 914864 HTTP Error 429: Request Limit Exceeded
+retry 1228208 HTTP Error 429: Request Limit Exceeded
+retry 1212097 HTTP Error 429: Request Limit Exceeded
+retry 1228208 HTTP Error 429: Request Limit Exceeded
+retry 1312535 HTTP Error 429: Request Limit Exceeded
+retry 1439905 HTTP Error 429: Request Limit Exceeded
+700 742
+retry 1490298 HTTP Error 429: Request Limit Exceeded
+retry 1439905 HTTP Error 429: Request Limit Exceeded
+retry 1610018 HTTP Error 429: Request Limit Exceeded
+retry 1610018 HTTP Error 429: Request Limit Exceeded
+retry 1439905 HTTP Error 429: Request Limit Exceeded

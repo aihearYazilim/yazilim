@@ -1,0 +1,7 @@
+strateji,sermaye,IS_geo,IS_dd,IS_worst,IS_n,OOS_geo,OOS_dd,OOS_worst,OOS_n,OOS_win,OOS_trade_mean
+"A bedelsiz: ilk bildirim -> SPK onayı+1 gün sat (XU100>SMA50, K=5, stop %15)",100000,4.56,-46.6,-16.6,94,0.65,-18.8,-16.9,19,0.37,2.86
+"A bedelsiz: ilk bildirim -> SPK onayı+1 gün sat (XU100>SMA50, K=5, stop %15)",1000000,4.22,-46.0,-13.6,94,0.95,-10.3,-3.9,19,0.37,2.86
+"B geri alım: program başı -> 60 gün (K=10, stop %15)",100000,4.83,-31.5,-16.3,237,-0.37,-26.7,-18.7,52,0.31,-3.04
+"B geri alım: program başı -> 60 gün (K=10, stop %15)",1000000,4.36,-33.5,-19.6,237,1.22,-12.7,-11.5,52,0.31,-3.04
+"C bedelsiz: SPK onayı -> bölünme günü sat (XU100>SMA50, K=10)",100000,3.29,-14.4,-1.2,197,0.74,-11.6,-8.8,47,0.47,-3.18
+"C bedelsiz: SPK onayı -> bölünme günü sat (XU100>SMA50, K=10)",1000000,3.07,-12.9,-0.7,197,0.94,-8.8,-5.8,47,0.47,-3.18

@@ -1,0 +1,22 @@
+BASE {'struct': 'P', 'delta': 0.1, 'L': 8, 'filt': 'vrp', 'mode': 'hold', 'h': 0.1}
+ IS {'geo': 0.0242, 'dd': -0.3205, 'worst': -0.3132, 'negm': 0.1154} 
+ OOS {'geo': 0.0529, 'dd': -0.0752, 'worst': -0.0234, 'negm': 0.0769}
+ trades total 55 OOS 5 margin closes 5
+ yearly: {Timestamp('2017-12-31 00:00:00'): 0.173, Timestamp('2018-12-31 00:00:00'): 0.149, Timestamp('2019-12-31 00:00:00'): 0.201, Timestamp('2020-12-31 00:00:00'): -0.104, Timestamp('2021-12-31 00:00:00'): 0.309, Timestamp('2022-12-31 00:00:00'): 0.492, Timestamp('2023-12-31 00:00:00'): 0.877, Timestamp('2024-12-31 00:00:00'): 1.09, Timestamp('2025-12-31 00:00:00'): 0.292, Timestamp('2026-12-31 00:00:00'): 0.473}
+ OOS months: [ 0.062  0.031  0.071  0.02   0.058  0.041  0.01   0.078 -0.023  0.119
+  0.017  0.011]
+ avg lev OOS 7.62 max margin/eq 1.17
+ capacity 1M: contracts/trade median 52, strike day volume median 0, OI median 184
+ capacity 5M: contracts/trade median 258, strike day volume median 0, OI median 184
+ OOS entries: [('2025-11-03', [('P', np.float64(10250.0), np.float64(-0.1), 0, 117)]), ('2026-01-02', [('P', np.float64(11250.0), np.float64(-0.11), 0, 184)]), ('2026-03-02', [('P', np.float64(12500.0), np.float64(-0.1), 20, 390)]), ('2026-05-04', [('P', np.float64(14500.0), np.float64(-0.1), 0, 239)]), ('2026-07-01', [('P', np.float64(15000.0), np.float64(-0.11), 57, 121)])]
+ h=0.05           IS {'geo': 0.0255, 'dd': -0.3201, 'worst': -0.3128, 'negm': 0.1058}  OOS {'geo': 0.054, 'dd': -0.075, 'worst': -0.0207, 'negm': 0.0769}
+ h=0.20           IS {'geo': 0.0214, 'dd': -0.341, 'worst': -0.314, 'negm': 0.1154}  OOS {'geo': 0.0507, 'dd': -0.0756, 'worst': -0.0287, 'negm': 0.0769}
+ nema=0           IS {'geo': 0.0206, 'dd': -0.3319, 'worst': -0.3165, 'negm': 0.1154}  OOS {'geo': 0.0485, 'dd': -0.0827, 'worst': -0.0336, 'negm': 0.0769}
+ tax=0            IS {'geo': 0.0262, 'dd': -0.3205, 'worst': -0.3132, 'negm': 0.1058}  OOS {'geo': 0.0552, 'dd': -0.0752, 'worst': -0.0234, 'negm': 0.0769}
+ margin scan x1.5 IS {'geo': 0.0223, 'dd': -0.259, 'worst': -0.2338, 'negm': 0.1058}  OOS {'geo': 0.0478, 'dd': -0.069, 'worst': -0.0239, 'negm': 0.0769}
+ entry day 3      IS {'geo': 0.0252, 'dd': -0.347, 'worst': -0.2389, 'negm': 0.1154}  OOS {'geo': 0.0385, 'dd': -0.076, 'worst': -0.0311, 'negm': 0.0769}
+ entry day 6      IS {'geo': 0.0202, 'dd': -0.4807, 'worst': -0.3687, 'negm': 0.0962}  OOS {'geo': -0.005, 'dd': -0.3318, 'worst': -0.2336, 'negm': 0.3077}
+ liq=vol5         IS {'geo': 0.0179, 'dd': -0.4533, 'worst': -0.3132, 'negm': 0.125}  OOS {'geo': 0.0515, 'dd': -0.0752, 'worst': -0.0234, 'negm': 0.0769}
+ liq=any          IS {'geo': 0.0237, 'dd': -0.3292, 'worst': -0.3132, 'negm': 0.1058}  OOS {'geo': 0.0529, 'dd': -0.0752, 'worst': -0.0234, 'negm': 0.0769}
+ dep-3pp          IS {'geo': 0.0222, 'dd': -0.3344, 'worst': -0.3154, 'negm': 0.125}  OOS {'geo': 0.0511, 'dd': -0.076, 'worst': -0.0252, 'negm': 0.0769}
+ mindte 25        IS {'geo': 0.0242, 'dd': -0.3205, 'worst': -0.3132, 'negm': 0.1154}  OOS {'geo': 0.0529, 'dd': -0.0752, 'worst': -0.0234, 'negm': 0.0769}

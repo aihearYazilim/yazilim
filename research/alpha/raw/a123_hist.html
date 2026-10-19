@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1E2026">
+    <meta name="app-version" content="1.0.15">
+    <style>html,body{margin:0;background:#1E2026;color:#E6E8EA}</style>
+    <title>Binance Alpha Airdrop History - Archive of Past Binance Alpha Project Airdrops</title>
+    <meta name="description" content="Binance Alpha Airdrop History provides an archive of past Binance Alpha project airdrops, including all completed airdrop records.">
+    <meta name="keywords" content="Binance,Alpha,Airdrop,History,Crypto,Cryptocurrency,Token,Binance Airdrop">
+    <meta name="author" content="alpha123.uk">
+    <meta property="og:title" content="Binance Alpha Airdrop History">
+    <meta property="og:description" content="Archive of past Binance Alpha project airdrops, including all completed airdrop records">
+    <meta property="og:url" content="https://alpha123.uk/history.html">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Binance Alpha Airdrop History">
+    <meta name="twitter:description" content="Archive of past Binance Alpha project airdrops, including all completed airdrop records">
+    <meta name="twitter:image" content="https://alpha123.uk/AirdropsCalendar/og-image-144.png">
+    <meta name="twitter:image:alt" content="Binance Alpha Airdrop History">
+    <link rel="icon" type="image/png" href="/AirdropsCalendar/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/AirdropsCalendar/favicon.svg" />
+    <link rel="shortcut icon" href="/AirdropsCalendar/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/AirdropsCalendar/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Alpha Airdrops" />
+    <link rel="manifest" href="/AirdropsCalendar/site-en.webmanifest" />
+    <link rel="canonical" href="https://alpha123.uk/history.html" />
+    <link rel="alternate" hreflang="x-default" href="https://alpha123.uk/history.html" />
+    <link rel="alternate" hreflang="en" href="https://alpha123.uk/history.html" />
+    <link rel="alternate" hreflang="bn-BD" href="https://alpha123.uk/bn/history.html" />
+    <link rel="alternate" hreflang="zh-CN" href="https://alpha123.uk/zh/history.html" />
+    <link rel="alternate" hreflang="id-ID" href="https://alpha123.uk/id/history.html" />
+    <link rel="alternate" hreflang="ko-KR" href="https://alpha123.uk/ko/history.html" />
+    <link rel="alternate" hreflang="vi-VN" href="https://alpha123.uk/vi/history.html" />
+    <link rel="stylesheet" href="/css/bootstrap-icons.css">
+    <link rel="stylesheet" href="/css/history.css?v=1.0.15">
+    <script defer src="/js/language.js?v=1.0.8"></script>
+    <script defer src="/js/sw-register.js?v=1.0.15"></script>
+    <script defer src="/js/shell-version.js?v=1.0.15"></script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Binance Alpha Airdrop History",
+      "url": "https://alpha123.uk/history.html",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "Alpha Airdrops",
+        "url": "https://alpha123.uk/"
+      }
+    }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <a href="/" class="logo">
+                Binance <span>Alpha</span> History
+            </a>
+            <button id="refreshButton" class="theme-toggle">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <div class="header-links">
+                <a href="/" class="nav-link">Today</a>
+                <a href="/history.html" class="nav-link active">Airdrops</a>
+                <a href="/stability/" class="nav-link">Stability</a>
+                <a href="/calendar/" class="nav-link">Ledger</a>
+            </div>
+        </div>
+    </header>
+    <main class="main">
+        <div class="container">
+            <h2 class="section-title">
+                <i class="bi bi-clock-history"></i> Airdrop History
+            </h2>
+            <div class="airdrops-table-wrapper">
+                <table class="airdrops-table" id="history-airdrops">
+                    <thead>
+                        <tr>
+                            <th style="width:28%;">
+                                <span style="position:relative;display:inline-block;">
+                                    Project
+                                    <i id="filterToggle" class="bi bi-funnel" style="cursor:pointer;margin-left:6px;"></i>
+                                    <div id="filterMenu" style="display:none;position:absolute;top:1.6em;left:0;z-index:100;background:#111318;border:1px solid #2a2f3a;border-radius:8px;padding:8px 28px 8px 10px;min-width:180px;box-shadow:0 8px 20px rgba(0,0,0,0.5);color:#e5e7eb;">
+                                        <button id="filterCloseBtn" aria-label="Close filter" title="Close" style="position:absolute;top:6px;right:8px;background:transparent;border:none;color:#9ca3af;cursor:pointer;padding:2px;">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px;">Filter</div>
+                                        <input id="filterPrefix" type="text" placeholder="Filter by token prefix..." style="width:100%;padding:6px 8px;border:1px solid #2a2f3a;border-radius:6px;background:#0d0f14;color:#e5e7eb;margin-bottom:8px;outline:none;" />
+                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:6px 0;">
+                                            <input type="checkbox" id="filterSpot" /> Spot <i class="bi bi-file-earmark-text contract-icon value-text exchange-price-value" style="display:inline;margin-left:4px;"></i>
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:6px 0;">
+                                            <input type="checkbox" id="filterFutures" /> Futures <i class="bi bi-file-earmark-text contract-icon" style="color:#22c55e;margin-left:4px;"></i>
+                                        </label>
+                                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:6px 0;">
+                                            <input type="checkbox" id="filterTge" /> TGE
+                                        </label>
+                                    </div>
+                                </span>
+                            </th>
+                            <th>Points</th>
+                            <th id="amount-sort-header" style="cursor:pointer;white-space:nowrap;">Amount <span class="sort-icons"><i id="sortStateIcon" class="bi bi-caret-down"></i></span></th>
+                            <th id="mc-sort-header" style="cursor:pointer;white-space:nowrap;text-align:right;width:6.6em;">
+                                <div style="display:inline-flex;align-items:center;justify-content:flex-end;gap:6px;">
+                                    <span id="mcMetricLabel" style="cursor:pointer;color:#f59e0b;">MC</span>
+                                    <span class="sort-icons"><i id="mcSortStateIcon" class="bi bi-caret-down"></i></span>
+                                </div>
+                            </th>
+                            <th style="width:20%;">Date</th>
+                            <th style="width:30px;text-align:center;"><i class="bi bi-pin"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" class="loading">
+                                <div class="spinner"></div>
+                                <p>Loading...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <a href="https://alpha123.uk" class="footer-link"><i class="bi bi-globe2"></i> alpha123.uk</a>
+                </div>
+                <div class="footer-right">
+                    <div class="footer-links">
+                        <a href="https://twitter.com/alpha123uk" class="footer-link" target="_blank" rel="noopener noreferrer" title="Alpha123 𝕏 (Twitter)" aria-label="Alpha123 𝕏 (Twitter)">𝕏</a>
+                        <a href="https://t.me/alpha123en" class="footer-link" target="_blank" rel="noopener noreferrer" title="Telegram Alerts" aria-label="Telegram Alerts"><i class="bi bi-telegram"></i></a>
+                        <a href="/manual/en/icons-reference.html" class="footer-link" title="Icons Reference" aria-label="Icons Reference"><i class="bi bi-question-circle"></i></a>
+                        <div class="language-dropdown">
+                            <a href="#" class="footer-link language-selector"><i class="bi bi-translate"></i> </a>
+                            <div class="language-menu">
+                                <a href="/history.html" class="language-option" data-lang="en">English</a>
+                                <a href="/bn/history.html" class="language-option" data-lang="bn">বাংলা</a>
+                                <a href="/zh/history.html" class="language-option" data-lang="zh">中文</a>
+                                <a href="/id/history.html" class="language-option" data-lang="id">Bahasa Indonesia</a>
+                                <a href="/ko/history.html" class="language-option" data-lang="ko">한국어</a>
+                                <a href="/vi/history.html" class="language-option" data-lang="vi">Tiếng Việt</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+        
+        function initializeApp() {
+            // Global state for sorting and prices
+            window.historyAirdropsData = [];
+            window.historyDexPrices = {};
+            window.currentSort = { key: null, direction: 'desc' };
+            window.historyFilters = { spot: false, futures: false, tge: false, prefix: '' };
+            window.currentMarketMetric = 'mc';
+
+            loadAirdropData();
+            initFavorites();
+            
+            const refreshButton = document.getElementById('refreshButton');
+            if (refreshButton) {
+                refreshButton.addEventListener('click', function() {
+                    refreshData();
+                    const icon = this.querySelector('i');
+                    icon.classList.add('rotating');
+                    setTimeout(() => {
+                        icon.classList.remove('rotating');
+                    }, 1000);
+                });
+            }
+
+            // Bind amount header for sorting
+            const amountHeader = document.getElementById('amount-sort-header');
+            if (amountHeader) {
+                amountHeader.addEventListener('click', function() {
+                    toggleSortByValue();
+                });
+            }
+
+            // Filter menu
+            initFilterMenu();
+
+            // MC header sort and toggle
+            const mcHeader = document.getElementById('mc-sort-header');
+            if (mcHeader) mcHeader.addEventListener('click', function(){ toggleSortByMc(); });
+            const mcMetricLabel = document.getElementById('mcMetricLabel');
+            if (mcMetricLabel) mcMetricLabel.addEventListener('click', function(e){ e.stopPropagation(); toggleMarketMetric(); });
+            
+            initSharesTooltips();
+            initTokenLinkDelegation();
+        }
+        
+        function refreshData() {
+            document.querySelector('#history-airdrops tbody').innerHTML = `
+                <tr>
+                    <td colspan="5" class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading...</p>
+                    </td>
+                </tr>
+            `;
+            // reset sort to default
+            window.currentSort = { key: null, direction: 'desc' };
+            updateSortIcons();
+            loadAirdropData();
+        }
+
+        function initFilterMenu() {
+            const toggle = document.getElementById('filterToggle');
+            const menu = document.getElementById('filterMenu');
+            const spotCb = document.getElementById('filterSpot');
+            const futuresCb = document.getElementById('filterFutures');
+            const tgeCb = document.getElementById('filterTge');
+            const prefixInput = document.getElementById('filterPrefix');
+            const closeBtn = document.getElementById('filterCloseBtn');
+            if (!toggle || !menu || !spotCb || !futuresCb || !tgeCb) return;
+            toggle.addEventListener('click', function(e){
+                e.stopPropagation();
+                menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
+            });
+            document.addEventListener('click', function(e){
+                if (!menu.contains(e.target) && e.target !== toggle) menu.style.display = 'none';
+            });
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    menu.style.display = 'none';
+                });
+            }
+            function onFiltersChange(){
+                window.historyFilters = {
+                    spot: !!spotCb.checked,
+                    futures: !!futuresCb.checked,
+                    tge: !!tgeCb.checked,
+                    prefix: (prefixInput && prefixInput.value ? prefixInput.value.trim() : '')
+                };
+                updateFilterIconState();
+                applySortingAndRender();
+            }
+            spotCb.addEventListener('change', onFiltersChange);
+            futuresCb.addEventListener('change', onFiltersChange);
+            tgeCb.addEventListener('change', onFiltersChange);
+            if (prefixInput) prefixInput.addEventListener('input', onFiltersChange);
+            updateFilterIconState();
+        }
+
+        function updateFilterIconState() {
+            const toggle = document.getElementById('filterToggle');
+            if (!toggle) return;
+            const f = window.historyFilters || {};
+            const anyActive = !!(f.spot || f.futures || f.tge || (f.prefix && f.prefix.length > 0));
+            if (anyActive) { toggle.classList.remove('bi-funnel'); toggle.classList.add('bi-funnel-fill'); toggle.style.color = '#f59e0b'; }
+            else { toggle.classList.remove('bi-funnel-fill'); toggle.classList.add('bi-funnel'); toggle.style.color = ''; }
+        }
+
+        function formatSharesText(totalAmount, amountPerShare) {
+            try {
+                const total = parseFloat(totalAmount);
+                const per = parseFloat(amountPerShare);
+                if (!isFinite(total) || !isFinite(per) || total <= 0 || per <= 0) return null;
+                const shares = total / per;
+                const k = Math.round(shares / 1000);
+                return `${k}k slots`;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        let _sharesTooltipEl = null;
+        let _sharesTooltipTimer = null;
+        function showSharesTooltip(targetEl, text) {
+            if (!text) return;
+            if (!_sharesTooltipEl) {
+                _sharesTooltipEl = document.createElement('div');
+                _sharesTooltipEl.className = 'shares-tooltip';
+                document.body.appendChild(_sharesTooltipEl);
+            }
+            _sharesTooltipEl.textContent = text;
+            const rect = targetEl.getBoundingClientRect();
+            _sharesTooltipEl.style.opacity = '0';
+            _sharesTooltipEl.style.left = '0px';
+            _sharesTooltipEl.style.top = '0px';
+            _sharesTooltipEl.style.display = 'block';
+            requestAnimationFrame(() => {
+                const tipRect = _sharesTooltipEl.getBoundingClientRect();
+                const left = Math.max(8, Math.min(rect.left + (rect.width - tipRect.width) / 2, window.innerWidth - tipRect.width - 8));
+                const top = Math.max(8, rect.top - tipRect.height - 8);
+                _sharesTooltipEl.style.left = `${left}px`;
+                _sharesTooltipEl.style.top = `${top}px`;
+                _sharesTooltipEl.style.opacity = '1';
+            });
+        }
+        function hideSharesTooltip() {
+            if (_sharesTooltipEl) {
+                _sharesTooltipEl.style.opacity = '0';
+                _sharesTooltipEl.style.display = 'none';
+            }
+            if (_sharesTooltipTimer) {
+                clearTimeout(_sharesTooltipTimer);
+                _sharesTooltipTimer = null;
+            }
+        }
+
+        let _sharesBannerEl = null;
+        let _sharesBannerTimer = null;
+        function showSharesBanner(text, anchorEl) {
+            if (!text) return;
+            if (_sharesBannerEl && _sharesBannerEl.parentNode) {
+                _sharesBannerEl.parentNode.removeChild(_sharesBannerEl);
+            }
+            _sharesBannerEl = document.createElement('div');
+            _sharesBannerEl.className = 'shares-banner';
+            _sharesBannerEl.textContent = text;
+            document.body.appendChild(_sharesBannerEl);
+            if (anchorEl && anchorEl.getBoundingClientRect) {
+                _sharesBannerEl.style.left = '0px';
+                _sharesBannerEl.style.top = '0px';
+                const rect = anchorEl.getBoundingClientRect();
+                const bannerRect = _sharesBannerEl.getBoundingClientRect();
+                const margin = 8;
+                let left = rect.left + (rect.width - bannerRect.width) / 2;
+                let top = rect.top - bannerRect.height - margin;
+                if (top < 8) {
+                    top = rect.bottom + margin;
+                }
+                left = Math.max(8, Math.min(left, window.innerWidth - bannerRect.width - 8));
+                top = Math.max(8, Math.min(top, window.innerHeight - bannerRect.height - 8));
+                _sharesBannerEl.style.left = `${left}px`;
+                _sharesBannerEl.style.top = `${top}px`;
+                _sharesBannerEl.style.transform = 'none';
+            }
+            if (_sharesBannerTimer) clearTimeout(_sharesBannerTimer);
+            _sharesBannerTimer = setTimeout(() => {
+                if (_sharesBannerEl && _sharesBannerEl.parentNode) {
+                    _sharesBannerEl.parentNode.removeChild(_sharesBannerEl);
+                }
+                _sharesBannerEl = null;
+            }, 3000);
+        }
+
+        function isTouchDevice() {
+            return (('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0 || (navigator.msMaxTouchPoints || 0) > 0);
+        }
+
+        function initSharesTooltips() {
+            document.addEventListener('mouseover', function(e) {
+                if (isTouchDevice()) return;
+                const target = e.target && e.target.closest('.shares-info');
+                if (!target) return;
+                const totalAmount = target.getAttribute('data-totalamount');
+                const perAmount = target.getAttribute('data-amount');
+                const text = formatSharesText(totalAmount, perAmount);
+                if (text) showSharesTooltip(target, text);
+            });
+            document.addEventListener('mouseout', function(e) {
+                const related = e.relatedTarget;
+                const from = e.target && e.target.closest('.shares-info');
+                if (!from) return;
+                const stillOnShares = related && related.closest && related.closest('.shares-info');
+                if (!stillOnShares) {
+                    hideSharesTooltip();
+                }
+            });
+            document.addEventListener('click', function(e) {
+                const target = e.target && e.target.closest('.shares-info');
+                if (!target) return;
+                hideSharesTooltip();
+                const totalAmount = target.getAttribute('data-totalamount');
+                const perAmount = target.getAttribute('data-amount');
+                const text = formatSharesText(totalAmount, perAmount);
+                if (text) showSharesBanner(text, target);
+            });
+        }
+
+        async function loadAirdropData() {
+            document.querySelector('#history-airdrops tbody').innerHTML = `
+                <tr>
+                    <td colspan="5" class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading...</p>
+                    </td>
+                </tr>
+            `;
+
+            try {
+                const response = await fetch('/api/historydata');
+                const data = await response.json();
+                
+                if (!data || !data.airdrops || !Array.isArray(data.airdrops)) {
+                    displayNoDataMessage();
+                    return;
+                }
+                
+                const processedData = processAirdropData(data.airdrops);
+                window.historyAirdropsData = processedData;
+                applySortingAndRender();
+                
+                const tokensNeedingDex = [];
+                
+                window.historyAirdropsData.forEach(airdrop => {
+                    if (airdrop.token && airdrop.amount && !isNaN(parseFloat(airdrop.amount))) {
+                        if (airdrop.contract_address && airdrop.chain_id) {
+                            tokensNeedingDex.push({
+                                token: airdrop.token,
+                                contract_address: airdrop.contract_address,
+                                chain_id: airdrop.chain_id
+                            });
+                        }
+                    }
+                });
+                
+                await processDexPrices(tokensNeedingDex);
+                
+            } catch (error) {
+                displayNoDataMessage();
+            }
+        }
+        
+        async function processDexPrices(tokensNeedingDex) {
+            if (tokensNeedingDex.length === 0) return;
+            
+            try {
+                // 改为GET请求以支持缓存，返回所有历史token价格
+                const dexResponse = await fetch(`/api/price/?batch_dex=true`);
+                
+                const dexData = await dexResponse.json();
+                
+                if (dexData.success && dexData.prices) {
+                    const priceMap = {};
+                    for (const [token, dexPriceData] of Object.entries(dexData.prices)) {
+                        const dexPrice = dexPriceData && (dexPriceData.dex_price || dexPriceData.price);
+                        if (dexPrice) priceMap[token] = dexPrice;
+                    }
+                    window.historyDexPrices = priceMap;
+
+                    if (window.currentSort && window.currentSort.key === 'value') {
+                        applySortingAndRender();
+                    } else {
+                        renderPricesFromState();
+                    }
+                }
+            } catch (error) {
+                // Handle error
+            }
+        }
+
+        function processAirdropData(airdrops) {
+            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            
+            const filteredAirdrops = airdrops.filter(airdrop => {
+                if (!airdrop.amount) return false;
+                
+                if (typeof airdrop.amount === 'string' && airdrop.amount.trim() === '') {
+                    return false;
+                }
+                
+                const numAmount = parseFloat(airdrop.amount);
+                if (isNaN(numAmount) || numAmount <= 0) {
+                    return false;
+                }
+                
+                return true;
+            });
+            
+            const processedAirdrops = filteredAirdrops.map(airdrop => {
+                return {
+                    ...airdrop,
+                    isFavorite: favorites.includes(airdrop.token)
+                };
+            });
+            
+            processedAirdrops.sort((a, b) => {
+                if (a.isFavorite && !b.isFavorite) return -1;
+                if (!a.isFavorite && b.isFavorite) return 1;
+                
+                const dateA = a.date || '9999-12-31';
+                const dateB = b.date || '9999-12-31';
+                return dateB.localeCompare(dateA);
+            });
+            
+            return processedAirdrops;
+        }
+
+        function displayNoDataMessage() {
+            const noDataMessage = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 20px;">
+                        No data available
+                    </td>
+                </tr>
+            `;
+            document.querySelector('#history-airdrops tbody').innerHTML = noDataMessage;
+        }
+
+        function joinUrlParts(parts) {
+            return parts.join('');
+        }
+
+        function getChainNameById(chainId) {
+            const map = { '1':'eth','56':'bsc','137':'polygon','42161':'arbitrum','10':'optimism','8453':'base','43114':'avalanche','250':'fantom','25':'cronos','1101':'polygon_zkevm','324':'zksync','59144':'linea','7777777':'zora','534352':'scroll','81457':'blast','501':'solana','784':'sui','196':'xlayer','sui':'sui' };
+            return map[String(chainId)] || 'bsc';
+        }
+
+        function buildTokenLink(rawContract, chainId) {
+            const normalizedChainId = String(chainId).trim();
+            const chainName = getChainNameById(chainId);
+            const raw = rawContract || '';
+            const binanceMap = {
+                '56': { chain: 'bsc', binanceChainId: '56' },
+                '8453': { chain: 'base', binanceChainId: '8453' },
+                '501': { chain: 'sol', binanceChainId: 'CT_501' }
+            };
+            const binanceCfg = binanceMap[normalizedChainId];
+            if (binanceCfg) {
+                const tokenCA = encodeURIComponent(raw);
+                const baseUrl = joinUrlParts(['https://','app.','bin','ance','.','com']);
+                return `${baseUrl}/uni-qr/web3-token-details?utm_source=alpha123&tokenCA=${tokenCA}&binanceChainId=${binanceCfg.binanceChainId}&chain=${binanceCfg.chain}&ref=Z16QY7JQ`;
+            }
+            const debotAllowedChains = new Set(['1','56','8453','501','196','137','42161']);
+            if (normalizedChainId === '784' || normalizedChainId.toLowerCase() === 'sui' || !debotAllowedChains.has(normalizedChainId)) {
+                const baseUrl = joinUrlParts(['https://','web3.','o','kx','.','com']);
+                return `${baseUrl}/token/${chainName}/${raw}`;
+            }
+            const isEvmAddress = raw && raw.startsWith('0x');
+            const contract = isEvmAddress ? raw.toLowerCase() : raw;
+            const baseUrl = joinUrlParts(['https://','de','bot','.','ai']);
+            return `${baseUrl}/token/${chainName}/245734_${contract}`;
+        }
+
+        function initTokenLinkDelegation() {
+            document.addEventListener('click', function(e) {
+                const link = e.target && e.target.closest('.js-token-link');
+                if (!link) return;
+                const chainId = link.getAttribute('data-chain-id') || '';
+                const rawContract = link.getAttribute('data-contract') || '';
+                if (!chainId || !rawContract) return;
+                const url = buildTokenLink(rawContract, chainId);
+                link.setAttribute('href', url);
+                link.removeAttribute('target');
+            });
+        }
+
+        function renderAirdrops(airdrops) {
+            const tableBody = document.querySelector('#history-airdrops tbody');
+            tableBody.innerHTML = '';
+
+            if (airdrops.length === 0) {
+                displayNoDataMessage();
+                return;
+            }
+
+            airdrops.forEach((airdrop, index) => {
+                const row = document.createElement('tr');
+                
+                const tokenCell = document.createElement('td');
+                const tokenSymbol = airdrop.token || 'UNKNOWN';
+                let tokenHtml = `
+                    <div class="token-name">
+                        <div>
+                            <div class="token-symbol" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                                ${tokenSymbol}
+                            </div>
+                            <div class="token-fullname">${airdrop.name || 'Unknown Project'}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add contract icon if contract address exists
+                // Add contract icon if contract address exists
+                let tokenSymbolHtml = tokenSymbol;
+                if (airdrop.chain_id && airdrop.contract_address) {
+                    const rawContract = (airdrop.contract_address || '');
+                    const chainIdAttr = String(airdrop.chain_id || '');
+                    const isFuturesListed = airdrop.futures_listed === true;
+                    const isSpotListed = airdrop.spot_listed === true;
+                    let iconHtml = '';
+                    if (isSpotListed) {
+                        iconHtml = '<i class="bi bi-file-earmark-text contract-icon value-text exchange-price-value" style="display:inline;margin-left:4px;"></i>';
+                    } else if (isFuturesListed) {
+                        iconHtml = '<i class="bi bi-file-earmark-text contract-icon" style="color:#22c55e;"></i>';
+                    } else {
+                        iconHtml = '<i class="bi bi-file-earmark-text contract-icon"></i>';
+                    }
+                    tokenSymbolHtml = `<a class="token-link js-token-link" href="#" data-chain-id="${chainIdAttr}" data-contract="${rawContract}" rel="noopener">${tokenSymbol}${iconHtml}</a>`;
+                }
+                
+                tokenHtml = `
+                    <div class="token-name">
+                        <div>
+                            <div class="token-symbol" style="white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                                ${tokenSymbolHtml}
+                            </div>
+                            <div class="token-fullname">${airdrop.name || 'Unknown Project'}</div>
+                        </div>
+                    </div>
+                `;
+                
+                tokenCell.innerHTML = tokenHtml;
+                row.appendChild(tokenCell);
+                
+                const pointsCell = document.createElement('td');
+                // Compute slots text, e.g. "1k slots"
+                let sharesText = null;
+                if (airdrop.total_amount != null && airdrop.amount != null) {
+                    sharesText = formatSharesText(airdrop.total_amount, airdrop.amount);
+                }
+                if (sharesText) {
+                    pointsCell.innerHTML = `
+                        <div class="points-cell">
+                            <div class="points-main">
+                                <span class="points-badge">${airdrop.points || '-'}</span>
+                            </div>
+                            <div class="points-shares">${sharesText}</div>
+                        </div>
+                    `;
+                } else {
+                    pointsCell.innerHTML = `
+                        <div class="points-cell">
+                            <div class="points-main">
+                                <span class="points-badge">${airdrop.points || '-'}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                row.appendChild(pointsCell);
+                
+                const amountCell = document.createElement('td');
+                if (airdrop.amount) {
+                    const amount = parseFloat(airdrop.amount);
+                    let html = '';
+                    
+                    // Amount column only shows numeric amount; slots info is shown under points
+                    html += `<span class="points-badge points-badge--compact">${amount}</span>`;
+                    
+                    const chainIdAttr = airdrop.chain_id ? String(airdrop.chain_id) : '';
+                    const contractAttr = airdrop.contract_address ? String(airdrop.contract_address) : '';
+                    html += `<br><div class="price-container" data-token="${airdrop.token}" data-amount="${amount}" data-chain-id="${chainIdAttr}" data-contract="${contractAttr}"></div>`;
+                    
+                    amountCell.innerHTML = html;
+                } else {
+                    amountCell.innerHTML = `<span class="points-badge">-</span>`;
+                }
+                row.appendChild(amountCell);
+                
+                const mcCell = document.createElement('td');
+                mcCell.style.textAlign = 'right';
+                mcCell.style.whiteSpace = 'nowrap';
+                const metricKey = (window.currentMarketMetric === 'fdv') ? 'fdv' : 'market_cap';
+                const rawMetric = airdrop[metricKey];
+                if (rawMetric !== undefined && rawMetric !== null && !isNaN(parseFloat(rawMetric))) {
+                    mcCell.innerHTML = `<span class="points-badge">${formatCompactNumber(parseFloat(rawMetric))}</span>`;
+                } else {
+                    mcCell.innerHTML = `<span class="points-badge">-</span>`;
+                }
+                row.appendChild(mcCell);
+
+                const timeCell = document.createElement('td');
+                let timeText = 'Unknown';
+                let tgeText = '';
+                
+                if (airdrop.date) {
+                    const dateParts = airdrop.date.split('-');
+                    if (dateParts.length === 3) {
+                        timeText = `${dateParts[1]}-${dateParts[2]}`;
+                    } else {
+                        timeText = airdrop.date;
+                    }
+                    
+                    if (airdrop.type === 'tge') {
+                        if (airdrop.pretge === true) {
+                            tgeText = '<div class="tge-tag">Pre-TGE</div>';
+                        } else if (airdrop.bctge === true) {
+                            tgeText = '<div class="tge-tag">BC-TGE</div>';
+                        } else {
+                            tgeText = '<div class="tge-tag">TGE</div>';
+                        }
+                    }
+                }
+                
+                if (tgeText) {
+                    timeCell.innerHTML = `<div class="time-cell"><div class="time-main">${timeText}</div><div class="time-extra">${tgeText}</div></div>`;
+                } else {
+                    timeCell.innerHTML = `<div class="time-cell"><div class="time-main">${timeText}</div></div>`;
+                }
+                row.appendChild(timeCell);
+                
+                const favoriteCell = document.createElement('td');
+                favoriteCell.innerHTML = `
+                    <button class="favorite-btn ${airdrop.isFavorite ? 'active' : ''}" data-token="${airdrop.token}">
+                        <i class="bi ${airdrop.isFavorite ? 'bi-pin-fill' : 'bi-pin'}"></i>
+                    </button>
+                `;
+                row.appendChild(favoriteCell);
+                
+                tableBody.appendChild(row);
+            });
+            
+            document.querySelectorAll('.favorite-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const token = this.getAttribute('data-token');
+                    toggleFavorite(token);
+                    
+                    loadAirdropData();
+                });
+            });
+
+            // render prices after rows built
+            renderPricesFromState();
+        }
+
+        function renderPricesFromState() {
+            if (!window.historyAirdropsData || !Array.isArray(window.historyAirdropsData)) return;
+            const priceMap = window.historyDexPrices || {};
+            document.querySelectorAll('.price-container').forEach(container => {
+                const nodes = container.querySelectorAll('.value-text, .exchange-price-value, .price-link');
+                nodes.forEach(n => n.remove());
+            });
+            // compute per container using its own amount/chain/contract
+            document.querySelectorAll('.price-container').forEach(container => {
+                const token = container.getAttribute('data-token') || '';
+                const price = priceMap[token];
+                if (!price) return;
+                const amount = parseFloat(container.getAttribute('data-amount') || '0');
+                if (isNaN(amount) || amount <= 0) return;
+
+                const chainId = (container.getAttribute('data-chain-id') || '').trim();
+                const rawContract = (container.getAttribute('data-contract') || '').trim();
+
+                const value = Math.round(price * amount * 10) / 10;
+                const linkEl = document.createElement('a');
+                linkEl.className = 'price-link js-token-link';
+                linkEl.href = '#';
+                linkEl.setAttribute('data-chain-id', chainId);
+                linkEl.setAttribute('data-contract', rawContract);
+                linkEl.rel = 'noopener';
+                const dexEl = document.createElement('div');
+                dexEl.className = 'value-text exchange-price-value';
+                dexEl.textContent = `$${value.toFixed(1)}`;
+                linkEl.appendChild(dexEl);
+                container.appendChild(linkEl);
+            });
+        }
+
+        function applySortingAndRender() {
+            if (!window.historyAirdropsData) return;
+            let items = window.historyAirdropsData.slice();
+            items = applyFilters(items);
+            if (window.currentSort && window.currentSort.key === 'value') {
+                const priceMap = window.historyDexPrices || {};
+                items.sort((a, b) => {
+                    const pa = parseFloat(a.amount || '0');
+                    const pb = parseFloat(b.amount || '0');
+                    const va = (isNaN(pa) ? 0 : pa) * (priceMap[a.token] || 0);
+                    const vb = (isNaN(pb) ? 0 : pb) * (priceMap[b.token] || 0);
+                    if (window.currentSort.direction === 'asc') return va - vb;
+                    return vb - va;
+                });
+            } else if (window.currentSort && window.currentSort.key === 'mc') {
+                const key = (window.currentMarketMetric === 'fdv') ? 'fdv' : 'market_cap';
+                items.sort((a, b) => {
+                    const va = parseFloat(a[key] || '0');
+                    const vb = parseFloat(b[key] || '0');
+                    const av = (isNaN(va) ? 0 : va);
+                    const bv = (isNaN(vb) ? 0 : vb);
+                    if (window.currentSort.direction === 'asc') return av - bv;
+                    return bv - av;
+                });
+            }
+            renderAirdrops(items);
+            updateSortIcons();
+        }
+
+        function toggleSortByValue() {
+            if (!window.currentSort || window.currentSort.key !== 'value') {
+                window.currentSort = { key: 'value', direction: 'desc' };
+            } else if (window.currentSort.direction === 'desc') {
+                window.currentSort.direction = 'asc';
+            } else {
+                window.currentSort = { key: null, direction: 'desc' };
+            }
+            applySortingAndRender();
+        }
+
+        function toggleSortByMc() {
+            if (!window.currentSort || window.currentSort.key !== 'mc') {
+                window.currentSort = { key: 'mc', direction: 'desc' };
+            } else if (window.currentSort.direction === 'desc') {
+                window.currentSort.direction = 'asc';
+            } else {
+                window.currentSort = { key: null, direction: 'desc' };
+            }
+            applySortingAndRender();
+        }
+
+        function updateSortIcons() {
+            const amountIcon = document.getElementById('sortStateIcon');
+            const mcIcon = document.getElementById('mcSortStateIcon');
+            if (amountIcon) {
+                amountIcon.classList.remove('bi-caret-up-fill','bi-caret-down-fill','bi-caret-up','bi-caret-down');
+                if (!window.currentSort || window.currentSort.key !== 'value') amountIcon.classList.add('bi','bi-caret-down');
+                else if (window.currentSort.direction === 'asc') amountIcon.classList.add('bi','bi-caret-up-fill');
+                else amountIcon.classList.add('bi','bi-caret-down-fill');
+            }
+            if (mcIcon) {
+                mcIcon.classList.remove('bi-caret-up-fill','bi-caret-down-fill','bi-caret-up','bi-caret-down');
+                if (!window.currentSort || window.currentSort.key !== 'mc') mcIcon.classList.add('bi','bi-caret-down');
+                else if (window.currentSort.direction === 'asc') mcIcon.classList.add('bi','bi-caret-up-fill');
+                else mcIcon.classList.add('bi','bi-caret-down-fill');
+            }
+
+            const mcMetricLabel = document.getElementById('mcMetricLabel');
+            if (mcMetricLabel) { mcMetricLabel.textContent = (window.currentMarketMetric === 'fdv') ? 'FDV' : 'MC'; mcMetricLabel.style.color = '#f59e0b'; }
+        }
+
+        function setMarketMetric(metric) {
+            const next = (metric === 'fdv') ? 'fdv' : 'mc';
+            if (window.currentMarketMetric !== next) {
+                window.currentMarketMetric = next;
+                applySortingAndRender();
+            } else {
+                updateSortIcons();
+            }
+        }
+
+        function applyFilters(items) {
+            const f = window.historyFilters || { spot: false, futures: false, tge: false, prefix: '' };
+            const anyActive = f.spot || f.futures || f.tge || (f.prefix && f.prefix.length > 0);
+            if (!anyActive) return items;
+            const prefixLower = (f.prefix || '').toLowerCase();
+            return items.filter(a => {
+                if (prefixLower) {
+                    const sym = (a.token || '').toString().toLowerCase();
+                    if (!sym.startsWith(prefixLower)) return false;
+                }
+                let matched = !(f.spot || f.futures || f.tge);
+                if (f.spot && a.spot_listed === true) matched = true;
+                if (f.futures && a.futures_listed === true) matched = true;
+                if (f.tge && a.type === 'tge') matched = true;
+                return matched;
+            });
+        }
+
+        function formatCompactNumber(value) {
+            if (value === null || value === undefined || isNaN(value)) return '-';
+            const abs = Math.abs(value);
+            const sign = value < 0 ? '-' : '';
+            if (abs >= 1e12) return sign + (abs / 1e12).toFixed(1) + 'T';
+            if (abs >= 1e9) return sign + (abs / 1e9).toFixed(1) + 'B';
+            if (abs >= 1e6) return sign + (abs / 1e6).toFixed(1) + 'M';
+            if (abs >= 1e3) return sign + (abs / 1e3).toFixed(1) + 'K';
+            return sign + abs.toFixed(0);
+        }
+
+        function initFavorites() {
+            if (!localStorage.getItem('favorites')) {
+                localStorage.setItem('favorites', JSON.stringify([]));
+            }
+        }
+
+        function toggleFavorite(token) {
+            const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+            const index = favorites.indexOf(token);
+            
+            if (index === -1) {
+                favorites.push(token);
+            } else {
+                favorites.splice(index, 1);
+            }
+            
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+        }
+
+        function toggleMarketMetric() {
+            window.currentMarketMetric = (window.currentMarketMetric === 'fdv') ? 'mc' : 'fdv';
+            applySortingAndRender();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const htmlEl = document.documentElement;
+            htmlEl.classList.add('dark-mode');
+        });
+    </script>
+   <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "s8evkid0ub");
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4c3f9148b59e5bc',t:'MTc5MjI4OTA3Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html> 

@@ -1,0 +1,32 @@
+0 932
+50 932
+100 932
+150 932
+200 932
+250 932
+300 932
+350 932
+400 932
+450 932
+500 932
+550 932
+retry 1378872 HTTP Error 429: Request Limit Exceeded
+retry 1518626 HTTP Error 429: Request Limit Exceeded
+600 932
+650 932
+retry 1507900 HTTP Error 429: Request Limit Exceeded
+retry 1563267 HTTP Error 429: Request Limit Exceeded
+retry 1541093 HTTP Error 429: Request Limit Exceeded
+retry 1645122 HTTP Error 429: Request Limit Exceeded
+retry 1518626 HTTP Error 429: Request Limit Exceeded
+700 932
+750 932
+800 932
+retry 1507900 HTTP Error 429: Request Limit Exceeded
+retry 1541093 HTTP Error 429: Request Limit Exceeded
+retry 1645122 HTTP Error 429: Request Limit Exceeded
+retry 1507900 HTTP Error 429: Request Limit Exceeded
+retry 1645122 HTTP Error 429: Request Limit Exceeded
+850 932
+900 932
+retry 1645122 HTTP Error 429: Request Limit Exceeded

@@ -1,0 +1,308 @@
+{'family': 'ALL', 'n_cfg': 1701, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(3.71), 'WF_OOS_geo': np.float64(1.45), 'WF_OOS_dd': np.float64(-78.5), 'WF_OOS_worst': np.float64(-78.5), 'n_switch_oos': 5, 'frozen_cfg': 'mom21_0|none|5|5', 'frozen_IS_geo': np.float64(1.59), 'frozen_OOS_geo': np.float64(-0.35), 'frozen_OOS_dd': np.float64(-79.6), 'frozen_OOS_worst': np.float64(-68.3)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(2.98), 'WF_OOS_geo': np.float64(-4.07), 'WF_OOS_dd': np.float64(-76.0), 'WF_OOS_worst': np.float64(-75.9), 'n_switch_oos': 8, 'frozen_cfg': 'c_all|none|5|21', 'frozen_IS_geo': np.float64(2.96), 'frozen_OOS_geo': np.float64(-4.77), 'frozen_OOS_dd': np.float64(-74.6), 'frozen_OOS_worst': np.float64(-60.6)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(1.54), 'WF_OOS_geo': np.float64(1.14), 'WF_OOS_dd': np.float64(-77.1), 'WF_OOS_worst': np.float64(-77.1), 'n_switch_oos': 5, 'frozen_cfg': 'c_all|none|5|21', 'frozen_IS_geo': np.float64(2.96), 'frozen_OOS_geo': np.float64(-4.77), 'frozen_OOS_dd': np.float64(-74.6), 'frozen_OOS_worst': np.float64(-60.6)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(3.4), 'WF_OOS_geo': np.float64(-5.98), 'WF_OOS_dd': np.float64(-86.2), 'WF_OOS_worst': np.float64(-78.5), 'n_switch_oos': 3, 'frozen_cfg': 'mom252_0|none|5|21', 'frozen_IS_geo': np.float64(3.39), 'frozen_OOS_geo': np.float64(-9.74), 'frozen_OOS_dd': np.float64(-92.0), 'frozen_OOS_worst': np.float64(-81.7)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.85), 'WF_OOS_geo': np.float64(-7.58), 'WF_OOS_dd': np.float64(-77.1), 'WF_OOS_worst': np.float64(-77.1), 'n_switch_oos': 9, 'frozen_cfg': 'c_all|ew20|20|21', 'frozen_IS_geo': np.float64(5.01), 'frozen_OOS_geo': np.float64(2.07), 'frozen_OOS_dd': np.float64(-8.3), 'frozen_OOS_worst': np.float64(-5.8)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.02), 'WF_OOS_geo': np.float64(-5.18), 'WF_OOS_dd': np.float64(-77.1), 'WF_OOS_worst': np.float64(-77.1), 'n_switch_oos': 5, 'frozen_cfg': 'mom252_0|none|5|21', 'frozen_IS_geo': np.float64(3.39), 'frozen_OOS_geo': np.float64(-9.74), 'frozen_OOS_dd': np.float64(-92.0), 'frozen_OOS_worst': np.float64(-81.7)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(3.07), 'WF_OOS_geo': np.float64(-7.24), 'WF_OOS_dd': np.float64(-86.9), 'WF_OOS_worst': np.float64(-78.5), 'n_switch_oos': 4, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.71), 'WF_OOS_geo': np.float64(-3.78), 'WF_OOS_dd': np.float64(-52.0), 'WF_OOS_worst': np.float64(-51.6), 'n_switch_oos': 4, 'frozen_cfg': 'c_all|ew20|20|21', 'frozen_IS_geo': np.float64(5.01), 'frozen_OOS_geo': np.float64(2.07), 'frozen_OOS_dd': np.float64(-8.3), 'frozen_OOS_worst': np.float64(-5.8)}
+{'family': 'ALL', 'n_cfg': 1701, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(2.73), 'WF_OOS_geo': np.float64(-6.19), 'WF_OOS_dd': np.float64(-83.9), 'WF_OOS_worst': np.float64(-81.7), 'n_switch_oos': 6, 'frozen_cfg': 'sector126|ew20|10|5', 'frozen_IS_geo': np.float64(4.54), 'frozen_OOS_geo': np.float64(-1.04), 'frozen_OOS_dd': np.float64(-22.1), 'frozen_OOS_worst': np.float64(-11.8)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(3.68), 'WF_OOS_geo': np.float64(2.24), 'WF_OOS_dd': np.float64(-78.5), 'WF_OOS_worst': np.float64(-78.5), 'n_switch_oos': 4, 'frozen_cfg': 'mom21_0|none|5|5', 'frozen_IS_geo': np.float64(1.59), 'frozen_OOS_geo': np.float64(-0.35), 'frozen_OOS_dd': np.float64(-79.6), 'frozen_OOS_worst': np.float64(-68.3)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(2.48), 'WF_OOS_geo': np.float64(-2.87), 'WF_OOS_dd': np.float64(-76.0), 'WF_OOS_worst': np.float64(-75.9), 'n_switch_oos': 6, 'frozen_cfg': 'mom126_0|none|20|5', 'frozen_IS_geo': np.float64(4.02), 'frozen_OOS_geo': np.float64(0.49), 'frozen_OOS_dd': np.float64(-62.9), 'frozen_OOS_worst': np.float64(-53.3)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.27), 'WF_OOS_geo': np.float64(2.74), 'WF_OOS_dd': np.float64(-77.1), 'WF_OOS_worst': np.float64(-77.1), 'n_switch_oos': 3, 'frozen_cfg': 'mom21_0|none|5|5', 'frozen_IS_geo': np.float64(1.59), 'frozen_OOS_geo': np.float64(-0.35), 'frozen_OOS_dd': np.float64(-79.6), 'frozen_OOS_worst': np.float64(-68.3)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(2.87), 'WF_OOS_geo': np.float64(-5.98), 'WF_OOS_dd': np.float64(-86.2), 'WF_OOS_worst': np.float64(-78.5), 'n_switch_oos': 3, 'frozen_cfg': 'mom252_0|none|5|21', 'frozen_IS_geo': np.float64(3.39), 'frozen_OOS_geo': np.float64(-9.74), 'frozen_OOS_dd': np.float64(-92.0), 'frozen_OOS_worst': np.float64(-81.7)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.38), 'WF_OOS_geo': np.float64(-7.43), 'WF_OOS_dd': np.float64(-77.2), 'WF_OOS_worst': np.float64(-77.1), 'n_switch_oos': 9, 'frozen_cfg': 'h26|breadth50|20|21', 'frozen_IS_geo': np.float64(4.18), 'frozen_OOS_geo': np.float64(1.27), 'frozen_OOS_dd': np.float64(-10.6), 'frozen_OOS_worst': np.float64(-5.0)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.32), 'WF_OOS_geo': np.float64(-5.18), 'WF_OOS_dd': np.float64(-77.1), 'WF_OOS_worst': np.float64(-77.1), 'n_switch_oos': 5, 'frozen_cfg': 'mom252_0|none|5|21', 'frozen_IS_geo': np.float64(3.39), 'frozen_OOS_geo': np.float64(-9.74), 'frozen_OOS_dd': np.float64(-92.0), 'frozen_OOS_worst': np.float64(-81.7)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(1.62), 'WF_OOS_geo': np.float64(-6.25), 'WF_OOS_dd': np.float64(-86.9), 'WF_OOS_worst': np.float64(-78.5), 'n_switch_oos': 3, 'frozen_cfg': 'mom252_0|none|5|21', 'frozen_IS_geo': np.float64(3.39), 'frozen_OOS_geo': np.float64(-9.74), 'frozen_OOS_dd': np.float64(-92.0), 'frozen_OOS_worst': np.float64(-81.7)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.03), 'WF_OOS_geo': np.float64(-3.47), 'WF_OOS_dd': np.float64(-52.5), 'WF_OOS_worst': np.float64(-51.6), 'n_switch_oos': 5, 'frozen_cfg': 'h26|breadth50|20|21', 'frozen_IS_geo': np.float64(4.18), 'frozen_OOS_geo': np.float64(1.27), 'frozen_OOS_dd': np.float64(-10.6), 'frozen_OOS_worst': np.float64(-5.0)}
+{'family': 'momentum', 'n_cfg': 504, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(2.52), 'WF_OOS_geo': np.float64(-5.9), 'WF_OOS_dd': np.float64(-83.9), 'WF_OOS_worst': np.float64(-81.7), 'n_switch_oos': 5, 'frozen_cfg': 'h26|ew20|20|21', 'frozen_IS_geo': np.float64(4.19), 'frozen_OOS_geo': np.float64(2.58), 'frozen_OOS_dd': np.float64(-8.1), 'frozen_OOS_worst': np.float64(-5.7)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(-1.0), 'WF_OOS_geo': np.float64(-4.66), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 3, 'frozen_cfg': 'rev5|none|10|21', 'frozen_IS_geo': np.float64(2.04), 'frozen_OOS_geo': np.float64(-7.73), 'frozen_OOS_dd': np.float64(-68.0), 'frozen_OOS_worst': np.float64(-53.5)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(0.45), 'WF_OOS_geo': np.float64(-3.82), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 2, 'frozen_cfg': 'rev1|none|20|21', 'frozen_IS_geo': np.float64(3.18), 'frozen_OOS_geo': np.float64(-4.84), 'frozen_OOS_dd': np.float64(-63.2), 'frozen_OOS_worst': np.float64(-55.3)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(-0.36), 'WF_OOS_geo': np.float64(-3.82), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 2, 'frozen_cfg': 'rev1|none|20|21', 'frozen_IS_geo': np.float64(3.18), 'frozen_OOS_geo': np.float64(-4.84), 'frozen_OOS_dd': np.float64(-63.2), 'frozen_OOS_worst': np.float64(-55.3)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(0.58), 'WF_OOS_geo': np.float64(-5.2), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 3, 'frozen_cfg': 'rev5|none|10|21', 'frozen_IS_geo': np.float64(2.04), 'frozen_OOS_geo': np.float64(-7.73), 'frozen_OOS_dd': np.float64(-68.0), 'frozen_OOS_worst': np.float64(-53.5)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(1.52), 'WF_OOS_geo': np.float64(-5.14), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 4, 'frozen_cfg': 'rev5|none|10|21', 'frozen_IS_geo': np.float64(2.04), 'frozen_OOS_geo': np.float64(-7.73), 'frozen_OOS_dd': np.float64(-68.0), 'frozen_OOS_worst': np.float64(-53.5)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(1.68), 'WF_OOS_geo': np.float64(-6.51), 'WF_OOS_dd': np.float64(-61.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 3, 'frozen_cfg': 'rev5|none|10|21', 'frozen_IS_geo': np.float64(2.04), 'frozen_OOS_geo': np.float64(-7.73), 'frozen_OOS_dd': np.float64(-68.0), 'frozen_OOS_worst': np.float64(-53.5)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(1.4), 'WF_OOS_geo': np.float64(-4.66), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 3, 'frozen_cfg': 'rev5|none|10|21', 'frozen_IS_geo': np.float64(2.04), 'frozen_OOS_geo': np.float64(-7.73), 'frozen_OOS_dd': np.float64(-68.0), 'frozen_OOS_worst': np.float64(-53.5)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(1.41), 'WF_OOS_geo': np.float64(-6.26), 'WF_OOS_dd': np.float64(-61.2), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 4, 'frozen_cfg': 'rev1|breadth50|20|21', 'frozen_IS_geo': np.float64(2.86), 'frozen_OOS_geo': np.float64(0.36), 'frozen_OOS_dd': np.float64(-14.2), 'frozen_OOS_worst': np.float64(-7.4)}
+{'family': 'reversal', 'n_cfg': 189, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(1.76), 'WF_OOS_geo': np.float64(-5.58), 'WF_OOS_dd': np.float64(-58.1), 'WF_OOS_worst': np.float64(-55.3), 'n_switch_oos': 2, 'frozen_cfg': 'rev1|breadth50|20|21', 'frozen_IS_geo': np.float64(2.86), 'frozen_OOS_geo': np.float64(0.36), 'frozen_OOS_dd': np.float64(-14.2), 'frozen_OOS_worst': np.float64(-7.4)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(1.86), 'WF_OOS_geo': np.float64(-5.54), 'WF_OOS_dd': np.float64(-59.0), 'WF_OOS_worst': np.float64(-44.2), 'n_switch_oos': 9, 'frozen_cfg': 'volbrk55|none|5|5', 'frozen_IS_geo': np.float64(2.09), 'frozen_OOS_geo': np.float64(-10.56), 'frozen_OOS_dd': np.float64(-79.2), 'frozen_OOS_worst': np.float64(-56.4)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(2.84), 'WF_OOS_geo': np.float64(-4.24), 'WF_OOS_dd': np.float64(-54.5), 'WF_OOS_worst': np.float64(-44.2), 'n_switch_oos': 8, 'frozen_cfg': 'volbrk55|sma50|20|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(-2.28), 'frozen_OOS_dd': np.float64(-45.1), 'frozen_OOS_worst': np.float64(-36.0)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(2.41), 'WF_OOS_geo': np.float64(-5.51), 'WF_OOS_dd': np.float64(-60.0), 'WF_OOS_worst': np.float64(-44.2), 'n_switch_oos': 9, 'frozen_cfg': 'volbrk55|none|20|5', 'frozen_IS_geo': np.float64(2.18), 'frozen_OOS_geo': np.float64(-4.11), 'frozen_OOS_dd': np.float64(-57.1), 'frozen_OOS_worst': np.float64(-47.7)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(2.31), 'WF_OOS_geo': np.float64(-2.93), 'WF_OOS_dd': np.float64(-43.6), 'WF_OOS_worst': np.float64(-29.9), 'n_switch_oos': 6, 'frozen_cfg': 'volbrk20|ew20|10|21', 'frozen_IS_geo': np.float64(3.89), 'frozen_OOS_geo': np.float64(1.38), 'frozen_OOS_dd': np.float64(-17.7), 'frozen_OOS_worst': np.float64(-15.2)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.21), 'WF_OOS_geo': np.float64(-1.44), 'WF_OOS_dd': np.float64(-38.9), 'WF_OOS_worst': np.float64(-29.9), 'n_switch_oos': 5, 'frozen_cfg': 'volbrk55|breadth50|20|21', 'frozen_IS_geo': np.float64(4.09), 'frozen_OOS_geo': np.float64(1.88), 'frozen_OOS_dd': np.float64(-9.0), 'frozen_OOS_worst': np.float64(-2.9)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(2.24), 'WF_OOS_geo': np.float64(-4.55), 'WF_OOS_dd': np.float64(-55.4), 'WF_OOS_worst': np.float64(-44.0), 'n_switch_oos': 5, 'frozen_cfg': 'volbrk20|ew20|10|21', 'frozen_IS_geo': np.float64(3.89), 'frozen_OOS_geo': np.float64(1.38), 'frozen_OOS_dd': np.float64(-17.7), 'frozen_OOS_worst': np.float64(-15.2)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(1.94), 'WF_OOS_geo': np.float64(1.24), 'WF_OOS_dd': np.float64(-16.0), 'WF_OOS_worst': np.float64(-9.0), 'n_switch_oos': 2, 'frozen_cfg': 'volbrk20|breadth50|10|21', 'frozen_IS_geo': np.float64(3.81), 'frozen_OOS_geo': np.float64(2.82), 'frozen_OOS_dd': np.float64(-9.6), 'frozen_OOS_worst': np.float64(-0.5)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.08), 'WF_OOS_geo': np.float64(1.96), 'WF_OOS_dd': np.float64(-9.6), 'WF_OOS_worst': np.float64(-1.6), 'n_switch_oos': 3, 'frozen_cfg': 'volbrk20|breadth50|20|21', 'frozen_IS_geo': np.float64(3.66), 'frozen_OOS_geo': np.float64(1.94), 'frozen_OOS_dd': np.float64(-8.9), 'frozen_OOS_worst': np.float64(-2.7)}
+{'family': 'volbrk', 'n_cfg': 126, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.11), 'WF_OOS_geo': np.float64(1.6), 'WF_OOS_dd': np.float64(-9.6), 'WF_OOS_worst': np.float64(-5.9), 'n_switch_oos': 3, 'frozen_cfg': 'volbrk55|ew20|20|21', 'frozen_IS_geo': np.float64(4.07), 'frozen_OOS_geo': np.float64(1.53), 'frozen_OOS_dd': np.float64(-11.9), 'frozen_OOS_worst': np.float64(-9.8)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(3.03), 'WF_OOS_geo': np.float64(0.22), 'WF_OOS_dd': np.float64(-21.6), 'WF_OOS_worst': np.float64(-20.4), 'n_switch_oos': 7, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(2.96), 'WF_OOS_geo': np.float64(0.18), 'WF_OOS_dd': np.float64(-23.3), 'WF_OOS_worst': np.float64(-20.4), 'n_switch_oos': 6, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.27), 'WF_OOS_geo': np.float64(1.46), 'WF_OOS_dd': np.float64(-12.2), 'WF_OOS_worst': np.float64(-8.8), 'n_switch_oos': 5, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(3.34), 'WF_OOS_geo': np.float64(0.71), 'WF_OOS_dd': np.float64(-19.1), 'WF_OOS_worst': np.float64(-16.9), 'n_switch_oos': 3, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.84), 'WF_OOS_geo': np.float64(1.4), 'WF_OOS_dd': np.float64(-9.1), 'WF_OOS_worst': np.float64(-2.7), 'n_switch_oos': 4, 'frozen_cfg': 'lowvol120|breadth50|20|21', 'frozen_IS_geo': np.float64(4.02), 'frozen_OOS_geo': np.float64(1.26), 'frozen_OOS_dd': np.float64(-11.0), 'frozen_OOS_worst': np.float64(-3.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.02), 'WF_OOS_geo': np.float64(0.81), 'WF_OOS_dd': np.float64(-19.1), 'WF_OOS_worst': np.float64(-16.9), 'n_switch_oos': 3, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(3.13), 'WF_OOS_geo': np.float64(0.74), 'WF_OOS_dd': np.float64(-16.5), 'WF_OOS_worst': np.float64(-11.0), 'n_switch_oos': 2, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(4.04), 'WF_OOS_geo': np.float64(0.9), 'WF_OOS_dd': np.float64(-11.0), 'WF_OOS_worst': np.float64(-3.0), 'n_switch_oos': 3, 'frozen_cfg': 'lowvol120|breadth50|20|5', 'frozen_IS_geo': np.float64(3.92), 'frozen_OOS_geo': np.float64(1.03), 'frozen_OOS_dd': np.float64(-11.7), 'frozen_OOS_worst': np.float64(-3.4)}
+{'family': 'lowvol', 'n_cfg': 126, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.79), 'WF_OOS_geo': np.float64(1.01), 'WF_OOS_dd': np.float64(-13.4), 'WF_OOS_worst': np.float64(-11.0), 'n_switch_oos': 3, 'frozen_cfg': 'lowvol60|none|10|21', 'frozen_IS_geo': np.float64(3.9), 'frozen_OOS_geo': np.float64(0.99), 'frozen_OOS_dd': np.float64(-16.5), 'frozen_OOS_worst': np.float64(-11.0)}
+{'family': 'small', 'n_cfg': 63, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(3.27), 'WF_OOS_geo': np.float64(1.34), 'WF_OOS_dd': np.float64(-30.9), 'WF_OOS_worst': np.float64(-18.8), 'n_switch_oos': 3, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'small', 'n_cfg': 63, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(2.58), 'WF_OOS_geo': np.float64(-1.49), 'WF_OOS_dd': np.float64(-36.3), 'WF_OOS_worst': np.float64(-26.2), 'n_switch_oos': 5, 'frozen_cfg': 'small|sma50|20|1', 'frozen_IS_geo': np.float64(3.59), 'frozen_OOS_geo': np.float64(0.29), 'frozen_OOS_dd': np.float64(-15.1), 'frozen_OOS_worst': np.float64(-10.4)}
+{'family': 'small', 'n_cfg': 63, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(2.9), 'WF_OOS_geo': np.float64(-0.42), 'WF_OOS_dd': np.float64(-36.3), 'WF_OOS_worst': np.float64(-26.2), 'n_switch_oos': 5, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'small', 'n_cfg': 63, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(3.57), 'WF_OOS_geo': np.float64(0.2), 'WF_OOS_dd': np.float64(-32.7), 'WF_OOS_worst': np.float64(-18.2), 'n_switch_oos': 3, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'small', 'n_cfg': 63, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.03), 'WF_OOS_geo': np.float64(1.02), 'WF_OOS_dd': np.float64(-9.5), 'WF_OOS_worst': np.float64(-5.6), 'n_switch_oos': 4, 'frozen_cfg': 'small|breadth50|20|21', 'frozen_IS_geo': np.float64(4.58), 'frozen_OOS_geo': np.float64(2.08), 'frozen_OOS_dd': np.float64(-8.4), 'frozen_OOS_worst': np.float64(-3.3)}
+{'family': 'small', 'n_cfg': 63, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(2.88), 'WF_OOS_geo': np.float64(-0.3), 'WF_OOS_dd': np.float64(-26.0), 'WF_OOS_worst': np.float64(-16.9), 'n_switch_oos': 5, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'small', 'n_cfg': 63, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(3.31), 'WF_OOS_geo': np.float64(-0.32), 'WF_OOS_dd': np.float64(-36.6), 'WF_OOS_worst': np.float64(-18.2), 'n_switch_oos': 1, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'small', 'n_cfg': 63, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.57), 'WF_OOS_geo': np.float64(2.08), 'WF_OOS_dd': np.float64(-8.4), 'WF_OOS_worst': np.float64(-3.3), 'n_switch_oos': 1, 'frozen_cfg': 'small|breadth50|20|21', 'frozen_IS_geo': np.float64(4.58), 'frozen_OOS_geo': np.float64(2.08), 'frozen_OOS_dd': np.float64(-8.4), 'frozen_OOS_worst': np.float64(-3.3)}
+{'family': 'small', 'n_cfg': 63, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.46), 'WF_OOS_geo': np.float64(-0.08), 'WF_OOS_dd': np.float64(-35.1), 'WF_OOS_worst': np.float64(-18.5), 'n_switch_oos': 2, 'frozen_cfg': 'small|none|5|21', 'frozen_IS_geo': np.float64(5.63), 'frozen_OOS_geo': np.float64(-0.32), 'frozen_OOS_dd': np.float64(-36.6), 'frozen_OOS_worst': np.float64(-18.2)}
+{'family': 'sector', 'n_cfg': 126, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(3.06), 'WF_OOS_geo': np.float64(-0.64), 'WF_OOS_dd': np.float64(-33.9), 'WF_OOS_worst': np.float64(-31.3), 'n_switch_oos': 5, 'frozen_cfg': 'sector126|none|10|21', 'frozen_IS_geo': np.float64(4.17), 'frozen_OOS_geo': np.float64(-1.69), 'frozen_OOS_dd': np.float64(-44.8), 'frozen_OOS_worst': np.float64(-42.0)}
+{'family': 'sector', 'n_cfg': 126, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(4.59), 'WF_OOS_geo': np.float64(-2.05), 'WF_OOS_dd': np.float64(-33.7), 'WF_OOS_worst': np.float64(-31.5), 'n_switch_oos': 9, 'frozen_cfg': 'sector126|ew20|10|5', 'frozen_IS_geo': np.float64(4.54), 'frozen_OOS_geo': np.float64(-1.04), 'frozen_OOS_dd': np.float64(-22.1), 'frozen_OOS_worst': np.float64(-11.8)}
+{'family': 'sector', 'n_cfg': 126, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.16), 'WF_OOS_geo': np.float64(-1.11), 'WF_OOS_dd': np.float64(-35.2), 'WF_OOS_worst': np.float64(-31.3), 'n_switch_oos': 6, 'frozen_cfg': 'sector126|none|10|5', 'frozen_IS_geo': np.float64(3.58), 'frozen_OOS_geo': np.float64(-1.41), 'frozen_OOS_dd': np.float64(-41.5), 'frozen_OOS_worst': np.float64(-32.9)}
+{'family': 'sector', 'n_cfg': 126, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(2.37), 'WF_OOS_geo': np.float64(-0.3), 'WF_OOS_dd': np.float64(-36.1), 'WF_OOS_worst': np.float64(-31.3), 'n_switch_oos': 3, 'frozen_cfg': 'sector126|ew20|10|5', 'frozen_IS_geo': np.float64(4.54), 'frozen_OOS_geo': np.float64(-1.04), 'frozen_OOS_dd': np.float64(-22.1), 'frozen_OOS_worst': np.float64(-11.8)}
+{'family': 'sector', 'n_cfg': 126, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.71), 'WF_OOS_geo': np.float64(0.53), 'WF_OOS_dd': np.float64(-35.5), 'WF_OOS_worst': np.float64(-31.3), 'n_switch_oos': 4, 'frozen_cfg': 'sector126|ew20|20|21', 'frozen_IS_geo': np.float64(5.25), 'frozen_OOS_geo': np.float64(0.28), 'frozen_OOS_dd': np.float64(-19.9), 'frozen_OOS_worst': np.float64(-12.7)}
+{'family': 'sector', 'n_cfg': 126, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.46), 'WF_OOS_geo': np.float64(-0.91), 'WF_OOS_dd': np.float64(-35.5), 'WF_OOS_worst': np.float64(-31.3), 'n_switch_oos': 5, 'frozen_cfg': 'sector126|ew20|10|5', 'frozen_IS_geo': np.float64(4.54), 'frozen_OOS_geo': np.float64(-1.04), 'frozen_OOS_dd': np.float64(-22.1), 'frozen_OOS_worst': np.float64(-11.8)}
+{'family': 'sector', 'n_cfg': 126, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(3.06), 'WF_OOS_geo': np.float64(-1.88), 'WF_OOS_dd': np.float64(-43.4), 'WF_OOS_worst': np.float64(-36.1), 'n_switch_oos': 5, 'frozen_cfg': 'sector126|ew20|5|5', 'frozen_IS_geo': np.float64(4.17), 'frozen_OOS_geo': np.float64(0.6), 'frozen_OOS_dd': np.float64(-24.3), 'frozen_OOS_worst': np.float64(-14.6)}
+{'family': 'sector', 'n_cfg': 126, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.15), 'WF_OOS_geo': np.float64(0.13), 'WF_OOS_dd': np.float64(-20.0), 'WF_OOS_worst': np.float64(-12.7), 'n_switch_oos': 3, 'frozen_cfg': 'sector63|ew20|20|5', 'frozen_IS_geo': np.float64(4.67), 'frozen_OOS_geo': np.float64(1.17), 'frozen_OOS_dd': np.float64(-14.3), 'frozen_OOS_worst': np.float64(-10.1)}
+{'family': 'sector', 'n_cfg': 126, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.62), 'WF_OOS_geo': np.float64(-3.81), 'WF_OOS_dd': np.float64(-46.6), 'WF_OOS_worst': np.float64(-39.1), 'n_switch_oos': 6, 'frozen_cfg': 'sector126|ew20|10|5', 'frozen_IS_geo': np.float64(4.54), 'frozen_OOS_geo': np.float64(-1.04), 'frozen_OOS_dd': np.float64(-22.1), 'frozen_OOS_worst': np.float64(-11.8)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(1.4), 'WF_OOS_geo': np.float64(0.46), 'WF_OOS_dd': np.float64(-49.1), 'WF_OOS_worst': np.float64(-27.9), 'n_switch_oos': 3, 'frozen_cfg': 'tavan10|none|5|5', 'frozen_IS_geo': np.float64(-0.71), 'frozen_OOS_geo': np.float64(-6.38), 'frozen_OOS_dd': np.float64(-79.2), 'frozen_OOS_worst': np.float64(-64.4)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(1.27), 'WF_OOS_geo': np.float64(3.17), 'WF_OOS_dd': np.float64(-28.3), 'WF_OOS_worst': np.float64(-23.3), 'n_switch_oos': 2, 'frozen_cfg': 'tavan10|none|5|5', 'frozen_IS_geo': np.float64(-0.71), 'frozen_OOS_geo': np.float64(-6.38), 'frozen_OOS_dd': np.float64(-79.2), 'frozen_OOS_worst': np.float64(-64.4)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(0.41), 'WF_OOS_geo': np.float64(-0.45), 'WF_OOS_dd': np.float64(-54.1), 'WF_OOS_worst': np.float64(-36.0), 'n_switch_oos': 3, 'frozen_cfg': 'tavan10|none|5|5', 'frozen_IS_geo': np.float64(-0.71), 'frozen_OOS_geo': np.float64(-6.38), 'frozen_OOS_dd': np.float64(-79.2), 'frozen_OOS_worst': np.float64(-64.4)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(0.11), 'WF_OOS_geo': np.float64(-9.12), 'WF_OOS_dd': np.float64(-74.5), 'WF_OOS_worst': np.float64(-64.4), 'n_switch_oos': 5, 'frozen_cfg': 'tavan10|ew50|5|5', 'frozen_IS_geo': np.float64(1.57), 'frozen_OOS_geo': np.float64(1.51), 'frozen_OOS_dd': np.float64(-16.8), 'frozen_OOS_worst': np.float64(-6.7)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(0.38), 'WF_OOS_geo': np.float64(1.03), 'WF_OOS_dd': np.float64(-19.7), 'WF_OOS_worst': np.float64(-9.2), 'n_switch_oos': 3, 'frozen_cfg': 'tavan3|ew20|5|21', 'frozen_IS_geo': np.float64(3.05), 'frozen_OOS_geo': np.float64(-1.68), 'frozen_OOS_dd': np.float64(-29.0), 'frozen_OOS_worst': np.float64(-13.4)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(-0.36), 'WF_OOS_geo': np.float64(1.06), 'WF_OOS_dd': np.float64(-19.7), 'WF_OOS_worst': np.float64(-9.2), 'n_switch_oos': 5, 'frozen_cfg': 'tavan3|ew20|5|21', 'frozen_IS_geo': np.float64(3.05), 'frozen_OOS_geo': np.float64(-1.68), 'frozen_OOS_dd': np.float64(-29.0), 'frozen_OOS_worst': np.float64(-13.4)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(0.18), 'WF_OOS_geo': np.float64(-0.48), 'WF_OOS_dd': np.float64(-42.8), 'WF_OOS_worst': np.float64(-36.2), 'n_switch_oos': 3, 'frozen_cfg': 'tavan10|ew20|5|5', 'frozen_IS_geo': np.float64(1.72), 'frozen_OOS_geo': np.float64(-1.43), 'frozen_OOS_dd': np.float64(-29.9), 'frozen_OOS_worst': np.float64(-15.9)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(1.31), 'WF_OOS_geo': np.float64(-2.87), 'WF_OOS_dd': np.float64(-44.1), 'WF_OOS_worst': np.float64(-36.2), 'n_switch_oos': 6, 'frozen_cfg': 'tavan10|breadth50|5|5', 'frozen_IS_geo': np.float64(1.48), 'frozen_OOS_geo': np.float64(3.15), 'frozen_OOS_dd': np.float64(-12.0), 'frozen_OOS_worst': np.float64(0.8)}
+{'family': 'tavan', 'n_cfg': 189, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(0.19), 'WF_OOS_geo': np.float64(0.55), 'WF_OOS_dd': np.float64(-35.1), 'WF_OOS_worst': np.float64(-16.4), 'n_switch_oos': 5, 'frozen_cfg': 'tavan10|breadth50|5|5', 'frozen_IS_geo': np.float64(1.48), 'frozen_OOS_geo': np.float64(3.15), 'frozen_OOS_dd': np.float64(-12.0), 'frozen_OOS_worst': np.float64(0.8)}
+{'family': 'combo', 'n_cfg': 378, 'look': 12, 'metric': 'geo', 'WF_IS_geo': np.float64(2.96), 'WF_OOS_geo': np.float64(-1.94), 'WF_OOS_dd': np.float64(-63.1), 'WF_OOS_worst': np.float64(-60.9), 'n_switch_oos': 6, 'frozen_cfg': 'c_all|none|5|21', 'frozen_IS_geo': np.float64(2.96), 'frozen_OOS_geo': np.float64(-4.77), 'frozen_OOS_dd': np.float64(-74.6), 'frozen_OOS_worst': np.float64(-60.6)}
+{'family': 'combo', 'n_cfg': 378, 'look': 12, 'metric': 'sharpe', 'WF_IS_geo': np.float64(2.97), 'WF_OOS_geo': np.float64(-0.9), 'WF_OOS_dd': np.float64(-54.3), 'WF_OOS_worst': np.float64(-53.8), 'n_switch_oos': 6, 'frozen_cfg': 'c_all|none|5|21', 'frozen_IS_geo': np.float64(2.96), 'frozen_OOS_geo': np.float64(-4.77), 'frozen_OOS_dd': np.float64(-74.6), 'frozen_OOS_worst': np.float64(-60.6)}
+{'family': 'combo', 'n_cfg': 378, 'look': 12, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.09), 'WF_OOS_geo': np.float64(-2.41), 'WF_OOS_dd': np.float64(-61.3), 'WF_OOS_worst': np.float64(-60.8), 'n_switch_oos': 6, 'frozen_cfg': 'c_all|none|5|21', 'frozen_IS_geo': np.float64(2.96), 'frozen_OOS_geo': np.float64(-4.77), 'frozen_OOS_dd': np.float64(-74.6), 'frozen_OOS_worst': np.float64(-60.6)}
+{'family': 'combo', 'n_cfg': 378, 'look': 24, 'metric': 'geo', 'WF_IS_geo': np.float64(3.93), 'WF_OOS_geo': np.float64(-4.93), 'WF_OOS_dd': np.float64(-75.2), 'WF_OOS_worst': np.float64(-72.8), 'n_switch_oos': 6, 'frozen_cfg': 'c_mom_rev|none|5|21', 'frozen_IS_geo': np.float64(1.62), 'frozen_OOS_geo': np.float64(-10.31), 'frozen_OOS_dd': np.float64(-82.8), 'frozen_OOS_worst': np.float64(-73.1)}
+{'family': 'combo', 'n_cfg': 378, 'look': 24, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.96), 'WF_OOS_geo': np.float64(-3.07), 'WF_OOS_dd': np.float64(-59.1), 'WF_OOS_worst': np.float64(-58.5), 'n_switch_oos': 5, 'frozen_cfg': 'c_all|ew20|20|21', 'frozen_IS_geo': np.float64(5.01), 'frozen_OOS_geo': np.float64(2.07), 'frozen_OOS_dd': np.float64(-8.3), 'frozen_OOS_worst': np.float64(-5.8)}
+{'family': 'combo', 'n_cfg': 378, 'look': 24, 'metric': 'calmar', 'WF_IS_geo': np.float64(4.74), 'WF_OOS_geo': np.float64(-3.59), 'WF_OOS_dd': np.float64(-59.1), 'WF_OOS_worst': np.float64(-58.5), 'n_switch_oos': 9, 'frozen_cfg': 'c_mom_rev|none|5|21', 'frozen_IS_geo': np.float64(1.62), 'frozen_OOS_geo': np.float64(-10.31), 'frozen_OOS_dd': np.float64(-82.8), 'frozen_OOS_worst': np.float64(-73.1)}
+{'family': 'combo', 'n_cfg': 378, 'look': 36, 'metric': 'geo', 'WF_IS_geo': np.float64(2.65), 'WF_OOS_geo': np.float64(-4.78), 'WF_OOS_dd': np.float64(-72.1), 'WF_OOS_worst': np.float64(-70.2), 'n_switch_oos': 6, 'frozen_cfg': 'c_h52_lowvol|ew20|5|21', 'frozen_IS_geo': np.float64(4.7), 'frozen_OOS_geo': np.float64(2.91), 'frozen_OOS_dd': np.float64(-5.9), 'frozen_OOS_worst': np.float64(-2.6)}
+{'family': 'combo', 'n_cfg': 378, 'look': 36, 'metric': 'sharpe', 'WF_IS_geo': np.float64(3.77), 'WF_OOS_geo': np.float64(1.65), 'WF_OOS_dd': np.float64(-8.3), 'WF_OOS_worst': np.float64(-5.8), 'n_switch_oos': 3, 'frozen_cfg': 'c_all|ew20|20|21', 'frozen_IS_geo': np.float64(5.01), 'frozen_OOS_geo': np.float64(2.07), 'frozen_OOS_dd': np.float64(-8.3), 'frozen_OOS_worst': np.float64(-5.8)}
+{'family': 'combo', 'n_cfg': 378, 'look': 36, 'metric': 'calmar', 'WF_IS_geo': np.float64(3.22), 'WF_OOS_geo': np.float64(-6.34), 'WF_OOS_dd': np.float64(-72.1), 'WF_OOS_worst': np.float64(-70.2), 'n_switch_oos': 5, 'frozen_cfg': 'c_h52_lowvol|breadth50|10|21', 'frozen_IS_geo': np.float64(4.38), 'frozen_OOS_geo': np.float64(1.76), 'frozen_OOS_dd': np.float64(-8.1), 'frozen_OOS_worst': np.float64(-2.5)}
+  family  n_cfg  look metric  WF_IS_geo  WF_OOS_geo  WF_OOS_dd  WF_OOS_worst  n_switch_oos                   frozen_cfg  frozen_IS_geo  frozen_OOS_geo  frozen_OOS_dd  frozen_OOS_worst
+     ALL   1701    12    geo       3.71        1.45      -78.5         -78.5             5             mom21_0|none|5|5           1.59           -0.35          -79.6             -68.3
+     ALL   1701    12 sharpe       2.98       -4.07      -76.0         -75.9             8              c_all|none|5|21           2.96           -4.77          -74.6             -60.6
+     ALL   1701    12 calmar       1.54        1.14      -77.1         -77.1             5              c_all|none|5|21           2.96           -4.77          -74.6             -60.6
+     ALL   1701    24    geo       3.40       -5.98      -86.2         -78.5             3           mom252_0|none|5|21           3.39           -9.74          -92.0             -81.7
+     ALL   1701    24 sharpe       3.85       -7.58      -77.1         -77.1             9             c_all|ew20|20|21           5.01            2.07           -8.3              -5.8
+     ALL   1701    24 calmar       3.02       -5.18      -77.1         -77.1             5           mom252_0|none|5|21           3.39           -9.74          -92.0             -81.7
+     ALL   1701    36    geo       3.07       -7.24      -86.9         -78.5             4              small|none|5|21           5.63           -0.32          -36.6             -18.2
+     ALL   1701    36 sharpe       3.71       -3.78      -52.0         -51.6             4             c_all|ew20|20|21           5.01            2.07           -8.3              -5.8
+     ALL   1701    36 calmar       2.73       -6.19      -83.9         -81.7             6          sector126|ew20|10|5           4.54           -1.04          -22.1             -11.8
+momentum    504    12    geo       3.68        2.24      -78.5         -78.5             4             mom21_0|none|5|5           1.59           -0.35          -79.6             -68.3
+momentum    504    12 sharpe       2.48       -2.87      -76.0         -75.9             6           mom126_0|none|20|5           4.02            0.49          -62.9             -53.3
+momentum    504    12 calmar       3.27        2.74      -77.1         -77.1             3             mom21_0|none|5|5           1.59           -0.35          -79.6             -68.3
+momentum    504    24    geo       2.87       -5.98      -86.2         -78.5             3           mom252_0|none|5|21           3.39           -9.74          -92.0             -81.7
+momentum    504    24 sharpe       3.38       -7.43      -77.2         -77.1             9          h26|breadth50|20|21           4.18            1.27          -10.6              -5.0
+momentum    504    24 calmar       3.32       -5.18      -77.1         -77.1             5           mom252_0|none|5|21           3.39           -9.74          -92.0             -81.7
+momentum    504    36    geo       1.62       -6.25      -86.9         -78.5             3           mom252_0|none|5|21           3.39           -9.74          -92.0             -81.7
+momentum    504    36 sharpe       3.03       -3.47      -52.5         -51.6             5          h26|breadth50|20|21           4.18            1.27          -10.6              -5.0
+momentum    504    36 calmar       2.52       -5.90      -83.9         -81.7             5               h26|ew20|20|21           4.19            2.58           -8.1              -5.7
+reversal    189    12    geo      -1.00       -4.66      -58.1         -55.3             3              rev5|none|10|21           2.04           -7.73          -68.0             -53.5
+reversal    189    12 sharpe       0.45       -3.82      -58.1         -55.3             2              rev1|none|20|21           3.18           -4.84          -63.2             -55.3
+reversal    189    12 calmar      -0.36       -3.82      -58.1         -55.3             2              rev1|none|20|21           3.18           -4.84          -63.2             -55.3
+reversal    189    24    geo       0.58       -5.20      -58.1         -55.3             3              rev5|none|10|21           2.04           -7.73          -68.0             -53.5
+reversal    189    24 sharpe       1.52       -5.14      -58.1         -55.3             4              rev5|none|10|21           2.04           -7.73          -68.0             -53.5
+reversal    189    24 calmar       1.68       -6.51      -61.1         -55.3             3              rev5|none|10|21           2.04           -7.73          -68.0             -53.5
+reversal    189    36    geo       1.40       -4.66      -58.1         -55.3             3              rev5|none|10|21           2.04           -7.73          -68.0             -53.5
+reversal    189    36 sharpe       1.41       -6.26      -61.2         -55.3             4         rev1|breadth50|20|21           2.86            0.36          -14.2              -7.4
+reversal    189    36 calmar       1.76       -5.58      -58.1         -55.3             2         rev1|breadth50|20|21           2.86            0.36          -14.2              -7.4
+  volbrk    126    12    geo       1.86       -5.54      -59.0         -44.2             9            volbrk55|none|5|5           2.09          -10.56          -79.2             -56.4
+  volbrk    126    12 sharpe       2.84       -4.24      -54.5         -44.2             8         volbrk55|sma50|20|21           3.90           -2.28          -45.1             -36.0
+  volbrk    126    12 calmar       2.41       -5.51      -60.0         -44.2             9           volbrk55|none|20|5           2.18           -4.11          -57.1             -47.7
+  volbrk    126    24    geo       2.31       -2.93      -43.6         -29.9             6          volbrk20|ew20|10|21           3.89            1.38          -17.7             -15.2
+  volbrk    126    24 sharpe       3.21       -1.44      -38.9         -29.9             5     volbrk55|breadth50|20|21           4.09            1.88           -9.0              -2.9
+  volbrk    126    24 calmar       2.24       -4.55      -55.4         -44.0             5          volbrk20|ew20|10|21           3.89            1.38          -17.7             -15.2
+  volbrk    126    36    geo       1.94        1.24      -16.0          -9.0             2     volbrk20|breadth50|10|21           3.81            2.82           -9.6              -0.5
+  volbrk    126    36 sharpe       3.08        1.96       -9.6          -1.6             3     volbrk20|breadth50|20|21           3.66            1.94           -8.9              -2.7
+  volbrk    126    36 calmar       3.11        1.60       -9.6          -5.9             3          volbrk55|ew20|20|21           4.07            1.53          -11.9              -9.8
+  lowvol    126    12    geo       3.03        0.22      -21.6         -20.4             7          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+  lowvol    126    12 sharpe       2.96        0.18      -23.3         -20.4             6          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+  lowvol    126    12 calmar       3.27        1.46      -12.2          -8.8             5          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+  lowvol    126    24    geo       3.34        0.71      -19.1         -16.9             3          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+  lowvol    126    24 sharpe       3.84        1.40       -9.1          -2.7             4    lowvol120|breadth50|20|21           4.02            1.26          -11.0              -3.0
+  lowvol    126    24 calmar       3.02        0.81      -19.1         -16.9             3          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+  lowvol    126    36    geo       3.13        0.74      -16.5         -11.0             2          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+  lowvol    126    36 sharpe       4.04        0.90      -11.0          -3.0             3     lowvol120|breadth50|20|5           3.92            1.03          -11.7              -3.4
+  lowvol    126    36 calmar       3.79        1.01      -13.4         -11.0             3          lowvol60|none|10|21           3.90            0.99          -16.5             -11.0
+   small     63    12    geo       3.27        1.34      -30.9         -18.8             3              small|none|5|21           5.63           -0.32          -36.6             -18.2
+   small     63    12 sharpe       2.58       -1.49      -36.3         -26.2             5             small|sma50|20|1           3.59            0.29          -15.1             -10.4
+   small     63    12 calmar       2.90       -0.42      -36.3         -26.2             5              small|none|5|21           5.63           -0.32          -36.6             -18.2
+   small     63    24    geo       3.57        0.20      -32.7         -18.2             3              small|none|5|21           5.63           -0.32          -36.6             -18.2
+   small     63    24 sharpe       3.03        1.02       -9.5          -5.6             4        small|breadth50|20|21           4.58            2.08           -8.4              -3.3
+   small     63    24 calmar       2.88       -0.30      -26.0         -16.9             5              small|none|5|21           5.63           -0.32          -36.6             -18.2
+   small     63    36    geo       3.31       -0.32      -36.6         -18.2             1              small|none|5|21           5.63           -0.32          -36.6             -18.2
+   small     63    36 sharpe       3.57        2.08       -8.4          -3.3             1        small|breadth50|20|21           4.58            2.08           -8.4              -3.3
+   small     63    36 calmar       3.46       -0.08      -35.1         -18.5             2              small|none|5|21           5.63           -0.32          -36.6             -18.2
+  sector    126    12    geo       3.06       -0.64      -33.9         -31.3             5         sector126|none|10|21           4.17           -1.69          -44.8             -42.0
+  sector    126    12 sharpe       4.59       -2.05      -33.7         -31.5             9          sector126|ew20|10|5           4.54           -1.04          -22.1             -11.8
+  sector    126    12 calmar       3.16       -1.11      -35.2         -31.3             6          sector126|none|10|5           3.58           -1.41          -41.5             -32.9
+  sector    126    24    geo       2.37       -0.30      -36.1         -31.3             3          sector126|ew20|10|5           4.54           -1.04          -22.1             -11.8
+  sector    126    24 sharpe       3.71        0.53      -35.5         -31.3             4         sector126|ew20|20|21           5.25            0.28          -19.9             -12.7
+  sector    126    24 calmar       3.46       -0.91      -35.5         -31.3             5          sector126|ew20|10|5           4.54           -1.04          -22.1             -11.8
+  sector    126    36    geo       3.06       -1.88      -43.4         -36.1             5           sector126|ew20|5|5           4.17            0.60          -24.3             -14.6
+  sector    126    36 sharpe       3.15        0.13      -20.0         -12.7             3           sector63|ew20|20|5           4.67            1.17          -14.3             -10.1
+  sector    126    36 calmar       3.62       -3.81      -46.6         -39.1             6          sector126|ew20|10|5           4.54           -1.04          -22.1             -11.8
+   tavan    189    12    geo       1.40        0.46      -49.1         -27.9             3             tavan10|none|5|5          -0.71           -6.38          -79.2             -64.4
+   tavan    189    12 sharpe       1.27        3.17      -28.3         -23.3             2             tavan10|none|5|5          -0.71           -6.38          -79.2             -64.4
+   tavan    189    12 calmar       0.41       -0.45      -54.1         -36.0             3             tavan10|none|5|5          -0.71           -6.38          -79.2             -64.4
+   tavan    189    24    geo       0.11       -9.12      -74.5         -64.4             5             tavan10|ew50|5|5           1.57            1.51          -16.8              -6.7
+   tavan    189    24 sharpe       0.38        1.03      -19.7          -9.2             3             tavan3|ew20|5|21           3.05           -1.68          -29.0             -13.4
+   tavan    189    24 calmar      -0.36        1.06      -19.7          -9.2             5             tavan3|ew20|5|21           3.05           -1.68          -29.0             -13.4
+   tavan    189    36    geo       0.18       -0.48      -42.8         -36.2             3             tavan10|ew20|5|5           1.72           -1.43          -29.9             -15.9
+   tavan    189    36 sharpe       1.31       -2.87      -44.1         -36.2             6        tavan10|breadth50|5|5           1.48            3.15          -12.0               0.8
+   tavan    189    36 calmar       0.19        0.55      -35.1         -16.4             5        tavan10|breadth50|5|5           1.48            3.15          -12.0               0.8
+   combo    378    12    geo       2.96       -1.94      -63.1         -60.9             6              c_all|none|5|21           2.96           -4.77          -74.6             -60.6
+   combo    378    12 sharpe       2.97       -0.90      -54.3         -53.8             6              c_all|none|5|21           2.96           -4.77          -74.6             -60.6
+   combo    378    12 calmar       3.09       -2.41      -61.3         -60.8             6              c_all|none|5|21           2.96           -4.77          -74.6             -60.6
+   combo    378    24    geo       3.93       -4.93      -75.2         -72.8             6          c_mom_rev|none|5|21           1.62          -10.31          -82.8             -73.1
+   combo    378    24 sharpe       3.96       -3.07      -59.1         -58.5             5             c_all|ew20|20|21           5.01            2.07           -8.3              -5.8
+   combo    378    24 calmar       4.74       -3.59      -59.1         -58.5             9          c_mom_rev|none|5|21           1.62          -10.31          -82.8             -73.1
+   combo    378    36    geo       2.65       -4.78      -72.1         -70.2             6       c_h52_lowvol|ew20|5|21           4.70            2.91           -5.9              -2.6
+   combo    378    36 sharpe       3.77        1.65       -8.3          -5.8             3             c_all|ew20|20|21           5.01            2.07           -8.3              -5.8
+   combo    378    36 calmar       3.22       -6.34      -72.1         -70.2             5 c_h52_lowvol|breadth50|10|21           4.38            1.76           -8.1              -2.5
+  family  look metric  k  WF_IS_geo  WF_OOS_geo  WF_OOS_dd  WF_OOS_worst
+   combo    24    geo 10       4.26       -4.69      -70.4         -66.5
+   combo    24    geo  5       4.21       -5.45      -74.7         -71.2
+   combo    24    geo 20       4.15       -3.43      -65.6         -62.9
+   combo    24 calmar 20       4.03       -2.68      -58.3         -57.8
+   combo    24 calmar 10       4.02       -2.29      -56.1         -55.7
+   combo    24 sharpe  5       4.01       -1.55      -54.7         -54.1
+   combo    24 calmar  5       3.98       -3.67      -60.0         -59.5
+     ALL    24 sharpe  5       3.96       -1.38      -62.8         -62.5
+   combo    36 sharpe  5       3.95        1.02      -14.7         -14.3
+   combo    36    geo 20       3.89       -2.58      -63.5         -62.8
+   combo    36 sharpe 10       3.89       -0.75      -36.2         -35.7
+   combo    24 sharpe 20       3.88       -1.69      -53.0         -52.5
+   combo    24 sharpe 10       3.87       -1.96      -57.0         -56.6
+   combo    36 calmar 20       3.87       -1.70      -47.0         -46.8
+     ALL    24 sharpe 10       3.86       -1.46      -63.5         -63.1
+  lowvol    36 sharpe  5       3.84        1.07      -10.5          -3.1
+  lowvol    36 sharpe 20       3.84        1.03      -10.5          -2.7
+   combo    36 sharpe 20       3.84       -0.59      -32.1         -31.5
+     ALL    24 sharpe 20       3.80       -1.49      -62.6         -61.6
+   combo    36    geo 10       3.80       -2.70      -66.5         -66.4
+   combo    36 calmar 10       3.78       -1.51      -50.0         -49.9
+  sector    36 calmar 20       3.75       -1.07      -33.4         -26.8
+     ALL    36 sharpe 10       3.74       -3.37      -54.6         -54.0
+     ALL    36 sharpe  5       3.73       -5.31      -62.9         -62.5
+  sector    24 sharpe  5       3.73       -1.87      -40.5         -33.2
+  lowvol    36 sharpe 10       3.71        1.15      -11.2          -2.9
+momentum    24 calmar 10       3.70       -3.59      -72.6         -71.3
+  sector    36 sharpe 20       3.69       -0.80      -26.4         -17.5
+     ALL    36 sharpe 20       3.67       -2.47      -54.4         -53.9
+  lowvol    24 sharpe 10       3.65        0.89      -11.2          -5.6
+  sector    24 sharpe 10       3.63       -0.65      -29.5         -24.1
+  lowvol    24 sharpe  5       3.63        0.89      -10.4          -3.9
+  sector    24 calmar 20       3.63       -1.00      -32.6         -26.9
+  lowvol    24 sharpe 20       3.61        0.99      -11.2          -5.8
+  sector    24 sharpe 20       3.59       -0.51      -27.5         -20.8
+   combo    36 calmar  5       3.58       -3.21      -62.4         -62.3
+  sector    36 sharpe  5       3.57       -0.16      -20.5         -10.0
+  lowvol    24    geo  5       3.57        1.21      -13.1          -7.4
+  sector    24 calmar 10       3.55       -1.04      -37.5         -33.3
+  sector    12 calmar 10       3.55       -1.59      -37.7         -34.6
+  sector    36 sharpe 10       3.54       -0.68      -23.4         -13.2
+  lowvol    24 calmar 20       3.53        0.82      -12.2          -8.1
+  sector    36    geo 20       3.53       -1.23      -33.8         -27.8
+   combo    12 sharpe 20       3.53       -1.41      -57.6         -57.1
+  lowvol    36    geo 10       3.51        0.82      -15.4         -14.6
+  lowvol    36    geo 20       3.51        0.84      -14.6         -13.5
+  sector    36 calmar 10       3.50       -1.63      -36.8         -30.4
+  sector    24    geo 20       3.49       -1.24      -35.7         -30.0
+  lowvol    36 calmar 20       3.48        0.69      -12.3          -9.6
+   combo    12 sharpe 10       3.46       -1.32      -57.9         -57.3
+  lowvol    24 calmar 10       3.45        0.99      -12.1          -7.5
+  lowvol    24    geo 20       3.44        1.07      -11.8          -8.8
+     ALL    24    geo 20       3.44       -3.06      -77.2         -70.7
+  lowvol    24    geo 10       3.43        0.79      -12.8          -9.8
+  sector    36    geo 10       3.42       -1.86      -39.4         -34.9
+   combo    36    geo  5       3.42       -2.26      -64.5         -64.4
+  sector    24 calmar  5       3.42       -1.47      -38.9         -35.5
+momentum    24 sharpe  5       3.41       -1.02      -63.0         -62.5
+momentum    24 calmar 20       3.40       -2.23      -69.9         -69.1
+  sector    12 sharpe  5       3.39       -1.45      -35.4         -32.9
+  sector    24    geo  5       3.38       -1.00      -37.4         -33.2
+  lowvol    36    geo  5       3.36        1.33      -13.9         -13.1
+   combo    12 calmar 10       3.36       -0.84      -58.9         -58.4
+  lowvol    24 calmar  5       3.35        1.01      -12.0          -7.3
+momentum    24 sharpe 10       3.35       -1.60      -65.7         -63.1
+momentum    36 calmar 10       3.34       -4.29      -73.4         -73.0
+momentum    24 calmar  5       3.34       -3.08      -71.5         -70.5
+   combo    12    geo 20       3.32       -2.46      -64.2         -63.8
+  sector    36    geo  5       3.31       -2.16      -40.4         -36.1
+momentum    36 calmar  5       3.31       -4.09      -76.4         -74.5
+  sector    12    geo  5       3.31       -1.17      -37.9         -35.4
+  sector    24    geo 10       3.29       -1.13      -37.5         -32.3
+  lowvol    12    geo 20       3.28        0.85      -14.4         -13.2
+momentum    24 sharpe 20       3.28       -1.95      -66.3         -63.9
+momentum    36 sharpe 10       3.26       -3.10      -64.3         -63.1
+  lowvol    12 sharpe 20       3.26        0.91      -12.4         -10.1
+  lowvol    36 calmar 10       3.25        0.47      -12.6         -11.0
+     ALL    24 calmar  5       3.25       -3.05      -71.5         -70.5
+  sector    12 calmar  5       3.25       -1.27      -36.8         -35.5
+  sector    12 sharpe 10       3.23       -1.68      -35.3         -30.7
+  lowvol    12 sharpe 10       3.22        1.08      -12.1          -9.9
+     ALL    24 calmar 20       3.21       -2.53      -69.4         -69.1
+   combo    12    geo  5       3.20       -3.21      -66.3         -65.9
+  sector    12 calmar 20       3.19       -1.51      -36.4         -32.5
+momentum    12 sharpe 10       3.18       -0.47      -68.6         -68.4
+   combo    12 sharpe  5       3.16       -0.70      -55.2         -54.6
+  sector    36 calmar  5       3.16       -2.45      -42.3         -35.8
+momentum    36 sharpe  5       3.15       -3.41      -63.0         -62.5
+momentum    36 calmar 20       3.15       -3.61      -69.3         -68.5
+     ALL    12 sharpe 20       3.15       -0.44      -62.7         -62.3
+   combo    12 calmar 20       3.15       -1.50      -58.1         -57.6
+momentum    36 sharpe 20       3.14       -3.57      -64.8         -63.3
+     ALL    24 calmar 10       3.13       -3.06      -71.6         -71.3
+   combo    12    geo 10       3.13       -2.46      -66.6         -66.3
+  sector    12 sharpe 20       3.12       -1.53      -34.5         -30.4
+  lowvol    36 calmar  5       3.11        1.26      -11.4          -8.3
+  lowvol    12 calmar 20       3.11        1.11      -12.4          -9.6
+momentum    12    geo 10       3.06       -2.47      -78.6         -76.8
+  sector    12    geo 10       3.04       -1.53      -37.3         -35.0
+  lowvol    12    geo 10       3.04        0.59      -18.2         -16.7
+     ALL    12 sharpe 10       3.04       -1.41      -68.6         -68.4
+momentum    12    geo 20       3.04       -3.47      -79.2         -77.9
+     ALL    36 calmar  5       3.02       -4.78      -76.4         -74.5
+  lowvol    12 sharpe  5       3.02        0.70      -14.6         -13.0
+  lowvol    12    geo  5       2.99        0.67      -19.9         -18.5
+momentum    12 sharpe 20       2.99       -1.03      -64.5         -64.1
+     ALL    24    geo  5       2.98       -3.90      -80.5         -75.9
+     ALL    36 calmar 10       2.98       -4.76      -73.4         -73.0
+  sector    12    geo 20       2.97       -1.31      -34.5         -30.2
+     ALL    24    geo 10       2.95       -3.93      -81.1         -76.0
+momentum    36    geo 20       2.95       -3.60      -76.2         -70.7
+momentum    24    geo 20       2.93       -2.97      -77.7         -70.7
+momentum    12 sharpe  5       2.91       -1.94      -75.4         -75.4
+momentum    12 calmar 10       2.88       -0.12      -68.6         -68.4
+   combo    12 calmar  5       2.88       -0.83      -58.3         -57.8
+  lowvol    12 calmar 10       2.87        0.93      -12.4         -10.6
+     ALL    36 calmar 20       2.86       -3.98      -69.3         -68.5
+  lowvol    12 calmar  5       2.83        0.83      -13.2         -12.1
+momentum    36    geo 10       2.82       -4.69      -81.4         -74.7
+momentum    12 calmar 20       2.80       -0.87      -65.1         -64.7
+momentum    24    geo 10       2.76       -4.48      -82.5         -76.0
+     ALL    12 sharpe  5       2.73       -2.10      -71.3         -71.3
+momentum    12 calmar  5       2.73       -0.76      -76.9         -76.8
+     ALL    12 calmar 20       2.72       -0.56      -63.4         -63.0
+     ALL    36    geo 10       2.71       -5.28      -80.8         -74.7
+     ALL    36    geo 20       2.64       -4.00      -75.4         -70.7
+     ALL    12    geo 20       2.64       -3.71      -79.0         -77.9
+     ALL    36    geo  5       2.64       -4.21      -80.3         -75.5
+momentum    36    geo  5       2.62       -3.69      -80.8         -75.5
+     ALL    12    geo 10       2.62       -2.43      -78.6         -76.8
+     ALL    12    geo  5       2.61       -1.13      -76.9         -76.8
+momentum    12    geo  5       2.53       -0.95      -76.9         -76.8
+     ALL    12 calmar 10       2.45       -0.85      -68.6         -68.4
+momentum    24    geo  5       2.41       -4.08      -81.3         -75.9
+     ALL    12 calmar  5       1.98       -0.91      -76.9         -76.8
+        WF_IS_geo  WF_OOS_geo
+count  135.000000  135.000000
+mean     3.316222   -1.578593
+std      0.418009    1.750753
+min      1.980000   -5.450000
+25%      3.040000   -3.010000
+50%      3.320000   -1.490000
+75%      3.600000   -0.575000
+max      4.260000    1.330000

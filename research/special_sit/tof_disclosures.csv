@@ -1,0 +1,766 @@
+idx,ts,filer,summary,src,related,kind,target,price,n_classes,start,end,record,fund_cap,pay_next_day
+731506,2019-01-09 17:09:12,"ISMEN, IYM",Zorunlu Pay Alım Teklifi,tofform,,Zorunlu,,4.03,,2019-01-10,2019-01-23,,False,False
+731769,2019-01-09 18:20:12,"ISMEN, IYM","Şirket sermayesinin %11,27?sini temsil eden payların 15.11.2018 tarihinde Mayhoola for Investments L",tofcollect,BOYP,Zorunlu,BOYP,,,2019-01-10,2019-01-23,,False,True
+732136,2019-01-10 10:25:48,"ISMEN, IYM",09.01.2019-18:20 tarihli bildirimde pay alım teklifine konu pay bilgileri düzeltilmiştir.,tofcollect,,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+732370,2019-01-10 17:39:09,"ISMEN, IYM",Zorunlu Pay Alım Teklifi-09.01.2019 Tarih ve 17:09 saatinde yapılan açıklamanın güncellemesidir.,tofform,,Zorunlu,,4.03,,2019-01-10,2019-01-23,,False,False
+732375,2019-01-10 17:41:15,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola for Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+732715,2019-01-11 17:55:22,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+733112,2019-01-14 17:52:19,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+733540,2019-01-15 17:33:51,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+733735,2019-01-16 17:51:10,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+733902,2019-01-17 18:03:38,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+734129,2019-01-18 17:46:31,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+734343,2019-01-21 17:40:35,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+734582,2019-01-22 17:47:57,"ISMEN, IYM","Şirket sermayesinin %11,27'sini temsil eden payların 15.11.2018 tarihinde Mayhoola For Investments L",tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+734853,2019-01-23 18:03:49,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,BOYP,Zorunlu,BOYP,4.03,1.0,2019-01-10,2019-01-23,,False,True
+745964,2019-03-07 17:33:51,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.?nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+746464,2019-03-08 18:36:27,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+746905,2019-03-11 18:41:26,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+747519,2019-03-12 18:29:19,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+747728,2019-03-13 18:30:03,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+747924,2019-03-14 17:51:38,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+748150,2019-03-15 18:07:03,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+748409,2019-03-18 18:31:32,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+748612,2019-03-19 18:16:07,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+748902,2019-03-20 18:28:40,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+749125,2019-03-21 18:29:03,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+749231,2019-03-22 11:25:31,"YAT, YFMEN",Penguen Gıda Sanayi A.Ş.'nin A Grubu imtiyazlı pay sahipleri tarafından yapılan Pay Alım Teklifi Hak,tofcollect,PENGD,Zorunlu,PENGD,1.2989,1.0,2019-03-08,2019-03-21,,False,True
+757336,2019-04-22 14:29:01,ANELE,Gönüllü Pay Alım Teklifi hakkında,tofform,,Gönüllü,,1.26,,2019-04-29,2019-05-13,,True,False
+757618,2019-04-24 16:47:17,ANELE,Gönüllü Pay Alım Teklifine İlişkin Bilgilendirme Notu hakkında,tofform,,Gönüllü,,1.26,,2019-04-29,2019-05-13,,False,False
+758347,2019-04-26 17:14:01,ANELE,Gönüllü Pay Alım Teklifi hakkında,tofform,,Gönüllü,,1.26,,2019-04-29,2019-05-13,,False,False
+758864,2019-04-29 18:32:59,"A1CAP, ACP",ANELT Paylarında Yapılan Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+758899,2019-04-29 18:54:51,"A1CAP, ACP",ANELT Paylarında Yapılan Gönüllü Pay Alım Teklifi ,tofcollect,,Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+758982,2019-04-29 21:02:00,"A1CAP, ACP",ANELT Paylarında Yapılan Gönüllü Pay Alım Teklifi ,tofcollect,,Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+759891,2019-04-30 18:59:40,"A1CAP, ACP",ANELT Paylarında Yapılan Gönüllü Pay Alım Teklifi ,tofcollect,,Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+760869,2019-05-02 19:54:40,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+761160,2019-05-03 18:05:59,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+761537,2019-05-06 18:27:16,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+761843,2019-05-07 18:03:43,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-13,,True,False
+761887,2019-05-07 18:34:03,ANELE,Gönüllü Pay Alım Teklifi hakkında,tofform,,Gönüllü,,1.26,,2019-04-29,2019-05-27,,False,False
+762308,2019-05-08 19:01:00,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,,Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+762690,2019-05-09 18:33:29,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+763207,2019-05-10 18:33:35,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+763594,2019-05-13 17:43:54,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+763947,2019-05-14 18:07:16,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+764156,2019-05-15 17:23:07,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+764401,2019-05-16 17:52:21,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+764564,2019-05-17 15:51:47,NIBAS,Pay Alım Teklifi Yapılması Hk,tofform,,,,6.7,,2019-05-20,2019-05-31,,False,False
+764611,2019-05-17 17:36:25,"A1CAP, ACP",Gönüllü Pay Alım Teklifi,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+764850,2019-05-20 17:24:35,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+764860,2019-05-20 17:32:50,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+765077,2019-05-21 17:31:24,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+765083,2019-05-21 17:45:55,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+765292,2019-05-22 17:08:14,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+765309,2019-05-22 17:54:06,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+765534,2019-05-23 17:43:59,"A1CAP, ACP",Pay Alım Teklifi Bildirimi,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+765541,2019-05-23 18:05:53,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+765728,2019-05-24 17:07:29,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+765752,2019-05-24 18:04:25,"A1CAP, ACP",Gönüllü Pay Alım Teklifi ,tofcollect,"ANELT,ANELE",Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+765963,2019-05-27 17:19:20,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+766009,2019-05-27 18:50:24,"A1CAP, ACP",Gönüllü Pay Alım Teklifinin Sona Ermesi ,tofcollect,,Gönüllü,ANELT,1.26,1.0,2019-04-29,2019-05-27,,False,True
+766150,2019-05-28 17:16:53,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+766345,2019-05-29 17:12:24,"A1CAP, ACP",NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+766541,2019-05-30 17:51:18,"A1CAP, ACP","NIBAS Paylarına ilişkin Yapılan Zorunlu Pay Alım Teklifi
+",tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+766902,2019-05-31 18:14:12,"A1CAP, ACP",Pay Alım Teklifinin Sona Ermesi.,tofcollect,NIBAS,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+767031,2019-06-03 13:10:00,"A1CAP, ACP",Pay alım teklifi sonuçları - Düzletme,tofcollect,,Zorunlu,NIBAS,6.7,1.0,2019-05-20,2019-05-31,,False,True
+767357,2019-06-10 18:07:33,"ISMEN, IYM",Zorunlu Pay Alım Teklifi ,tofform,,Zorunlu,,20.7409,,2019-06-11,2019-07-08,,False,False
+767360,2019-06-10 18:08:15,"ISMEN, IYM","Şirket sermayesinin %82,275?ini, oy haklarının %90,153?ünü temsil eden payların 15.04.2019 tarihinde",tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+767623,2019-06-11 18:16:52,"ISMEN, IYM",Zorunlu Pay Alım Teklifi Başvuruları,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+767850,2019-06-12 17:56:34,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+768087,2019-06-13 17:34:37,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+768328,2019-06-14 17:47:20,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+768569,2019-06-17 17:34:04,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+768772,2019-06-18 17:23:42,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+768989,2019-06-19 17:31:08,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+769176,2019-06-20 17:39:02,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+769384,2019-06-21 17:33:49,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+769581,2019-06-24 17:45:33,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+769768,2019-06-25 17:35:00,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+769948,2019-06-26 17:22:30,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+770144,2019-06-27 17:29:47,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+770359,2019-06-28 17:20:29,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+770640,2019-07-01 17:19:55,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+771044,2019-07-02 17:15:55,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+771398,2019-07-03 17:35:13,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+771900,2019-07-04 17:51:42,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+772602,2019-07-05 17:32:29,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,ULUSE,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+773822,2019-07-08 18:43:43,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,,Zorunlu,ULUSE,20.7409,1.0,2019-06-11,2019-07-08,,False,True
+781728,2019-08-09 16:26:39,"INFO, IYF",INFO Pay Alım Teklifi Yapılması Hk.,tofform,,,,1.91,,2019-08-15,2019-08-28,,False,False
+782485,2019-08-15 18:26:54,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+782672,2019-08-16 18:44:12,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+782940,2019-08-19 18:16:56,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi ,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+783330,2019-08-20 18:30:41,"INFO, IYF","İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi
+",tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+783560,2019-08-21 18:22:18,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+783756,2019-08-22 19:03:54,"INFO, IYF","	
+İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi",tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+783934,2019-08-23 18:24:37,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+784130,2019-08-26 18:25:13,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+784346,2019-08-27 18:21:14,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+784684,2019-08-28 18:48:54,"INFO, IYF",İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+785190,2019-09-02 18:36:20,"INFO, IYF","	
+İnfo Yatırım Menkul Değerler A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi Sonucu (Güncelleme)",tofcollect,,Zorunlu,INFO,1.91,1.0,2019-08-15,2019-08-28,,False,True
+789153,2019-09-30 10:23:58,,Pay Alım Teklifi Bilgi Formu,tofform,,,,,,,,,False,False
+789186,2019-09-30 13:05:17,,Pay Alım Teklifi Bilgi Formu,tofform,,,,,,,,,False,False
+789499,2019-10-01 20:39:46,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+789722,2019-10-02 19:12:46,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+790059,2019-10-03 18:50:02,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+790574,2019-10-04 19:38:42,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+791072,2019-10-07 19:00:53,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+791661,2019-10-08 18:26:33,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+791914,2019-10-09 17:58:09,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+792406,2019-10-10 18:19:33,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+792785,2019-10-11 18:18:03,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+793185,2019-10-14 19:20:35,"IAZ, INVAZ",Kervansaray Yatırım Holding A.Ş. Paylarında Yapılan Zorunlu Pay Alım Teklifi,tofcollect,KERVN,Zorunlu,KERVN,0.3,1.0,2019-10-01,2019-10-14,,False,False
+807438,2020-01-03 16:37:00,ZRY,Sürmegöz Tekstil Yatırım A.Ş. tarafından gerçekleştirilecek zorunlu pay alım teklifine ilişkin Pay A,tofform,,Zorunlu,,4.34,,2020-01-06,2020-01-24,,False,False
+807446,2020-01-03 16:56:27,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+807964,2020-01-06 17:57:32,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+808477,2020-01-07 17:14:59,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+809449,2020-01-08 17:18:27,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+810837,2020-01-09 17:14:34,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+811886,2020-01-10 17:19:25,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+812147,2020-01-13 17:23:53,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+812415,2020-01-14 17:10:30,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+812901,2020-01-15 17:13:11,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+813201,2020-01-16 17:11:22,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+813425,2020-01-17 17:34:37,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+813567,2020-01-20 17:23:54,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+813587,2020-01-20 17:50:56,"GRM, GRYAT",Marshall Boya ve Vernik Sanayi A.Ş. Paylarının Gönüllü Pay Alım Teklifi Yoluyla Alınması,tofform,,Gönüllü,,40.0,,2020-01-24,2020-02-20,,False,False
+813812,2020-01-21 18:43:50,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+814020,2020-01-22 17:26:11,"GRM, GRYAT",Marshall Boya ve Vernik Sanayi A.Ş. Paylarının Gönüllü Pay Alım Teklifi Yoluyla Alınması-Güncel Tale,tofform,,Gönüllü,,40.0,,2020-01-24,2020-02-20,,False,False
+814023,2020-01-22 17:41:20,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+814162,2020-01-23 17:16:45,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+814366,2020-01-24 17:12:47,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+814377,2020-01-24 17:27:24,ZRY,Yünsa paylarına ilişkin Sürmegöz Tekstil Yatırım A.Ş. tarafından yapılan zorunlu pay alım teklifi ha,tofcollect,YUNSA,Zorunlu,YUNSA,4.34,1.0,2020-01-06,2020-01-24,,False,True
+814625,2020-01-27 17:32:12,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+814954,2020-01-28 22:58:18,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+815286,2020-01-29 21:41:45,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+815594,2020-01-30 17:24:26,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim  ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+816268,2020-01-31 17:11:01,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+816761,2020-02-03 17:19:03,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+817010,2020-02-04 17:32:48,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+817248,2020-02-05 18:33:20,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+817470,2020-02-06 17:55:50,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+817675,2020-02-07 17:44:32,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+818192,2020-02-10 18:00:11,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+818430,2020-02-11 17:31:41,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+818625,2020-02-12 17:16:21,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+818855,2020-02-13 17:56:22,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+819141,2020-02-14 17:47:05,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+819573,2020-02-17 17:25:40,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+819835,2020-02-18 13:04:24,"GRM, GRYAT",Marshall Boya ve Vernik Sanayii A.Ş. Gönüllü Pay Alım Teklifi Fiyat Güncellemesi,tofform,,Gönüllü,,53.0,,2020-01-24,2020-03-05,,False,False
+819905,2020-02-18 17:26:06,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,40.0,1.0,2020-01-24,2020-02-20,,False,True
+819918,2020-02-18 17:43:37,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim Düzeltme,tofcollect,,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-02-20,,False,True
+819966,2020-02-18 19:22:10,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim Düzeltme,tofcollect,,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+820119,2020-02-19 17:34:03,"GRM, GRYAT","
+Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim  ",tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+820557,2020-02-20 18:27:22,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim  ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+820926,2020-02-21 17:48:30,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim  ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+821171,2020-02-24 17:07:00,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+821496,2020-02-25 17:51:01,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+821761,2020-02-26 17:29:35,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+822074,2020-02-27 17:48:29,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+822837,2020-02-28 17:12:55,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+823386,2020-03-02 18:08:59,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+824002,2020-03-03 18:31:28,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+824288,2020-03-04 18:17:06,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+824627,2020-03-05 17:45:24,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+824690,2020-03-05 19:24:40,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim ,tofcollect,,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+825431,2020-03-09 15:46:35,"GRM, GRYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,MRSHL,Gönüllü,MRSHL,53.0,1.0,2020-01-24,2020-03-05,,False,True
+828859,2020-03-13 17:20:52,ANELE,Zorunlu Pay Alım Teklifi hakkında,tofform,,Zorunlu,,,,2020-03-20,2020-04-02,,False,False
+830759,2020-03-19 16:21:37,ANELE,Zorunlu Pay Alım Teklifi hakkında,tofform,,Zorunlu,,,,2020-03-20,2020-04-02,,False,False
+831110,2020-03-20 17:53:29,"INFO, IYF",ANELT Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+831125,2020-03-20 18:11:37,"INFO, IYF",ANELT Pay Alım Teklifi Bilgilendirmesi ,tofcollect,,Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+831510,2020-03-23 17:47:24,"INFO, IYF",ANELT Pay Alım Teklifi Bilgilendirmesi,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+831828,2020-03-24 18:26:29,"INFO, IYF",ANELT Pay Alım Teklifi Bilgilendirmesi,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+831889,2020-03-25 08:56:14,"INFO, IYF",ANELT Pay Alım Teklifi Bilgilendirmesi,tofcollect,,Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+832190,2020-03-25 18:23:39,"INFO, IYF","	
+ANELT Pay Alım Teklifi Bilgilendirmesi",tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+832450,2020-03-26 18:24:01,"INFO, IYF",ANELT Pay Alım Teklifi Bilgilendirmesi,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+832973,2020-03-27 18:18:06,"INFO, IYF","	
+ANELT Pay Alım Teklifi Bilgilendirmesi",tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+833380,2020-03-30 18:11:32,"INFO, IYF",ANELT Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+833626,2020-03-31 18:12:06,"INFO, IYF",ANELT Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+833951,2020-04-01 18:12:38,"INFO, IYF",ANELT Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+834393,2020-04-02 18:17:34,"INFO, IYF",ANELT Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,"ANELT,ANELE",Zorunlu,ANELT,1.40939,1.0,2020-03-20,2020-04-02,,False,True
+854503,2020-07-03 18:43:14,BMK,Taze Kuru Pay Alım Teklifi Bilgi Formu,tofform,,,,8.05,,2020-07-06,2020-07-20,,False,False
+855237,2020-07-06 18:19:26,BMK,21 Mayıs 2020?de KAP'ta açıklandığı üzere Hüseyin Avni METİNKALE?nin Taze Kuru San. ve Tic. A.Ş.?nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+856185,2020-07-07 18:15:44,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+857261,2020-07-08 17:26:20,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+857281,2020-07-08 17:35:29,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+858466,2020-07-09 18:08:04,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+859061,2020-07-10 17:37:53,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+859546,2020-07-13 18:12:10,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+859844,2020-07-14 18:13:56,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+860120,2020-07-16 17:36:30,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+860321,2020-07-17 18:18:04,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+860560,2020-07-20 18:08:13,BMK,21 Mayıs 2020 de KAP ta açıklandığı üzere Hüseyin Avni METİNKALE nin Taze Kuru San. ve Tic. A.Ş. nin,tofcollect,TKURU,Zorunlu,TKURU,8.05,1.0,2020-07-06,2020-07-20,,False,True
+861700,2020-07-24 18:04:58,IDGYO,Zorunlu Pay Alım Teklifi Hakkında,tofform,,Zorunlu,,2.9592,,2020-07-27,2020-08-11,,False,False
+862121,2020-07-27 18:12:10,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+862275,2020-07-28 09:20:14,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+862824,2020-07-28 18:37:36,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+863559,2020-07-29 18:11:06,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+864183,2020-07-30 12:40:53,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+864973,2020-08-04 17:20:48,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+865427,2020-08-05 17:30:48,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+866179,2020-08-06 19:01:42,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+866731,2020-08-07 18:10:33,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+867290,2020-08-10 17:19:42,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+868100,2020-08-11 17:07:12,"INFO, IYF",IDGYO Zorunlu Pay Alım Teklifi Bilgilendirmesi ,tofcollect,IDGYO,Zorunlu,IDGYO,2.9592,1.0,2020-07-27,2020-08-11,,False,True
+889539,2020-11-23 12:48:26,MTY,BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+889809,2020-11-24 18:02:08,MTY,BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+890011,2020-11-25 18:03:32,MTY,BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+890171,2020-11-26 18:02:33,MTY,BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+890356,2020-11-27 18:08:28,MTY,BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+890608,2020-11-30 18:01:36,MTY,"	
+BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi",tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+890821,2020-12-01 18:02:54,MTY,"	
+BMELK Zorunlu Pay Alım Teklifi Bilgilendirmesi",tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+891021,2020-12-02 18:03:30,MTY,PAMEL Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+891243,2020-12-03 18:05:51,MTY,PAMEL Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+891492,2020-12-04 18:09:33,MTY,PAMEL Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+891854,2020-12-07 18:15:56,MTY,PAMEL Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,BMELK,Zorunlu,BMELK,5.06,1.0,2020-11-23,2020-12-07,,False,True
+913922,2021-03-01 16:05:24,DENGE,Zorunlu Pay Alım Teklifi Hakkında,tofform,,Zorunlu,,3.2384,,2021-03-02,2021-03-15,,False,False
+914533,2021-03-02 17:14:49,"TERA, TRA",DENGE Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofform,,Zorunlu,,3.2384,,2021-03-02,2021-03-15,,False,False
+914864,2021-03-03 17:34:05,"TERA, TRA",DENGE Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofform,,Zorunlu,,3.2384,,2021-03-02,2021-03-15,,False,False
+915542,2021-03-05 18:28:33,IZINV,IZTAR Pay Alım Teklifi Hk.,tofform,,,,7.6056,,2021-03-08,2021-03-19,,False,False
+916054,2021-03-08 17:22:45,"TERA, TRA",İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofform,,Zorunlu,,7.6056,,2021-03-08,2021-03-19,,False,False
+918236,2021-03-15 17:18:30,"MRBAS, MRS",DERAS,tofcollect,,Zorunlu,DERAS,6.45,1.0,2021-03-12,2021-03-25,,False,True
+918261,2021-03-15 18:26:41,"TERA, TRA",DENGE Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,DENGE,Zorunlu,DENGE,3.2384,1.0,2021-03-02,2021-03-15,,False,True
+918268,2021-03-15 18:36:09,"TERA, TRA",İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,IZTAR,Zorunlu,IZTAR,7.6056,1.0,2021-03-08,2021-03-19,,False,True
+918427,2021-03-16 14:29:39,"MRBAS, MRS",DERAS ,tofcollect,,Zorunlu,DERAS,6.45,1.0,2021-03-12,2021-03-25,,False,True
+918478,2021-03-16 17:11:51,"TERA, TRA",İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,IZTAR,Zorunlu,IZTAR,7.6056,1.0,2021-03-08,2021-03-19,,False,True
+918484,2021-03-16 17:21:52,"MRBAS, MRS",DERAS,tofcollect,DERAS,Zorunlu,DERAS,6.45,1.0,2021-03-12,2021-03-25,,False,True
+918491,2021-03-16 17:31:02,"MRBAS, MRS",SERAS,tofcollect,DERAS,Zorunlu,DERAS,6.45,1.0,2021-03-12,2021-03-25,,False,True
+918725,2021-03-17 12:18:16,"MRBAS, MRS",DERAS,tofcollect,DERAS,Zorunlu,DERAS,6.45,1.0,2021-03-12,2021-03-25,,False,True
+918805,2021-03-17 17:05:04,"TERA, TRA",İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,IZTAR,Zorunlu,IZTAR,7.6056,1.0,2021-03-08,2021-03-19,,False,True
+918951,2021-03-18 10:14:38,"MRBAS, MRS",DERAS,tofcollect,,Zorunlu,DERAS,6.45,1.0,2021-03-12,2021-03-25,,False,True
+919038,2021-03-18 17:07:24,"TERA, TRA",İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,IZTAR,Zorunlu,IZTAR,7.6056,1.0,2021-03-08,2021-03-19,,False,True
+919396,2021-03-19 17:25:18,"TERA, TRA",İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,IZTAR,Zorunlu,IZTAR,7.6056,1.0,2021-03-08,2021-03-19,,False,True
+919552,2021-03-22 08:15:10,IZINV,İz Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofform,,Zorunlu,,7.6056,,2021-03-08,2021-03-19,,False,False
+931846,2021-04-28 17:18:05,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+931948,2021-04-28 18:34:36,OTTO,Taç Tarım Ürünleri Zorunlu Pay Alım Teklifi - Bilgilendirme,tofform,,Zorunlu,,11.9217,,2021-04-29,2021-05-12,,False,False
+932434,2021-04-29 17:24:11,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+933478,2021-04-30 17:40:33,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+934188,2021-05-03 17:48:34,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+934476,2021-05-04 18:05:52,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+934722,2021-05-05 18:17:02,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+934954,2021-05-06 17:24:04,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+935298,2021-05-07 17:38:32,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+935845,2021-05-10 17:05:34,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+936202,2021-05-11 17:08:46,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+943169,2021-06-18 18:57:07,KGYO,(B) grubu pay sahiplerine zorunlu pay alım teklifi ,tofform,,Zorunlu,,4.6587,,2021-06-21,2021-07-02,,False,False
+943186,2021-06-18 20:10:21,KGYO,B) grubu pay sahiplerine zorunlu pay alım teklifi (Düzeltme),tofform,,Zorunlu,,4.6587,,2021-06-21,2021-07-02,,False,False
+943458,2021-06-21 19:14:05,"A1CAP, ACP",YKGYO Zorunlu Pay Alım Teklifi Bildirimi,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+943623,2021-06-22 18:36:50,"A1CAP, ACP",YKGYO Zorunlu Pay Alım Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+943840,2021-06-23 17:50:04,"A1CAP, ACP",YKGYO Zorunlu Pay Alım Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+944028,2021-06-24 20:10:01,"A1CAP, ACP",YKGYO Zorunlu Pay Alım Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+944273,2021-06-25 20:09:18,"A1CAP, ACP",YKGYO Zorunlu Pay Alımı Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+944613,2021-06-28 18:18:31,"A1CAP, ACP",YKGYO Zorunlu Pay Alım Hk.,tofcollect,,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+944912,2021-06-29 18:20:57,"A1CAP, ACP",YKGYO Zorunlu Pay Alımı Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+945246,2021-06-30 18:46:09,"A1CAP, ACP",YKGYO Zorunlu Pay Alımı Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+945527,2021-07-01 18:23:14,"A1CAP, ACP",YKGYO Zorunlu Pay Alımı Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+945977,2021-07-02 19:08:09,"A1CAP, ACP",YKGYO Zorunlu Pay Alımı Hk.,tofcollect,YKGYO,Zorunlu,YKGYO,4.6587,1.0,2021-06-21,2021-07-02,,False,True
+945978,2021-07-02 19:17:22,KGYO,Koray Gayrimenkul ve Yatırım A.Ş. tarafından II-26.1 sayılı Pay Alım Teklifi Tebliği Uyarınca Yapıla,tofform,,Zorunlu,,4.6857,,2021-06-21,2021-07-02,,False,False
+946082,2021-07-05 10:48:03,"ISMEN, IYM","Şirket sermayesinin %90,38?ini temsil eden ve yönetim kontrolü sağlayan payların 31 Mayıs 2021 tarih",tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+946466,2021-07-05 19:03:53,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+947008,2021-07-06 18:10:18,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+947871,2021-07-07 17:48:55,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+949177,2021-07-08 19:25:22,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+950051,2021-07-09 18:10:13,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+950415,2021-07-12 18:41:00,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+950892,2021-07-13 18:49:29,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+951307,2021-07-14 19:10:08,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+951557,2021-07-16 18:22:41,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+951631,2021-07-19 13:30:50,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+951869,2021-07-26 18:33:36,"ISMEN, IYM",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OLMK,Zorunlu,OLMK,7.7003,1.0,2021-07-05,2021-07-26,,False,True
+960867,2021-08-27 20:01:55,"GRM, GRYAT",Armada Bilgisayar Sistemleri Sanayi ve Ticaret A.Ş - Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişk,tofform,,Zorunlu,,57.7824,,2021-08-31,2021-09-13,,False,False
+960868,2021-08-27 20:04:11,INGRM,Imola Acquisition Corporation tarafından Şirketimize iletilen açıklama (Pay Alım Teklifi Bilgi Formu,tofform,,,,57.7824,,2021-08-31,2021-09-13,,False,False
+961060,2021-08-31 20:18:10,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+961341,2021-09-01 20:02:41,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+961554,2021-09-02 18:54:14,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+961808,2021-09-03 18:39:29,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+962089,2021-09-06 18:24:48,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+962373,2021-09-07 18:20:00,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+962880,2021-09-08 18:22:49,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+963025,2021-09-09 18:17:01,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+963261,2021-09-10 18:16:22,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+963377,2021-09-13 11:55:22,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi Düzeltme Açıklaması,tofcollect,,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+963578,2021-09-13 19:03:42,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,ARMDA,Zorunlu,ARMDA,57.7824,1.0,2021-08-31,2021-09-13,,False,True
+976776,2021-11-10 11:04:21,ETILR,"Mehmet Hilmi Soylu ve İzzettin Kaplan Tarafından Pay Alım Teklifi Bilgi Formu, Kesinleşen Pay Alım T",tofform,,,,5.33,,2021-11-11,2021-11-24,,False,False
+977259,2021-11-12 09:43:45,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+977433,2021-11-12 17:16:51,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+977808,2021-11-15 17:15:55,PIT,"Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim
+",tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+978073,2021-11-16 17:14:31,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+978339,2021-11-17 17:08:46,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+978506,2021-11-18 17:18:15,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+978773,2021-11-19 17:23:31,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+979002,2021-11-22 17:49:40,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+979295,2021-11-23 17:12:01,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+979470,2021-11-24 17:35:12,PIT,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ETILR,Gönüllü,ETILR,5.33,1.0,2021-11-11,2021-11-24,,False,True
+996711,2022-01-27 20:02:07,HURGZ,Hâkim ortağımız Demirören Medya Yatırımları Ticaret A.Ş. tarafından Şirketimize iletilen açıklama (P,tofform,,,,7.40111,,2022-01-28,2022-02-10,,False,False
+996777,2022-01-28 11:05:39,ZRY,Hürriyet Pay Alım Teklifi,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+997002,2022-01-28 18:39:41,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+998069,2022-01-31 18:55:30,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+998673,2022-02-01 19:10:09,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+999070,2022-02-02 18:33:57,ZRY,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+999310,2022-02-03 18:21:20,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+999569,2022-02-04 18:14:35,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+999982,2022-02-07 18:50:12,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+1000463,2022-02-08 18:29:24,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+1000726,2022-02-09 18:40:07,ZRY,Pay Alım Teklifi Sonuç Bildirimi ,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+1000971,2022-02-10 19:10:47,ZRY,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,HURGZ,Zorunlu,HURGZ,7.40111,1.0,2022-01-28,2022-02-10,,False,True
+1015208,2022-04-01 18:49:32,"GRM, GRYAT",Gönüllü Pay Alım Teklifi Onaylı Bilgi Formu ve Talep Formu,tofform,,Gönüllü,,12.2,,2022-04-04,2022-04-29,,False,False
+1015364,2022-04-04 12:02:16,"GRM, GRYAT",Gönüllü Pay Alım Teklifi Onaylı Bilgi Formu ve Talep Formu,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1015674,2022-04-04 18:46:14,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1016077,2022-04-05 18:47:22,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1016649,2022-04-06 18:27:22,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1017321,2022-04-07 18:23:56,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1018705,2022-04-08 19:21:15,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1019251,2022-04-11 18:14:51,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1019778,2022-04-12 18:18:48,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1020139,2022-04-13 18:18:04,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1020811,2022-04-14 18:21:01,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1021260,2022-04-15 18:40:27,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1021556,2022-04-18 18:23:18,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1022159,2022-04-19 18:20:17,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1022377,2022-04-20 18:17:24,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1022759,2022-04-21 18:19:31,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1023183,2022-04-22 18:31:10,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,12.2,1.0,2022-04-04,2022-04-29,,False,True
+1023371,2022-04-25 08:53:47,"GRM, GRYAT",Gönüllü Pay Alım Teklifi Güncel Talep Formu,tofform,,Gönüllü,,15.0,,2022-04-04,2022-05-18,,False,False
+1023423,2022-04-25 11:02:23,"GRM, GRYAT",Pay Alım Teklifi Güncel Talep Formu,tofcollect,,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1023567,2022-04-25 18:15:20,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1024011,2022-04-26 18:16:04,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1024385,2022-04-27 18:15:12,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1025368,2022-04-29 09:54:17,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1025788,2022-04-29 18:15:00,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1026735,2022-05-05 18:15:33,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1027335,2022-05-06 18:13:14,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1027888,2022-05-09 18:12:56,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1028508,2022-05-10 18:11:49,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1029382,2022-05-11 18:11:41,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1030035,2022-05-12 18:52:55,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1030327,2022-05-13 18:11:44,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1030383,2022-05-13 18:57:43,KCHOL,"Yapı ve Kredi Bankası A.Ş. payları zorunlu pay alım teklifi için SPK onayının alınması, Zorunlu Pay ",tofform,,Zorunlu,,2.2757,,2022-05-16,2022-05-30,2022-04-01,False,False
+1030423,2022-05-13 19:34:37,"YKR, YKYAT","Yapı ve Kredi Bankası A.Ş. payları zorunlu pay alım teklifi için SPK onayının alınması, Zorunlu Pay ",tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1030623,2022-05-16 18:10:42,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1030696,2022-05-16 19:36:54,"YKR, YKYAT",Pay Alım Teklifi Sonuç Bildirimi (16.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1030950,2022-05-17 18:10:52,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,GARAN,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1030980,2022-05-17 18:31:36,"YKR, YKYAT",Pay Alım Teklifi Sonuç Bildirimi (17.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1031270,2022-05-18 18:32:54,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (18.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1031290,2022-05-18 18:56:24,"GRM, GRYAT",Pay Alım Teklifi Sonuç Bildirimi,tofcollect,,Gönüllü,GARAN,15.0,1.0,2022-04-04,2022-05-18,,False,True
+1031566,2022-05-20 18:31:20,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (20.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1031896,2022-05-23 18:38:09,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (23.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1032197,2022-05-24 18:35:41,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (24.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1032473,2022-05-25 18:23:09,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (25.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1032794,2022-05-26 18:28:32,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (26.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1033090,2022-05-27 19:06:49,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (27.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1033446,2022-05-30 19:39:02,"YKR, YKYAT",Pay Alım Teklif Sonuç Bildirimi (30.05.2022),tofcollect,"YKBNK,KCHOL",Zorunlu,YKBNK,2.2757,1.0,2022-05-16,2022-05-30,2022-04-01,False,True
+1047442,2022-07-22 18:36:13,OZRDN,Hâkim ortağımız Naci Tamer Özerden tarafından Şirketimize iletilen açıklama (Pay Alım Teklifi Bilgi ,tofform,,Zorunlu,,7.36,,2022-07-25,2022-08-05,2022-05-04,False,False
+1047447,2022-07-22 18:47:17,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Onaylı Bilgi Formu ve Talep Formu,tofform,,Zorunlu,,7.36,,2022-07-25,2022-08-05,2022-05-04,False,False
+1047448,2022-07-22 18:47:51,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1047600,2022-07-25 18:08:49,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1047830,2022-07-26 18:08:17,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1048369,2022-07-27 21:15:47,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1048701,2022-07-28 18:10:00,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1049387,2022-07-29 18:06:20,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1050484,2022-08-01 18:08:11,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1051210,2022-08-02 18:07:26,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1051582,2022-08-03 18:16:58,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1051974,2022-08-04 18:06:34,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1052473,2022-08-05 18:08:49,ZRY,Özerden Plastik Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sonuç Bildirimi,tofcollect,OZRDN,Zorunlu,OZRDN,7.36,1.0,2022-07-25,2022-08-05,2022-05-04,False,True
+1057272,2022-08-19 18:43:06,DOHOL,Karel Pay Alım Teklifi Bilgi Formu ve Talep Formu,tofform,,,,11.4727,,2022-08-22,2022-09-05,2022-06-30,False,False
+1057286,2022-08-19 18:54:06,KAREL,"Şirketimiz paylarına yönelik ""Pay Alım Teklifi Bilgi Formu"" ve ""Pay Alım Teklifi Talep Formu""",tofform,,,,11.4727,,2022-08-22,2022-09-05,2022-06-30,False,False
+1057369,2022-08-19 21:22:11,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş.  payları zorunlu pay alım teklifine ilişkin Zorunlu Pay Alım Te,tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1057652,2022-08-22 21:47:07,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (22.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1057657,2022-08-22 23:14:19,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (22.08.2022),tofcollect,,Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1057874,2022-08-23 18:43:28,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (23.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1058206,2022-08-24 18:51:29,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (24.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1058440,2022-08-25 18:42:32,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (25.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1058677,2022-08-26 18:45:48,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (26.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1058941,2022-08-29 18:23:02,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (29.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1059181,2022-08-31 18:50:25,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (31.08.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1059476,2022-09-01 19:02:14,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (01.09.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1059795,2022-09-02 20:55:23,"AKM, AKMEN","	
+Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (02.09.2022)",tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1060321,2022-09-05 23:11:45,"AKM, AKMEN",Karel Elektronik Sanayi Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (05.09.2022),tofcollect,"KAREL,DOHOL",Zorunlu,KAREL,11.4727,1.0,2022-08-22,2022-09-05,2022-06-30,False,True
+1105530,2023-01-27 18:57:21,CELHA,"Şirketimiz paylarına yönelik ""Pay Alım Teklifi Bilgi Formu"" ve ""Pay Alım Teklifi Talep Formu""",tofform,,Zorunlu,,18.4084,,2023-01-30,2023-02-10,2022-11-29,False,False
+1105536,2023-01-27 19:44:38,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay Alım Teklifi ,tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1106014,2023-01-30 19:32:33,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (30.01.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1107551,2023-01-31 19:17:12,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (31.01.2023),tofcollect,,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1107824,2023-02-01 10:01:57,ICUGS,Zorunlu Pay Alım Teklifi,tofform,,Zorunlu,,1.8,,2023-02-02,2023-02-15,2022-05-17,False,False
+1108002,2023-02-01 15:18:02,STJ,RHEAG Zorunlu Pay Alım Teklifi,tofform,,Zorunlu,,1.8,,2023-02-02,2023-02-15,2022-12-09,False,False
+1108020,2023-02-01 15:59:35,ICUGS,Zorunlu Pay Alım Teklifi,tofform,,Zorunlu,,1.8,,2023-02-02,2023-02-15,2022-12-09,False,False
+1108345,2023-02-01 19:10:28,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (01.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1108796,2023-02-02 11:57:41,STJ,"RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. 
+ZORUNLU PAY ALIM TEKLİFİ",tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1109162,2023-02-02 17:03:34,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. ZORUNLU PAY ALIM TEKLİFİ SONUÇ BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1109266,2023-02-02 19:02:22,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (02.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1109441,2023-02-03 17:10:52,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş.ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1109586,2023-02-03 20:49:07,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (03.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1110089,2023-02-06 17:26:05,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1110152,2023-02-06 19:18:45,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (06.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1110761,2023-02-07 17:04:55,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1110853,2023-02-07 18:32:21,"ISMEN, IYM",lik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (07.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1111496,2023-02-08 17:08:31,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1111684,2023-02-08 21:48:11,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (08.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1112476,2023-02-09 19:56:15,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (09.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-10,2022-11-29,False,True
+1112536,2023-02-09 21:21:00,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-15,2022-12-09,False,True
+1112681,2023-02-10 15:15:00,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1112816,2023-02-10 19:22:21,CELHA,"Şirketimiz paylarına yönelik ""Pay Alım Teklifi Bilgi Formu"" ve ""Pay Alım Teklifi Talep Formu""",tofform,,Zorunlu,,18.4084,,2023-01-30,2023-02-15,2022-11-29,False,False
+1112818,2023-02-10 19:29:18,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Fiili Pay Alım Teklifi Sürecinin Uzatılması ve Sonuç Bildirimi (10.0,tofcollect,,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-15,2022-11-29,False,True
+1113026,2023-02-13 20:01:12,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (13.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-15,2022-11-29,False,True
+1113223,2023-02-14 19:22:53,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (14.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-15,2022-11-29,False,True
+1113574,2023-02-15 17:08:12,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1113676,2023-02-15 19:14:25,"ISMEN, IYM",Çelik Halat ve Tel Sanayii A.Ş. Pay Alım Teklifi Sonuç Bildirimi (15.02.2023),tofcollect,CELHA,Zorunlu,CELHA,18.4084,1.0,2023-01-30,2023-02-15,2022-11-29,False,True
+1114372,2023-02-16 17:15:47,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ	,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1114844,2023-02-17 17:13:18,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1115244,2023-02-20 17:04:59,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1115325,2023-02-20 18:31:17,INTEK,"Şirketimiz paylarına ilişkin ""Pay Alım Teklifi Bilgi Formu"" ve ""Pay Alım Teklifi Talep Formu""",tofform,,,,39.15,,2023-02-21,2023-03-06,2022-11-17,False,False
+1115330,2023-02-20 18:34:42,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay A,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1115354,2023-02-20 18:49:15,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay A,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1115577,2023-02-21 17:17:07,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1115605,2023-02-21 18:13:09,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (21.02.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1116039,2023-02-22 17:11:43,STJ,RHEA GİRİŞİM SERMAYESİ YATIRIM ORTAKLIĞI A.Ş. ZORUNLU PAY ALIM TEKLİFİ SONUC BİLDİRİMİ,tofcollect,RHEAG,Zorunlu,RHEAG,1.8,1.0,2023-02-02,2023-02-22,2022-12-09,False,True
+1116117,2023-02-22 18:34:34,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (22.02.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1116395,2023-02-23 18:10:33,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (23.02.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1116782,2023-02-24 18:18:34,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (24.02.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1117238,2023-02-27 18:20:36,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (27.02.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1117655,2023-02-28 18:14:05,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (28.02.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1118402,2023-03-01 18:13:38,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (01.03.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1119311,2023-03-02 18:15:17,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (02.03.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1119957,2023-03-03 18:22:14,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (03.03.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1120556,2023-03-06 18:11:58,AYX,Uzertaş Boya Sanayi Ticaret ve Yatırım A.Ş. Pay Alım Teklifi Sonuç Bildirimi (06.03.2023) ,tofcollect,UZERB,Zorunlu,UZERB,39.15,1.0,2023-02-21,2023-03-06,2022-11-17,False,True
+1152845,2023-05-22 18:19:15,"TERA, TRA",Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi,tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+1152902,2023-05-22 19:20:10,"TERA, TRA","11.05.2021 tarihli ""Taç Tarım Zorunlu Pay Alım Teklifi Bilgilendirmesi"" KAP Sürecinin Kapanması
+",tofcollect,TACTR,Zorunlu,TACTR,11.8734,1.0,2021-04-28,2021-05-11,,False,True
+1190307,2023-08-29 18:12:37,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu,tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1190322,2023-08-29 18:26:56,VERUS,"Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. paylarına ilişkin ""Pay Alım Teklifi Bilgi Formu"" v",tofform,,,,65.45,,2023-08-31,2023-09-13,2023-06-22,False,False
+1190597,2023-08-31 18:11:39,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (31.08.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1190929,2023-09-01 18:12:26,AYX,"Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (01.09.2023)
+",tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1191426,2023-09-04 18:10:31,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (04.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1191816,2023-09-05 18:10:47,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (05.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1192238,2023-09-06 18:10:37,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (06.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1192772,2023-09-07 18:10:00,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (07.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1193301,2023-09-08 18:10:37,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (08.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1193932,2023-09-11 18:12:11,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (11.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1194225,2023-09-12 18:11:18,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş. Pay Alım Teklifi Sonuç Bildirimi (12.09.2023),tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1194288,2023-09-12 19:40:45,BMSCH,Zorunlu pay alım teklifi için SPK başvurusu sonucu,tofform,,Zorunlu,,15.02,,2023-09-13,2023-09-26,2023-05-30,False,False
+1194291,2023-09-12 20:18:08,BMSCH,"Şirketimiz paylarına yönelik ""Pay Alım Teklifi Bilgi Formu"" ve ""Pay Alım Teklifi Talep Formu""",tofform,,Zorunlu,,15.02,,2023-09-13,2023-09-26,2023-05-30,False,False
+1194329,2023-09-13 09:17:10,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş. payları zorunlu pay alım teklifine ilişkin Zorunlu Pay Alım T,tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1194608,2023-09-13 18:13:19,AYX,Acıselsan Acıpayam Selüloz Sanayi ve Ticaret A.Ş.  Pay Alım Teklifi Sonuç Bildirimi (13.09.2023) ,tofcollect,"ACSEL,VERUS",Zorunlu,ACSEL,65.45,1.0,2023-08-31,2023-09-13,2023-06-22,False,True
+1194615,2023-09-13 18:16:42,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (13.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1195145,2023-09-14 18:21:15,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (14.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1195410,2023-09-15 18:05:21,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (15.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1195975,2023-09-18 18:11:58,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (18.09.2023) ,tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1196229,2023-09-19 18:10:49,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (19.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1196500,2023-09-20 18:10:50,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (20.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1196709,2023-09-21 18:10:13,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (21.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1196911,2023-09-22 18:10:29,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (22.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1197163,2023-09-25 18:10:36,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (25.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1197473,2023-09-26 18:22:33,PIT,BMS Çelik Hasır Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (26.09.2023),tofcollect,BMSCH,Zorunlu,BMSCH,15.02,1.0,2023-09-13,2023-09-26,2023-05-30,False,True
+1201338,2023-10-06 19:10:35,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Pay Sahiplerine Zorunlu Pay Alım Teklif,tofform,,Zorunlu,,8.9002,,2023-10-09,2023-10-20,2023-08-22,False,False
+1203147,2023-10-09 18:41:38,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1203934,2023-10-10 18:10:35,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1204628,2023-10-11 18:56:28,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1205411,2023-10-12 18:15:18,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1206142,2023-10-13 18:10:36,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1206947,2023-10-16 18:10:37,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1206949,2023-10-16 18:11:35,"A1CAP, ACP",Tetamat Gıda Yatırımları AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,267.9523,,2023-10-17,2023-10-30,2023-08-31,False,False
+1207304,2023-10-17 18:22:22,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1207318,2023-10-17 18:40:53,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1207558,2023-10-18 18:11:37,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1207559,2023-10-18 18:11:44,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1207807,2023-10-19 18:23:41,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1207808,2023-10-19 18:24:06,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1208287,2023-10-20 18:10:51,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1208288,2023-10-20 18:11:01,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1208446,2023-10-23 09:27:00,"A1CAP, ACP",MIPAZ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,8.9002,1.0,2023-10-09,2023-10-20,2023-08-22,False,True
+1208447,2023-10-23 09:27:20,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Pay Sahiplerine Zorunlu Pay Alım Teklif,tofform,,Zorunlu,,8.9002,,2023-10-09,2023-10-20,2023-08-22,False,False
+1208698,2023-10-23 18:19:10,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1209090,2023-10-24 18:11:27,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1210017,2023-10-25 18:11:04,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1210564,2023-10-26 18:10:28,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1211002,2023-10-27 18:14:21,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1212096,2023-10-30 22:02:27,"A1CAP, ACP",TETMT Zorunlu Pay Alım Teklifi Hk.,tofcollect,TETMT,Zorunlu,TETMT,267.9523,1.0,2023-10-17,2023-10-30,2023-08-31,False,True
+1212097,2023-10-30 22:04:31,"A1CAP, ACP",Tetamat Gıda Yatırımları AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,267.9523,,2023-10-17,2023-10-30,2023-08-31,False,False
+1228208,2023-12-22 18:33:13,BMSTL,Şirketimiz paylarına yönelik Gönüllü Çağrı ,tofform,,,,24.08,,2023-12-25,2024-01-08,2023-10-23,False,False
+1228263,2023-12-25 08:51:17,PIT,BMSTL Gönüllü Pay Alım Teklifi Sürecinin Başlaması Hakkında.,tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1229057,2023-12-25 18:19:45,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (25.12.2023),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1229443,2023-12-26 18:10:36,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (26.12.2023),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1229839,2023-12-27 18:10:53,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (27.12.2023),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1230248,2023-12-28 18:10:33,PIT,"BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç
+Bildirimi (28.12.2023)",tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1230972,2023-12-29 21:23:10,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (29.12.2023),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1231501,2024-01-02 18:10:05,PIT,"BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç
+Bildirimi (02.01.2024)",tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1232221,2024-01-03 18:10:10,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (03.01.2024),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1232625,2024-01-04 18:10:25,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (04.01.2024),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1233337,2024-01-05 18:27:31,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (05.01.2024),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1234784,2024-01-08 18:13:43,PIT,BMS Birleşik Metal Sanayi ve Ticaret A.Ş Pay Alım Teklifi Sonuç Bildirimi (08.01.2024),tofcollect,BMSTL,Gönüllü,BMSTL,24.08,1.0,2023-12-25,2024-01-08,2023-10-23,False,True
+1259683,2024-03-18 14:26:37,"BLS, BLSMD","Tetemat Gıda Yatırımları A.Ş.Paylarına Yönelik Zorunlu Pay Alım Teklifi için SPK Onayının Alınması, ",tofform,,Zorunlu,,2514.8227,,2024-03-19,2024-04-01,2024-01-31,False,False
+1259962,2024-03-18 18:23:11,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,27.3619,,2024-03-19,2024-04-01,2023-12-18,False,False
+1259965,2024-03-18 18:24:29,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Pay Sahiplerine Zorunlu Pay Alım Teklif,tofform,,Zorunlu,,41.02,,2024-03-19,2024-04-01,2024-01-19,False,False
+1260261,2024-03-19 17:03:51,"BLS, BLSMD","Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi
+",tofcollect,TETMT,Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1260315,2024-03-19 18:10:16,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1260317,2024-03-19 18:10:30,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1260647,2024-03-20 17:32:51,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1260729,2024-03-20 18:45:07,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1260730,2024-03-20 18:45:18,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1261115,2024-03-21 17:11:47,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1261185,2024-03-21 18:11:07,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1261186,2024-03-21 18:11:19,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1261601,2024-03-22 18:12:58,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1261604,2024-03-22 18:13:24,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1261710,2024-03-22 21:34:15,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1262108,2024-03-25 17:06:23,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1262187,2024-03-25 18:11:23,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1262189,2024-03-25 18:11:34,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1262757,2024-03-26 17:45:27,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1262783,2024-03-26 18:14:30,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1262784,2024-03-26 18:14:49,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1262836,2024-03-26 18:40:45,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Pay Sahiplerine Zorunlu Pay Alı,tofform,,Zorunlu,,103.3852,,2024-03-27,2024-04-15,2023-12-01,False,False
+1263274,2024-03-27 17:05:38,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1263366,2024-03-27 18:10:52,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1263367,2024-03-27 18:11:07,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1263369,2024-03-27 18:11:59,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1263800,2024-03-28 17:12:01,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1263866,2024-03-28 18:17:09,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1263868,2024-03-28 18:17:27,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1263869,2024-03-28 18:17:43,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1264347,2024-03-29 17:06:33,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1264419,2024-03-29 18:17:42,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1264420,2024-03-29 18:17:54,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1264421,2024-03-29 18:18:16,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1265128,2024-04-01 17:03:06,"BLS, BLSMD",Tetemat Gıda Yatırımları A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi Sürecinin Tamamlanması,tofcollect,"TETMT,MIPAZ",Zorunlu,TETMT,2514.8227,1.0,2024-03-19,2024-04-01,2024-01-31,False,True
+1265234,2024-04-01 18:22:59,"A1CAP, ACP",Bayrak EBT Taban Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,BAYRK,Zorunlu,BAYRK,27.3619,1.0,2024-03-19,2024-04-01,2023-12-18,False,True
+1265235,2024-04-01 18:23:29,"A1CAP, ACP",Milpa Ticari ve Sınai Ürünler Pazarlama Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,MIPAZ,Zorunlu,MIPAZ,41.02,1.0,2024-03-19,2024-04-01,2024-01-19,False,True
+1265236,2024-04-01 18:23:48,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1265922,2024-04-02 18:10:49,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1266661,2024-04-03 18:15:59,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1267521,2024-04-04 18:11:25,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1268748,2024-04-05 18:16:06,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1268895,2024-04-05 19:48:49,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi İçin SPK Onayın,tofform,,Zorunlu,,18.0512,,2024-04-08,2024-04-25,2024-02-15,False,False
+1270874,2024-04-08 17:27:38,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1271073,2024-04-08 18:22:59,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1271507,2024-04-09 13:03:56,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1271570,2024-04-09 14:00:11,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1272020,2024-04-15 17:25:37,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1272113,2024-04-15 18:14:51,"A1CAP, ACP",Link Bilgisayar Sistemleri Yazılımı ve Donanımı Sanayi ve Ticaret AŞ Zorunlu Pay Alım Teklifi Hk.,tofcollect,LINK,Zorunlu,LINK,103.3852,1.0,2024-03-27,2024-04-15,2023-12-01,False,True
+1272993,2024-04-16 17:18:54,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1273861,2024-04-17 17:11:55,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1274740,2024-04-18 20:15:24,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1275289,2024-04-19 17:55:08,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1276162,2024-04-22 17:48:14,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1276555,2024-04-24 17:43:24,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1276999,2024-04-25 17:43:26,"BLS, BLSMD",Selçuk Gıda Endüstri İhracat İthalat A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi Sürecinin Tamam,tofcollect,SELGD,Zorunlu,SELGD,18.0512,1.0,2024-04-08,2024-04-25,2024-02-15,False,True
+1278999,2024-04-29 20:05:04,"TERA, TRA",Pera Gayrimenkul Yatırım Ortaklığı A.Ş. payları pay alım teklifine ilişkin Pay Alım Teklifi Bilgi Fo,tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1279634,2024-04-30 18:27:47,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1280799,2024-05-02 20:31:03,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1281274,2024-05-03 19:42:23,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1282105,2024-05-06 19:34:31,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1282985,2024-05-07 20:55:43,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1283720,2024-05-08 19:52:00,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1284467,2024-05-09 20:28:43,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1285283,2024-05-10 21:02:25,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,27.7714,,2024-05-13,2024-05-24,2024-03-06,False,False
+1285304,2024-05-11 00:23:39,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1285765,2024-05-13 18:14:45,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1285804,2024-05-13 18:30:58,"TERA, TRA","Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Payları, Pay Alım Teklifi, Günlük Pay Alım Bilgileri",tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1286273,2024-05-14 18:12:10,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1286375,2024-05-14 20:35:41,"TERA, TRA",Pera Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Alım Teklifi Sonuç Bildirimi (14.05.2024),tofcollect,PEGYO,Zorunlu,PEGYO,10.3516,1.0,2024-04-30,2024-05-14,2024-04-28,False,True
+1286666,2024-05-15 18:11:29,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1287086,2024-05-16 18:12:33,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1287596,2024-05-17 18:12:04,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1288229,2024-05-20 18:11:37,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1289127,2024-05-21 18:16:54,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1289694,2024-05-22 18:12:50,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1290318,2024-05-23 18:11:32,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1290829,2024-05-24 18:10:16,GLRYH,Kartal Yenilenebilir Enerji Üretim AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"KARYE,RTALB,PRDGS,A1CAP",Zorunlu,KARYE,27.7714,1.0,2024-05-13,2024-05-24,2024-03-06,False,True
+1299658,2024-06-14 18:24:59,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,10.692,,2024-06-20,2024-07-03,2024-04-25,False,False
+1299797,2024-06-14 19:35:00,HUBVC,HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,10.692,,2024-06-20,2024-07-03,2024-04-25,False,False
+1300321,2024-06-20 19:07:01,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk. ,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1300582,2024-06-21 17:04:07,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1301293,2024-06-24 17:19:30,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1301754,2024-06-25 18:53:33,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1302133,2024-06-26 18:00:17,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1302637,2024-06-27 18:14:18,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1303173,2024-06-28 18:18:15,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1304322,2024-07-02 10:41:23,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1304736,2024-07-02 18:48:33,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1305167,2024-07-03 19:52:11,"INFO, IYF",HUB Girişim Sermayesi Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Sürecinin Tama,tofcollect,HUBVC,Zorunlu,HUBVC,10.692,1.0,2024-06-20,2024-07-03,2024-04-25,False,True
+1312535,2024-07-12 19:19:12,OYAKC,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofform,,Zorunlu,,73.18,,2024-07-16,2024-07-29,2023-12-10,False,False
+1312537,2024-07-12 19:24:14,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofform,,Zorunlu,,73.18,,2024-07-16,2024-07-29,2023-12-10,False,False
+1312943,2024-07-16 18:23:47,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1313229,2024-07-17 18:22:13,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1313739,2024-07-18 18:25:09,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1314008,2024-07-19 18:16:03,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1314465,2024-07-22 18:29:27,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1314787,2024-07-23 18:27:09,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1315097,2024-07-24 18:16:33,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1315602,2024-07-25 18:39:08,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1315972,2024-07-26 18:44:21,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1316549,2024-07-29 18:19:50,"OYA, OYYAT","	
+Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Sürecin Tamamlanması",tofcollect,OYAKC,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1316594,2024-07-29 19:53:07,"OYA, OYYAT",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Sürecin Tamamlanması,tofcollect,,Zorunlu,OYAKC,73.18,1.0,2024-07-16,2024-07-29,2024-03-06,False,True
+1360324,2024-11-25 18:19:37,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,152.44,,2024-11-26,2024-12-09,2024-09-18,False,False
+1360594,2024-11-26 18:10:11,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1360873,2024-11-27 18:10:08,"A1CAP, ACP","Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.
+",tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1361232,2024-11-28 18:10:07,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1361537,2024-11-29 18:10:12,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1361871,2024-12-02 18:12:07,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1362209,2024-12-03 18:10:40,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1362535,2024-12-04 18:10:28,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1362999,2024-12-05 18:14:17,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1363619,2024-12-06 18:10:32,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1364301,2024-12-09 18:13:57,"A1CAP, ACP",Doğan Burda Dergi Yayıncılık ve Pazarlama AŞ Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,DOBUR,Zorunlu,DOBUR,152.44,1.0,2024-11-26,2024-12-09,2024-09-18,False,True
+1391592,2025-02-10 18:14:25,LYDHO,Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Payları Zorunlu Pay Alım Teklifi Bilgi Formu,tofform,,Zorunlu,,280.72,,2025-02-11,2025-02-24,2024-12-09,False,False
+1391626,2025-02-10 18:33:06,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi İçin SPK Onayını,tofform,,Zorunlu,,280.72,,2025-02-11,2025-02-24,2024-12-09,False,False
+1391915,2025-02-11 18:10:11,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1392273,2025-02-12 18:01:06,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1392654,2025-02-13 18:05:00,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1392992,2025-02-14 18:00:46,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1393444,2025-02-17 18:24:41,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1393776,2025-02-18 18:05:27,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1394189,2025-02-19 19:01:59,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1394528,2025-02-20 19:32:03,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1394805,2025-02-21 18:04:15,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1395326,2025-02-24 20:24:52,"BLS, BLSMD",Ufuk Yatırım Yönetim ve Gayrimenkul A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi Sürecinin Tamaml,tofcollect,UFUK,Zorunlu,UFUK,280.72,1.0,2025-02-11,2025-02-24,2024-12-09,False,True
+1439905,2025-05-16 18:38:33,TSPOR,Pay Alım Teklifi Hakkında.,tofform,,Zorunlu,,0.9997,,2025-05-20,2025-06-02,2025-04-09,False,False
+1482468,2025-08-25 18:16:49,DITAS,"Şirketimiz paylarına yönelik ""Pay Alım Teklifi Bilgi Formu"" ve ""Pay Alım Teklifi Talep Formu""",tofform,,,,15.2538,,2025-08-26,2025-09-08,2025-07-16,False,False
+1482813,2025-08-26 18:24:29,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1483177,2025-08-27 17:50:29,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1483565,2025-08-28 18:33:31,INM,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1483957,2025-08-29 18:21:26,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1484531,2025-09-01 18:28:52,INM,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1485609,2025-09-02 18:29:19,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1486170,2025-09-03 18:23:21,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1486548,2025-09-04 18:21:12,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1487194,2025-09-05 18:22:58,INM,Pay Alım Teklifi Sonuç Bildirimi,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1487947,2025-09-08 18:21:17,INM,Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,DITAS,Zorunlu,DITAS,15.2538,1.0,2025-08-26,2025-09-08,2025-07-16,False,True
+1490298,2025-09-16 17:35:33,"A1CAP, ACP",Egeli & Co Tarım Girişim Sermayesi Yatırım Ortaklığı A.Ş. (Egeli & Co) Pay Sahiplerine Zorunlu Pay A,tofform,,Zorunlu,,2.5121,,2025-09-17,2025-09-30,2024-08-02,False,False
+1492154,2025-09-23 16:33:26,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofform,,Zorunlu,,78.8124,,2025-09-25,2025-10-08,2025-05-14,False,False
+1493013,2025-09-25 17:35:28,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1493421,2025-09-26 17:31:00,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1493840,2025-09-29 17:20:50,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1494285,2025-09-30 17:20:09,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1494909,2025-10-01 17:35:53,"INFO, IYF","	
+Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.",tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1495309,2025-10-02 17:13:31,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1495976,2025-10-03 17:48:41,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1497598,2025-10-07 09:32:58,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1498585,2025-10-07 17:45:07,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1500508,2025-10-08 18:04:24,"INFO, IYF",Pergamon Status Dış Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Sürecinin Tamamlanması,tofcollect,"PSDTC,HEDEF",Zorunlu,PSDTC,78.8124,1.0,2025-09-25,2025-10-08,2025-05-14,False,True
+1520885,2025-11-27 18:07:24,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi ,tofform,,Zorunlu,,221.81,,2025-11-28,2025-12-11,2025-10-03,False,False
+1520893,2025-11-27 18:11:18,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Payları Zorunlu Pay Alım Teklifin,tofform,,Zorunlu,,6.09,,2025-12-03,2025-12-16,2025-05-13,False,False
+1521311,2025-11-28 18:01:01,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1521915,2025-12-02 08:35:52,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1522284,2025-12-02 18:08:48,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1522758,2025-12-03 17:41:25,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1522843,2025-12-03 18:30:58,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1523211,2025-12-04 17:19:49,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1523253,2025-12-04 18:01:00,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1523813,2025-12-05 17:46:39,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1523867,2025-12-05 18:01:28,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1524571,2025-12-08 16:47:49,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1524595,2025-12-08 17:12:24,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1524807,2025-12-08 18:04:32,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1525210,2025-12-09 17:14:47,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1525276,2025-12-09 18:02:28,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1525629,2025-12-10 17:19:58,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1525686,2025-12-10 18:00:42,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1526000,2025-12-11 17:24:46,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1526025,2025-12-11 18:02:48,"BLS, BLSMD",Senkron Siber Güvenlik Yazılım Ve Bilişim Çözümleri A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi ,tofcollect,SNKRN,Zorunlu,SNKRN,221.81,1.0,2025-11-28,2025-12-11,2025-10-03,False,True
+1526323,2025-12-12 17:26:35,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1526742,2025-12-15 18:11:27,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1527136,2025-12-16 17:44:46,"MRBAS, MRS",Saray Matbaacılık Kağıtçılık Kırtasiyecilik Ticaret ve Sanayi A.Ş. Pay Sahiplerine Zorunlu Pay Alım ,tofcollect,SAMAT,Zorunlu,SAMAT,6.09,1.0,2025-12-03,2025-12-16,2025-05-13,False,True
+1541796,2026-01-13 20:02:20,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1541797,2026-01-13 20:02:42,KAPLM,"Zorunlu Pay Alım Teklifi Bilgi Formu, Pay Alım Teklifi Tarihleri ve Talep Formu",tofform,,Zorunlu,,212.42,,2026-01-15,2026-01-28,2025-09-03,False,False
+1542835,2026-01-14 19:44:36,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1542836,2026-01-14 19:44:46,KAPLM,"Zorunlu Pay Alım Teklifi Bilgi Formu, Pay Alım Teklifi Tarihleri ve Talep Formu
+",tofform,,Zorunlu,,212.42,,2026-01-15,2026-01-28,2025-09-03,False,False
+1543821,2026-01-15 20:54:28,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1544503,2026-01-19 13:34:05,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1544818,2026-01-19 22:01:03,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1545244,2026-01-20 21:30:40,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1545548,2026-01-21 19:52:19,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1545974,2026-01-22 19:58:31,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1546319,2026-01-23 19:12:41,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1546962,2026-01-26 20:37:09,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1547495,2026-01-27 22:08:08,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1548107,2026-01-28 22:26:39,"TERA, TRA",Kaplamin Ambalaj Sanayi ve Ticaret A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Sonuçlarına İlişkin,tofcollect,KAPLM,Zorunlu,KAPLM,212.42,1.0,2026-01-15,2026-01-28,2025-09-03,False,True
+1575426,2026-03-25 12:29:57,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1577001,2026-03-26 22:21:20,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1577061,2026-03-26 23:17:06,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1577743,2026-03-27 19:11:46,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1579093,2026-03-30 18:51:23,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1580933,2026-03-31 18:34:48,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1582410,2026-04-01 18:18:36,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1583109,2026-04-02 18:54:07,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1583916,2026-04-03 18:06:55,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1585147,2026-04-06 18:30:41,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1586907,2026-04-07 18:14:49,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1589213,2026-04-08 18:21:44,"TERA, TRA",Kuzugrup Gayrimenkul Yatırım Ortaklığı A.Ş.Pay Sahiplerine Zorunlu Pay Alım Teklifi Sonuçlarına İliş,tofcollect,KZGYO,Zorunlu,KZGYO,22.89,1.0,2026-03-26,2026-04-08,2025-12-26,False,True
+1610018,2026-05-21 18:03:24,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofform,,Zorunlu,,12.32,,2026-05-22,2026-06-09,2026-02-11,False,False
+1610787,2026-05-22 18:58:28,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1611086,2026-05-25 18:01:46,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1611224,2026-05-26 13:07:19,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1611618,2026-06-01 18:05:28,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1612059,2026-06-02 18:01:02,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1612680,2026-06-03 18:06:32,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1613280,2026-06-04 18:02:31,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu pay alım teklifi ,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1613928,2026-06-05 18:02:17,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1613999,2026-06-05 18:15:48,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1614847,2026-06-08 18:04:00,"BLS, BLSMD",Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1615513,2026-06-09 18:02:54,"BLS, BLSMD","Özerden Ambalaj Sanayi A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi Sürecinin Tamamlanması
+",tofcollect,OZRDN,Zorunlu,OZRDN,12.32,1.0,2026-05-22,2026-06-09,2026-02-11,False,True
+1655498,2026-08-27 19:00:21,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofform,,Zorunlu,,247.0,,2026-08-28,2026-09-11,2025-09-01,False,False
+1655930,2026-08-28 18:27:35,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1656402,2026-08-31 18:01:49,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1656881,2026-09-01 18:06:57,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1656979,2026-09-01 21:04:00,CELHA,"Zorunlu Pay Alım Teklifi Tarihleri, Pay Alım Teklifi Bilgi Formu ve Pay Alım Teklifi Talep Formu",tofform,,Zorunlu,,19.55,,2026-09-02,2026-09-16,2026-06-02,False,False
+1657489,2026-09-02 18:04:05,"BLS, BLSMD",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1657609,2026-09-02 18:57:48,COL,Çelik Halat ve Tel Sanayii A.Ş Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1658486,2026-09-03 18:01:56,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1658592,2026-09-03 18:18:00,"BLS, BLSMD",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1659111,2026-09-04 18:06:32,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1659175,2026-09-04 18:22:34,"BLS, BLSMD",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1659672,2026-09-07 18:09:31,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1659678,2026-09-07 18:11:49,COL,-,tofcollect,,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1660433,2026-09-08 18:20:50,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1660436,2026-09-08 18:26:39,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1661184,2026-09-09 18:02:22,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofform,,Gönüllü,,104.0,,2026-09-10,2026-09-23,2026-06-15,False,False
+1661202,2026-09-09 18:05:45,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1661234,2026-09-09 18:14:43,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1661635,2026-09-10 18:04:57,"BLS, BLSMD",Pay Alım Teklifi Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1661641,2026-09-10 18:11:21,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1661645,2026-09-10 18:12:25,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1662036,2026-09-11 18:04:20,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1662037,2026-09-11 18:04:29,"BLS, BLSMD",TGS Dış Ticaret A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi Sürecinin Tamamlanması,tofcollect,TGSAS,Zorunlu,TGSAS,247.0,1.0,2026-08-28,2026-09-11,2025-09-01,False,True
+1662051,2026-09-11 18:12:05,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1662561,2026-09-14 18:02:03,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1662573,2026-09-14 18:12:33,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1662622,2026-09-14 19:32:26,"TERA, TRA",Peker Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,PEKGY,Zorunlu,PEKGY,18.77,1.0,2026-09-16,2026-09-29,2026-02-27,False,True
+1662818,2026-09-15 11:57:31,"TERA, TRA",Peker Gayrimenkul Yatırım Ortaklığı A.Ş. Pay Sahiplerine Zorunlu Pay Alım Teklifi Hk.,tofcollect,,Zorunlu,PEKGY,18.77,1.0,2026-09-16,2026-09-29,2026-02-27,False,True
+1663193,2026-09-15 18:20:35,COL,-,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1663220,2026-09-15 19:29:36,"BLS, BLSMD",Pay Alım Teklif Yoluyla Pay Toplanmasına İlişkin Bildirim,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1664190,2026-09-16 18:08:00,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1664299,2026-09-16 18:58:48,COL,Çelik Halat ve Tel Sanayii A.Ş. Paylarına Yönelik Zorunlu Pay Alım Teklifi Sürecinin Tamamlanması,tofcollect,CELHA,Zorunlu,CELHA,19.55,1.0,2026-09-02,2026-09-16,2026-06-02,False,True
+1664826,2026-09-17 18:01:03,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1665489,2026-09-18 18:01:14,"BLS, BLSMD",Atlantis Yatırım Holding A.Ş. Paylarına Yönelik Gönüllü Pay Alım Teklifi,tofcollect,ATSYH,Gönüllü,ATSYH,104.0,1.0,2026-09-10,2026-09-23,2026-06-15,False,True
+1666829,2026-09-22 19:17:12,"TBY, TEBYT",AKÇANSA Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifi Sürecine İlişkin Açıklama,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1667388,2026-09-23 19:24:02,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 23.09.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1667902,2026-09-24 18:34:40,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 24.09.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1668319,2026-09-25 18:25:45,"TBY, TEBYT","	
+Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 25.09.2026 tarihi",tofcollect,,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1669181,2026-09-28 18:57:09,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 28.09.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1669748,2026-09-29 18:25:38,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 29.09.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1670471,2026-09-30 18:24:06,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 30.09.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1670958,2026-10-01 18:35:43,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 01.10.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1671533,2026-10-02 18:16:51,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 02.10.2026 tarihind,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1672601,2026-10-05 19:00:04,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin olarak 05.10.2026 tarihind,tofcollect,,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True
+1673963,2026-10-06 20:24:15,"TBY, TEBYT",Akçansa Çimento Sanayi ve Ticaret A.Ş. Zorunlu Pay Alım Teklifine İlişkin 06.10.2026 tarihindeki Gün,tofcollect,AKCNS,Zorunlu,AKCNS,274.24,1.0,2026-09-23,2026-10-06,2026-06-18,False,True

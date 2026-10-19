@@ -1,0 +1,43 @@
+=== Önceden tanımlı IS seçim kuralları ===
+                                          rule          sizing     trend real        ptr stop   IS  IS_dd  IS_worst  IS_sh  avgL_IS  OOS  OOS_dd  OOS_worst  avgL_OOS  trades_OOS  stops_IS  liq_IS  nb_med  nb_min
+                                 R1 max IS geo fix:8:None:None      None 0.05       None  0.0 2.25 -82.69    -63.22   0.78     1.59 8.96   -2.25       1.61      5.44           6         0       5    1.22   -4.98
+                R2 max IS geo | IS maxDD>=-50% fix:5:None:None (20, 1.0) None (126, 0.0)  0.0 2.07 -44.63    -24.71   0.95     1.30 3.53   -1.57       1.17      1.41           1         0       0    1.89    0.28
+R3 max IS geo | IS maxDD>=-25%, worst ay>=-15%     vt:0.3:8:20      None 0.05       None  0.0 1.83 -22.11     -9.91   1.59     0.66 8.96   -2.25       1.61      5.44           6         0       0    1.55   -0.25
+  R4 max komşu medyanı IS geo | IS maxDD>=-50% fix:5:None:None (20, 1.0) None (126, 0.0)  0.0 2.07 -44.63    -24.71   0.95     1.30 3.53   -1.57       1.17      1.41           1         0       0    1.89    0.28
+            R5 max komşu medyanı | maxDD>=-25%     vt:0.3:8:20 (20, 0.5) None (126, 0.0)  0.0 1.79 -20.86    -11.71   1.41     0.74 2.14   -1.16       1.12      0.09           3         0       0    1.65    0.73
+          R6 max IS Calmar (geo/|dd|), avgL>=1     vt:0.3:8:60 (20, 2.0) None  (63, 0.0)  0.0 1.63 -23.59    -17.50   1.22     1.04 5.84   -2.61       1.17      4.02           3         0       0    1.42    0.57
+
+=== IS geo ilk 15 (bilgi) ===
+         sizing     trend  real        ptr stop   IS  IS_dd  IS_worst  IS_sh  avgL_IS  OOS  OOS_dd  OOS_worst  avgL_OOS  trades_OOS  stops_IS  liq_IS  nb_med
+fix:8:None:None      None  0.05       None  0.0 2.25 -82.69    -63.22   0.78     1.59 8.96   -2.25       1.61      5.44           6         0       5    1.22
+fix:5:None:None (20, 1.0)  None (126, 0.0)  0.0 2.07 -44.63    -24.71   0.95     1.30 3.53   -1.57       1.17      1.41           1         0       0    1.89
+fix:5:None:None (20, 0.5)  None (126, 0.0)  0.0 2.06 -37.19    -23.53   1.00     1.14 2.18   -0.67       1.17      0.06           3         0       0    1.80
+fix:6:None:None (20, 1.0)  None (126, 0.0)  0.0 2.06 -54.87    -29.19   0.84     1.57 3.76   -1.86       1.17      1.66           1         0       0    1.68
+fix:5:None:None (20, 0.5) -0.05 (126, 0.0)  0.0 2.05 -37.19    -23.53   1.01     1.02 2.18   -0.67       1.17      0.06           3         0       0    1.74
+fix:6:None:None (20, 0.5)  None (126, 0.0)  0.0 2.03 -44.75    -27.97   0.87     1.37 2.17   -0.83       1.17      0.07           3         0       0    1.63
+fix:6:None:None (20, 0.5) -0.05 (126, 0.0)  0.0 2.02 -44.75    -27.97   0.87     1.24 2.17   -0.83       1.17      0.07           3         0       0    1.66
+fix:5:None:None      None  0.05       None  0.0 2.01 -71.80    -56.68   0.87     1.01 6.42   -1.35       1.95      3.43           5         0       0    1.52
+fix:6:None:None (60, 2.0)  0.05       None  0.0 1.98 -60.07    -35.62   0.94     0.99 7.31   -1.57       1.83      4.10           5         0       0    1.74
+fix:6:None:None      None  0.05       None  0.0 1.97 -79.71    -64.62   0.77     1.22 7.31   -1.57       1.83      4.10           5         0       0    1.45
+fix:5:None:None (20, 2.0)  None (126, 0.0)  0.0 1.96 -52.57    -43.06   0.86     1.53 3.53   -1.57       1.17      1.41           1         0       0    1.75
+fix:8:None:None (60, 2.0)  0.05       None  0.0 1.95 -72.89    -47.71   0.80     1.32 8.96   -2.25       1.61      5.44           6         0       1    1.55
+fix:5:None:None (60, 2.0)  0.05       None  0.0 1.93 -44.60    -30.62   1.06     0.82 6.42   -1.35       1.95      3.43           5         0       0    1.72
+fix:6:None:None (20, 2.0)  None (126, 0.0)  0.0 1.93 -59.84    -50.00   0.77     1.84 3.76   -1.86       1.17      1.66           1         0       0    1.52
+fix:4:None:None (20, 1.0)  None (126, 0.0)  0.0 1.92 -36.19    -20.66   1.04     1.04 3.29   -1.26       1.17      1.14           1         0       0    1.71
+
+=== Walk-forward (aylık yeniden seçim; OOS ayları = 2025-11..2026-10, ay sonu bazlı) ===
+Traceback (most recent call last):
+  File "/home/user/yazilim/research/try_carry/select_rules.py", line 109, in <module>
+    s, picks = wf(**kw)
+               ~~^^^^^^
+TypeError: wf() missing 1 required positional argument: 'obj'
+WF genişleyen, dd>=-50 IS(2010-02..2025-10) geo 0.06 dd -84.1 worst -43.1 | OOS geo 3.97 dd 0.0 worst 1.9 | farklı konfig 11
+   OOS seçimleri: ["['fix:5:None:None', '(20, 1.0)', 'None', '(126, 0.0)', '0.0']", "['fix:5:None:None', '(60, 2.0)', '0.05', 'None', '0.0']", "['vt:0.3:8:20', 'None', '0.05', 'None', '0.0']"]
+WF genişleyen, dd>=-25 IS(2010-02..2025-10) geo 0.71 dd -38.3 worst -38.2 | OOS geo 8.90 dd 0.0 worst 1.6 | farklı konfig 8
+   OOS seçimleri: ["['vt:0.3:8:20', 'None', '0.05', 'None', '0.0']"]
+/home/user/yazilim/research/try_carry/select_rules.py:89: RuntimeWarning: invalid value encountered in divide
+  dd = (eq / np.maximum.accumulate(eq, axis=1) - 1).min(axis=1) * 100
+WF son 60 ay, dd>=-50 IS(2010-02..2025-10) geo -0.12 dd -90.8 worst -43.1 | OOS geo 4.11 dd 0.0 worst 1.6 | farklı konfig 36
+   OOS seçimleri: ["['fix:8:None:None', '(20, 1.0)', 'None', '(63, 0.0)', '0.0']", "['fix:8:None:None', '(60, 2.0)', 'None', '(126, 0.0)', '0.0']", "['vt:0.2:8:20', '(5, 2.0)', 'None', '(63, 0.0)', '0.0']", "['vt:0.3:5:60', '(60, 1.0)', 'None', 'None', '0.0']", "['vt:0.3:8:60', '(60, 2.0)', 'None', '(63, 0.0)', '0.0']"]
+WF son 36 ay, dd>=-30 IS(2010-02..2025-10) geo -1.12 dd -92.9 worst -92.9 | OOS geo 7.68 dd 0.0 worst 2.4 | farklı konfig 49
+   OOS seçimleri: ["['fix:6:None:None', '(20, 2.0)', 'None', 'None', '0.0']", "['fix:6:None:None', '(60, 2.0)', 'None', 'None', '0.0']", "['fix:8:None:None', '(20, 2.0)', 'None', '(63, 0.0)', '0.0']"]

@@ -1,0 +1,3 @@
+C_L1 w_C inverse-vol=0.753  IS max-Sharpe=0.85
+C_L0 w_C inverse-vol=0.750  IS max-Sharpe=0.80
+simülasyon: 150
