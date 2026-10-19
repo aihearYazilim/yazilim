@@ -25,23 +25,35 @@ def load():
         s = pd.Series({pd.Timestamp(t, unit='ms').normalize(): v for t, v in x['roi']})
         s = s[~s.index.duplicated(keep='last')].sort_index()
         cum[x['pid']] = s
-    C = pd.DataFrame(cum).sort_index()
-    C = C.loc[:OOS_END]
-    # daily return from cumulative ROI (%): before the lead's first non-zero ROI it is NaN (not yet live)
-    W = 1 + C / 100
-    R = W / W.shift(1) - 1
-    first_nz = (C != 0).idxmax()
-    for c in R.columns:
-        f = first_nz[c]
-        if (C[c] != 0).any():
-            R.loc[:f - pd.Timedelta(days=1), c] = np.nan
-            R.loc[f - pd.Timedelta(days=1), c] = 0.0 if f > C.index[0] else np.nan
+    idx = pd.date_range('2025-10-19', OOS_END, freq='D')
+    rets, closed_early = {}, []
+    for pid, s in cum.items():
+        s = s.loc[:OOS_END]
+        if s.index[0] < pd.Timestamp('2025-10-19'):
+            closed_early.append(pid)          # chart window ends before today -> inactive/closed lead
+            s = s.loc['2025-10-19':]
+            if len(s) < 2:
+                continue
+            w = 1 + s / 100
+            r = (w / w.shift(1) - 1).iloc[1:]
         else:
-            R[c] = np.nan
-    R = R.clip(lower=-1.0)
-    # once wiped out (cum ROI <= -100) further returns are meaningless -> 0 (stays at zero)
-    dead = (W <= 0.0001).cummax()
-    R[dead.shift(1).fillna(False).astype(bool)] = 0.0
+            nz = s[s != 0]
+            if nz.empty:
+                continue
+            f = nz.index[0]
+            # day before first non-zero ROI = base 0 (for leads live at window start the chart is rebased to 0)
+            base = pd.Series([0.0], index=[f - pd.Timedelta(days=1)])
+            s2 = pd.concat([base, s.loc[f:]])
+            w = 1 + s2 / 100
+            r = (w / w.shift(1) - 1).iloc[1:]
+            # once cumulative ROI <= -100% the account is wiped: later values meaningless
+            dead = (w.iloc[1:] <= 1e-4).cummax().shift(1, fill_value=False)
+            r[dead] = 0.0
+        rets[pid] = r.clip(lower=-1.0).replace([np.inf, -np.inf], np.nan)
+    R = pd.DataFrame(rets).reindex(idx)
+    R = R.loc['2025-10-20':]
+    R = R.loc[:, R.notna().any()]
+    C = closed_early
     return C, R
 
 

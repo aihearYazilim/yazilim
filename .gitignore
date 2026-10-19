@@ -9,3 +9,4 @@ data/crypto_1h/
 data/crypto_4h/
 __pycache__/
 live/cache/
+raw/
