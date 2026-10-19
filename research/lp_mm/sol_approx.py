@@ -42,8 +42,8 @@ def calibrate(pairs=(('eth_usdc_weth_005', 'uni_eth_usdc_weth_005'), ('arb_weth_
         for k in WIDTHS:
             v = vcenter(df['p'].values, k) * df['u1'].values
             r = feeL.values / v
-            res.setdefault(k, []).append(r[m].sum() / lam_h[m].sum())
-    return {k: float(np.median(v)) for k, v in res.items()}, res
+            if m.sum() > 24*90: res.setdefault(k, []).append(r[m].sum() / lam_h[m].sum())
+    return {k: float(np.nanmedian(v)) for k, v in res.items()}, res
 
 
 def run_synth(name, lkey, sym, mult, start='2022-01-01', gas_usd=0.02, col='apyBase'):

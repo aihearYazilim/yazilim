@@ -36,7 +36,9 @@ def usdtry():
 
 def load_pool(key):
     meta = json.load(open(f'{HERE}/raw/meta_{key}.json'))
-    df = pd.read_csv(f'{HERE}/raw/chain_{key}.csv', dtype={'sqrtP': str, 'liq': str, 'fg0': str, 'fg1': str})
+    df = pd.read_csv(f'{HERE}/raw/chain_{key}.csv', dtype=str)
+    df = df[df['ts'] != 'ts']
+    df['ts'] = df['ts'].astype('int64'); df['block'] = df['block'].astype('int64')
     df = df.drop_duplicates('ts').sort_values('ts').reset_index(drop=True)
     sq = np.array([int(x) for x in df['sqrtP']], dtype=object)
     p = np.array([float((s * s) / (2**192)) for s in sq])  # raw token1 per raw token0

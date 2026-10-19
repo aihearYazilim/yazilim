@@ -13,9 +13,12 @@ FXR = np.array([fx.loc[:a + pd.DateOffset(months=1) - pd.Timedelta(days=1)].iloc
 K_OOS = MONTHS.index(OOS0)
 
 def uni(u):
+    return np.clip(_uni(u), 0, None)
+
+def _uni(u):
     if u in MAJ:
         return np.load(RAW / f"wf_{u}.npy")
-    return np.nanmean(np.stack([np.load(RAW / f"wf_{s}.npy") for s in ALTS]), axis=0)
+    return np.nanmean(np.stack([np.clip(np.load(RAW / f"wf_{s}.npy"), 0, None) for s in ALTS]), axis=0)
 
 def chain(R, L, mask, k0, k1):
     out, picks = [], []
