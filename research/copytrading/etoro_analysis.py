@@ -128,7 +128,7 @@ def stats(r_usd, months, tax=0.0):
     eq = (1 + r_try).cumprod()
     return dict(geo_try=(eq.iloc[-1]) ** (1 / len(eq)) - 1,
                 geo_usd=((1 + r_usd).prod()) ** (1 / len(r_usd)) - 1,
-                mdd=(eq / eq.cummax() - 1).min(), worst=r_try.min())
+                mdd=(eq / eq.cummax().clip(lower=1.0) - 1).min(), worst=r_try.min())
 
 
 if __name__ == '__main__':
@@ -161,6 +161,11 @@ if __name__ == '__main__':
     print('combos', len(df))
     best = df.sort_values('IS_try', ascending=False).iloc[0]
     print('BEST BY IS (walk-forward):\n', best)
+    print('BEST BY IS with n>=5:\n', df[df.n >= 5].sort_values('IS_try', ascending=False).iloc[0])
+    print('rules with WF OOS TRY >=5.3%:', (df.WF_OOS_try >= 0.053).sum(), ' >=10%:', (df.WF_OOS_try >= 0.10).sum(),
+          ' median WF OOS TRY', round(df.WF_OOS_try.median(), 4), ' max', round(df.WF_OOS_try.max(), 4))
+    last = R.apply(lambda c: c.last_valid_index())
+    print('universe users whose history stops before 2026-09:', (last < pd.Period('2026-09', 'M')).sum())
     # benchmark: equal weight of all eligible (>=24m pre-OOS, active 2025-09) users, no selection
     elig = R.columns[(R.loc[:'2025-09'].iloc[-24:].notna().all())]
     ew = R.loc[OOS, elig].fillna(0).mean(axis=1) - SLIP_M

@@ -68,9 +68,32 @@ def details():
     return d
 
 
+def implied_capital(R):
+    """Point-in-time size proxy: lead capital base ~ cumulative PNL / cumulative ROI (both from the 365D charts).
+    Only available for leads with details (live before 2026-08); others -> NaN (fail any size filter)."""
+    P = {}
+    for l in open(f'{RAW}/binance_detail.jsonl'):
+        x = json.loads(l)
+        if x['pnl']:
+            s = pd.Series({pd.Timestamp(t, unit='ms').normalize(): v for t, v in x['pnl']})
+            P[x['pid']] = s[~s.index.duplicated(keep='last')]
+    P = pd.DataFrame(P).reindex(R.index)
+    cumroi = (1 + R.fillna(0)).cumprod() - 1
+    cumroi = cumroi.reindex(columns=P.columns)
+    K = P / cumroi.where(cumroi.abs() > 0.02)
+    K = K.where(K > 0)
+    return K.reindex(columns=R.columns)
+
+
+KCAP = None
+
+
 def scores(R, t, L, kind):
     win = R.loc[:t].iloc[-L:]
     ok = win.notna().all()
+    if KCAP is not None:
+        k = KMED.loc[t]
+        ok = ok & (k >= KCAP).reindex(ok.index).fillna(False)
     w = win.loc[:, ok]
     eq = (1 + w).cumprod()
     ret = eq.iloc[-1] - 1
@@ -84,7 +107,7 @@ def scores(R, t, L, kind):
     return sc, mdd
 
 
-def run(R, det, L, kind, ddcap, n, slip_day, start_offset=0, hold=30):
+def run(R, det, L, kind, ddcap, n, slip_day, start_offset=0, hold=30, cap=None):
     dates = R.index
     i0 = L + start_offset
     out, prev = [], set()
@@ -95,6 +118,8 @@ def run(R, det, L, kind, ddcap, n, slip_day, start_offset=0, hold=30):
             sc = sc[mdd <= ddcap]
         picks = list(sc.sort_values(ascending=False).index[:n])
         seg = R.iloc[i0 + 1:i0 + 1 + hold][picks].fillna(0.0)
+        if cap is not None:
+            seg = seg.clip(upper=cap)
         if len(seg) == 0:
             break
         per = []
@@ -127,29 +152,38 @@ def summ(df):
     m = 30.44 / days
     return dict(n_per=len(df), days=days, geo_m_try=eq.iloc[-1] ** m - 1 if eq.iloc[-1] > 0 else -1,
                 geo_m_usd=eq_u.iloc[-1] ** m - 1 if eq_u.iloc[-1] > 0 else -1,
-                mdd_per=(eq / eq.cummax() - 1).min(), worst=df['r_try'].min(), best=df['r_try'].max())
+                mdd_per=(eq / eq.cummax().clip(lower=1.0) - 1).min(), worst=df['r_try'].min(), best=df['r_try'].max())
 
 
 if __name__ == '__main__':
     C, R = load()
     det = details()
     print('leads with data', R.shape[1], 'live at window start', R.iloc[1].notna().sum(), 'days', len(R))
+    K = implied_capital(R)
+    KMED = K.rolling(30, min_periods=5).median()
+    kc = float(sys.argv[1]) if len(sys.argv) > 1 else None
+    KCAP = kc
+    tag = '' if kc is None else f'_k{int(kc)}'
     grid = list(itertools.product([30, 60, 90], ['roi', 'sharpe', 'calmar'], [None, 0.3], [1, 3, 5, 10, 20]))
     res = []
     for L, kind, ddc, n in grid:
-        for slip in [0.0, 0.0005, 0.0015]:
-            df = to_try(run(R, det, L, kind, ddc, n, slip))
+        for slip, cap in [(0.0, None), (0.0005, None), (0.0015, None), (0.0005, 0.3)]:
+            df = to_try(run(R, det, L, kind, ddc, n, slip, cap=cap))
             s = summ(df)
-            res.append(dict(L=L, kind=kind, ddcap=ddc, n=n, slip_day=slip, **s))
+            res.append(dict(L=L, kind=kind, ddcap=ddc, n=n, slip_day=slip, cap=cap, **s))
     out = pd.DataFrame(res)
-    out.to_csv(f'{RAW}/binance_grid.csv', index=False)
+    out.to_csv(f'{RAW}/binance_grid{tag}.csv', index=False)
     pd.set_option('display.width', 250)
     o = out.copy()
     for c in ['geo_m_try', 'geo_m_usd', 'mdd_per', 'worst', 'best']:
         o[c] = (o[c] * 100).round(2)
-    print(o[o.slip_day == 0.0005].to_string())
+    print(o[(o.slip_day == 0.0005) & o.cap.isna()].to_string())
+    print(o[(o.slip_day == 0.0005) & o.cap.notna()].to_string())
+    # benchmark: equal weight of ALL leads live at each selection date (no ranking), same costs
+    df = to_try(run(R, det, 30, 'roi', None, 100000, 0.0005)); print('EW all live leads', summ(df))
+    df = to_try(run(R, det, 30, 'roi', None, 100000, 0.0005, cap=0.3)); print('EW all live leads cap', summ(df))
     print('combos (rules x slip scenarios)', len(out), 'rules', len(grid))
-    for s in [0.0, 0.0005, 0.0015]:
-        x = out[out.slip_day == s]
+    for s, cp in [(0.0, None), (0.0005, None), (0.0015, None), (0.0005, 0.3)]:
+        x = out[(out.slip_day == s) & ((out.cap == cp) if cp else out.cap.isna())]
         print(f'slip {s}: median rule geo_m_try {x.geo_m_try.median()*100:.2f}%, best {x.geo_m_try.max()*100:.2f}%,'
               f' share>=10% {(x.geo_m_try>=0.10).mean():.2f}, share>=5.3% {(x.geo_m_try>=0.053).mean():.2f}')

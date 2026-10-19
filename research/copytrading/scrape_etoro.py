@@ -72,7 +72,7 @@ def main():
         for line in open(fn):
             done.add(json.loads(line)['cid'])
     todo = [c for c in users if c not in done]
-    with open(fn, 'a') as f, ThreadPoolExecutor(4) as ex:
+    with open(fn, 'a') as f, ThreadPoolExecutor(2) as ex:
         for i, (cid, d) in enumerate(ex.map(hist, todo)):
             if d is not None:
                 f.write(json.dumps({'cid': cid, 'monthly': d.get('monthly'), 'yearly': d.get('yearly')}) + '\n')
