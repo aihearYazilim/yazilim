@@ -34,7 +34,9 @@ def main(time_range='365D', data_type='ROI', order='DESC'):
         if page * 30 >= total:
             break
         page += 1
-        time.sleep(0.3)
+        if page % 20 == 0:
+            print('page', page, total, len(seen), flush=True)
+        time.sleep(0.2)
     with open(OUT, 'w') as f:
         for x in seen.values():
             f.write(json.dumps(x) + '\n')

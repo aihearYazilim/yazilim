@@ -21,20 +21,37 @@ def get(url):
     return None
 
 
+def fetch_all(flt, users, lo=-100.0, hi=1e7, depth=0):
+    """Rankings pages only reach 1500 rows -> recursively split by (LastTwoYears) gain range."""
+    rng = f'&gainmin={lo}&gainmax={hi}'
+    d = get(BASE + flt + rng + '&page=1')
+    if not d:
+        return
+    tot = d['TotalRows']
+    if tot > 1500 and depth < 25:
+        mid = (lo + hi) / 2 if hi < 1e6 else max(lo + 50, 100)
+        if hi >= 1e6 and lo >= 100: mid = lo * 4
+        fetch_all(flt, users, lo, mid, depth + 1)
+        fetch_all(flt, users, mid + 0.001, hi, depth + 1)
+        return
+    page = 1
+    while True:
+        for it in d.get('Items') or []:
+            it['_src'] = flt
+            users.setdefault(it['CustomerId'], it)
+        if page * 500 >= min(tot, 1500):
+            break
+        page += 1
+        d = get(BASE + flt + rng + f'&page={page}')
+        if not d:
+            break
+
+
 def universe():
     users = {}
     for flt in ['&popularinvestor=true', '&copiersmin=1']:
-        page = 1
-        while True:
-            d = get(BASE + flt + f'&page={page}')
-            if not d or not d.get('Items'):
-                break
-            for it in d['Items']:
-                it['_src'] = flt
-                users.setdefault(it['CustomerId'], it)
-            if page * 500 >= d['TotalRows']:
-                break
-            page += 1
+        fetch_all(flt, users)
+        print(flt, len(users), flush=True)
     with open(f'{RAW}/etoro_universe.jsonl', 'w') as f:
         for u in users.values():
             f.write(json.dumps(u) + '\n')

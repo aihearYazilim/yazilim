@@ -1,11 +1,14 @@
-"""For each currently-listed Binance lead portfolio: detail (startTime, status, profit share, copier stats)
-and 365D daily cumulative ROI + PNL chart (starts ~2025-10-20 = OOS start).
-Output raw/copytrading/binance_hist.jsonl"""
+"""For each currently-listed Binance lead portfolio:
+ phase 1: 365D daily cumulative ROI chart (starts ~2025-10-20 = OOS start)  -> binance_roi.jsonl
+ phase 2: for leads with ROI history before 2026-08-01: detail (startTime, profit share, copier stats)
+          + 365D cumulative PNL chart                                         -> binance_detail.jsonl
+"""
 import json, time, sys, urllib.request, os
 from concurrent.futures import ThreadPoolExecutor
 
 RAW = '/home/user/yazilim/raw/copytrading'
 B = 'https://www.binance.com/bapi/futures/v1'
+CUT = 1785542400000  # 2026-08-01
 
 
 def get(url):
@@ -26,27 +29,40 @@ KEEP = ['status', 'startTime', 'endTime', 'closedTime', 'profitSharingRate', 'to
         'portfolioType', 'lockPeriod', 'nickname', 'futuresType', 'initInvestAsset']
 
 
-def one(pid):
+def roi(pid):
+    r = get(f'{B}/public/future/copy-trade/lead-portfolio/chart-data?portfolioId={pid}&timeRange=365D&dataType=ROI')
+    return {'pid': pid, 'roi': [[x['dateTime'], x['value']] for x in (r or [])], 'ok': r is not None}
+
+
+def detail(pid):
     det = get(f'{B}/friendly/future/copy-trade/lead-portfolio/detail?portfolioId={pid}') or {}
-    roi = get(f'{B}/public/future/copy-trade/lead-portfolio/chart-data?portfolioId={pid}&timeRange=365D&dataType=ROI')
     pnl = get(f'{B}/public/future/copy-trade/lead-portfolio/chart-data?portfolioId={pid}&timeRange=365D&dataType=PNL')
-    return {'pid': pid, 'detail': {k: det.get(k) for k in KEEP},
-            'roi': [[x['dateTime'], x['value']] for x in (roi or [])],
-            'pnl': [[x['dateTime'], x['value']] for x in (pnl or [])]}
+    return {'pid': pid, 'detail': {k: det.get(k) for k in KEEP}, 'pnl': [[x['dateTime'], x['value']] for x in (pnl or [])]}
 
 
-def main():
-    pids = [json.loads(l)['leadPortfolioId'] for l in open(f'{RAW}/binance_list.jsonl')]
-    fn = f'{RAW}/binance_hist.jsonl'
+def phase(fn, func, pids, threads=6):
     done = set()
     if os.path.exists(fn):
         done = {json.loads(l)['pid'] for l in open(fn)}
     todo = [p for p in pids if p not in done]
-    with open(fn, 'a') as f, ThreadPoolExecutor(4) as ex:
-        for i, r in enumerate(ex.map(one, todo)):
+    with open(fn, 'a') as f, ThreadPoolExecutor(threads) as ex:
+        for i, r in enumerate(ex.map(func, todo)):
             f.write(json.dumps(r) + '\n')
             if i % 500 == 0:
-                print(i, len(todo), flush=True)
+                print(fn[-25:], i, len(todo), flush=True)
+
+
+def main():
+    pids = [json.loads(l)['leadPortfolioId'] for l in open(f'{RAW}/binance_list.jsonl')]
+    phase(f'{RAW}/binance_roi.jsonl', roi, pids)
+    early = []
+    for l in open(f'{RAW}/binance_roi.jsonl'):
+        x = json.loads(l)
+        nz = [t for t, v in x['roi'] if v != 0]
+        if nz and min(nz) < CUT:
+            early.append(x['pid'])
+    print('phase2', len(early), flush=True)
+    phase(f'{RAW}/binance_detail.jsonl', detail, early)
     print('done')
 
 
