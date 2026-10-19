@@ -44,7 +44,7 @@ def maxdd(eq):
 def load_all(tag=''):
     E = []
     for f in sorted(glob.glob(f'{HERE}/out/eq_*{tag}.pkl')):
-        if tag == '' and f.endswith(('_c08.pkl', '_p05.pkl')): continue
+        if tag == '' and f.endswith('_low.pkl'): continue
         E.append(pd.read_pickle(f))
     return pd.concat(E, axis=1)
 
@@ -90,3 +90,15 @@ if __name__ == '__main__':
     print('combos', len(S))
     print(S.sort_values('is_usd', ascending=False).head(25).round(4))
     print(S.sort_values('oos_usd', ascending=False).head(10).round(4))
+
+
+def timed(eq, look=14, cost=0.00125):
+    """Regime filter: be in the LP strategy on day t only if its trailing `look`-day return > 0 (known at t-1);
+    else hold USD cash (0%). Entry/exit cost `cost` of capital each switch."""
+    r = eq.pct_change().fillna(0.0)
+    sig = (eq / eq.shift(look) - 1).shift(1) > 0
+    sw = sig.astype(int).diff().abs().fillna(0)
+    rr = np.where(sig, r, 0.0) - sw * cost
+    out = (1 + pd.Series(rr, index=eq.index)).cumprod()
+    out[eq.isna()] = np.nan
+    return out

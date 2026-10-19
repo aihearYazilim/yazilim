@@ -169,7 +169,7 @@ def main(key):
         done = set(pd.read_csv(out)['ts'])
     f = open(out, 'a')
     if not done: f.write('ts,block,sqrtP,tick,liq,fg0,fg1\n')
-    t_start = {'base': 1693526400, 'arb': 0}.get(chain, 0)
+    t_start = {'base': 1693526400, 'arb': 1685577600 if 'usdc_005' in key else 0}.get(chain, 0)
     todo = [(T, int(b)) for T, b in zip(targ, hb) if T not in done and T >= t_start and b > 0]
     print('todo', len(todo), flush=True)
     CH = 1000

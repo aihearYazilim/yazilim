@@ -92,7 +92,9 @@ def run_pool(key, swap_cost=SWAP_COST, perp_cost=PERP_COST, tag=''):
 
 
 if __name__ == '__main__':
-    keys = sys.argv[1:] or [os.path.basename(f)[6:-4] for f in glob.glob(f'{HERE}/raw/chain_*.csv')]
+    low = '--lowcost' in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    keys = args or [os.path.basename(f)[6:-4] for f in glob.glob(f'{HERE}/raw/chain_*.csv')]
     for k in keys:
-        E, D = run_pool(k)
+        E, D = run_pool(k, 0.0008, 0.00045, '_low') if low else run_pool(k)
         print(k, E.shape)
