@@ -141,9 +141,6 @@
 - **Riskler:** Düşük; yorgunluk.
 - **Puanlama:** Teknik 8 | Kanıt 4 | Etki 5 | Yenilik 6 | Düşük risk 9 | **TOPLAM 32/50**
 
-### Fikir 9 (kısa): PD mikrografi — dokunmatik ekranda görsel/işitsel ipuçlu el yazısı eğitimi
-Çizgi/hedef ipuçları, metronom tempolu harf büyüklüğü geri bildirimi; 10 dk/gün. Kanıt: ipuçlu yazı eğitimi küçük çalışmalarda harf boyutunu artırır (*doğrulanmadı*). Benzer tablet uygulamaları araştırma düzeyinde var. Puan: 8 | 4 | 4 | 5 | 9 = **30/50**.
-
 ---
 
 ## 3. Alanın en iyi 3 fikri (sıralı) ve gerekçe
@@ -163,7 +160,6 @@ GAMA-40 kasıtlı olarak alt sırada: fizik olarak yapılabilir (yalnızca 120 H
 - **İnme afazi egzersizi:** Constant Therapy/Tactus zaten var (Türkçe lokalizasyon ayrı bir iş, "yeni mekanizma" değil).
 - **Kamera tabanlı ayna terapisi:** Phantom Mirror, Digital MT, AS-Mirror mağazada var → "zaten var".
 - **Prizma adaptasyonu (ihmal), soğutma yeleği (MS), Meniett (basınç), ağırlıklı/jiroskopik eldiven (ET):** optik/ısı/basınç/mekanik atalet — telefon üretemez.
-- **Huzursuz bacak titreşim pedi:** Mekanizma kısmen taklit edilebilir ama uyku ajanının kapsamında.
 
 ## 5. Kaynaklar (URL)
 - Chan D ve ark. 2022, PLOS ONE, GENUS faz 1/2A: https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0278412
