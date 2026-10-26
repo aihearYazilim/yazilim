@@ -137,7 +137,8 @@
 14. Practical Neurology 2024 — Headache and Digital Health (POEM, CDE, Katsuki AI, ID-CM rakamları): https://practicalneurology.com/articles/2024-may-june/headache-and-digital-health-the-future-of-headache-medicine
 15. ID-EC smart app kronik migren (duy. %64,9/özg. %90,2; yalnız arama özeti): https://pmc.ncbi.nlm.nih.gov/articles/PMC8295831/
 16. Cheon ve ark. 2021 — TPBS vs DITI in CRPS, Diagnostics: https://pmc.ncbi.nlm.nih.gov/articles/PMC8394493/
-17. Dhatt ve ark. 2021 — The Role of FLIR ONE Thermography in CRPS, Am J Phys Med Rehabil (yalnız başlık; ek donanım): https://crps.org/wp-content/uploads/2015/04/CRPS-DiagnosticTests.pdf (521 hatası, erişilemedi)
+17. Dhatt ve ark. 2021 — The Role of FLIR ONE Thermography in CRPS, Am J Phys Med Rehabil (yalnız başlık, Elsevier/Neurología kaynak listesinde görüldü; ek donanım): https://www.elsevier.es/en-revista-neurologia-english-edition--495-pdf-download-S2173580822001572
+17b. RSDSA/CRPS.org — CRPS Diagnostic Tests PDF (521 hatası, erişilemedi): https://crps.org/wp-content/uploads/2015/04/CRPS-DiagnosticTests.pdf
 
 **Doğrulanmayan (bellekten; web kotası dolduğu için teyit edilemedi):**
 18. TURDEP-II (Satman ve ark. 2013) — Türkiye diyabet prevalansı %13,7 [doğrulanmadı]
