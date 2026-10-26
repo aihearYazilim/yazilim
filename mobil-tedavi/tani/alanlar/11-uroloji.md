@@ -1,6 +1,6 @@
 # Üroloji — Aile hekimi için telefonla tanı/triyaj fikirleri
 
-> Yöntem notu: Bu rapor 2026-10-26'da hazırlandı. İlk 14 web araması sonrasında oturumun paylaşımlı WebSearch kotası doldu; kalan doğrulamalar PubMed E-utilities (esearch/efetch) ve doğrudan makale sayfaları (JMIR, CUAJ, ICS, INJ, PMC) üzerinden WebFetch ile yapıldı. Doğrulanamayan epidemiyolojik rakamlar "(doğrulanmadı)" olarak işaretlendi. Türkçe veri seti, TİTCK sınıfı ve ürünlerin Türkiye'de erişilebilirliği doğrulanamadı.
+> Yöntem notu: Bu rapor 2026-10-26'da hazırlandı. İlk 14 web araması sonrasında oturumun paylaşımlı WebSearch kotası doldu; kalan doğrulamalar PubMed E-utilities (esearch/efetch) ve doğrudan makale sayfaları (JMIR, CUAJ, ICS, INJ, PMC) üzerinden WebFetch ile yapıldı. Doğrulanamayanlar "(doğrulanmadı)" işaretli.
 
 ## 1. Aile hekiminin bu alanda en sık karşılaştığı tanı/sevk kararları (envanter)
 
@@ -120,7 +120,7 @@
 ## 3. Alanın en iyi 3 fikri ve gerekçe
 1. **Fikir 1 — SesAkım (43/60):** Ürolojide telefonun tek başına üretebildiği, hastane cihazıyla kıyaslanmış tek nesnel ölçüm; erkeklerde Qmax r=0,74-0,94 ve meta-analiz desteği var. Aile hekiminin en sık ürolojik kararına (AÜSS'de ilaç/sevk) doğrudan sayı verir. Akustik ölçüm "zaten var" (proudP vb.) ama hasta-evde ürünleri; hekim tarafı, ASM tuvaletine kalibreli, IPSS entegre triyaj katmanı yok. En büyük risk: Dawidek 2022'nin gösterdiği akustik değişkenlik → ürünleşme öncesi Türkiye'de üroflovmetre referanslı doğrulama şart.
 2. **Fikir 3 — AkutSkrotum (37/60):** Nadir ama geri dönüşsüz sonuçlu karar; TWIST'in iyi NPV'si + zaman sayacı + belgeleme fotoğrafı, aile hekimine "düşük riskte izle / yüksek riskte USG'yi bekleme" güveni verir. Telefon sensör katkısı (fotoğraf/flaş) kanıtsız; değerin çoğu skor + protokolden gelir.
-3. **Fikir 8 — ÇocukAkım (35/60)** (Fikir 6 ile eşit; Fikir 6'nın sensör katkısı neredeyse sıfır olduğu için tercih edildi): Çocuk üroflovmetrisine erişim en kısıtlı alan; patern sınıflaması (stakkato/kesintili) nicel Qmax'tan daha tolerant; pilot ICC 0,755 umut verici ama n=16. Fikir 1 ile aynı altyapı — ek maliyet düşük.
+3. **Fikir 8 — ÇocukAkım (35/60)**: Çocuk üroflovmetrisine erişim en kısıtlı alan; patern sınıflaması (stakkato/kesintili) nicel Qmax'tan daha tolerant; pilot ICC 0,755 umut verici ama n=16. Fikir 1 ile aynı altyapı — ek maliyet düşük.
 
 ## 4. Elenenler
 - **İYE idrar fotoğrafı (renk/bulanıklık):** kanıt yok; bulanıklık İYE için özgül değil; şerit okuma renk kartı/kutu ister (Healthy.io Dip UTI, Scanwell zaten var, donanımlı) → kural 1 ihlali.
@@ -131,9 +131,6 @@
 - **Çocukta inmemiş testis fotoğrafı:** palpasyon gerektirir, fotoğrafla yapılamaz. **Fimozis fotoğrafı:** telesağlık tanı uyumu %40,5 (Boston 2023) → kanıt zayıf, hekim zaten gözle görüyor.
 - **Enürezis anketi/alarm uygulaması:** salt anket/kayıt; mevcut uygulamalar güvenilmez bulunmuş (Myint 2016); sensörlü kısmı Fikir 8'de.
 - **Termal kamera ile torsiyon:** FLIR eklentisi gerektirir (kural 1); yalnız köpek modeli.
-- **Kamera ile post-void rezidüel (işeme sonrası kalan idrar):** USG gerektirir, telefonla yapılamaz.
-- **Hipospadias kurvatür uygulamaları (Angulus, CurvAssist):** cerrah/ameliyat içi; aile hekimi kararı değil; zaten var.
-- **Kamera-PPG ile ED damar sağlığı/endotel ölçümü:** kanıt yok, tansiyon/damar sertliği PPG ile güvenilir değil.
 
 ## 5. Kaynaklar
 Doğrulandı (bu oturumda içerik okundu):
@@ -178,5 +175,4 @@ Doğrulanmadı (arama kotası doldu; bilgi dağarcığından):
 - Müslümanoğlu AY ve ark. Türkiye üriner taş prevalansı (2011).
 - Türkiye enürezis prevalans çalışmaları (Gür 2004 vb.).
 - AUA/SUFU Mikrohematüri Kılavuzu 2020 (risk kategorileri tanımı).
-- Telefon flaş LED lümen değerleri.
 - proudP'nin Türkiye'de erişilebilirliği ve G2'deki "%98 doğruluk" iddiasının dayanağı (bulunamadı; pazarlama iddiası sayıldı).
