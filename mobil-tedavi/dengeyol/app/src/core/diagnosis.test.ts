@@ -23,6 +23,7 @@ describe('tanı önerisi', () => {
   it('≥1 dk süren arka kanal → kupulolitiyazis (olası)', () => {
     const r = suggestDiagnosis({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 90 }), dhR: f({}) });
     expect(r.suggestions[0]).toMatchObject({ canal: 'PC', side: 'L', mechanism: 'cupulolithiasis', confidence: 'olası' });
+    expect(r.suggestions[0]!.maneuvers[0]).toBe('semont');
   });
 
   it('geotropik yatay kanal: güçlü taraf hasta', () => {

@@ -57,6 +57,20 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     why: 'Kan sulandırıcı kullananlarda yeni baş ağrısı ya da baş çarpması kanama açısından acil değerlendirilmelidir.'
   },
   {
+    id: 'spontaneous',
+    text: 'Başınızı hiç hareket ettirmeden, kendiliğinden başlayan ve dakikalar ya da saatler süren baş dönmesi atakları oluyor mu?',
+    stopsOn: 'yes',
+    action: 'doctor',
+    why: 'Kendiliğinden gelen ve uzun süren ataklar BPPV\'ye uymaz; Meniere hastalığı ya da vestibüler migren gibi başka nedenler açısından değerlendirilmelisiniz.'
+  },
+  {
+    id: 'headTrauma',
+    text: 'Son birkaç hafta içinde başınızı çarptınız mı ya da bir kaza geçirdiniz mi?',
+    stopsOn: 'yes',
+    action: 'doctor',
+    why: 'Kafa travması sonrası baş dönmesi hekim tarafından değerlendirilmelidir.'
+  },
+  {
     id: 'ear',
     text: 'Ani işitme kaybı, yeni başlayan kulak çınlaması, kulak ağrısı ya da kulak akıntısı var mı?',
     stopsOn: 'yes',
@@ -119,7 +133,14 @@ export const CONTRAINDICATIONS: Contraindication[] = [
     id: 'neck',
     text: 'Boyun omurgası hastalığım (boyun fıtığı nedeniyle hareket kısıtlılığı, boyun instabilitesi, ileri kireçlenme) ya da yakın zamanda boyun ameliyatım var.'
   },
+  {
+    id: 'spine',
+    text: 'Ankilozan spondilit, ağır romatoid artrit, ileri kamburluk (kifoskolyoz), ciddi bel/sırt sorunu ya da omurilik yaralanmam var.'
+  },
   { id: 'vascular', text: 'Hekimimin bildiği ciddi şah damarı (karotis) darlığım ya da dengesiz kalp hastalığım var.' },
+  { id: 'stroke', text: 'Geçirilmiş inme ya da beyin damar hastalığım var.' },
+  { id: 'obesity', text: 'Kilom nedeniyle yatakta hızlı yan dönmem ve yüzüstü dönmem çok zor.' },
+  { id: 'cognition', text: 'Hafıza ya da dikkat sorunlarım nedeniyle adım adım yönergeleri takip etmekte zorlanıyorum.' },
   { id: 'eye', text: 'Geçirilmiş retina yırtılması/dekolmanı ya da son birkaç ay içinde göz ameliyatım oldu.' },
   { id: 'pregnancy', text: 'İleri dönem gebeyim.' },
   {
@@ -174,7 +195,10 @@ export interface DoseLimits {
 
 /** Varsayılan (reçetesiz) sınırlar: günde 3, 3 gün, toplam 9 manevra; sonra hekime. */
 export const DEFAULT_DOSE: DoseLimits = { maxPerDay: 3, maxDays: 3, maxTotal: 9 };
-/** Reçeteyle verilebilecek üst sınırlar (Radtke 2004: günde 3, 1 hafta). */
+/**
+ * Reçeteyle verilebilecek üst sınırlar. Radtke 2004 ev Epley'ini 1 hafta uygulatmıştır; günde 3 kez dozlama
+ * yaygın klinik uygulamadır ancak birincil kaynaktan doğrulanamamıştır (docs/KLINIK-INCELEME.md).
+ */
 export const MAX_PRESCRIBED_DOSE: DoseLimits = { maxPerDay: 3, maxDays: 7, maxTotal: 21 };
 
 export function clampDose(d: Partial<DoseLimits> | undefined): DoseLimits {

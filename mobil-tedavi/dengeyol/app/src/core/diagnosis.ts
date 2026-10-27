@@ -125,7 +125,7 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
         ? `${cap(sideLabel(side))} arka kanal BPPV — kupulolitiyazis (olası)`
         : `${cap(sideLabel(side))} arka kanal BPPV (kanalitiyazis)`,
       rationale,
-      maneuvers: maneuversFor('PC', 'canalithiasis')
+      maneuvers: maneuversFor('PC', cupulo ? 'cupulolithiasis' : 'canalithiasis')
     });
     if (f.latencySec === 0 && !cupulo) {
       warnings.push('Arka kanal deseni gecikmesiz başladı; tipik BPPV gecikmeli (1–20 s) başlar. Santral nedenleri gözden kaçırmayın.');
@@ -208,7 +208,7 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
         mechanism: mech,
         confidence: side && bothSides ? 'tipik' : side ? 'olası' : 'belirsiz',
         label: side
-          ? `${cap(sideLabel(side))} yatay kanal BPPV — ${geo ? 'geotropik (kanalitiyazis)' : 'apogeotropik (kupulolitiyazis)'}`
+          ? `${cap(sideLabel(side))} yatay kanal BPPV — ${geo ? 'geotropik (kanalitiyazis)' : 'apogeotropik (kupulolitiyazis ya da ön kol kanalitiyazisi)'}`
           : `Yatay kanal BPPV — ${geo ? 'geotropik' : 'apogeotropik'}, taraf belirsiz`,
         rationale: side
           ? rationale
@@ -239,7 +239,7 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       label: 'Nistagmussuz pozisyonel vertigo ("subjektif BPPV" olasılığı)',
       rationale: [
         `Nistagmus gözlenmedi; baş dönmesi: ${vertigoKeys.map(keyLabel).join(', ')}.`,
-        'Bárány ölçütlerinde "olası BPPV" kategorisi. Klinik karara göre semptomatik tarafa manevra düşünülebilir.'
+        'Bárány 2015 ölçütleri bu durum için öyküye göre iki ayrı kategori tanımlar ("probable BPPV, spontaneously resolved" ve "possible BPPV"); kategoriyi öyküyle siz belirleyin. Klinik karara göre semptomatik tarafa manevra düşünülebilir.'
       ],
       maneuvers: side ? maneuversFor('PC', 'unknown') : []
     });

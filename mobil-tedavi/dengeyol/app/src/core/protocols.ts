@@ -143,7 +143,8 @@ const DIX_HALLPIKE: ProtocolDef = {
       clinician:
         'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar. Nistagmusu gözleyin; başlangıç ve bitişi işaretleyin.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
-      minHoldSec: 45,
+      // Gecikme nadiren 1 dakikaya uzayabilir (AAO-HNSF 2017) → gözlem penceresi 60 s.
+      minHoldSec: 60,
       afterVertigoSec: 10,
       maxVertigoSec: LIMITS.maxVertigoSec,
       observe: true,
@@ -347,7 +348,7 @@ const SEMONT: ProtocolDef = {
     {
       id: 'se-sit',
       title: 'Yatak ortasında otur, başını {Hya} çevir',
-      say: 'Yatağın ortasında, bacaklarınız yataktan aşağı sarkacak şekilde oturun. İki yanınızda da yatacak kadar yer olsun. Başınızı {Hya} doğru 45 derece çevirin.',
+      say: 'Yatağın uzun kenarının ortasına, bacaklarınız yataktan aşağı sarkacak şekilde oturun. İki yanınızda da yatacak kadar yer olsun. Başınızı {Hya} doğru 45 derece çevirin.',
       clinician: 'Hasta yatak kenarında, iki yana yatabilecek şekilde oturur. Baş {Hya} (sağlam taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
       minHoldSec: 5,
@@ -494,7 +495,7 @@ const BBQ_ROLL: ProtocolDef = {
   ],
   sources: [
     'Lempert T, Tiel-Wilck K. Laryngoscope 1996;106:476–478.',
-    'Kim JS ve ark. Neurology 2012;78:159–166 (geotropik yatay kanal RKÇ: BBQ, Gufoni, sham).'
+    'Kim JS ve ark. Neurology 2012;79(7):700–707 (geotropik yatay kanal RKÇ: BBQ, Gufoni, sham; PMID 22855868).'
   ],
   cautions: ['Yalnızca klinisyen modunda. Yüzüstü adım hastanın hareket kapasitesine göre uyarlanmalıdır.'],
   evidenceNote: 'Sınıf I kanıt (Kim 2012).'
@@ -536,9 +537,9 @@ const GUFONI_GEO: ProtocolDef = {
     {
       id: 'gg-2',
       title: 'Başı 45° yere çevir',
-      say: 'Başınızı hızla 45 derece yere doğru çevirin; burnunuz yere baksın.',
-      clinician: 'Baş hızla 45° yere doğru çevrilir (burun yere).',
-      target: lie(-135, 12, -30, 30),
+      say: 'Başınızı hızla yere doğru, yarı yola kadar, yaklaşık 45 derece çevirin; burnunuz yere doğru eğik baksın.',
+      clinician: 'Baş hızla 45–60° yere doğru çevrilir (burun yere eğik).',
+      target: lie(-140, 12, -30, 30),
       minHoldSec: 120,
       afterVertigoSec: 30,
       maxVertigoSec: null,
@@ -547,8 +548,8 @@ const GUFONI_GEO: ProtocolDef = {
     {
       id: 'gg-3',
       title: 'Yavaşça otur',
-      say: 'Yavaşça oturun ve başınızı dik tutun.',
-      clinician: 'Hasta yavaşça oturtulur.',
+      say: 'Başınız aynı yöne çevrili kalarak yavaşça oturun. Oturduktan sonra başınızı yavaşça düzeltin.',
+      clinician: 'Baş sağlam omza çevrili kalarak hasta yavaşça oturtulur; oturduktan sonra baş düzeltilir.',
       target: sit(-15, 35),
       minHoldSec: 60,
       afterVertigoSec: 15,
@@ -558,7 +559,8 @@ const GUFONI_GEO: ProtocolDef = {
   ],
   sources: [
     'Gufoni M ve ark. Acta Otorhinolaryngol Ital 1998;18:363–367.',
-    'Kim JS ve ark. Neurology 2012;78:159–166 (geotropik yatay kanal RKÇ).'
+    'Kim JS ve ark. Neurology 2012;79(7):700–707 (geotropik yatay kanal RKÇ; PMID 22855868).',
+    'Bhattacharyya N ve ark. AAO-HNSF BPPV kılavuzu 2017, Tablo 14.'
   ],
   cautions: ['Yalnızca klinisyen modunda.'],
   evidenceNote: 'Sınıf I kanıt (Kim 2012).'
@@ -566,14 +568,14 @@ const GUFONI_GEO: ProtocolDef = {
 
 const GUFONI_APO: ProtocolDef = {
   id: 'gufoni-apo',
-  name: 'Gufoni manevrası (apogeotropik yatay kanal)',
+  name: 'Gufoni manevrası (apogeotropik yatay kanal) — burun-yukarı (Appiani / Kim) varyantı',
   shortName: 'Gufoni-apo',
   kind: 'maneuver',
   canal: 'HC',
   sided: true,
   patient: 'no',
   summary:
-    'Yatay kanal apogeotropik tedavisi (Appiani / Kim değiştirilmiş Gufoni). Etkilenen tarafa hızla yan yatılır, ardından baş 45° tavana doğru çevrilir.',
+    'Yatay kanal apogeotropik tedavisi, burun-yukarı varyantı (Appiani 2005; Kim 2012 RKÇ protokolü). Etkilenen tarafa hızla yan yatılır, 1 dk sonra baş 45° tavana doğru çevrilir ve ~2 dk beklenir. Kılavuzdaki burun-yere varyantı bu uygulamada yoktur.',
   steps: [
     {
       id: 'ga-sit',
@@ -590,21 +592,21 @@ const GUFONI_APO: ProtocolDef = {
       id: 'ga-1',
       title: 'Hızla {A} yanına yat',
       say: 'Hızla {A} yanınıza yatın; başınız gövdenizle aynı hizada olsun.',
-      clinician: 'Hasta hızla {A} yanına (etkilenen taraf) yatırılır; baş gövdeyle aynı hizada.',
+      clinician: 'Hasta hızla {A} yanına (etkilenen taraf) yatırılır; baş gövdeyle aynı hizada. Sabit süre: 1 dk.',
       target: lie(90, 12, -30, 30),
       minHoldSec: 60,
-      afterVertigoSec: 30,
+      afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: true
     },
     {
       id: 'ga-2',
       title: 'Başı 45° tavana çevir',
-      say: 'Başınızı hızla 45 derece tavana doğru çevirin; burnunuz yukarı baksın.',
-      clinician: 'Baş hızla 45° tavana doğru çevrilir (burun yukarı).',
+      say: 'Başınızı hızla tavana doğru, yarı yola kadar, yaklaşık 45 derece çevirin; burnunuz yukarı doğru eğik baksın.',
+      clinician: 'Baş hızla 45° tavana doğru çevrilir (burun yukarı). Sabit süre: ~2 dk.',
       target: lie(45, 12, -30, 30),
       minHoldSec: 120,
-      afterVertigoSec: 30,
+      afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: true
     },
@@ -622,7 +624,8 @@ const GUFONI_APO: ProtocolDef = {
   ],
   sources: [
     'Appiani GC ve ark. Otol Neurotol 2005;26:257–260.',
-    'Kim JS ve ark. Neurology 2012;79:700–707 (apogeotropik yatay kanal RKÇ).'
+    'Kim JS ve ark. Neurology 2012;78(3):159–166 (apogeotropik yatay kanal RKÇ; PMID 22170885; protokol NCT00810641).',
+    'Bhattacharyya N ve ark. AAO-HNSF BPPV kılavuzu 2017, Tablo 15 (iki varyant; burun-yukarı varyantı RKÇ ile sınanmıştır).'
   ],
   cautions: [
     'Yalnızca klinisyen modunda. Anlık etkinlik tutarsızdır; apogeotropik formun geotropiğe dönüşmesi beklenebilir.'
@@ -670,7 +673,7 @@ const YACOVINO: ProtocolDef = {
       clinician: 'Sırtüstüyken baş kaldırılarak çene göğse getirilir.',
       target: lie(0, 15, -65, -20),
       minHoldSec: 30,
-      afterVertigoSec: 15,
+      afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: true
     },
@@ -763,7 +766,8 @@ export function resolveProtocol(id: ProtocolId, side: Side | null): ResolvedProt
 
 /** Tanıya göre önerilen manevralar (ilk eleman varsayılan). */
 export function maneuversFor(canal: Canal, mechanism: 'canalithiasis' | 'cupulolithiasis' | 'unknown'): ProtocolId[] {
-  if (canal === 'PC') return ['epley', 'semont'];
+  // Arka kanal kupulolitiyazisinde Semont önce önerilir (kupuladaki debrisi serbestleştirme amacı; düşük kanıt).
+  if (canal === 'PC') return mechanism === 'cupulolithiasis' ? ['semont', 'epley'] : ['epley', 'semont'];
   if (canal === 'HC') return mechanism === 'cupulolithiasis' ? ['gufoni-apo'] : ['bbq-roll', 'gufoni-geo'];
   return ['yacovino'];
 }
