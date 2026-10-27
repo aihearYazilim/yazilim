@@ -1,0 +1,131 @@
+/**
+ * Anlık baş pozunu bir adımın hedefiyle karşılaştırır.
+ */
+import { angleDiff, type HeadPose } from './geometry';
+import type { Target } from './protocols';
+
+export type HintKey =
+  | 'LIE_DOWN'
+  | 'SIT_UP'
+  | 'TURN_RIGHT'
+  | 'TURN_LEFT'
+  | 'HANG_MORE'
+  | 'HANG_LESS'
+  | 'CHIN_DOWN'
+  | 'CHIN_UP'
+  | 'HEAD_STRAIGHT';
+
+export interface Evaluation {
+  inRange: boolean;
+  postureOk: boolean;
+  /** Hedef − mevcut θ (işaretli, derece). Pozitif → sağa çevrilmeli. Yalnızca yatar hedefte. */
+  thetaErr: number | null;
+  /** Ekstansiyon aralığına işaretli uzaklık. Pozitif → daha fazla sarkıtmalı, negatif → kaldırmalı. 0 = aralıkta. */
+  phiErr: number | null;
+  /** Öne eğilme aralığına işaretli uzaklık. Pozitif → çene daha aşağı. */
+  psiErr: number | null;
+  /** Toplam yaklaşık hata (derece). */
+  errorDeg: number;
+  /** 0–1; 1 = hedefte. Sesli yaklaşma tonu için. */
+  closeness: number;
+  /** En öncelikli düzeltme. */
+  hint: HintKey | null;
+}
+
+/** Dik oturuş sınırı: başın dikeyden sapması bundan küçükse "oturuyor" sayılır. */
+export const SITTING_MAX_TILT = 55;
+/** Yatış sınırı: başın dikeyden sapması bundan büyükse "yatıyor" sayılır. */
+export const LYING_MIN_TILT = 45;
+/** Otururken yana eğilme sınırı. */
+export const SITTING_MAX_LAMBDA = 25;
+
+function rangeDistance(v: number, lo: number, hi: number): number {
+  if (v < lo) return lo - v;
+  if (v > hi) return hi - v;
+  return 0;
+}
+
+export function evaluate(pose: HeadPose, target: Target): Evaluation {
+  if (target.kind === 'sitting') {
+    const postureOk = pose.tiltFromUpright <= SITTING_MAX_TILT;
+    if (!postureOk) {
+      return {
+        inRange: false,
+        postureOk,
+        thetaErr: null,
+        phiErr: null,
+        psiErr: null,
+        errorDeg: pose.tiltFromUpright,
+        closeness: closenessFrom(pose.tiltFromUpright - SITTING_MAX_TILT + 20),
+        hint: 'SIT_UP'
+      };
+    }
+    const psiErr = rangeDistance(pose.psi, target.psiMin, target.psiMax);
+    const lambdaExcess = Math.max(0, Math.abs(pose.lambda) - SITTING_MAX_LAMBDA);
+    const inRange = psiErr === 0 && lambdaExcess === 0;
+    let hint: HintKey | null = null;
+    if (!inRange) {
+      if (Math.abs(psiErr) >= lambdaExcess) hint = psiErr > 0 ? 'CHIN_DOWN' : 'CHIN_UP';
+      else hint = 'HEAD_STRAIGHT';
+    }
+    const errorDeg = Math.hypot(psiErr, lambdaExcess);
+    return { inRange, postureOk, thetaErr: null, phiErr: null, psiErr, errorDeg, closeness: closenessFrom(errorDeg), hint };
+  }
+
+  // Yatar hedef
+  const postureOk = pose.tiltFromUpright >= LYING_MIN_TILT;
+  if (!postureOk) {
+    return {
+      inRange: false,
+      postureOk,
+      thetaErr: null,
+      phiErr: null,
+      psiErr: null,
+      errorDeg: 90 - pose.tiltFromUpright,
+      closeness: 0,
+      hint: 'LIE_DOWN'
+    };
+  }
+  const thetaErr = angleDiff(target.theta, pose.theta);
+  const thetaExcess = Math.max(0, Math.abs(thetaErr) - target.thetaTol);
+  const phiErr = rangeDistance(pose.phi, target.phiMin, target.phiMax);
+  const inRange = thetaExcess === 0 && phiErr === 0;
+  let hint: HintKey | null = null;
+  if (!inRange) {
+    // Önce dönüş (kritik eksen), sonra sarkıklık.
+    if (thetaExcess >= Math.abs(phiErr) * 0.75) hint = thetaErr > 0 ? 'TURN_RIGHT' : 'TURN_LEFT';
+    else hint = phiErr > 0 ? 'HANG_MORE' : 'HANG_LESS';
+  }
+  const errorDeg = Math.hypot(thetaExcess, phiErr);
+  return { inRange, postureOk, thetaErr, phiErr, psiErr: null, errorDeg, closeness: closenessFrom(errorDeg), hint };
+}
+
+/** 0° hata → 1, 45°+ hata → 0. */
+function closenessFrom(errDeg: number): number {
+  if (errDeg <= 0) return 1;
+  return Math.max(0, 1 - errDeg / 45);
+}
+
+export const HINT_TEXT_PATIENT: Record<HintKey, string> = {
+  LIE_DOWN: 'Şimdi yatın.',
+  SIT_UP: 'Yavaşça oturun.',
+  TURN_RIGHT: 'Başınızı biraz daha sağa çevirin.',
+  TURN_LEFT: 'Başınızı biraz daha sola çevirin.',
+  HANG_MORE: 'Başınızı biraz daha geriye bırakın.',
+  HANG_LESS: 'Başınızı biraz kaldırın.',
+  CHIN_DOWN: 'Çenenizi biraz göğsünüze doğru indirin.',
+  CHIN_UP: 'Çenenizi biraz kaldırın.',
+  HEAD_STRAIGHT: 'Başınızı yana yatırmayın, dik tutun.'
+};
+
+export const HINT_TEXT_CLINICIAN: Record<HintKey, string> = {
+  LIE_DOWN: 'Hasta henüz yatar pozisyonda değil.',
+  SIT_UP: 'Hasta oturtulmalı.',
+  TURN_RIGHT: 'Başı sağa çevirin.',
+  TURN_LEFT: 'Başı sola çevirin.',
+  HANG_MORE: 'Ekstansiyonu artırın (baş daha sarkık).',
+  HANG_LESS: 'Ekstansiyonu azaltın.',
+  CHIN_DOWN: 'Fleksiyonu artırın (çene aşağı).',
+  CHIN_UP: 'Fleksiyonu azaltın.',
+  HEAD_STRAIGHT: 'Lateral eğilmeyi düzeltin.'
+};
