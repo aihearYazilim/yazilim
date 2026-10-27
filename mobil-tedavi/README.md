@@ -17,6 +17,19 @@ Proje sahibi uzun vadeli egzersiz, diyet, yaşam tarzı ve haftalık terapi proj
 | `aninda/proje-C-atak-ani.md` | "Atak Anı" platformu: Bayılma Kalkanı (presenkop karşı-basınç + kan alma kas gerimi) ve HipoDurdur (hipoglisemi 15-15) modülleri; sonraki modüller |
 | `aninda/proje-D-tekatis-uyku.md` | Akut uykusuzluk için tek seanslık CBT-I; **sınır durum** (reçete 1–2 hafta yatış saati değişikliği; dijital öz-yönlendirmeli kanıtı zayıf) |
 
+## Tur 3 — Aile hekimi için TANI uygulamaları
+Aile hekiminin kendi telefonuyla, ek donanımsız, muayene sırasında tanı/triyaj/sevk kararı vermesine yardım eden uygulamalar.
+24 branş ajanı ~190 fikir üretti; yönetici ajan 90 tekil adaya indirip tek cetvelle (maks 90) puanladı.
+
+| Dosya | İçerik |
+|---|---|
+| `tani/BRIEF-3-TANI.md` | Görev tanımı, telefonun tanısal envanteri, şablon, puanlama |
+| `tani/alanlar/01..24-*.md` | 24 branş raporu |
+| `tani/00-DEGERLENDIRME-TANI.md` | Yönetici kararı: tekilleştirme, sıralı tablo, ilk 10, "ASM Muayene Asistanı" platform önerisi, tedavi projeleriyle eşleşme |
+
+İlk 10: ÇocukGöz-Tarama, SoluSay/VitalAkış, Dikkat Işığı, SternumSCG, SkleraBil, Kalk-Yürü-Otur, LensBak, SesSpiro, OrtoNabız, ElSinovit.
+Önerilen başlangıç: SoluSay/VitalAkış çekirdeği + OrtoNabız modu.
+
 ## Tur 1 — Genel tarama (arşiv; finalistleri uzun vadeli olduğu için elendi)
 | Dosya | İçerik |
 |---|---|
