@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { applySettings } from './platform/feedback';
 import { MotionProvider } from './platform/MotionContext';
 import { useData } from './state/store';
+import { ErrorBoundary } from './ui/components/ErrorBoundary';
 import { SimPanel } from './ui/components/SimPanel';
 import { About } from './ui/screens/About';
 import { ClinicianHome } from './ui/screens/clinician/ClinicianHome';
@@ -35,6 +36,7 @@ export function App() {
   }, [settings]);
 
   return (
+    <ErrorBoundary>
     <MotionProvider>
       <HashRouter>
         <Routes>
@@ -54,5 +56,6 @@ export function App() {
       </HashRouter>
       <SimPanel />
     </MotionProvider>
+    </ErrorBoundary>
   );
 }

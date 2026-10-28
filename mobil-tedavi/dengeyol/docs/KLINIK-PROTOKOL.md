@@ -66,7 +66,10 @@ uzun ataklar; yakın kafa travması; ani işitme kaybı/kulak belirtisi; boyun t
 "bu, önceki BPPV'nizle aynı mı?". Acil olanlarda 112 ekranı, diğerlerinde hekime yönlendirme.
 
 **Seans içi:** Bir pozisyonda baş dönmesi 2 dakikayı aşarsa manevra durur ve hekime yönlendirilir (tipik BPPV <1 dk).
-Hasta "kendimi iyi hissetmiyorum" ile istediği an durdurabilir. Uygulama arka plana geçerse manevra otomatik duraklar.
+Hasta "kendimi iyi hissetmiyorum" ile istediği an durdurabilir. Uygulama arka plana geçerse manevra otomatik duraklar;
+ekran kapatılır/geri tuşuna basılırsa yapılan kısım "kesildi" olarak kaydedilir ve doza sayılır. Baş dönmesi işaretinde
+1 saniye içindeki ikinci dokunuş (kazara çift dokunma) yok sayılır; süre ilk işaretin başından son işaretin sonuna kadar
+ölçülür.
 
 **Hastanın kendi taraf testi:** Önce şüpheli olmayan taraf, sonra şüpheli taraf; her birinde baş dönmesinin başlangıç/bitişi
 ekrana dokunarak işaretlenir. Karar: tek taraf pozitif ve <1 dk → o tarafa manevra; hekim tarafıyla çelişki → hekime;
@@ -74,7 +77,20 @@ iki taraf da pozitif → hangisinin daha şiddetli olduğu sorulur, eşitse ya d
 bitişi işaretlenmemiş → hekime; hiç tetiklenmezse manevra yapılmaz.
 
 **Doz:** Reçetesiz günde en fazla 3, en fazla 3 gün, toplam 9 manevra; sonra hekime. Reçeteyle en fazla günde 3 × 7 gün.
-Manevradan 30 dk sonra tekrar testi; negatifse ertesi sabah 06:00'dan sonra ikinci test; ikisi de negatifse atak kapatılabilir.
+Sınırlar ataktan bağımsız sayılır: günlük sınır takvim gününe, toplam sınır son 3 (reçeteyle 7) günlük kayan pencereye göre;
+atağı kapatıp yeniden açmak sınırı sıfırlamaz. Yarıda bırakılan ama pozisyon değiştirilmiş manevra da sayılır.
+Hekime ya da acile yönlendirmeyle biten bir ataktan sonra yeni atak (ve deneme manevrası), hasta "hekimimle görüştüm"
+onayını verene kadar açılmaz.
+Manevradan 30 dk sonra tekrar testi; negatifse ertesi sabah 06:00'dan sonra ikinci test (gece yarısından sonra yapılan
+testte aynı günün 06:00'sı); ikisi de negatifse atak kapatılabilir. Taraf testi hiç tetiklenmediyse sabah tek taraflı
+tekrar testi değil, iki yönlü taraf testi yapılır.
+
+**Deneme manevrası:** Baş dönmesi yokken adımları öğrenmek için. Atağa kaydedilmez ve tedavi dozuna sayılmaz; ancak
+kırmızı bayrak soruları ("aynı baş dönmesi mi" hariç) her seferinde sorulur ve günde en fazla 2 kez yapılabilir.
+
+**Telefonun yeri (her manevra/test başında):** Kalibrasyondan sonra telefon alından alınıp yeniden takılmış olabilir.
+Başlat'a basınca hasta dik oturup karşıya bakarken kısa bir ölçüm alınır; kalibrasyona göre artık hata 10°'yi aşarsa
+"tavana bak" adımıyla hızlıca yeniden tanıtılır (cihaz işaret kuralı korunur). Ölçüm hareketliyse manevra başlamaz.
 Son 30 günde 3+ atak → hekim önerisi.
 
 ## 5. Odyolog modu tanı önerisi

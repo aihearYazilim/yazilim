@@ -8,7 +8,8 @@ import { Screen } from '../../components/Screen';
 export function PrescriptionImport() {
   const { token = '' } = useParams();
   const nav = useNavigate();
-  const res = decodePrescription(decodeURIComponent(token));
+  // useParams değeri zaten çözülmüş gelir; ikinci kez decodeURIComponent bozuk "%" içeren bağlantılarda hata fırlatır.
+  const res = decodePrescription(token);
 
   if (!res.ok) {
     return (

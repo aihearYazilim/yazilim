@@ -234,6 +234,45 @@ describe('Epley yürütücüsü (hasta modu)', () => {
   });
 });
 
+describe('inceleme sonrası düzeltmeler', () => {
+  it('baş dönmesi süresi tüm işaretleri kapsar (ikinci uzun dalga gizlenmez)', () => {
+    const r = {
+      stepId: 'x', title: 'x', startedAt: 0, firstInRangeAt: 1000, reachedAt: 2000, endedAt: null, holdSec: 0, samples: 0,
+      inRangeSamples: 0, sumAbsThetaErr: 0, maxAbsThetaErr: 0, thetaSamples: 0, transitionSec: null, manual: false, driftCount: 0,
+      vertigoMarks: [{ start: 3, end: 5 }, { start: 8, end: 98 }]
+    };
+    expect(vertigoSummary(r)).toEqual({ latencySec: 2, durationSec: 95 });
+    expect(vertigoSummary({ ...r, vertigoMarks: [{ start: 3, end: 5 }, { start: 8, end: null }] })!.durationSec).toBeNull();
+  });
+
+  it('kazara çift dokunuş (1 s içinde) yok sayılır', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    x.t += 500;
+    send(x, { type: 'vertigoToggle' });
+    x.t += 300;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(true);
+    expect(x.s.records[0]!.vertigoMarks).toHaveLength(1);
+  });
+
+  it('elle onaylı adım duraklat/devam sonrası tamamlanır', () => {
+    const x = sim('epley', 'clinician');
+    send(x, { type: 'start' });
+    send(x, { type: 'manualConfirm' });
+    x.t += 1000;
+    send(x, { type: 'tick', pose: null });
+    send(x, { type: 'pause' });
+    send(x, { type: 'resume' });
+    expect(x.s.phase).toBe('holding');
+    for (let i = 0; i < 100; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: null });
+    }
+    expect(x.s.stepIndex).toBe(1);
+  });
+});
+
 describe('Semont hızlı geçiş ölçümü', () => {
   it('yavaş geçişte uyarı notu üretir', () => {
     const x = sim('semont');

@@ -291,6 +291,35 @@ await step('Hasta: tanısız ilk atak → manevralar kilitli', async () => {
   await ctx.close();
 });
 
+const PATIENT_OK = {
+  consentAt: '2026-01-01T00:00:00.000Z',
+  contraindications: [],
+  diagnosedByDoctor: true,
+  canal: 'PC',
+  side: 'R'
+};
+
+await step('Hasta: hekime yönlendirilen ataktan sonra yeni atak onay ister; deneme günlük sınırı', async () => {
+  const now = Date.now();
+  const referred = {
+    id: 'old', startedAt: now - 7200e3, endedAt: now - 3600e3, side: 'R', protocolId: 'epley', redFlags: [], sideTests: [],
+    maneuvers: [], retests: [], status: 'referred', endNote: 'ATYPICAL_LONG'
+  };
+  const { ctx, page, errors } = await newPage(
+    seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [referred], practiceLog: [now - 60e3, now - 30e3] } })
+  );
+  await page.goto(BASE + '#/hasta/atak/start');
+  await page.getByTestId('blocked-referral').waitFor();
+  await snap(page, 'yonlendirme-kilidi');
+  await page.getByTestId('doctor-cleared').click();
+  await page.getByTestId('redflag-question').waitFor();
+  await page.goto(BASE + '#/hasta');
+  await page.goto(BASE + '#/hasta/atak/practice');
+  await page.getByTestId('blocked-practice').waitFor();
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
 let rxUrl = null;
 await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley → QR reçete', async () => {
   const { ctx, page, errors } = await newPage(seed());

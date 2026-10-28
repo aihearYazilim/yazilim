@@ -4,7 +4,7 @@
  *   start    — yeni atak (ya da yarım kalan ataka devam): kırmızı bayrak → kalibrasyon → taraf → manevra → sonrası
  *   retest   — 30 dk / sabah tekrar testi: (kırmızı bayrak) → kalibrasyon → Dix-Hallpike (tedavi edilen taraf) → sonuç
  *   treat    — pozitif tekrar testi sonrası yeniden manevra
- *   practice — deneme manevrası (kayıt tutulmaz)
+ *   practice — deneme manevrası (atak kaydı tutulmaz; güvenlik soruları sorulur, günde en fazla 2)
  */
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -25,7 +25,17 @@ import {
   type StopAction,
   type YesNo
 } from '../../../core/safety';
-import { episodeDose, episodeSide, formatTime, EARLY_RETEST_MS, needsRedFlags, nextAction } from '../../../state/episodes';
+import {
+  episodeDose,
+  episodeSide,
+  formatTime,
+  EARLY_RETEST_MS,
+  needsRedFlags,
+  nextAction,
+  pendingReferral,
+  practiceAllowed,
+  PRACTICE_PER_DAY
+} from '../../../state/episodes';
 import { activeEpisode, store, uid, useData } from '../../../state/store';
 import type { Episode, ManeuverLog } from '../../../state/types';
 import { Choice, StepDots, YesNo as YesNoButtons } from '../../components/Controls';
@@ -37,6 +47,7 @@ import { RunnerView, type RunnerOutcome } from '../RunnerView';
 type Mode = 'start' | 'retest' | 'treat' | 'practice';
 
 type Stage =
+  | { k: 'blocked'; why: 'referral' | 'practiceLimit' }
   | { k: 'redflags'; i: number; answers: Record<string, YesNo> }
   | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[] }
   | { k: 'calibrate' }
@@ -64,9 +75,18 @@ export function EpisodeFlow() {
   const [episodeId, setEpisodeId] = useState<string | null>(() => activeEpisode(d)?.id ?? null);
   const [cal, setCal] = useState<Calibration | null>(null);
 
+  // Deneme manevrasında "aynı baş dönmesi mi" sorusu anlamsızdır; diğer güvenlik soruları her seferinde sorulur.
+  const flags = mode === 'practice' ? RED_FLAGS.filter((q) => q.id !== 'same') : RED_FLAGS;
+
   const initialStage = (): Stage => {
-    if (mode === 'practice') return { k: 'calibrate' };
-    if (needsRedFlags(activeEpisode(d), Date.now())) return { k: 'redflags', i: 0, answers: {} };
+    const cur = store.get();
+    const ep = activeEpisode(cur);
+    if (!ep && pendingReferral(cur)) return { k: 'blocked', why: 'referral' };
+    if (mode === 'practice') {
+      if (!practiceAllowed(cur, Date.now())) return { k: 'blocked', why: 'practiceLimit' };
+      return { k: 'redflags', i: 0, answers: {} };
+    }
+    if (needsRedFlags(ep, Date.now())) return { k: 'redflags', i: 0, answers: {} };
     return { k: 'calibrate' };
   };
   const [stage, setStage] = useState<Stage>(initialStage);
@@ -133,6 +153,13 @@ export function EpisodeFlow() {
     }
     const ep = activeEpisode(store.get());
     if (mode === 'retest') {
+      const na = ep ? nextAction(ep, Date.now()) : null;
+      // Taraf henüz belirlenmediyse (önceki taraf testi tetiklenmedi) ya da hiç manevra yapılmadıysa
+      // tek taraflı tekrar testi değil, iki yönlü taraf testi yapılır.
+      if (ep && ((na?.kind === 'morning-retest' && na.needsSideTest) || ep.maneuvers.length === 0)) {
+        setStage({ k: 'sideQ' });
+        return;
+      }
       const s = ep ? episodeSide(ep, profile) : null;
       if (!s) return toStart();
       setStage({ k: 'retestRun', side: s });
@@ -152,7 +179,8 @@ export function EpisodeFlow() {
       return;
     }
     const known = profile.prescription?.side ?? (profile.side !== 'unknown' ? profile.side : null);
-    if (known && !requireSideTest) setStage({ k: 'sideConfirm', known });
+    const testedBefore = !!ep && ep.sideTests.length > 0;
+    if (known && !requireSideTest && !testedBefore) setStage({ k: 'sideConfirm', known });
     else setStage({ k: 'sideQ' });
   };
 
@@ -169,7 +197,7 @@ export function EpisodeFlow() {
   const checkDose = (): boolean => {
     const ep = activeEpisode(store.get());
     if (!ep) return true;
-    const ds = episodeDose(ep, store.get().patient, Date.now());
+    const ds = episodeDose(ep, store.get().patient, Date.now(), store.get().episodes);
     if (!ds.allowed) {
       if (ds.reason !== 'DAILY_LIMIT') {
         updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: DOSE_TEXT[ds.reason] }));
@@ -182,6 +210,10 @@ export function EpisodeFlow() {
 
   const onRedFlagsDone = (answers: Record<string, YesNo>) => {
     const out = evaluateRedFlags(answers);
+    if (mode === 'practice' && out.stop && out.action) {
+      setStage({ k: 'stop', action: out.action, triggered: out.triggered });
+      return;
+    }
     if (mode !== 'practice') {
       const id = ensureEpisode();
       updateEpisode(id, (e) => ({ ...e, redFlags: [...e.redFlags, { at: Date.now(), answers, stopped: out.stop }] }));
@@ -263,7 +295,12 @@ export function EpisodeFlow() {
   };
 
   const logManeuver = (o: RunnerOutcome, side: Side) => {
-    if (mode === 'practice') return;
+    if (mode === 'practice') {
+      if (o.phase === 'done' || o.state.records.length > 1) {
+        store.update((x) => ({ ...x, practiceLog: [...(x.practiceLog ?? []).slice(-20), Date.now()] }));
+      }
+      return;
+    }
     const id = ensureEpisode();
     const log: ManeuverLog = {
       id: uid(),
@@ -352,11 +389,48 @@ export function EpisodeFlow() {
 
   // ---- Görünüm ------------------------------------------------------------------------------------
   switch (stage.k) {
+    case 'blocked':
+      return (
+        <Screen title="DengeYol" back="/hasta">
+          {stage.why === 'referral' ? (
+            <>
+              <div className="card tint-warn stack" data-testid="blocked-referral">
+                <div className="card-title">
+                  <Icon name="alert" />
+                  <h2>Önce hekiminizle görüşün</h2>
+                </div>
+                <p>
+                  Son atağınız hekime ya da acile yönlendirmeyle sonlandı. Yeni bir manevra yapmadan önce bu durumu hekiminizle konuşmanız gerekir.
+                </p>
+              </div>
+              <button
+                className="btn secondary block"
+                data-testid="doctor-cleared"
+                onClick={() => {
+                  store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, doctorClearedAt: Date.now() } : x.patient }));
+                  setStage(initialStage());
+                }}
+              >
+                Hekimimle görüştüm, manevra yapmamda sakınca yok dedi
+              </button>
+            </>
+          ) : (
+            <div className="card tint-accent stack" data-testid="blocked-practice">
+              <h2>Bugünlük deneme yeterli</h2>
+              <p>Deneme manevrası günde en fazla {PRACTICE_PER_DAY} kez yapılabilir. Yarın yeniden deneyebilirsiniz.</p>
+            </div>
+          )}
+          <button className="btn ghost" onClick={() => nav('/hasta', { replace: true })}>
+            Ana ekran
+          </button>
+        </Screen>
+      );
+
     case 'redflags': {
-      const q = RED_FLAGS[stage.i]!;
+      const q = flags[stage.i]!;
       const answer = (v: YesNo) => {
         const answers = { ...stage.answers, [q.id]: v };
-        if (v === q.stopsOn || stage.i === RED_FLAGS.length - 1) onRedFlagsDone(answers);
+        if (v === q.stopsOn || stage.i === flags.length - 1) onRedFlagsDone(answers);
         else setStage({ k: 'redflags', i: stage.i + 1, answers });
       };
       return (
@@ -364,9 +438,9 @@ export function EpisodeFlow() {
           title="Güvenlik soruları"
           onBack={() => (stage.i === 0 ? nav('/hasta') : setStage({ k: 'redflags', i: stage.i - 1, answers: stage.answers }))}
         >
-          <StepDots total={RED_FLAGS.length} index={stage.i} />
+          <StepDots total={flags.length} index={stage.i} />
           <p className="small muted">
-            Soru {stage.i + 1} / {RED_FLAGS.length}
+            Soru {stage.i + 1} / {flags.length}
           </p>
           <h1 data-testid="redflag-question" data-qid={q.id}>
             {q.text}
@@ -533,7 +607,7 @@ export function EpisodeFlow() {
             mode === 'practice' ? (
               <div className="notice info">
                 <Icon name="info" />
-                <span>Deneme manevrası: kayıt tutulmaz, sayılmaz.</span>
+                <span>Deneme manevrası: atağa kaydedilmez, tedavi sayılmaz.</span>
               </div>
             ) : undefined
           }
@@ -598,7 +672,7 @@ export function EpisodeFlow() {
     case 'end': {
       const canTreat = stage.extra === 'treat' && (() => {
         const ep = activeEpisode(d);
-        return ep ? episodeDose(ep, profile, Date.now()).allowed : false;
+        return ep ? episodeDose(ep, profile, Date.now(), d.episodes).allowed : false;
       })();
       const ep = activeEpisode(d);
       const side = ep ? episodeSide(ep, profile) : null;
@@ -616,7 +690,7 @@ export function EpisodeFlow() {
           {stage.extra === 'treat' && !canTreat && ep && (
             <div className="notice danger">
               <Icon name="alert" />
-              <span>{(() => { const ds = episodeDose(ep, profile, Date.now()); return ds.allowed ? '' : DOSE_TEXT[ds.reason]; })()}</span>
+              <span>{(() => { const ds = episodeDose(ep, profile, Date.now(), d.episodes); return ds.allowed ? '' : DOSE_TEXT[ds.reason]; })()}</span>
             </div>
           )}
           <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })} data-testid="go-home">

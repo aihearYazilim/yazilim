@@ -91,7 +91,8 @@ export function Segmented<T extends string | number>({
   label
 }: {
   options: { value: T; label: string }[];
-  value: T;
+  /** null → hiçbiri seçili değil. */
+  value: T | null;
   onChange: (v: T) => void;
   label: string;
 }) {

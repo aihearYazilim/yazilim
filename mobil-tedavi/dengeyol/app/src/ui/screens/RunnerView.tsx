@@ -3,7 +3,7 @@
  * Telefon alındayken ekran dışa baktığı için yardımcı kişi ya da klinisyen ekranı görebilir; hasta sesle yönlendirilir.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Calibration } from '../../core/calibration';
+import { CALIBRATION_ERROR_TEXT, computeCalibration, residualUprightDeg, type Calibration } from '../../core/calibration';
 import { HINT_TEXT_CLINICIAN } from '../../core/evaluator';
 import { resolveProtocol, type ProtocolId, type ResolvedProtocol, type Side, sideName } from '../../core/protocols';
 import {
@@ -18,17 +18,20 @@ import {
 } from '../../core/runner';
 import { applySettings, playCues, unlockAudio } from '../../platform/feedback';
 import { useMotion } from '../../platform/MotionContext';
-import { PoseTracker } from '../../platform/pose';
+import { collectSamples, PoseTracker } from '../../platform/pose';
 import { speech } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
-import { keepAwake, releaseAwake } from '../../platform/wakeLock';
+import { keepAwake, releaseAwake, wakeLockSupported } from '../../platform/wakeLock';
 import { useData } from '../../state/store';
 import { StepDots } from '../components/Controls';
 import { HangBar, HeadGauge, HoldRing } from '../components/Gauges';
 import { Icon } from '../components/Icon';
-import { publishSimTarget } from '../components/SimPanel';
+import { publishSimTarget, useSimAuto } from '../components/SimPanel';
 import { BedSetup } from './Illustrations';
+
+/** Başlangıç kontrolünde telefonun alındaki yeri bu açıdan fazla değişmişse hızlı yeniden tanıtma yapılır. */
+export const REMOUNT_TOLERANCE_DEG = 10;
 
 export interface RunnerOutcome {
   phase: 'done' | 'aborted' | 'safetyStop';
@@ -41,7 +44,7 @@ export function RunnerView({
   protocolId,
   side,
   mode,
-  calibration,
+  calibration: initialCalibration,
   onExit,
   intro
 }: {
@@ -57,6 +60,8 @@ export function RunnerView({
   const { settings } = useData();
   const { source } = useMotion();
   const protocol = useMemo(() => resolveProtocol(protocolId, side), [protocolId, side]);
+  const sim = useSimAuto();
+  const [calibration, setCalibration] = useState<Calibration | null>(initialCalibration);
   const manual = calibration === null;
   const P = mode === 'patient';
 
@@ -72,10 +77,17 @@ export function RunnerView({
 
   const [started, setStarted] = useState(false);
   const [preCount, setPreCount] = useState(0);
+  /** Başlangıç kontrolü: telefonun alındaki yeri (hasta modu). */
+  const [prep, setPrep] = useState<null | 'place' | 'lookup'>(null);
+  const [prepError, setPrepError] = useState<string | null>(null);
+  const busy = useRef(false);
+  const alive = useRef(true);
   const [state, setState] = useState<RunnerState>(initialRunnerState);
   const sRef = useRef(state);
   const trackerRef = useRef<PoseTracker | null>(null);
   const exited = useRef(false);
+  /** onExit gerçekten çağrıldı mı (bileşen kapanırken bekleyen bitiş kaybolmasın). */
+  const delivered = useRef(false);
   const timeScale = settings.simulation ? settings.timeScale : 1;
   const clock = useRef({ perf0: performance.now(), virt0: Date.now(), scale: timeScale });
 
@@ -136,11 +148,25 @@ export function RunnerView({
     if (!started) return;
     const onVis = () => {
       if (document.visibilityState === 'hidden') dispatch({ type: 'pause', now: now() });
+      // Tarayıcı, sayfa gizlenince ekran kilidini bırakır; geri gelince yeniden iste.
+      else void keepAwake();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, dispatch]);
+
+  // Çalışırken sayfa kapatılmak/yenilenmek istenirse uyar
+  const running = started && !['done', 'aborted', 'safetyStop'].includes(state.phase);
+  useEffect(() => {
+    if (!running) return;
+    const onBefore = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBefore);
+    return () => window.removeEventListener('beforeunload', onBefore);
+  }, [running]);
 
   // Yaklaşma tonu ve demo hedefi
   const step = protocol.steps[state.stepIndex];
@@ -160,33 +186,117 @@ export function RunnerView({
       exited.current = true;
       tones.stopGuidance();
       const phase = state.phase;
-      const t = setTimeout(
-        () => onExitRef.current({ phase, state: sRef.current, protocol, manual }),
-        phase === 'done' ? 1200 : 300
-      );
+      const t = setTimeout(() => {
+        if (delivered.current) return;
+        delivered.current = true;
+        onExitRef.current({ phase, state: sRef.current, protocol, manual });
+      }, phase === 'done' ? 1200 : 300);
       return () => clearTimeout(t);
     }
     // Yalnızca faz değişiminde çalışır; terminal fazdan sonra faz bir daha değişmez.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
       tones.stopGuidance();
       publishSimTarget(null);
       void releaseAwake();
-    },
-    []
-  );
+      // Ekran çalışırken kapatıldıysa (geri tuşu vb.) yapılan kısım kayıt dışı kalmasın: kesildi olarak bildir.
+      if (!delivered.current && sRef.current.phase !== 'idle') {
+        delivered.current = true;
+        exited.current = true;
+        const cur = sRef.current;
+        if (cur.phase === 'done' || cur.phase === 'aborted' || cur.phase === 'safetyStop') {
+          onExitRef.current({ phase: cur.phase, state: cur, protocol, manual: manualRef.current });
+        } else {
+          const r = runnerStep(cfgRef.current, cur, { type: 'abort', now: now(), reason: 'INTERRUPTED' });
+          onExitRef.current({ phase: 'aborted', state: r.state, protocol, manual: manualRef.current });
+        }
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const cfgRef = useRef(cfg);
+  cfgRef.current = cfg;
+  const manualRef = useRef(manual);
+  manualRef.current = manual;
+
+  const scaled = (ms: number) => ms / Math.max(1, timeScale);
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, scaled(ms)));
+
+  /**
+   * Hasta modu başlangıç kontrolü: telefon kalibrasyondan sonra alından alınıp yeniden takılmış olabilir.
+   * Dik duruşta artık hata küçükse mevcut kalibrasyon kullanılır; büyükse "tavana bak" adımıyla hızlıca yeniden tanıtılır
+   * (işaret kuralı cihaza özgüdür, yeniden ölçülmez).
+   */
+  async function checkMount(c: Calibration): Promise<Calibration | null> {
+    const fail = (msg: string) => {
+      setPrep(null);
+      setPrepError(msg);
+      tones.play('alarm');
+      speech.speak(msg, 'high');
+      sim.upright();
+      return null;
+    };
+    if ((await source.start()) !== 'ok') return fail('Hareket sensöründen veri alınamadı. Telefonu tanıtma adımını yeniden yapın.');
+    sim.upright();
+    setPrep('place');
+    speech.speak('Telefonu ekranı dışa bakacak şekilde alnınıza yaslayın. Dik oturun, tam karşıya bakın ve kıpırdamayın.', 'high');
+    await sleep(6500);
+    if (!alive.current) return null;
+    const up = await collectSamples(source, Math.max(400, scaled(1500)));
+    if (!alive.current) return null;
+    if (!up || up.maxDevDeg > 6) return fail('Telefon ölçüm sırasında kıpırdadı. Tamamen hareketsiz kalıp yeniden Başlat\'a basın.');
+    if (residualUprightDeg(up.mean, c) <= REMOUNT_TOLERANCE_DEG) {
+      haptics.play('tap');
+      setPrep(null);
+      return c;
+    }
+    setPrep('lookup');
+    speech.speak('Telefonun yeri biraz değişmiş. Başınızı yavaşça geriye yatırın ve tavana bakın. Öyle kalın.', 'high');
+    sim.lookUp();
+    await sleep(3500);
+    if (!alive.current) return null;
+    const lu = await collectSamples(source, Math.max(400, scaled(1200)));
+    sim.upright();
+    if (!alive.current) return null;
+    if (!lu || lu.maxDevDeg > 8) return fail('Telefon ölçüm sırasında kıpırdadı. Yeniden Başlat\'a basın.');
+    const res = computeCalibration(c.sign, up.mean, lu.mean);
+    if (!res.ok) return fail(CALIBRATION_ERROR_TEXT[res.error]);
+    haptics.play('tap');
+    speech.speak('Tamam. Başınızı düzeltip karşıya bakın.', 'high');
+    await sleep(2000);
+    setPrep(null);
+    return res.calibration;
+  }
 
   async function begin() {
+    if (busy.current) return;
+    busy.current = true;
+    try {
+      await beginInner();
+    } finally {
+      busy.current = false;
+    }
+  }
+
+  async function beginInner() {
     unlockAudio();
     void keepAwake();
+    setPrepError(null);
+    if (P && calibration) {
+      const c = await checkMount(calibration);
+      if (!c || !alive.current) return;
+      setCalibration(c);
+    }
     speech.speak(
       P
         ? manual
           ? 'Başlıyoruz.'
-          : 'Başlıyoruz. Telefonu ekranı dışa bakacak şekilde alnınıza yaslayın ve yönergeleri dinleyin.'
+          : 'Başlıyoruz. Telefonu alnınızda tutun ve yönergeleri dinleyin.'
         : 'Başlıyoruz.',
       'high'
     );
@@ -194,6 +304,7 @@ export function RunnerView({
       setPreCount(i);
       tones.play('countdown');
       await new Promise((r) => setTimeout(r, 1000 / Math.max(1, timeScale)));
+      if (!alive.current) return;
     }
     setPreCount(0);
     clock.current = { perf0: performance.now(), virt0: Date.now(), scale: timeScale };
@@ -206,7 +317,11 @@ export function RunnerView({
     return (
       <div className="runner" data-testid="runner-ready">
         <div className="runner-head">
-          <button className="btn icon" aria-label="Kapat" onClick={() => onExit({ phase: 'aborted', state: sRef.current, protocol, manual })}>
+          <button className="btn icon" aria-label="Kapat" onClick={() => {
+              exited.current = true;
+              delivered.current = true;
+              onExit({ phase: 'aborted', state: sRef.current, protocol, manual });
+            }}>
             <Icon name="close" />
           </button>
           <strong className="grow">
@@ -235,7 +350,21 @@ export function RunnerView({
               </p>
             )}
             {P && !haptics.supported() && <p className="small muted">Bu cihazda titreşim desteklenmiyor; sesli ve tonlu uyarılar kullanılacak.</p>}
+            {!wakeLockSupported() && (
+              <p className="small muted">
+                Bu tarayıcı ekranı açık tutmayı desteklemiyor. Manevra sırasında ekran kararmasın diye telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.
+              </p>
+            )}
+            {P && !manual && (
+              <p className="small muted">Başlat'a basınca önce telefonun alnınızdaki yerini birkaç saniyede kontrol edeceğim.</p>
+            )}
           </div>
+          {prepError && (
+            <div className="notice danger" role="alert" data-testid="runner-prep-error">
+              <Icon name="alert" />
+              <span>{prepError}</span>
+            </div>
+          )}
           {protocol.cautions.length > 0 && (
             <div className="notice">
               <Icon name="alert" />
@@ -244,7 +373,11 @@ export function RunnerView({
           )}
         </div>
         <div style={{ padding: '0 16px calc(16px + env(safe-area-inset-bottom))', maxWidth: 640, width: '100%', margin: '0 auto' }}>
-          {preCount > 0 ? (
+          {prep ? (
+            <div className="btn secondary block xl" aria-live="assertive" data-testid="runner-prep">
+              {prep === 'place' ? 'Dik oturun, karşıya bakın…' : 'Tavana bakın…'}
+            </div>
+          ) : preCount > 0 ? (
             <div className="btn primary block xl" aria-live="assertive">
               {preCount}
             </div>
@@ -435,7 +568,14 @@ export function RunnerView({
                 ? 'Devam ettiğinizde aynı adımdan, pozisyonunuz yeniden doğrulanarak sürer.'
                 : 'Devam edildiğinde pozisyon yeniden doğrulanır.'}
             </p>
-            <button className="btn primary block" onClick={() => dispatch({ type: 'resume', now: now() })} data-testid="runner-resume">
+            <button
+              className="btn primary block"
+              onClick={() => {
+                void keepAwake();
+                dispatch({ type: 'resume', now: now() });
+              }}
+              data-testid="runner-resume"
+            >
               <Icon name="play" /> Devam et
             </button>
             {P && (

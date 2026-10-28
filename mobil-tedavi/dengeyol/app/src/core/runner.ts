@@ -67,7 +67,7 @@ export type Phase =
   | 'aborted'
   | 'safetyStop';
 
-export type StopReason = 'VERTIGO_TOO_LONG' | 'USER_ABORT' | 'USER_FEELS_UNWELL';
+export type StopReason = 'VERTIGO_TOO_LONG' | 'USER_ABORT' | 'USER_FEELS_UNWELL' | 'INTERRUPTED';
 
 export interface StepRecord {
   stepId: string;
@@ -113,6 +113,8 @@ export interface RunnerState {
   lastHintAt: number | null;
   lastCountMark: number;
   vertigoActive: boolean;
+  /** Son baş dönmesi dokunuşu (ms) — kazara çift dokunuşu yok saymak için. */
+  lastVertigoToggleAt: number | null;
   vertigoSince: number | null;
   vertigoEndedAt: number | null;
   vertigoLongWarned: boolean;
@@ -163,6 +165,7 @@ export function initialRunnerState(): RunnerState {
     lastHintAt: null,
     lastCountMark: 0,
     vertigoActive: false,
+    lastVertigoToggleAt: null,
     vertigoSince: null,
     vertigoEndedAt: null,
     vertigoLongWarned: false,
@@ -245,6 +248,7 @@ function startStep(cfg: RunnerConfig, s: RunnerState, index: number, now: number
     lastHintAt: null,
     lastCountMark: 0,
     vertigoActive: false,
+    lastVertigoToggleAt: null,
     vertigoSince: null,
     vertigoEndedAt: null,
     vertigoLongWarned: false,
@@ -294,6 +298,9 @@ function targetSatisfiedLoose(pose: HeadPose, target: Target): boolean {
   return e.postureOk && e.errorDeg <= 25;
 }
 
+/** Baş dönmesi dokunuşları arasında en az süre (s). */
+export const VERTIGO_DEBOUNCE_SEC = 1;
+
 export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): StepResult {
   const cues: Cue[] = [];
   const now = ev.now;
@@ -330,7 +337,9 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
       if (s.phase !== 'paused') return { state: s, cues };
       const back = s.pausedFrom ?? 'seeking';
       // Bekleme sırasında duraklatıldıysa, sensörle tekrar doğrulamak için arama fazına dön.
-      const phase: Phase = back === 'holding' || back === 'drifting' || back === 'settling' ? 'seeking' : back;
+      // Elle onaylanmış adımda sensör doğrulaması yoktur → doğrudan beklemeye dön.
+      const wasHolding = back === 'holding' || back === 'drifting' || back === 'settling';
+      const phase: Phase = wasHolding ? (s.manualStep ? 'holding' : 'seeking') : back;
       cues.push({ kind: 'speak', text: 'Devam ediyoruz.', priority: 'high' });
       return {
         state: { ...s, phase, pausedFrom: null, phaseSince: now, settlingSince: null, outOfRangeSince: null, lastTickAt: now },
@@ -387,6 +396,9 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
       if (s.phase === 'idle' || s.phase === 'between' || s.phase === 'paused') return { state: s, cues };
       const step = currentStep(cfg, s);
       if (!step) return { state: s, cues };
+      // Alındaki telefona körlemesine yapılan kazara çift dokunuşu yok say.
+      if (s.lastVertigoToggleAt !== null && sec(now - s.lastVertigoToggleAt) < VERTIGO_DEBOUNCE_SEC) return { state: s, cues };
+      s = { ...s, lastVertigoToggleAt: now };
       const rel = sec(now - s.stepStartedAt);
       if (!s.vertigoActive) {
         cues.push({ kind: 'haptic', pattern: 'tap' });
@@ -604,6 +616,16 @@ function holdingTick(
         if (sinceHint >= cfg.hintEverySec && ev?.hint) {
           cues.push({ kind: 'speak', text: hintText(cfg, ev.hint), priority: 'normal' });
           s.lastHintAt = now;
+        } else if (sinceHint >= cfg.hintEverySec && !ev && !s.manualStep) {
+          cues.push({
+            kind: 'speak',
+            text:
+              cfg.mode === 'patient'
+                ? 'Sensörden veri alınamıyor. Telefonu alnınıza yaslı tutun.'
+                : 'Sensör verisi yok; elle onaylayabilirsiniz.',
+            priority: 'normal'
+          });
+          s.lastHintAt = now;
         }
       }
     }
@@ -664,13 +686,20 @@ export function recordStats(r: StepRecord) {
   };
 }
 
-/** Bir test adımındaki ilk baş dönmesi işaretinden gecikme ve süre (s). */
+/**
+ * Bir adımdaki baş dönmesi işaretlerinin özeti (s).
+ * Gecikme: pozisyona girişten ilk işarete. Süre: ilk başlangıçtan SON bitişe kadar olan toplam yayılım
+ * (iki dalga ya da yeniden işaretleme olursa uzun süre gizlenmez). Bitişi işaretlenmemiş bir işaret varsa süre bilinmez (null).
+ */
 export function vertigoSummary(r: StepRecord): { latencySec: number; durationSec: number | null } | null {
-  const first = r.vertigoMarks[0];
+  const marks = r.vertigoMarks;
+  const first = marks[0];
   if (!first) return null;
   const ref = r.firstInRangeAt ?? r.reachedAt;
   const reachedRel = ref !== null ? sec(ref - r.startedAt) : 0;
   const latencySec = Math.max(0, Math.round(first.start - reachedRel));
-  const durationSec = first.end !== null ? Math.max(0, Math.round(first.end - first.start)) : null;
+  const open = marks.some((m) => m.end === null);
+  const lastEnd = Math.max(...marks.map((m) => m.end ?? -Infinity));
+  const durationSec = open ? null : Math.max(0, Math.round(lastEnd - first.start));
   return { latencySec, durationSec };
 }

@@ -227,6 +227,7 @@ function decisionText(d: Episode['sideTests'][number]['decision']): string {
 function stopText(r: string | null): string {
   if (r === 'VERTIGO_TOO_LONG') return 'durduruldu: uzun baş dönmesi';
   if (r === 'USER_FEELS_UNWELL') return 'durduruldu: kendini iyi hissetmedi';
+  if (r === 'INTERRUPTED') return 'kesildi: uygulamadan çıkıldı';
   return 'yarıda bırakıldı';
 }
 

@@ -3,7 +3,7 @@
  */
 import type { Side } from '../core/protocols';
 import { clampDose, DEFAULT_DOSE, type DoseLimits, doseStatus, localDayKey, type DoseStatus } from '../core/safety';
-import type { Episode, PatientProfile } from './types';
+import type { AppData, Episode, PatientProfile } from './types';
 
 /** Tekrar testi için manevradan sonra beklenecek süre (ms). Plan §2.3: 30 dk. */
 export const EARLY_RETEST_MS = 30 * 60 * 1000;
@@ -17,9 +17,41 @@ export function doseLimitsFor(profile: PatientProfile | undefined): DoseLimits {
   return DEFAULT_DOSE;
 }
 
-export function episodeDose(e: Episode, profile: PatientProfile | undefined, now: number): DoseStatus {
-  const times = e.maneuvers.filter((m) => m.completed || m.records.length > 1).map((m) => m.at);
-  return doseStatus(times, e.startedAt, now, doseLimitsFor(profile));
+/** Sayılan manevra: tamamlanmış ya da en az bir pozisyon adımına geçilmiş (yarıda bırakılsa da baş hareketi yapılmış). */
+function countedTimes(episodes: Episode[]): number[] {
+  return episodes.flatMap((e) => e.maneuvers.filter((m) => m.completed || m.records.length > 1).map((m) => m.at));
+}
+
+/**
+ * Doz durumu. Günlük ve toplam sınırlar TÜM ataklar boyunca sayılır (atak kapatılıp yeniden açılarak sınır sıfırlanamaz):
+ * günlük sınır takvim gününe, toplam sınır son `maxDays` günlük kayan pencereye göre; gün sınırı bu atağın başlangıcına göre.
+ */
+export function episodeDose(e: Episode, profile: PatientProfile | undefined, now: number, allEpisodes: Episode[] = [e]): DoseStatus {
+  const limits = doseLimitsFor(profile);
+  const windowMs = limits.maxDays * 24 * 60 * 60 * 1000;
+  const eps = allEpisodes.some((x) => x.id === e.id) ? allEpisodes : [...allEpisodes, e];
+  const times = countedTimes(eps).filter((t) => now - t < windowMs);
+  return doseStatus(times, e.startedAt, now, limits);
+}
+
+export const PRACTICE_PER_DAY = 2;
+
+export function practiceAllowed(d: AppData, now: number): boolean {
+  const k = localDayKey(now);
+  return (d.practiceLog ?? []).filter((t) => localDayKey(t) === k).length < PRACTICE_PER_DAY;
+}
+
+/**
+ * Son kapanan atak hekime/acile yönlendirmeyle bittiyse ve hasta sonrasında "hekimimle görüştüm" onayı vermediyse,
+ * yeni atak başlatılamaz.
+ */
+export function pendingReferral(d: AppData): Episode | null {
+  const ended = d.episodes.filter((e) => e.status !== 'active' && e.endedAt).sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0));
+  const last = ended[0];
+  if (!last || (last.status !== 'referred' && last.status !== 'emergency')) return null;
+  const cleared = d.patient?.doctorClearedAt;
+  if (cleared && cleared > (last.endedAt ?? 0)) return null;
+  return last;
 }
 
 export function needsRedFlags(e: Episode | null, now: number): boolean {
@@ -30,16 +62,18 @@ export function needsRedFlags(e: Episode | null, now: number): boolean {
 
 export type NextAction =
   | { kind: 'early-retest'; at: number; ready: boolean }
-  | { kind: 'morning-retest'; at: number; ready: boolean }
+  | { kind: 'morning-retest'; at: number; ready: boolean; needsSideTest: boolean }
   | { kind: 'treat-again' }
   | { kind: 'retry-side-test' }
   | { kind: 'resolved-suggest' }
   | { kind: 'none' };
 
-function nextMorning(t: number): number {
+/** t'den sonraki ilk sabah saati: gece yarısından sonra ve 06:00'dan önceyse aynı günün 06:00'sı. */
+export function nextMorning(t: number): number {
   const d = new Date(t);
-  const m = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, MORNING_HOUR, 0, 0, 0);
-  return m.getTime();
+  const sameDay = new Date(d.getFullYear(), d.getMonth(), d.getDate(), MORNING_HOUR, 0, 0, 0);
+  if (d.getHours() < MORNING_HOUR) return sameDay.getTime();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, MORNING_HOUR, 0, 0, 0).getTime();
 }
 
 /** Aktif atakta sıradaki önerilen eylem. */
@@ -51,7 +85,8 @@ export function nextAction(e: Episode, now: number): NextAction {
     const lastTest = e.sideTests[e.sideTests.length - 1];
     if (lastTest && lastTest.decision.kind === 'NOT_TRIGGERED') {
       const at = nextMorning(lastTest.at);
-      return { kind: 'morning-retest', at, ready: now >= at };
+      // Taraf henüz belirlenmedi → sabah iki yönlü taraf testi yapılır (tek taraflı tekrar testi değil).
+      return { kind: 'morning-retest', at, ready: now >= at, needsSideTest: true };
     }
     return { kind: 'retry-side-test' };
   }
@@ -66,7 +101,7 @@ export function nextAction(e: Episode, now: number): NextAction {
   const morningNeg = negativesAfter.some((r) => r.kind === 'morning');
   if (morningNeg) return { kind: 'resolved-suggest' };
   const at = nextMorning(lastRetest!.at);
-  return { kind: 'morning-retest', at, ready: now >= at };
+  return { kind: 'morning-retest', at, ready: now >= at, needsSideTest: false };
 }
 
 export function maneuversToday(e: Episode, now: number): number {

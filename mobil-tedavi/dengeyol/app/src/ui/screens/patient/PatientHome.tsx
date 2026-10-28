@@ -142,7 +142,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
   const nav = useNavigate();
   const ep = activeEpisode(d)!;
   const na = nextAction(ep, now);
-  const dose = episodeDose(ep, d.patient, now);
+  const dose = episodeDose(ep, d.patient, now, d.episodes);
   const side = episodeSide(ep, d.patient);
   const limits = doseLimitsFor(d.patient);
   const today = maneuversToday(ep, now);
@@ -196,9 +196,17 @@ function ActiveEpisodeCard({ now }: { now: number }) {
       {na.kind === 'morning-retest' && (
         <div className="card stack">
           <h2>Sabah testi</h2>
-          <p>Son test baş dönmesini tetiklemedi. Kristallerin yerinde kaldığını görmek için ertesi sabah bir kez daha test edelim.</p>
+          <p>
+            {na.needsSideTest
+              ? 'Pozisyon testleri baş dönmesini tetiklemedi; manevra yapılmadı. Sabah iki tarafı yeniden test edeceğiz.'
+              : 'Son test baş dönmesini tetiklemedi. Kristallerin yerinde kaldığını görmek için ertesi sabah bir kez daha test edelim.'}
+          </p>
           {na.ready ? (
-            <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest')} data-testid="do-retest">
+            <button
+              className="btn primary block xl"
+              onClick={() => nav(na.needsSideTest ? '/hasta/atak/start' : '/hasta/atak/retest')}
+              data-testid="do-retest"
+            >
               Sabah testini yap
             </button>
           ) : (

@@ -33,6 +33,8 @@ export interface PatientProfile {
   prescription?: Prescription;
   calibration?: Calibration;
   practiceDone?: boolean;
+  /** Hekime/acile yönlendirilen bir ataktan sonra hastanın "hekimimle görüştüm" onayı (ms). */
+  doctorClearedAt?: number;
 }
 
 export interface ManeuverLog {
@@ -123,6 +125,8 @@ export interface AppData {
   clinician: { name?: string; clinic?: string };
   clinicPatients: ClinicPatient[];
   clinicExams: ClinicExam[];
+  /** Deneme manevrası zamanları (günlük sınır için). */
+  practiceLog?: number[];
 }
 
 export const DEFAULT_SETTINGS: Settings = {

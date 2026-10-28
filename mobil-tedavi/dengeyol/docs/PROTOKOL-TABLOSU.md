@@ -32,11 +32,11 @@ Uyarılar:
 
 | # | Adım | Hedef | En az bekleme | Belirti bitince + | Belirti üst sınırı (hasta) | Not |
 |---|---|---|---|---|---|---|
-| 1 | Sırtüstü, baş hafif öne eğik | Yatar, θ 0° ±15°, φ -45…-10° | 10 s | 0 s | —  | bulgu: rollCenter |
-| 2 | Başı hızla sağa 90° çevir | Yatar, θ 90° ±15°, φ -50…15° | 45 s | 10 s | —  | bulgu: rollR |
-| 3 | Başı ortaya getir | Yatar, θ 0° ±15°, φ -50…10° | 30 s | 10 s | —  |  |
-| 4 | Başı hızla sola 90° çevir | Yatar, θ -90° ±15°, φ -50…15° | 45 s | 10 s | —  | bulgu: rollL |
-| 5 | Başı ortaya getir | Yatar, θ 0° ±15°, φ -50…10° | 10 s | 5 s | —  |  |
+| 1 | Sırtüstü, baş hafif öne eğik | Yatar, θ 0° ±15°, φ -42…-10° | 10 s | 0 s | —  | bulgu: rollCenter |
+| 2 | Başı hızla sağa 90° çevir | Yatar, θ 90° ±15°, φ -42…15° | 45 s | 10 s | —  | bulgu: rollR |
+| 3 | Başı ortaya getir | Yatar, θ 0° ±15°, φ -42…10° | 30 s | 10 s | —  |  |
+| 4 | Başı hızla sola 90° çevir | Yatar, θ -90° ±15°, φ -42…15° | 45 s | 10 s | —  | bulgu: rollL |
+| 5 | Başı ortaya getir | Yatar, θ 0° ±15°, φ -42…10° | 10 s | 5 s | —  |  |
 
 Kaynaklar:
 - Bhattacharyya N ve ark. Otolaryngol Head Neck Surg 2017 (supine roll test).
@@ -97,12 +97,12 @@ Uyarılar:
 
 | # | Adım | Hedef | En az bekleme | Belirti bitince + | Belirti üst sınırı (hasta) | Not |
 |---|---|---|---|---|---|---|
-| 1 | Sırtüstü, baş sağa 90° | Yatar, θ 90° ±15°, φ -45…20° | 45 s | 15 s | —  |  |
-| 2 | Yüz tavana | Yatar, θ 0° ±15°, φ -45…20° | 45 s | 15 s | —  |  |
-| 3 | Baş sola 90° | Yatar, θ -90° ±15°, φ -45…20° | 45 s | 15 s | —  |  |
-| 4 | Yüzüstü, dirsekler üzerinde | Yatar, θ 180° ±20°, φ -45…30° | 45 s | 15 s | —  |  |
-| 5 | Sağ yanına (toplam 270°) | Yatar, θ 90° ±15°, φ -45…20° | 45 s | 15 s | —  |  |
-| 6 | Sırtüstü (toplam 360°) | Yatar, θ 0° ±15°, φ -45…20° | 30 s | 15 s | —  |  |
+| 1 | Sırtüstü, baş sağa 90° | Yatar, θ 90° ±15°, φ -42…20° | 45 s | 15 s | —  |  |
+| 2 | Yüz tavana | Yatar, θ 0° ±15°, φ -42…20° | 45 s | 15 s | —  |  |
+| 3 | Baş sola 90° | Yatar, θ -90° ±15°, φ -42…20° | 45 s | 15 s | —  |  |
+| 4 | Yüzüstü, dirsekler üzerinde | Yatar, θ 180° ±20°, φ -42…30° | 45 s | 15 s | —  |  |
+| 5 | Sağ yanına (toplam 270°) | Yatar, θ 90° ±15°, φ -42…20° | 45 s | 15 s | —  |  |
+| 6 | Sırtüstü (toplam 360°) | Yatar, θ 0° ±15°, φ -42…20° | 30 s | 15 s | —  |  |
 | 7 | Yavaşça otur | Oturur, ψ -15…35° | 60 s | 15 s | —  |  |
 
 Kaynaklar:
@@ -164,7 +164,7 @@ Uyarılar:
 |---|---|---|---|---|---|---|
 | 1 | Otur | Oturur, ψ -20…30° | 5 s | 0 s | —  |  |
 | 2 | Derin baş sarkıtma | Yatar, θ 0° ±15°, φ 30…65° | 30 s | 30 s | —  |  |
-| 3 | Sırtüstü, çene göğse | Yatar, θ 0° ±15°, φ -65…-20° | 30 s | 0 s | —  |  |
+| 3 | Sırtüstü, çene göğse | Yatar, θ 0° ±15°, φ -42…-15° | 30 s | 0 s | —  |  |
 | 4 | Çene göğüste otur | Oturur, ψ 15…60° | 30 s | 15 s | —  |  |
 
 Kaynaklar:

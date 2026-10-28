@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
 import { type Finding, type Findings, keyLabel, NYSTAGMUS_LABEL, suggestDiagnosis } from '../../../core/diagnosis';
-import { encodePrescription, type Prescription } from '../../../core/prescription';
+import { decodePrescription, encodePrescription, type Prescription } from '../../../core/prescription';
 import {
   type Canal,
   type FindingKey,
@@ -520,13 +520,23 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
 function RxTab({ exam }: { exam: ClinicExam }) {
   const d = useData();
   const dx = exam.diagnosis;
-  const [maneuver, setManeuver] = useState<'epley' | 'semont'>('epley');
-  const [perDay, setPerDay] = useState(3);
-  const [days, setDays] = useState(3);
-  const [note, setNote] = useState('');
+  // Daha önce oluşturulan reçete varsa form onunla açılır (QR ile form her zaman aynı bilgiyi göstersin).
+  const issued = useMemo(() => {
+    if (!exam.prescriptionToken) return null;
+    const r = decodePrescription(exam.prescriptionToken);
+    return r.ok ? r.value : null;
+  }, [exam.prescriptionToken]);
+  const [maneuver, setManeuver] = useState<'epley' | 'semont'>(issued?.maneuver ?? 'epley');
+  const [perDay, setPerDay] = useState(issued?.perDay ?? 3);
+  const [days, setDays] = useState(issued?.days ?? 3);
+  const [note, setNote] = useState(issued?.note ?? '');
   const [svg, setSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [side, setSide] = useState<Side | null>(dx?.side ?? null);
+  const [side, setSide] = useState<Side | null>(issued?.side ?? dx?.side ?? null);
+  const stale =
+    !!issued &&
+    (issued.side !== side || issued.maneuver !== maneuver || issued.perDay !== perDay || issued.days !== days || (issued.note ?? '') !== note.trim());
+  const sideConflict = !!dx?.side && !!side && dx.side !== side;
 
   const url = useMemo(() => {
     if (!exam.prescriptionToken) return null;
@@ -582,7 +592,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
           <label>Taraf</label>
           <Segmented
             label="Taraf"
-            value={side ?? 'R'}
+            value={side}
             onChange={(v) => setSide(v)}
             options={[
               { value: 'R', label: 'Sağ' },
@@ -616,14 +626,33 @@ function RxTab({ exam }: { exam: ClinicExam }) {
           <label htmlFor="rxnote">Not (isteğe bağlı, en fazla 80 karakter)</label>
           <input id="rxnote" className="input" value={note} maxLength={80} onChange={(e) => setNote(e.target.value)} />
         </div>
+        {sideConflict && (
+          <div className="notice danger" role="alert">
+            <Icon name="alert" />
+            <span>Seçilen taraf, onaylanan tanıdaki taraftan ({sideName(dx!.side!)}) farklı. Lütfen kontrol edin.</span>
+          </div>
+        )}
         <button className="btn primary" onClick={make} disabled={!side} data-testid="rx-make">
-          <Icon name="qr" /> Reçete oluştur
+          <Icon name="qr" /> {issued ? 'Reçeteyi güncelle' : 'Reçete oluştur'}
         </button>
       </div>
 
-      {url && (
+      {url && stale && (
+        <div className="notice" role="status" data-testid="rx-stale">
+          <Icon name="alert" />
+          <span>Formda değişiklik var. Hastaya göstermeden önce "Reçeteyi güncelle"ye basın; eski QR kod gizlendi.</span>
+        </div>
+      )}
+
+      {url && issued && !stale && (
         <div className="card stack center" data-testid="rx-output">
           <h3>Hastaya gösterin</h3>
+          <p className="small" data-testid="rx-summary">
+            <strong>
+              {sideName(issued.side).toLocaleUpperCase('tr-TR')} arka kanal · {issued.maneuver === 'epley' ? 'Epley' : 'Semont'}
+            </strong>{' '}
+            · günde en fazla {issued.perDay}, {issued.days} gün
+          </p>
           {svg && <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} aria-label="Reçete QR kodu" />}
           <p className="small muted">Hasta telefon kamerasıyla bu kodu okutur.</p>
           <div className="row wrap" style={{ justifyContent: 'center' }}>
