@@ -22,7 +22,8 @@ export interface Settings {
 }
 
 export interface PatientProfile {
-  consentAt: string;
+  /** Bilgilendirilmiş onay zamanı; yoksa kurulum tamamlanmamıştır. */
+  consentAt?: string;
   diagnosedByDoctor: boolean;
   dxDate?: string;
   dxBy?: string;

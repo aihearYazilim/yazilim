@@ -26,7 +26,6 @@ export function PrescriptionImport() {
       ...d,
       settings: { ...d.settings, role: 'patient' },
       patient: {
-        consentAt: d.patient?.consentAt ?? '',
         contraindications: d.patient?.contraindications ?? [],
         ...d.patient,
         diagnosedByDoctor: true,

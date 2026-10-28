@@ -243,6 +243,13 @@ p {
 .row.wrap {
   flex-wrap: wrap;
 }
+.row > svg,
+.notice > svg,
+.card-title > svg,
+.btn > svg,
+.list-item > svg {
+  flex: none;
+}
 .grow {
   flex: 1;
 }
@@ -816,25 +823,36 @@ textarea.input {
 
 .sim-badge {
   position: fixed;
-  top: calc(6px + env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 90;
+  height: calc(20px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: var(--accent);
   color: #fff;
   font-weight: 800;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  padding: 3px 10px;
-  border-radius: 999px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
   pointer-events: none;
+}
+:root.sim-on body {
+  padding-top: 20px;
+}
+:root.sim-on .runner {
+  top: 20px;
 }
 .sim-panel {
   position: fixed;
   right: 12px;
   bottom: calc(140px + env(safe-area-inset-bottom));
   z-index: 95;
-  width: min(330px, calc(100vw - 24px));
+  width: min(300px, calc(100vw - 24px));
+  max-height: 46vh;
+  overflow-y: auto;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 18px;

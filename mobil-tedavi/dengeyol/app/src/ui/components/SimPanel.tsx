@@ -31,12 +31,21 @@ export function SimPanel() {
   const [target, setTarget] = useState<Target | null>(currentTarget);
 
   useEffect(() => {
-    const l: Listener = (t) => setTarget(t);
+    const l: Listener = (t) => {
+      setTarget(t);
+      // Yürütücü bitince panel kendiliğinden kapanır; ekrandaki düğmelerin üstünü örtmez.
+      if (!t) setOpen(false);
+    };
     listeners.add(l);
     return () => {
       listeners.delete(l);
     };
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('sim-on', !!simulated);
+    return () => document.documentElement.classList.remove('sim-on');
+  }, [simulated]);
 
   useEffect(() => {
     if (!simulated) return;
@@ -61,8 +70,8 @@ export function SimPanel() {
 
   return (
     <>
-      <div className="sim-badge">DEMO MODU · SANAL SENSÖR</div>
-      {!open ? (
+      <div className="sim-badge" role="status">DEMO MODU · sanal sensör · tedavi amaçlı değildir</div>
+      {!target ? null : !open ? (
         <button className="btn secondary sim-toggle" onClick={() => setOpen(true)} data-testid="sim-open" aria-label="Demo panelini aç">
           <Icon name="head" /> Sanal baş
         </button>

@@ -1,0 +1,403 @@
+// Uçtan uca testler: `npm run build` sonrası `npm run e2e`.
+// Gerçek Chromium, telefon boyutu, demo (sanal) sensör, ×20 zaman hızlandırma.
+import { spawn } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
+const { chromium, devices } = require('playwright');
+const here = dirname(fileURLToPath(import.meta.url));
+const out = join(here, 'out');
+mkdirSync(out, { recursive: true });
+const BASE = 'http://localhost:4173/';
+
+const server = spawn(process.execPath, [join(here, '..', 'node_modules', 'vite', 'bin', 'vite.js'), 'preview', '--port', '4173', '--strictPort'], {
+  cwd: join(here, '..'),
+  stdio: 'pipe'
+});
+const stopServer = () => {
+  try {
+    server.kill('SIGTERM');
+  } catch {
+    /* yok say */
+  }
+};
+process.on('exit', stopServer);
+await new Promise((res, rej) => {
+  const t = setTimeout(() => rej(new Error('önizleme sunucusu açılmadı')), 20000);
+  server.stdout.on('data', (b) => {
+    if (String(b).includes('4173')) {
+      clearTimeout(t);
+      res();
+    }
+  });
+});
+
+const browser = await chromium.launch();
+const results = [];
+let shot = 0;
+
+function seed(extra = {}) {
+  return {
+    version: 1,
+    settings: {
+      role: null,
+      speech: false,
+      speechRate: 1,
+      haptics: true,
+      guidanceTone: false,
+      fontScale: 'normal',
+      theme: 'auto',
+      simulation: true,
+      timeScale: 20,
+      ...(extra.settings ?? {})
+    },
+    episodes: [],
+    clinician: {},
+    clinicPatients: [],
+    clinicExams: [],
+    ...extra.data
+  };
+}
+
+async function newPage(data, opts = {}) {
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], colorScheme: opts.dark ? 'dark' : 'light' });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  if (data) {
+    await page.addInitScript((d) => {
+      if (!localStorage.getItem('dengeyol:v1')) localStorage.setItem('dengeyol:v1', JSON.stringify(d));
+    }, data);
+  }
+  return { ctx, page, errors };
+}
+
+async function snap(page, name) {
+  shot++;
+  await page.screenshot({ path: join(out, `${String(shot).padStart(2, '0')}-${name}.png`), fullPage: false });
+}
+
+async function step(name, fn) {
+  const t0 = Date.now();
+  try {
+    await fn();
+    results.push({ name, ok: true, ms: Date.now() - t0 });
+    console.log('✓', name, `(${Math.round((Date.now() - t0) / 1000)} s)`);
+  } catch (e) {
+    results.push({ name, ok: false, err: String(e) });
+    console.log('✗', name, '\n   ', String(e).split('\n').slice(0, 6).join('\n    '));
+  }
+}
+
+async function answerRedFlags(page, stopOn = null) {
+  for (let i = 0; i < 20; i++) {
+    const q = page.getByTestId('redflag-question');
+    if (!(await q.isVisible().catch(() => false))) return;
+    const id = await q.getAttribute('data-qid');
+    if (stopOn && id === stopOn) {
+      await page.getByRole('button', { name: 'Evet', exact: true }).click();
+      return;
+    }
+    // "same" sorusu: Evet = güvenli; diğerleri: Hayır = güvenli
+    await page.getByRole('button', { name: id === 'same' ? 'Evet' : 'Hayır', exact: true }).click();
+    await page.waitForTimeout(80);
+  }
+}
+
+async function calibrate(page) {
+  await page.getByTestId('cal-start').click();
+  await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
+  await page.getByTestId('cal-continue').click();
+}
+
+/** Yürütücüyü sanal başla hedeften hedefe götürerek tamamlar. */
+async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, timeout = 120000, onStep } = {}) {
+  await page.getByTestId('runner-start').click();
+  await page.getByTestId('runner').waitFor();
+  if (!(await page.getByTestId('sim-panel').isVisible().catch(() => false))) await page.getByTestId('sim-open').click();
+  const t0 = Date.now();
+  let lastStep = -1;
+  let marked = false;
+  while (Date.now() - t0 < timeout) {
+    const runner = page.getByTestId('runner');
+    if (!(await runner.isVisible().catch(() => false))) return;
+    const st = Number(await runner.getAttribute('data-step'));
+    const phase = await runner.getAttribute('data-phase');
+    if (phase === 'done' || phase === 'aborted' || phase === 'safetyStop') {
+      await page.waitForTimeout(1600);
+      if (await page.getByTestId('sim-panel').isVisible().catch(() => false)) throw new Error('demo paneli yürütücü bitince kapanmadı');
+      return phase;
+    }
+    if (st !== lastStep && phase !== 'between') {
+      lastStep = st;
+      if (onStep) await onStep(st);
+      await page.getByTestId('sim-goto').click();
+    }
+    if (markVertigoAtStep === st && !marked && phase === 'holding') {
+      marked = true;
+      await page.getByTestId('vertigo-pad').click();
+      await page.waitForTimeout(vertigoSec * 1000);
+      await page.getByTestId('vertigo-pad').click();
+    }
+    await page.waitForTimeout(150);
+  }
+  throw new Error('yürütücü zaman aşımı');
+}
+
+// ------------------------------------------------------------------------------------------------
+await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 30 dk tekrar testi → rapor', async () => {
+  const { ctx, page, errors } = await newPage(seed());
+  await page.goto(BASE);
+  await snap(page, 'karsilama');
+  await page.getByTestId('role-patient').click();
+  await page.getByTestId('start-onboarding').click();
+  await snap(page, 'kurulum-1');
+  await page.getByTestId('ob-consent').click();
+  await page.getByTestId('ob-next').click();
+  await page.getByRole('radio', { name: 'Evet, tanı kondu' }).click();
+  await page.getByRole('radio', { name: /Arka \(posterior\) kanal/ }).click();
+  await page.getByRole('radio', { name: 'Sağ kulak' }).click();
+  await snap(page, 'kurulum-tani');
+  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-none').click();
+  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-finish').click();
+  await page.getByTestId('start-episode').waitFor();
+  await snap(page, 'hasta-ana');
+  await page.getByTestId('start-episode').click();
+  await snap(page, 'kirmizi-bayrak');
+  await answerRedFlags(page);
+  await snap(page, 'kalibrasyon');
+  await calibrate(page);
+  await page.getByRole('radio', { name: /Evet, sağ taraf/ }).click();
+  await page.getByTestId('runner-ready').waitFor();
+  await snap(page, 'manevra-hazir');
+  let shotDone = false;
+  const phase = await driveRunner(page, {
+    markVertigoAtStep: 1,
+    onStep: async (s) => {
+      if (s === 2 && !shotDone) {
+        shotDone = true;
+        await page.waitForTimeout(400);
+        await page.getByTestId('sim-goto').click();
+        await page.waitForTimeout(600);
+        // Kullanıcının göreceği ekran: demo paneli kapalı
+        await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+        await page.waitForTimeout(200);
+        await snap(page, 'manevra-adim');
+        await page.getByTestId('sim-open').click();
+      }
+    }
+  });
+  if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
+  await page.getByRole('radio', { name: 'İyiyim' }).click();
+  await page.getByTestId('end-maneuver-done').waitFor();
+  await snap(page, 'manevra-bitti');
+  await page.getByTestId('go-home').click();
+  await page.getByTestId('active-episode').waitFor();
+  await snap(page, 'aktif-atak');
+  // 30 dk geçmiş gibi: manevra zamanını geri al
+  await page.evaluate(() => {
+    const d = JSON.parse(localStorage.getItem('dengeyol:v1'));
+    const e = d.episodes[0];
+    e.maneuvers.forEach((m) => (m.at -= 31 * 60000));
+    e.redFlags.forEach((r) => (r.at -= 31 * 60000));
+    localStorage.setItem('dengeyol:v1', JSON.stringify(d));
+  });
+  await page.reload();
+  await page.getByTestId('do-retest').click();
+  await answerRedFlags(page);
+  await calibrate(page);
+  const p2 = await driveRunner(page);
+  if (p2 !== 'done') throw new Error('tekrar testi tamamlanmadı');
+  await page.getByTestId('end-retest-negative').waitFor();
+  await snap(page, 'tekrar-test-negatif');
+  await page.getByTestId('go-home').click();
+  await page.getByRole('button', { name: 'Rapor' }).click();
+  await page.getByTestId('episode-report').waitFor();
+  const reportText = await page.getByTestId('episode-report').innerText();
+  if (!reportText.includes('Epley')) throw new Error('raporda manevra yok');
+  if (!/baş dönmesi|Belirti|–/.test(reportText)) throw new Error('raporda belirti işareti yok');
+  await snap(page, 'rapor');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Hasta: taraf bilinmiyor → iki yönlü semptom testi → sağ tarafa manevra kararı', async () => {
+  const data = seed({
+    settings: { role: 'patient' },
+    data: { patient: { consentAt: new Date().toISOString(), diagnosedByDoctor: true, canal: 'PC', side: 'unknown', contraindications: [] } }
+  });
+  const { ctx, page, errors } = await newPage(data);
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page);
+  await calibrate(page);
+  await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
+  // Önce sol (şüpheli olmayan) test: baş dönmesi yok
+  await page.getByTestId('runner-ready').waitFor();
+  await driveRunner(page);
+  await page.getByTestId('rest-continue').waitFor();
+  await snap(page, 'taraf-ara');
+  await page.getByTestId('rest-continue').click({ timeout: 10000 });
+  // Sonra sağ: baş dönmesi işaretle
+  await page.getByTestId('runner-ready').waitFor();
+  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  // Karar: sağ tarafa manevra → yürütücü hazır ekranı
+  await page.getByTestId('runner-ready').waitFor();
+  const title = await page.locator('h1').first().innerText();
+  if (!title.includes('Epley')) throw new Error('Epley ekranı beklenirken: ' + title);
+  const txt = await page.getByTestId('runner-ready').innerText();
+  if (!txt.includes('sağ')) throw new Error('sağ taraf beklenirdi');
+  await snap(page, 'taraf-karari-epley');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Hasta: acil kırmızı bayrak → durdurma ve 112 ekranı', async () => {
+  const data = seed({
+    settings: { role: 'patient' },
+    data: { patient: { consentAt: new Date().toISOString(), diagnosedByDoctor: true, canal: 'PC', side: 'R', contraindications: [] } }
+  });
+  const { ctx, page, errors } = await newPage(data);
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page, 'neuro');
+  await page.getByTestId('stop-emergency').waitFor();
+  const tel = await page.locator('a[href="tel:112"]').count();
+  if (tel < 1) throw new Error('112 bağlantısı yok');
+  await snap(page, 'acil-durdurma');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Hasta: tanısız ilk atak → manevralar kilitli', async () => {
+  const { ctx, page } = await newPage(seed({ settings: { role: 'patient' } }));
+  await page.goto(BASE + '#/hasta/kurulum');
+  await page.getByTestId('ob-consent').click();
+  await page.getByTestId('ob-next').click();
+  await page.getByRole('radio', { name: 'Hayır / emin değilim' }).click();
+  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-none').click();
+  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-gate-blocked').waitFor();
+  await snap(page, 'kilit-tanisiz');
+  await ctx.close();
+});
+
+let rxUrl = null;
+await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley → QR reçete', async () => {
+  const { ctx, page, errors } = await newPage(seed());
+  await page.goto(BASE);
+  await page.getByTestId('role-clinician').click();
+  await page.locator('#cn').fill('Odyolog Test Kullanıcı');
+  await page.locator('#cc').fill('Örnek Kliniği');
+  await page.getByTestId('clin-save-profile').click();
+  await snap(page, 'odyolog-ana');
+  await page.getByTestId('clin-new').click();
+  await page.getByTestId('clin-code').fill('P-001');
+  await page.getByTestId('clin-create').click();
+  await snap(page, 'muayene-testler');
+  await page.getByTestId('test-run-dhR').click();
+  await calibrate(page);
+  await page.getByTestId('runner-ready').waitFor();
+  let numShot = false;
+  await driveRunner(page, {
+    markVertigoAtStep: 1,
+    vertigoSec: 0.5,
+    onStep: async (s) => {
+      if (s === 1 && !numShot) {
+        numShot = true;
+        await page.getByTestId('sim-goto').click();
+        await page.waitForTimeout(700);
+        await snap(page, 'odyolog-dix-hallpike');
+      }
+    }
+  });
+  await page.getByTestId('finding-form').waitFor();
+  await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).click();
+  await page.locator('#dur').fill('20');
+  await snap(page, 'bulgu-formu');
+  await page.getByTestId('finding-save').click();
+  // Sol DH elle: negatif
+  await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
+  await page.getByRole('radio', { name: 'Yok' }).click();
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Tanı' }).click();
+  await page.getByTestId('dx-suggestion').first().waitFor();
+  const dxText = await page.getByTestId('dx-suggestion').first().innerText();
+  if (!/Sağ arka kanal/.test(dxText)) throw new Error('tanı önerisi beklenmedik: ' + dxText);
+  await snap(page, 'tani-onerisi');
+  await page.getByTestId('dx-confirm').first().click();
+  await page.getByRole('button', { name: 'Tedaviye geç' }).click();
+  await page.getByTestId('treat-run-epley').click();
+  await driveRunner(page);
+  await page.getByText('Yapılan manevralar').waitFor();
+  await page.getByRole('button', { name: 'Reçete' }).click();
+  await page.getByTestId('rx-make').click();
+  await page.getByTestId('rx-output').waitFor();
+  rxUrl = await page.getByTestId('rx-url').inputValue();
+  await snap(page, 'recete-qr');
+  await page.getByRole('button', { name: 'Rapor' }).click();
+  await page.getByTestId('exam-report').waitFor();
+  await snap(page, 'muayene-raporu');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Hasta: odyolog reçetesini QR bağlantısıyla içe aktarır', async () => {
+  if (!rxUrl) throw new Error('reçete bağlantısı yok');
+  const { ctx, page, errors } = await newPage(seed());
+  await page.goto(rxUrl);
+  await page.getByTestId('rx-card').waitFor();
+  const t = await page.getByTestId('rx-card').innerText();
+  if (!t.includes('SAĞ') || !t.includes('Epley') || !t.includes('Odyolog Test Kullanıcı')) throw new Error('reçete içeriği hatalı: ' + t);
+  await snap(page, 'recete-ice-aktar');
+  await page.getByTestId('rx-accept').click();
+  await page.getByTestId('ob-consent').click();
+  await page.getByTestId('ob-next').click();
+  // Tanı reçeteden dolu gelmeli
+  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-none').click();
+  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-finish').click();
+  await page.getByTestId('start-episode').waitFor();
+  const home = await page.locator('main').innerText();
+  if (!home.includes('Reçete')) throw new Error('ana ekranda reçete yok');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Bozuk reçete bağlantısı reddedilir', async () => {
+  const { ctx, page } = await newPage(seed());
+  const bad = rxUrl.replace(/\.([0-9a-f]{8})$/, '.00000000');
+  await page.goto(bad);
+  await page.getByTestId('rx-error').waitFor();
+  await ctx.close();
+});
+
+await step('Koyu tema ve büyük yazı ekran görüntüleri', async () => {
+  const data = seed({
+    settings: { role: 'patient', theme: 'dark', fontScale: 'large' },
+    data: { patient: { consentAt: new Date().toISOString(), diagnosedByDoctor: true, canal: 'PC', side: 'L', contraindications: [] } }
+  });
+  const { ctx, page } = await newPage(data, { dark: true });
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').waitFor();
+  await snap(page, 'koyu-hasta-ana');
+  await page.goto(BASE + '#/ayarlar');
+  await snap(page, 'koyu-ayarlar');
+  await ctx.close();
+});
+
+await browser.close();
+stopServer();
+const failed = results.filter((r) => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} senaryo geçti. Ekran görüntüleri: ${out}`);
+process.exit(failed.length ? 1 : 0);

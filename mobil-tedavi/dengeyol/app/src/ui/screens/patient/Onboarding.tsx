@@ -31,7 +31,7 @@ export function Onboarding() {
       ...x,
       patient: {
         ...(x.patient ?? {}),
-        consentAt: x.patient?.consentAt ?? new Date().toISOString(),
+        consentAt: x.patient?.consentAt || new Date().toISOString(),
         diagnosedByDoctor: dx === 'yes',
         dxDate: dxDate || undefined,
         canal: canal ?? 'unknown',
