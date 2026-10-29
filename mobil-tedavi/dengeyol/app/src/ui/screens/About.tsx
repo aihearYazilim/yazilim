@@ -13,7 +13,7 @@ export function About() {
         </p>
         <p>
           <strong>Hasta modu</strong>, daha önce hekim ya da odyolog tarafından BPPV tanısı konmuş kişilerin atak tekrarladığında evde manevrayı doğru yapmasına
-          yardım eder. <strong>Odyolog modu</strong>, klinikte pozisyon testlerini ve manevraları açı ölçümüyle yapmayı, bulguları kaydetmeyi ve hastaya ev
+          yardım eder. <strong>Klinisyen modu</strong> (odyolog ve hekimler için), klinikte pozisyon testlerini ve manevraları açı ölçümüyle yapmayı, bulguları kaydetmeyi ve hastaya ev
           reçetesi vermeyi sağlar.
         </p>
       </section>

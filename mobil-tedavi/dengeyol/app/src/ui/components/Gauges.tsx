@@ -1,7 +1,10 @@
 /**
  * Baş yönü göstergesi.
- * Yatar adımlar: baş, TEPESİNDEN (ayaklara doğru) bakılarak çizilir. Bu bakışta hastanın sağı ekranın sağıdır.
- * Burun yönü θ'yı gösterir: yukarı = yüz tavana, sağ = sağ kulak altta (yüz sağa), aşağı = yüz yere.
+ * Telefon alında, ekran dışa bakar. Ekran düz dururken ona karşıdan bakan kişi için hastanın SAĞI ekranın SOLUNDADIR;
+ * bu yüzden çizim de karşıdan bakış (ayna) olarak yapılır: etiketler ve burun oku telefonun fiziksel olarak durduğu yere
+ * göre doğru yönü gösterir. Ekran 180° çevrildiğinde (başucundaki yardımcı/klinisyen) tepeden bakış kullanılır: döndürülmüş
+ * ekranda bu da fiziksel olarak doğru yöne denk gelir.
+ * Burun yönü θ'yı gösterir: yukarı = yüz tavana, hastanın sağına = sağ kulak altta, aşağı = yüz yere.
  * Oturur adımlar: yandan görünüm, çene eğimi ψ.
  */
 import type { HeadPose } from '../../core/geometry';
@@ -24,28 +27,53 @@ function arcPath(from: number, to: number, r: number) {
   return `M ${C} ${C} L ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y} Z`;
 }
 
-export function HeadGauge({ target, pose, inRange }: { target: Target; pose: HeadPose | null; inRange: boolean }) {
+export function HeadGauge({
+  target,
+  pose,
+  inRange,
+  flipped = false
+}: {
+  target: Target;
+  pose: HeadPose | null;
+  inRange: boolean;
+  /** Ekran 180° çevrik mi (tepeden bakış). Değilse karşıdan bakış: hastanın sağı ekranın solu. */
+  flipped?: boolean;
+}) {
   if (target.kind === 'sitting') return <SittingGauge target={target} pose={pose} inRange={inRange} />;
   const lying = pose && pose.tiltFromUpright >= 45;
-  const theta = lying ? pose!.theta : null;
-  const tgtFrom = target.theta - target.thetaTol;
-  const tgtTo = target.theta + target.thetaTol;
+  // Çizim açısı: tepeden bakışta θ, karşıdan bakışta (ayna) −θ.
+  const k = flipped ? 1 : -1;
+  const rawTheta = lying ? pose!.theta : null;
+  const theta = rawTheta !== null ? k * rawTheta : null;
+  const tgtFrom = Math.min(k * (target.theta - target.thetaTol), k * (target.theta + target.thetaTol));
+  const tgtTo = Math.max(k * (target.theta - target.thetaTol), k * (target.theta + target.thetaTol));
   const nose = theta !== null ? polar(theta, R_HEAD + 18) : null;
   const noseL = theta !== null ? polar(theta - 16, R_HEAD - 2) : null;
   const noseR = theta !== null ? polar(theta + 16, R_HEAD - 2) : null;
   const earR = theta !== null ? polar(theta + 90, R_HEAD) : null;
   const earL = theta !== null ? polar(theta - 90, R_HEAD) : null;
-  const tgtMark = polar(target.theta, R_TARGET + 4);
+  const tgtMark = polar(k * target.theta, R_TARGET + 4);
+  const turn = (t: number) => (Math.abs(t) <= 3 ? 'düz' : `${t > 0 ? 'sağa' : 'sola'} ${Math.round(Math.abs(t))}°`);
+  const rightX = flipped ? 232 : 8;
+  const leftX = flipped ? 8 : 232;
   return (
-    <svg viewBox="0 0 240 240" width="100%" style={{ maxWidth: 260 }} role="img" aria-label="Baş yönü göstergesi">
+    <svg
+      viewBox="0 0 240 240"
+      width="100%"
+      style={{ maxWidth: 260 }}
+      role="img"
+      aria-label={`Baş yönü: ${rawTheta !== null ? turn(rawTheta) : 'ölçülmüyor'}; hedef ${turn(target.theta)}`}
+    >
       <circle cx={C} cy={C} r={R_TARGET + 18} fill="var(--gauge-bg)" />
       <path d={arcPath(tgtFrom, tgtTo, R_TARGET + 14)} fill="var(--gauge-target)" />
       <line x1={C} y1={C} x2={tgtMark.x} y2={tgtMark.y} stroke="var(--gauge-target-line)" strokeWidth={2} strokeDasharray="4 5" />
       {/* Yön etiketleri */}
       <text x={C} y={18} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--muted)">YÜZ TAVANA</text>
       <text x={C} y={234} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--muted)">YÜZ YERE</text>
-      <text x={232} y={C + 4} textAnchor="end" fontSize="11" fontWeight="800" fill="var(--muted)">SAĞ</text>
-      <text x={8} y={C + 4} textAnchor="start" fontSize="11" fontWeight="800" fill="var(--muted)">SOL</text>
+      <text x={rightX} y={C - 4} textAnchor={flipped ? 'end' : 'start'} fontSize="10" fontWeight="700" fill="var(--muted)">HASTANIN</text>
+      <text x={rightX} y={C + 9} textAnchor={flipped ? 'end' : 'start'} fontSize="12" fontWeight="800" fill="var(--text)">SAĞI</text>
+      <text x={leftX} y={C - 4} textAnchor={flipped ? 'start' : 'end'} fontSize="10" fontWeight="700" fill="var(--muted)">HASTANIN</text>
+      <text x={leftX} y={C + 9} textAnchor={flipped ? 'start' : 'end'} fontSize="12" fontWeight="800" fill="var(--text)">SOLU</text>
       {theta !== null && nose && noseL && noseR && earL && earR ? (
         <g>
           <circle cx={earL.x} cy={earL.y} r={9} fill="var(--gauge-head)" stroke="var(--gauge-head-line)" strokeWidth={2} />
@@ -55,8 +83,8 @@ export function HeadGauge({ target, pose, inRange }: { target: Target; pose: Hea
             d={`M ${noseL.x} ${noseL.y} L ${nose.x} ${nose.y} L ${noseR.x} ${noseR.y} Z`}
             fill={inRange ? 'var(--ok)' : 'var(--warn)'}
           />
-          <text x={C} y={C + 6} textAnchor="middle" fontSize="18" fontWeight="800" fill="var(--text)">
-            {Math.round(theta)}°
+          <text x={C} y={C + 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)">
+            {turn(rawTheta!)}
           </text>
         </g>
       ) : (

@@ -19,6 +19,10 @@ export interface Settings {
   simulation: boolean;
   /** Yalnızca simülasyonda: zaman hızlandırma. */
   timeScale: 1 | 5 | 20;
+  /** Manevra ekranı 180° çevrik (yardımcı/klinisyen başucunda duruyor). */
+  screenFlip?: boolean;
+  /** Hasta modunda manevrayı kim yaptırıyor. */
+  assist?: 'self' | 'helper';
 }
 
 export interface PatientProfile {
@@ -103,6 +107,10 @@ export interface ConfirmedDiagnosis {
   mechanism: 'canalithiasis' | 'cupulolithiasis' | 'unknown';
   label: string;
   fromSuggestion: boolean;
+  /** Onay anında ekranda olan uyarılar (rapora yazılır). */
+  warnings?: string[];
+  /** Onay anındaki bulguların imzası; bulgular sonradan değişirse tanı geçersiz sayılır. */
+  findingsKey?: string;
 }
 
 export interface ClinicExam {
@@ -122,7 +130,7 @@ export interface AppData {
   settings: Settings;
   patient?: PatientProfile;
   episodes: Episode[];
-  clinician: { name?: string; clinic?: string };
+  clinician: { name?: string; clinic?: string; /** VNG/Frenzel kullanılıyor: testler varsayılan olarak sensörsüz. */ sensorless?: boolean };
   clinicPatients: ClinicPatient[];
   clinicExams: ClinicExam[];
   /** Deneme manevrası zamanları (günlük sınır için). */

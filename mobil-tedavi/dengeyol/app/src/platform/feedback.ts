@@ -21,6 +21,13 @@ export function playCues(cues: Cue[]) {
 
 /** Kullanıcı dokunuşu içinde: ses ve ton motorlarının kilidini aç (iOS). */
 export function unlockAudio() {
+  // iOS 16.4+: "playback" oturumu, sessiz anahtar açıkken de tonların ve konuşmanın duyulmasını sağlar.
+  try {
+    const as = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+    if (as) as.type = 'playback';
+  } catch {
+    /* desteklenmiyor */
+  }
   speech.unlock();
   tones.unlock();
 }

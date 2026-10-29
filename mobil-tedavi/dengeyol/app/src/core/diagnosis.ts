@@ -68,7 +68,7 @@ export const NYSTAGMUS_LABEL: Record<NystagmusType, string> = {
   other: 'Diğer / atipik'
 };
 
-/** Bárány ölçütü: kanalitiyazis nistagmusu < 1 dk sürer. */
+/** Bárány ölçütü: kanalolitiazis nistagmusu < 1 dk sürer. */
 export const ONE_MINUTE = 60;
 
 const sideLabel = (s: Side) => (s === 'R' ? 'sağ' : 'sol');
@@ -96,7 +96,7 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
   const center = findings.rollCenter;
   if (center && center.nystagmus !== 'none') {
     warnings.push(
-      'Sırtüstü nötr pozisyonda nistagmus var. Yatay kanal kupulolitiyazisinde "boş nokta" bulgusu olabilir; spontan nistagmus ise santral/periferik vestibülopati açısından değerlendirin.'
+      'Sırtüstü nötr pozisyonda nistagmus var. Yatay kanal kupulolitiazisinde "null nokta" bulgusu olabilir; spontan nistagmus ise santral/periferik vestibülopati açısından değerlendirin.'
     );
   }
 
@@ -122,13 +122,18 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       mechanism: cupulo ? 'cupulolithiasis' : f.durationSec === null ? 'unknown' : 'canalithiasis',
       confidence: typical ? 'tipik' : 'olası',
       label: cupulo
-        ? `${cap(sideLabel(side))} arka kanal BPPV — kupulolitiyazis (olası)`
-        : `${cap(sideLabel(side))} arka kanal BPPV (kanalitiyazis)`,
+        ? `${cap(sideLabel(side))} arka kanal BPPV — kupulolitiazis (olası)`
+        : `${cap(sideLabel(side))} arka kanal BPPV (kanalolitiazis)`,
       rationale,
       maneuvers: maneuversFor('PC', cupulo ? 'cupulolithiasis' : 'canalithiasis')
     });
     if (f.latencySec === 0 && !cupulo) {
       warnings.push('Arka kanal deseni gecikmesiz başladı; tipik BPPV gecikmeli (1–20 s) başlar. Santral nedenleri gözden kaçırmayın.');
+    }
+    if (cupulo) {
+      warnings.push(
+        `Arka kanal deseni ≥1 dk sürdü${f.latencySec === 0 ? ' ve gecikmesiz başladı' : ''}. Arka kanal kupulolitiazisi nadir ve "gelişmekte olan" bir tanıdır; santral pozisyonel nistagmusu dışlayın, manevraya yanıt yoksa nörolojik değerlendirme.`
+      );
     }
   } else if (pcSides.length === 2) {
     suggestions.push({
@@ -187,8 +192,11 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       const geo = types.has('horizontal-geotropic');
       const iR = rR && horizR ? rR.intensity : 0;
       const iL = rL && horizL ? rL.intensity : 0;
+      // İki tarafta nistagmus var ama birinin şiddeti girilmemişse (0) taraf seçilmez: apogeotropikte
+      // "zayıf taraf" kuralı unutulmuş bir şiddeti yanlışlıkla hasta taraf sayardı.
+      const gradeMissing = !!horizR && !!horizL && (iR === 0 || iL === 0);
       let side: Side | null = null;
-      if (iR !== iL) {
+      if (iR !== iL && !gradeMissing) {
         // Geotropik: güçlü taraf hasta. Apogeotropik: zayıf taraf hasta.
         if (geo) side = iR > iL ? 'R' : 'L';
         else side = iR < iL ? 'R' : 'L';
@@ -198,21 +206,27 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       const mech: Mechanism = geo ? 'canalithiasis' : 'cupulolithiasis';
       const rationale = [
         `Supine roll: ${geo ? 'geotropik' : 'apogeotropik'} yatay nistagmus${bothSides ? ' (iki tarafta)' : ' (tek tarafta)'}.`,
-        `Şiddet sağ ${iR}/3, sol ${iL}/3 → ${side ? `${geo ? 'güçlü' : 'zayıf'} taraf ${sideLabel(side)}` : 'taraf belirlenemedi (eşit şiddet)'}.`
+        `Şiddet sağ ${iR}/3, sol ${iL}/3 → ${
+          side
+            ? `${geo ? 'güçlü' : 'zayıf'} taraf ${sideLabel(side)}`
+            : gradeMissing
+              ? 'taraf belirlenemedi (bir tarafın şiddeti girilmedi; iki tarafın şiddetini de girin)'
+              : 'taraf belirlenemedi (eşit şiddet)'
+        }.`
       ];
       if (geo && longAny) rationale.push('Geotropik nistagmus ≥1 dk sürdü (tipik değil; hafif kupula / "light cupula" ayırıcı tanısı).');
-      if (!geo && !longAny) rationale.push('Apogeotropik nistagmus genellikle ≥1 dk sürer; süre kısa ise ön kol kanalitiyazisi olabilir.');
+      if (!geo && !longAny) rationale.push('Apogeotropik nistagmus genellikle ≥1 dk sürer; süre kısa ise ön kol kanalolitiazisi olabilir.');
       suggestions.push({
         canal: 'HC',
         side,
         mechanism: mech,
         confidence: side && bothSides ? 'tipik' : side ? 'olası' : 'belirsiz',
         label: side
-          ? `${cap(sideLabel(side))} yatay kanal BPPV — ${geo ? 'geotropik (kanalitiyazis)' : 'apogeotropik (kupulolitiyazis ya da ön kol kanalitiyazisi)'}`
+          ? `${cap(sideLabel(side))} yatay kanal BPPV — ${geo ? 'geotropik (kanalolitiazis)' : 'apogeotropik (kupulolitiazis ya da ön kol kanalolitiazisi)'}`
           : `Yatay kanal BPPV — ${geo ? 'geotropik' : 'apogeotropik'}, taraf belirsiz`,
         rationale: side
           ? rationale
-          : [...rationale, 'Tarafı belirlemek için ek testler (eğilme-öne eğilme / bow and lean, yatma nistagmusu) kullanın.'],
+          : [...rationale, 'Tarafı belirlemek için ek testler (öne eğilme–geriye eğilme / bow and lean, yatma nistagmusu) kullanın.'],
         maneuvers: side ? maneuversFor('HC', mech) : []
       });
     }
@@ -243,6 +257,16 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       ],
       maneuvers: side ? maneuversFor('PC', 'unknown') : []
     });
+  }
+
+  // Herhangi bir uyarı varsa hiçbir öneri "tipik" sayılmaz: klinisyen uyarıyı görmeden tek dokunuşla onaylamasın.
+  if (warnings.length > 0) {
+    for (const s of suggestions) {
+      if (s.confidence === 'tipik') {
+        s.confidence = 'olası';
+        s.rationale = [...s.rationale, 'Muayenede uyarı bulunduğu için "tipik" sayılmadı; uyarıları okuyun.'];
+      }
+    }
   }
 
   const negative = !anyNys && vertigoKeys.length === 0 && all.length > 0;

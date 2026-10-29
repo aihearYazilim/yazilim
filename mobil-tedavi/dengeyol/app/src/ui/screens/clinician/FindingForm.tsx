@@ -30,10 +30,16 @@ export function FindingForm({
   const [nys, setNys] = useState<NystagmusType | null>(initial.nystagmusUnset ? null : initial.nystagmus);
   const [lat, setLat] = useState(initial.latencySec?.toString() ?? '');
   const [dur, setDur] = useState(initial.durationSec?.toString() ?? '');
-  const [intensity, setIntensity] = useState<0 | 1 | 2 | 3>(initial.intensity);
+  // Şiddet yatay kanalda tarafı belirler: nistagmus varken boş bırakılamaz (unutulan 0, apogeotropikte yanlış taraf seçtirirdi).
+  const [intensity, setIntensity] = useState<1 | 2 | 3 | null>(initial.intensity === 0 ? null : initial.intensity);
   const [vertigo, setVertigo] = useState(initial.vertigo);
   const num = (s: string) => (s.trim() === '' ? null : Math.max(0, Math.round(Number(s))));
-  const valid = nys !== null && (lat === '' || Number.isFinite(Number(lat))) && (dur === '' || Number.isFinite(Number(dur)));
+  const needIntensity = showIntensity && nys !== null && nys !== 'none';
+  const valid =
+    nys !== null &&
+    (lat === '' || Number.isFinite(Number(lat))) &&
+    (dur === '' || Number.isFinite(Number(dur))) &&
+    (!needIntensity || intensity !== null);
 
   return (
     <div className="card stack" data-testid="finding-form">
@@ -61,13 +67,12 @@ export function FindingForm({
       )}
       {showIntensity && nys !== 'none' && (
         <div className="field">
-          <label>Şiddet (yatay kanal tarafı için karşılaştırılır)</label>
+          <label>Şiddet (zorunlu: yatay kanalda taraf iki tarafın şiddeti karşılaştırılarak belirlenir)</label>
           <Segmented
             label="Şiddet"
             value={intensity}
             onChange={setIntensity}
             options={[
-              { value: 0, label: '0' },
               { value: 1, label: '1 hafif' },
               { value: 2, label: '2 orta' },
               { value: 3, label: '3 güçlü' }
@@ -88,7 +93,7 @@ export function FindingForm({
               nystagmus: nys!,
               latencySec: nys === 'none' ? null : num(lat),
               durationSec: nys === 'none' ? null : num(dur),
-              intensity: nys === 'none' ? 0 : showIntensity ? intensity : 0,
+              intensity: nys === 'none' ? 0 : showIntensity ? (intensity ?? 0) : 0,
               vertigo
             })
           }

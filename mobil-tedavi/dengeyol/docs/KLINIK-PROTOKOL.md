@@ -60,12 +60,16 @@ Testler 5 farklı telefon/yerleşim modelinde sağ/sol, sarkık ve yüz yere poz
   retina/göz ameliyatı, ileri gebelik, hareket kısıtlılığı, sesli yönergeyi takip edememe, bilişsel güçlük).
 - Odyolog reçetesi, tanı yerine geçer (taraf, kanal = arka, manevra ve doz reçeteden gelir).
 
-**Kırmızı bayrak soruları (her seans; 6 saatten eskiyse yeniden):** sürekli baş dönmesi; nörolojik belirti ("5D");
+**Kırmızı bayrak soruları (her seans; 6 saatten eskiyse yeniden):** Her soruda güvenli yanıt "Hayır"dır (son soru
+"önceki BPPV'den farklı mı?" biçimindedir). Sorular sesli okunur; yanıt düğmeleri her yeni soruda 0,6 s kilitlidir; durduran
+bir yanıttan sonra "Yanlış dokundum" seçeneğiyle onay istenir. Sorular: sürekli baş dönmesi; nörolojik belirti ("5D");
 yeni şiddetli baş/boyun ağrısı; göğüs ağrısı/çarpıntı/bayılma; kan sulandırıcı + baş ağrısı/çarpma; kendiliğinden gelen
 uzun ataklar; yakın kafa travması; ani işitme kaybı/kulak belirtisi; boyun travması/manipülasyonu; ateş/sıvı alamama;
-"bu, önceki BPPV'nizle aynı mı?". Acil olanlarda 112 ekranı, diğerlerinde hekime yönlendirme.
+"bu, önceki BPPV'nizden farklı mı?". Acil olanlarda 112 ekranı, diğerlerinde hekime yönlendirme.
 
 **Seans içi:** Bir pozisyonda baş dönmesi 2 dakikayı aşarsa manevra durur ve hekime yönlendirilir (tipik BPPV <1 dk).
+Baş dönmesi işaretliyken her 30 saniyede "geçtiyse dokunun" hatırlatması yapılır (unutulan bitiş işaretinin gereksiz
+durdurmaya yol açmaması için; durdurma kuralı değişmez). Hasta modunda duraklatma basılı tutmayla yapılır.
 Hasta "kendimi iyi hissetmiyorum" ile istediği an durdurabilir. Uygulama arka plana geçerse manevra otomatik duraklar;
 ekran kapatılır/geri tuşuna basılırsa yapılan kısım "kesildi" olarak kaydedilir ve doza sayılır. Baş dönmesi işaretinde
 1 saniye içindeki ikinci dokunuş (kazara çift dokunma) yok sayılır; süre ilk işaretin başından son işaretin sonuna kadar
@@ -88,16 +92,18 @@ tekrar testi değil, iki yönlü taraf testi yapılır.
 **Deneme manevrası:** Baş dönmesi yokken adımları öğrenmek için. Atağa kaydedilmez ve tedavi dozuna sayılmaz; ancak
 kırmızı bayrak soruları ("aynı baş dönmesi mi" hariç) her seferinde sorulur ve günde en fazla 2 kez yapılabilir.
 
-**Telefonun yeri (her manevra/test başında):** Kalibrasyondan sonra telefon alından alınıp yeniden takılmış olabilir.
-Başlat'a basınca hasta dik oturup karşıya bakarken kısa bir ölçüm alınır; kalibrasyona göre artık hata 10°'yi aşarsa
-"tavana bak" adımıyla hızlıca yeniden tanıtılır (cihaz işaret kuralı korunur). Ölçüm hareketliyse manevra başlamaz.
+**Telefonun yeri (her manevra/test başında):** Kalibrasyondan sonra telefon alından alınıp yeniden takılmış, hatta ekranı
+içe dönük takılmış olabilir. Yalnız dik duruş ölçümü içe/dışa dönüklüğü ayırt edemez (sağ/sol karışır). Bu yüzden Başlat'a
+basınca her seferinde dik duruş + "tavana bak" ölçülür ve yerleşim yeniden hesaplanır (~15 s; cihazın işaret kuralı ilk
+tanıtmadan kayıtlı). Ölçüm hareketliyse ya da yerleşim geçersizse manevra başlamaz. Kayıtlı tanıtma varsa ayrı tanıtma ekranı
+atlanır. Ölçümler, sesli yönergenin bitmesi (konuşma süresi tahmini) beklendikten sonra başlar.
 Son 30 günde 3+ atak → hekim önerisi.
 
 ## 5. Odyolog modu tanı önerisi
 
 Bárány Derneği 2015 ölçütleri (von Brevern ve ark.) ve AAO-HNSF 2017 kılavuzuna göre: arka kanal (yukarı vuran + torsiyonel,
-<1 dk; ≥1 dk → kupulolitiyazis olası, Semont önce önerilir), yatay kanal geotropik (güçlü taraf hasta), apogeotropik (zayıf
-taraf hasta; kupulolitiyazis ya da ön kol kanalitiyazisi), ön kanal (aşağı vuran + torsiyonel → olası; santral neden uyarısı),
+<1 dk; ≥1 dk → kupulolitiazis olası, Semont önce önerilir), yatay kanal geotropik (güçlü taraf hasta), apogeotropik (zayıf
+taraf hasta; kupulolitiazis ya da ön kol kanalolitiazisi), ön kanal (aşağı vuran + torsiyonel → olası; santral neden uyarısı),
 saf aşağı vuran / atipik desen → santral uyarısı, nistagmussuz pozisyonel vertigo → Bárány kategorileri klinisyene bırakılır.
 Uygulama yalnızca öneri sunar; tanıyı klinisyen onaylar ya da elle girer.
 

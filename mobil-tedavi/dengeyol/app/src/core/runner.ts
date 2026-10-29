@@ -119,6 +119,8 @@ export interface RunnerState {
   vertigoEndedAt: number | null;
   vertigoLongWarned: boolean;
   waitingVertigoAnnounced: boolean;
+  /** Baş dönmesi hatırlatmalarından en son söyleneni (s). */
+  vertigoRemindMark: number;
   /** Önceki adımın hedefinden ayrılma anı (hızlı geçiş ölçümü). */
   leftPreviousAt: number | null;
   manualStep: boolean;
@@ -142,8 +144,8 @@ export type RunnerEvent =
 
 export type Cue =
   | { kind: 'speak'; text: string; priority: 'high' | 'normal' }
-  | { kind: 'haptic'; pattern: 'reached' | 'drift' | 'stepDone' | 'alarm' | 'tap' }
-  | { kind: 'tone'; pattern: 'reached' | 'stepDone' | 'countdown' | 'done' | 'alarm' };
+  | { kind: 'haptic'; pattern: 'reached' | 'drift' | 'stepDone' | 'alarm' | 'tap' | 'move' | 'markOn' | 'markOff' | 'pause' }
+  | { kind: 'tone'; pattern: 'reached' | 'stepDone' | 'countdown' | 'done' | 'alarm' | 'move' | 'drift' | 'markOn' | 'markOff' | 'pause' };
 
 export interface StepResult {
   state: RunnerState;
@@ -170,6 +172,7 @@ export function initialRunnerState(): RunnerState {
     vertigoEndedAt: null,
     vertigoLongWarned: false,
     waitingVertigoAnnounced: false,
+    vertigoRemindMark: 0,
     leftPreviousAt: null,
     manualStep: false,
     evaluation: null,
@@ -235,6 +238,11 @@ function holdComplete(cfg: RunnerConfig, s: RunnerState, step: StepDef, now: num
 function startStep(cfg: RunnerConfig, s: RunnerState, index: number, now: number, cues: Cue[]): RunnerState {
   const step = cfg.protocol.steps[index];
   if (!step) return s;
+  // Yeni adım: sesi duyamayan kullanıcı için "şimdi hareket et" titreşim ve tonu (ilk adım hariç: zaten geri sayım var).
+  if (index > 0) {
+    cues.push({ kind: 'haptic', pattern: 'move' });
+    cues.push({ kind: 'tone', pattern: 'move' });
+  }
   cues.push({ kind: 'speak', text: stepSpeech(cfg, step), priority: 'high' });
   return {
     ...s,
@@ -253,6 +261,7 @@ function startStep(cfg: RunnerConfig, s: RunnerState, index: number, now: number
     vertigoEndedAt: null,
     vertigoLongWarned: false,
     waitingVertigoAnnounced: false,
+    vertigoRemindMark: 0,
     leftPreviousAt: null,
     manualStep: false,
     evaluation: null,
@@ -272,7 +281,7 @@ function finishStep(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[])
       text:
         cfg.protocol.kind === 'maneuver'
           ? cfg.mode === 'patient'
-            ? 'Manevra tamamlandı. Birkaç dakika oturarak dinlenin; ani baş hareketi yapmayın.'
+            ? 'Manevra tamamlandı. 10 dakika oturarak dinlenin; ani baş hareketi yapmayın.'
             : 'Manevra tamamlandı.'
           : cfg.mode === 'patient'
             ? 'Test tamamlandı.'
@@ -300,6 +309,8 @@ function targetSatisfiedLoose(pose: HeadPose, target: Target): boolean {
 
 /** Baş dönmesi dokunuşları arasında en az süre (s). */
 export const VERTIGO_DEBOUNCE_SEC = 1;
+/** Baş dönmesi işaretliyken "geçtiyse dokunun" hatırlatma aralığı (hasta modu). */
+export const VERTIGO_REMIND_EVERY_SEC = 30;
 
 export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): StepResult {
   const cues: Cue[] = [];
@@ -329,7 +340,13 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
 
     case 'pause': {
       if (s.phase === 'paused' || s.phase === 'idle') return { state: s, cues };
-      cues.push({ kind: 'speak', text: 'Duraklatıldı.', priority: 'high' });
+      cues.push({ kind: 'haptic', pattern: 'pause' });
+      cues.push({ kind: 'tone', pattern: 'pause' });
+      cues.push({
+        kind: 'speak',
+        text: cfg.mode === 'patient' ? 'Duraklatıldı. Olduğunuz yerde kalın. Devam etmek için ekrandaki Devam düğmesine basın.' : 'Duraklatıldı.',
+        priority: 'high'
+      });
       return { state: { ...s, phase: 'paused', pausedFrom: s.phase, phaseSince: now }, cues };
     }
 
@@ -401,7 +418,8 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
       s = { ...s, lastVertigoToggleAt: now };
       const rel = sec(now - s.stepStartedAt);
       if (!s.vertigoActive) {
-        cues.push({ kind: 'haptic', pattern: 'tap' });
+        cues.push({ kind: 'haptic', pattern: 'markOn' });
+        cues.push({ kind: 'tone', pattern: 'markOn' });
         cues.push({
           kind: 'speak',
           text:
@@ -411,9 +429,10 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
           priority: 'normal'
         });
         const st = updateRecord(s, (r) => ({ ...r, vertigoMarks: [...r.vertigoMarks, { start: rel, end: null }] }));
-        return { state: { ...st, vertigoActive: true, vertigoSince: now, vertigoLongWarned: false }, cues };
+        return { state: { ...st, vertigoActive: true, vertigoSince: now, vertigoLongWarned: false, vertigoRemindMark: 0 }, cues };
       }
-      cues.push({ kind: 'haptic', pattern: 'tap' });
+      cues.push({ kind: 'haptic', pattern: 'markOff' });
+      cues.push({ kind: 'tone', pattern: 'markOff' });
       cues.push({
         kind: 'speak',
         text:
@@ -490,6 +509,15 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
         cues.push({ kind: 'speak', text: 'Uyarı: belirti iki dakikayı aştı. Atipik yanıt olabilir.', priority: 'high' });
         s.vertigoLongWarned = true;
         s.notice = 'Belirti uzun sürüyor (atipik olabilir).';
+      }
+    }
+    // Hasta "geçti" dokunuşunu unutmasın: her 30 saniyede bir hatırlat (durdurma kuralı aynen kalır).
+    if (cfg.mode === 'patient') {
+      const mark = Math.floor(vSec / VERTIGO_REMIND_EVERY_SEC) * VERTIGO_REMIND_EVERY_SEC;
+      if (mark > 0 && mark > s.vertigoRemindMark && mark < step.maxVertigoSec) {
+        s.vertigoRemindMark = mark;
+        cues.push({ kind: 'haptic', pattern: 'markOn' });
+        cues.push({ kind: 'speak', text: 'Baş dönmesi geçtiyse ekrana dokunun. Sürüyorsa böyle kalın.', priority: 'normal' });
       }
     }
   }
@@ -604,6 +632,7 @@ function holdingTick(
         s.phase = 'drifting';
         s = updateRecord(s, (r) => ({ ...r, driftCount: r.driftCount + 1 }));
         cues.push({ kind: 'haptic', pattern: 'drift' });
+        cues.push({ kind: 'tone', pattern: 'drift' });
         const hint = ev?.hint ? hintText(cfg, ev.hint) : '';
         cues.push({
           kind: 'speak',
@@ -614,6 +643,7 @@ function holdingTick(
       } else {
         const sinceHint = s.lastHintAt === null ? Infinity : sec(now - s.lastHintAt);
         if (sinceHint >= cfg.hintEverySec && ev?.hint) {
+          cues.push({ kind: 'haptic', pattern: 'drift' });
           cues.push({ kind: 'speak', text: hintText(cfg, ev.hint), priority: 'normal' });
           s.lastHintAt = now;
         } else if (sinceHint >= cfg.hintEverySec && !ev && !s.manualStep) {
@@ -661,6 +691,7 @@ function holdingTick(
   // En az süre doldu ama baş dönmesi sürüyor
   if (s.holdSec >= step.minHoldSec && s.vertigoActive && !s.waitingVertigoAnnounced) {
     s.waitingVertigoAnnounced = true;
+    cues.push({ kind: 'haptic', pattern: 'markOn' });
     cues.push({
       kind: 'speak',
       text:
@@ -682,7 +713,7 @@ export function recordStats(r: StepRecord) {
   return {
     inRangePct: r.samples > 0 ? Math.round((100 * r.inRangeSamples) / r.samples) : null,
     meanAbsThetaErr: r.thetaSamples > 0 ? Math.round((10 * r.sumAbsThetaErr) / r.thetaSamples) / 10 : null,
-    maxAbsThetaErr: r.thetaSamples > 0 ? Math.round(r.maxAbsThetaErr) : null
+    maxAbsThetaErr: r.thetaSamples > 0 ? Math.round(10 * r.maxAbsThetaErr) / 10 : null
   };
 }
 

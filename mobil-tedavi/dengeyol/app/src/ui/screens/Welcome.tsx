@@ -42,7 +42,7 @@ export function Welcome() {
             <Icon name="steth" size={30} />
           </span>
           <span className="grow">
-            <h2>Odyolog / hekimim</h2>
+            <h2>Klinisyenim (odyolog / hekim)</h2>
             <span className="muted">Pozisyon testlerini ve manevraları açı ölçümüyle yapmak, bulguları kaydetmek ve hastaya ev reçetesi vermek istiyorum.</span>
           </span>
           <Icon name="chevron" />

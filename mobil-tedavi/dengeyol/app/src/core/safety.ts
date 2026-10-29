@@ -93,8 +93,9 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   },
   {
     id: 'same',
-    text: 'Bu baş dönmesi, daha önce hekiminizin BPPV tanısı koyduğu baş dönmesiyle aynı mı? (Yatarken, yatakta dönerken ya da yukarı bakarken başlayan, kısa süren dönme hissi)',
-    stopsOn: 'no',
+    // Soru "farklı mı" diye sorulur: böylece her soruda güvenli yanıt "Hayır" olur (alışkanlıkla yanlış basmayı önler).
+    text: 'Bu baş dönmesi, daha önce hekiminizin BPPV tanısı koyduğu baş dönmesinden FARKLI mı? (BPPV: yatarken, yatakta dönerken ya da yukarı bakarken başlayan, kısa süren dönme hissi)',
+    stopsOn: 'yes',
     action: 'doctor',
     why: 'Baş dönmeniz önceki BPPV atağından farklıysa yeni bir değerlendirme gerekir.'
   }
@@ -147,7 +148,12 @@ export const CONTRAINDICATIONS: Contraindication[] = [
     id: 'mobility',
     text: 'Yatağa yatıp kalkmakta, yan dönmekte ya da başımı çevirmekte ciddi güçlük çekiyorum ve yanımda yardım edecek kimse yok.'
   },
-  { id: 'hearing', text: 'Telefondan gelen sesli yönergeleri duyup takip etmekte güçlük çekiyorum.' }
+  {
+    // İşitme kaybı tek başına engel değildir: işitme cihazı/kulaklık (Bluetooth), yardımcı, titreşim ve bip sesleri
+    // yönlendirmeyi taşır. Yalnız bunların hiçbiri yoksa kapı kapanır.
+    id: 'hearing',
+    text: 'Telefondan gelen sesli yönergeleri duyamıyorum; işitme cihazımla ya da kulaklıkla da duyamıyorum ve yanımda yardım edecek kimse yok.'
+  }
 ];
 
 // ---------------------------------------------------------------------------------------------

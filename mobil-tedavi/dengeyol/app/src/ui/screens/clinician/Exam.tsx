@@ -45,6 +45,18 @@ const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | n
   { id: 'roll', label: 'Supine roll testi', protocolId: 'supine-roll', side: null, keys: ['rollCenter', 'rollR', 'rollL'] }
 ];
 
+/** Bulguların sıralı imzası: onaylı tanının hangi bulgulara dayandığını izlemek için. */
+export function findingsKeyOf(f: Findings): string {
+  return JSON.stringify(Object.keys(f).sort().map((k) => [k, f[k as FindingKey]]));
+}
+
+/** Onaylı tanı hâlâ geçerli mi (onaydan sonra bulgu değiştiyse hayır). */
+export function dxValid(exam: ClinicExam): boolean {
+  const dx = exam.diagnosis;
+  if (!dx) return false;
+  return dx.findingsKey === undefined || dx.findingsKey === findingsKeyOf(exam.findings);
+}
+
 function updateExam(id: string, fn: (e: ClinicExam) => ClinicExam) {
   store.update((d) => ({ ...d, clinicExams: d.clinicExams.map((e) => (e.id === id ? fn(e) : e)) }));
 }
@@ -67,7 +79,7 @@ export function Exam() {
   const patient = exam ? d.clinicPatients.find((p) => p.id === exam.patientId) : undefined;
   const [tab, setTab] = useState<Tab>('tests');
   const [cal, setCal] = useState<Calibration | null>(null);
-  const [sensorless, setSensorless] = useState(false);
+  const [sensorless, setSensorless] = useState(!!d.clinician.sensorless);
   const [pendingRun, setPendingRun] = useState<RunReq | null>(null);
   const [run, setRun] = useState<RunReq | null>(null);
   const [needCal, setNeedCal] = useState(false);
@@ -234,6 +246,12 @@ export function Exam() {
         {patient?.birthYear && <span>· d. {patient.birthYear}</span>}
         {patient?.sex && patient.sex !== '-' && <span>· {patient.sex}</span>}
       </div>
+      {exam.diagnosis && !dxValid(exam) && (
+        <div className="notice danger" role="alert" data-testid="dx-stale">
+          <Icon name="alert" />
+          <span>Bulgular tanı onaylandıktan sonra değişti. Tanı sekmesinden tanıyı yeniden onaylayın.</span>
+        </div>
+      )}
       <Segmented
         label="Bölüm"
         value={tab}
@@ -263,7 +281,7 @@ export function Exam() {
             setSensorless(false);
           }}
         >
-          Kalibrasyonu sıfırla (yeni hasta yerleşimi)
+          {sensorless ? 'Sensörlü moda geç' : 'Kalibrasyonu sıfırla (yeni hasta yerleşimi)'}
         </button>
       )}
       <button className="btn ghost small" onClick={() => nav('/odyolog')}>
@@ -312,8 +330,13 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
   const [mech, setMech] = useState<ConfirmedDiagnosis['mechanism'] | null>(null);
 
   const confirm = (dx: ConfirmedDiagnosis) => {
-    updateExam(exam.id, (e) => ({ ...e, diagnosis: dx }));
+    updateExam(exam.id, (e) => ({
+      ...e,
+      diagnosis: { ...dx, warnings: result.warnings.length ? result.warnings : undefined, findingsKey: findingsKeyOf(e.findings) }
+    }));
   };
+  const hasWarnings = result.warnings.length > 0;
+  const valid = dxValid(exam);
 
   return (
     <div className="stack">
@@ -330,7 +353,7 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
         </div>
       )}
       {result.suggestions.map((s, i) => (
-        <div key={i} className={`card stack ${exam.diagnosis?.label === s.label ? 'tint-ok' : ''}`} data-testid="dx-suggestion">
+        <div key={i} className={`card stack ${valid && exam.diagnosis?.label === s.label ? 'tint-ok' : ''}`} data-testid="dx-suggestion">
           <div className="row">
             <h3 className="grow">{s.label}</h3>
             <span className={`chip ${s.confidence === 'tipik' ? 'ok' : s.confidence === 'olası' ? 'warn' : ''}`}>{s.confidence}</span>
@@ -342,14 +365,25 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
           </ul>
           {s.maneuvers.length > 0 && <p className="small muted">Önerilen: {s.maneuvers.map((m) => PROTOCOLS[m].shortName).join(', ')}</p>}
           <button
-            className="btn secondary"
+            className={`btn ${hasWarnings ? 'warn' : 'secondary'}`}
             onClick={() => confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true })}
             data-testid="dx-confirm"
           >
-            <Icon name="check" /> Bu tanıyı onayla
+            <Icon name="check" /> {hasWarnings ? 'Uyarıları okudum, yine de onayla' : 'Bu tanıyı onayla'}
           </button>
         </div>
       ))}
+      <details className="card soft small" data-testid="dx-limits">
+        <summary>
+          <strong>Bu öneri neye dayanır, neye dayanmaz?</strong>
+        </summary>
+        <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+          <li>Yalnız girilen pozisyon testi bulgularına dayanır (Bárány 2015 ölçütleri).</li>
+          <li>Öykü, nörolojik muayene (HINTS dahil), işitme ve spontan nistagmus değerlendirilmez.</li>
+          <li>"Tipik": desen, gecikme ve süre ölçütlere uyuyor ve hiçbir uyarı yok. "Olası": ölçütlerden biri eksik ya da uyarı var.</li>
+          <li>Sevk ölçütleri: aşağı vuran ya da saf torsiyonel nistagmus, gecikmesiz/yorulmayan uzun yanıt, nörolojik bulgu, ani işitme kaybı, 2–3 doğru manevraya yanıtsızlık.</li>
+        </ul>
+      </details>
       <p className="small muted">Uygulama yalnızca öneri sunar. Tanı kararı klinisyene aittir.</p>
       {!manual ? (
         <button className="btn ghost" onClick={() => setManual(true)}>
@@ -383,8 +417,8 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
             value={mech ?? 'unknown'}
             onChange={setMech}
             options={[
-              { value: 'canalithiasis', label: 'Kanalitiyazis' },
-              { value: 'cupulolithiasis', label: 'Kupulolitiyazis' },
+              { value: 'canalithiasis', label: 'Kanalolitiazis' },
+              { value: 'cupulolithiasis', label: 'Kupulolitiazis' },
               { value: 'unknown', label: 'Bilinmiyor' }
             ]}
           />
@@ -408,13 +442,14 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
           </button>
         </div>
       )}
-      {exam.diagnosis && (
-        <div className="card tint-ok stack">
+      {exam.diagnosis && valid && (
+        <div className={`card ${exam.diagnosis.warnings?.length ? 'tint-warn' : 'tint-ok'} stack`}>
           <div className="row">
             <Icon name="check" />
             <strong className="grow">Onaylı tanı: {exam.diagnosis.label}</strong>
           </div>
-          <button className="btn primary" onClick={onGoTreat}>
+          {exam.diagnosis.warnings?.length ? <p className="small">Uyarılarla birlikte onaylandı; uyarılar rapora yazılır.</p> : null}
+          <button className="btn primary" onClick={onGoTreat} data-testid="dx-go-treat">
             Tedaviye geç
           </button>
         </div>
@@ -429,16 +464,19 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
   const dx = exam.diagnosis;
   const suggested = dx?.canal ? maneuversFor(dx.canal, dx.mechanism) : [];
   const [showAll, setShowAll] = useState(false);
-  const [side, setSide] = useState<Side>(dx?.side ?? 'R');
+  // Varsayılan taraf yok: tanıda taraf belirsizse klinisyen bilinçli seçsin.
+  const [side, setSide] = useState<Side | null>(dx?.side ?? null);
   useEffect(() => {
     if (dx?.side) setSide(dx.side);
   }, [dx?.side]);
+  const valid = dxValid(exam);
   const list = showAll ? MANEUVER_IDS : suggested.length ? suggested : MANEUVER_IDS;
 
   return (
     <div className="stack">
       {!dx && <div className="notice info">Tanı onaylanmadı. Manevrayı yine de seçebilirsiniz.</div>}
-      {dx && (
+      {dx && !valid && <div className="notice">Bulgular değişti; tanıyı yeniden onaylayın.</div>}
+      {dx && valid && (
         <div className="card soft small">
           Onaylı tanı: <strong>{dx.label}</strong>
         </div>
@@ -470,9 +508,14 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
                 {c}
               </p>
             ))}
-            <button className="btn primary" onClick={() => onRun({ protocolId: id, side: p.sided ? side : null, purpose: 'maneuver' })} data-testid={`treat-run-${id}`}>
+            <button
+              className="btn primary"
+              disabled={p.sided && !side}
+              onClick={() => onRun({ protocolId: id, side: p.sided ? side : null, purpose: 'maneuver' })}
+              data-testid={`treat-run-${id}`}
+            >
               <Icon name="play" /> {p.shortName}
-              {p.sided ? ` (${sideName(side)})` : ''} başlat
+              {p.sided ? (side ? ` (${sideName(side)})` : ' — önce tarafı seçin') : ''} başlat
             </button>
           </div>
         );
@@ -537,6 +580,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     !!issued &&
     (issued.side !== side || issued.maneuver !== maneuver || issued.perDay !== perDay || issued.days !== days || (issued.note ?? '') !== note.trim());
   const sideConflict = !!dx?.side && !!side && dx.side !== side;
+  const [ack, setAck] = useState(false);
 
   const url = useMemo(() => {
     if (!exam.prescriptionToken) return null;
@@ -552,14 +596,25 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     void QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setSvg);
   }, [url]);
 
-  if (dx && dx.canal !== 'PC') {
+  // Ev reçetesi yalnız geçerli, onaylı, taraflı arka kanal tanısıyla verilir (hasta tarafında "hekim tanısı" yerine geçer).
+  const rxBlock = !dx
+    ? 'Ev reçetesi için önce Tanı sekmesinde arka kanal tanısını onaylayın.'
+    : !dxValid(exam)
+      ? 'Bulgular tanı onaylandıktan sonra değişti. Tanıyı yeniden onaylayın.'
+      : dx.canal !== 'PC'
+        ? 'Ev reçetesi yalnızca arka kanal BPPV için verilebilir. Yatay ve ön kanal manevraları klinikte yapılmalıdır.'
+        : !dx.side
+          ? 'Onaylı tanıda taraf yok. Ev reçetesi için tarafı belli bir arka kanal tanısı onaylayın.'
+          : null;
+  if (rxBlock) {
     return (
-      <div className="notice info">
+      <div className="notice info" data-testid="rx-blocked">
         <Icon name="info" />
-        <span>Ev reçetesi yalnızca arka kanal BPPV için verilebilir. Yatay ve ön kanal manevraları klinikte yapılmalıdır.</span>
+        <span>{rxBlock}</span>
       </div>
     );
   }
+  const needAck = !!dx?.warnings?.length;
 
   const make = () => {
     if (!side) return;
@@ -581,7 +636,6 @@ function RxTab({ exam }: { exam: ClinicExam }) {
 
   return (
     <div className="stack">
-      {!dx && <div className="notice">Önce arka kanal tanısını onaylayın ya da tarafı aşağıdan seçin.</div>}
       <div className="card stack">
         <h3>Ev manevrası reçetesi</h3>
         <p className="small muted">
@@ -632,7 +686,13 @@ function RxTab({ exam }: { exam: ClinicExam }) {
             <span>Seçilen taraf, onaylanan tanıdaki taraftan ({sideName(dx!.side!)}) farklı. Lütfen kontrol edin.</span>
           </div>
         )}
-        <button className="btn primary" onClick={make} disabled={!side} data-testid="rx-make">
+        {needAck && (
+          <label className="row notice danger" style={{ alignItems: 'flex-start' }}>
+            <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="check-lg" data-testid="rx-ack" />
+            <span>Tanı uyarılarla onaylandı. Uyarıları değerlendirdim; bu hastanın evde manevra yapması uygundur.</span>
+          </label>
+        )}
+        <button className="btn primary" onClick={make} disabled={!side || (needAck && !ack)} data-testid="rx-make">
           <Icon name="qr" /> {issued ? 'Reçeteyi güncelle' : 'Reçete oluştur'}
         </button>
       </div>
@@ -677,9 +737,48 @@ function RxTab({ exam }: { exam: ClinicExam }) {
   );
 }
 
+const fullDate = (t: number) =>
+  new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** HBYS / e-Nabız muayene notuna yapıştırılacak düz metin. */
+export function examNoteText(exam: ClinicExam, code: string | undefined, clinician: { name?: string; clinic?: string }): string {
+  const lines: string[] = [];
+  lines.push(`Pozisyonel vertigo değerlendirmesi (DengeYol) — ${fullDate(exam.at)}${code ? ` — hasta kodu ${code}` : ''}`);
+  const keys = Object.keys(exam.findings) as FindingKey[];
+  if (keys.length) lines.push(`Testler: ${keys.map((k) => `${keyLabel(k)}: ${findingSummary(exam.findings[k])}`).join('; ')}.`);
+  const dx = exam.diagnosis;
+  if (dx && dxValid(exam)) {
+    const icd = dx.canal ? ' (ICD-10 öneri: H81.1 Benign paroksismal vertigo)' : '';
+    lines.push(`Tanı: ${dx.label}${dx.fromSuggestion ? ' — karar desteği önerisi klinisyence onaylandı' : ' — klinisyen'}${icd}.`);
+    if (dx.warnings?.length) lines.push(`Uyarılar: ${dx.warnings.join(' ')}`);
+  }
+  if (exam.maneuvers.length) {
+    lines.push(
+      `Manevra: ${exam.maneuvers
+        .map((m) => `${PROTOCOLS[m.protocolId].shortName}${m.side ? ` ${sideName(m.side)}` : ''} (${m.completed ? 'tamamlandı' : 'yarıda'})`)
+        .join(', ')}.`
+    );
+  }
+  const rk = Object.keys(exam.retestFindings) as FindingKey[];
+  if (rk.length) lines.push(`Tekrar test: ${rk.map((k) => `${keyLabel(k)}: ${findingSummary(exam.retestFindings[k])}`).join('; ')}.`);
+  if (exam.prescriptionToken) {
+    const r = decodePrescription(exam.prescriptionToken);
+    if (r.ok) {
+      lines.push(
+        `Ev reçetesi: ${sideName(r.value.side)} ${r.value.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla ${r.value.perDay}, ${r.value.days} gün (DengeYol uygulaması, QR ile verildi).`
+      );
+    }
+  }
+  if (clinician.name) lines.push(`${clinician.name}${clinician.clinic ? `, ${clinician.clinic}` : ''}`);
+  return lines.join('\n');
+}
+
 function ExamReport({ exam }: { exam: ClinicExam }) {
   const d = useData();
   const patient = d.clinicPatients.find((p) => p.id === exam.patientId);
+  const [copied, setCopied] = useState(false);
+  const rx = exam.prescriptionToken ? decodePrescription(exam.prescriptionToken) : null;
+  const valid = dxValid(exam);
   const fx = (title: string, f: Findings) => {
     const keys = Object.keys(f) as FindingKey[];
     if (keys.length === 0) return null;
@@ -711,15 +810,29 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             {patient?.birthYear ?? '—'} / {patient?.sex ?? '—'}
           </dd>
           <dt>Tarih</dt>
-          <dd>{formatDateTime(exam.at)}</dd>
+          <dd>{fullDate(exam.at)}</dd>
           <dt>Klinisyen</dt>
           <dd>
             {d.clinician.name ?? '—'}
             {d.clinician.clinic ? `, ${d.clinician.clinic}` : ''}
           </dd>
           <dt>Tanı</dt>
-          <dd>{exam.diagnosis?.label ?? '—'}</dd>
+          <dd>
+            {exam.diagnosis && valid
+              ? `${exam.diagnosis.label} (${exam.diagnosis.fromSuggestion ? 'karar desteği önerisi, klinisyen onayı' : 'klinisyen girişi'})`
+              : exam.diagnosis
+                ? 'Bulgular değişti; tanı yeniden onaylanmadı'
+                : '—'}
+          </dd>
         </dl>
+        {exam.diagnosis && valid && exam.diagnosis.warnings?.length ? (
+          <div className="notice danger">
+            <Icon name="alert" />
+            <span>
+              <strong>Onay sırasındaki uyarılar:</strong> {exam.diagnosis.warnings.join(' ')}
+            </span>
+          </div>
+        ) : null}
       </div>
       {fx('Pozisyon testleri', exam.findings)}
       {exam.maneuvers.length > 0 && (
@@ -759,10 +872,37 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
         </div>
       )}
       {fx('Tekrar test', exam.retestFindings)}
-      {exam.prescriptionToken && <div className="card soft small">Hastaya ev manevrası reçetesi verildi.</div>}
-      <button className="btn secondary no-print" onClick={() => window.print()}>
-        <Icon name="print" /> Yazdır / PDF
-      </button>
+      {rx?.ok && (
+        <div className="card stack">
+          <h3>Ev manevrası reçetesi</h3>
+          <p>
+            {sideName(rx.value.side).toLocaleUpperCase('tr-TR')} arka kanal · {rx.value.maneuver === 'epley' ? 'Epley' : 'Semont'} · günde en fazla{' '}
+            {rx.value.perDay}, {rx.value.days} gün{rx.value.note ? ` · Not: ${rx.value.note}` : ''}
+          </p>
+          <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz sınırları uygulamada uygulanır.</p>
+        </div>
+      )}
+      <div className="card stack signature">
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <span>Klinisyen: {d.clinician.name ?? '................................'}</span>
+          <span>İmza: ................................</span>
+        </div>
+      </div>
+      <div className="row wrap no-print">
+        <button
+          className="btn primary grow"
+          onClick={() => {
+            const text = examNoteText(exam, patient?.code, d.clinician);
+            void navigator.clipboard?.writeText(text).then(() => setCopied(true));
+          }}
+          data-testid="exam-copy-note"
+        >
+          <Icon name="copy" /> {copied ? 'Kopyalandı' : 'Muayene notunu kopyala (HBYS / e-Nabız)'}
+        </button>
+        <button className="btn secondary grow" onClick={() => window.print()}>
+          <Icon name="print" /> Yazdır / PDF
+        </button>
+      </div>
     </div>
   );
 }

@@ -42,7 +42,7 @@ export function PrescriptionImport() {
   };
 
   return (
-    <Screen title="Odyolog reçetesi">
+    <Screen title="Ev manevrası reçetesi">
       <div className="card tint-primary stack" data-testid="rx-card">
         <div className="card-title">
           <Icon name="steth" />

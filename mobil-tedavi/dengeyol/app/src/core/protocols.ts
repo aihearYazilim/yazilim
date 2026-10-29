@@ -78,6 +78,8 @@ export interface ProtocolDef {
   /** Hasta modunda kullanılabilir mi; yalnızca reçeteyle mi? */
   patient: 'yes' | 'prescription' | 'no';
   summary: string;
+  /** Hasta için sade dilli özet (yoksa `summary`). */
+  patientSummary?: string;
   steps: StepDef[];
   sources: string[];
   cautions: string[];
@@ -123,6 +125,8 @@ const DIX_HALLPIKE: ProtocolDef = {
   patient: 'yes',
   summary:
     'Arka kanal BPPV için tanı testi. Baş 45° test tarafına çevrili ve 20–30° sarkıkken sırtüstü yatılır; baş dönmesi/nistagmus gözlenir.',
+  patientSummary:
+    'Kısa bir test: başınızı bir yana çevirip hızla sırtüstü yatacaksınız, baş yastıktan biraz geriye sarkacak. Baş dönmesi olup olmadığına bakıyoruz. Yaklaşık 2 dakika.',
   steps: [
     {
       id: 'dh-sit',
@@ -264,6 +268,8 @@ const EPLEY: ProtocolDef = {
   patient: 'yes',
   summary:
     'Arka kanal BPPV tedavisi. Dix-Hallpike pozisyonundan başlayarak baş 90° karşı tarafa, ardından gövdeyle birlikte yüz yere 45° bakacak şekilde döndürülür ve oturulur.',
+  patientSummary:
+    'Kulaktaki kristalleri yerine götüren 5 adımlı hareket: başınızı çevirip sırtüstü yatma, başı öbür yana çevirme, yan dönüp yere bakma ve oturma. Her adımda yaklaşık 1 dakika kalacaksınız; toplam 5 dakika.',
   steps: [
     {
       id: 'ep-sit',
@@ -336,7 +342,7 @@ const EPLEY: ProtocolDef = {
 
 const SEMONT: ProtocolDef = {
   id: 'semont',
-  name: 'Semont (kurtarıcı) manevrası',
+  name: 'Semont (serbestleştirici) manevrası',
   shortName: 'Semont',
   kind: 'maneuver',
   canal: 'PC',
@@ -344,6 +350,8 @@ const SEMONT: ProtocolDef = {
   patient: 'prescription',
   summary:
     'Arka kanal BPPV tedavisi. Baş sağlam tarafa 45° çevrilmişken etkilenen tarafa yan yatılır, ardından tek hızlı hareketle karşı tarafa geçilir.',
+  patientSummary:
+    'Kristalleri yerine götüren hızlı bir hareket: başınız çevrili otururken bir yana yatacak, sonra tek hamlede öbür yana geçeceksiniz. Toplam yaklaşık 4 dakika.',
   steps: [
     {
       id: 'se-sit',
@@ -510,7 +518,7 @@ const GUFONI_GEO: ProtocolDef = {
   sided: true,
   patient: 'no',
   summary:
-    'Yatay kanal geotropik (kanalitiyazis) tedavisi. Sağlam tarafa hızla yan yatılır, ardından baş 45° yere doğru çevrilir.',
+    'Yatay kanal geotropik (kanalolitiazis) tedavisi. Sağlam tarafa hızla yan yatılır, ardından baş 45° yere doğru çevrilir.',
   steps: [
     {
       id: 'gg-sit',
@@ -766,7 +774,7 @@ export function resolveProtocol(id: ProtocolId, side: Side | null): ResolvedProt
 
 /** Tanıya göre önerilen manevralar (ilk eleman varsayılan). */
 export function maneuversFor(canal: Canal, mechanism: 'canalithiasis' | 'cupulolithiasis' | 'unknown'): ProtocolId[] {
-  // Arka kanal kupulolitiyazisinde Semont önce önerilir (kupuladaki debrisi serbestleştirme amacı; düşük kanıt).
+  // Arka kanal kupulolitiazisinde Semont önce önerilir (kupuladaki debrisi serbestleştirme amacı; düşük kanıt).
   if (canal === 'PC') return mechanism === 'cupulolithiasis' ? ['semont', 'epley'] : ['epley', 'semont'];
   if (canal === 'HC') return mechanism === 'cupulolithiasis' ? ['gufoni-apo'] : ['bbq-roll', 'gufoni-geo'];
   return ['yacovino'];

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CONTRAINDICATIONS, diagnosisGate, GATE_TEXT, type CanalAnswer, type SideAnswer } from '../../../core/safety';
 import { store, useData } from '../../../state/store';
-import { CheckList, Choice, StepDots } from '../../components/Controls';
+import { CheckList, Choice, Segmented, StepDots } from '../../components/Controls';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 
@@ -121,6 +121,19 @@ export function Onboarding() {
               <a href="tel:112">112'yi arayın</a>.
             </p>
           </div>
+          <div className="card stack" data-testid="ob-fontsize">
+            <strong>Yazılar rahat okunuyor mu?</strong>
+            <Segmented
+              label="Yazı boyutu"
+              value={d.settings.fontScale}
+              onChange={(v) => store.update((x) => ({ ...x, settings: { ...x.settings, fontScale: v } }))}
+              options={[
+                { value: 'normal', label: 'Normal' },
+                { value: 'large', label: 'Büyük' },
+                { value: 'xlarge', label: 'Çok büyük' }
+              ]}
+            />
+          </div>
           <div className="card soft stack small">
             <p>
               DengeYol tanı koymaz ve hekim muayenesinin yerine geçmez. Bir araştırma prototipidir; tıbbi cihaz onayı yoktur. Verileriniz yalnızca bu cihazda
@@ -205,6 +218,13 @@ export function Onboarding() {
         <>
           <h1>Sizin için uygun mu?</h1>
           <p className="lead">Aşağıdakilerden size uyanları işaretleyin.</p>
+          <div className="notice info small">
+            <Icon name="info" />
+            <span>
+              İşitme kaybınız varsa da kullanabilirsiniz: işitme cihazınızı ya da kulaklığınızı Bluetooth ile telefona bağlayın, sesi en yükseğe alın ya da bir
+              yakınınızla yapın. Yazılar ekranda da görünür; titreşim ve bip sesleri ne zaman hareket edeceğinizi bildirir.
+            </span>
+          </div>
           <CheckList
             options={CONTRAINDICATIONS.map((c) => ({ value: c.id, label: c.text }))}
             values={contra}

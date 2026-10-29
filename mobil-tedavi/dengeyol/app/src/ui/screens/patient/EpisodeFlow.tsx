@@ -6,7 +6,7 @@
  *   treat    — pozitif tekrar testi sonrası yeniden manevra
  *   practice — deneme manevrası (atak kaydı tutulmaz; güvenlik soruları sorulur, günde en fazla 2)
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
 import type { Side } from '../../../core/protocols';
@@ -32,6 +32,7 @@ import {
   EARLY_RETEST_MS,
   needsRedFlags,
   nextAction,
+  nextMorning,
   pendingReferral,
   practiceAllowed,
   PRACTICE_PER_DAY
@@ -43,12 +44,16 @@ import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
 import { RunnerView, type RunnerOutcome } from '../RunnerView';
+import { speech } from '../../../platform/speech';
+import { downloadReminder } from '../../../platform/reminders';
 
 type Mode = 'start' | 'retest' | 'treat' | 'practice';
 
 type Stage =
   | { k: 'blocked'; why: 'referral' | 'practiceLimit' }
   | { k: 'redflags'; i: number; answers: Record<string, YesNo> }
+  /** Durduran yanıttan sonra onay: yanlış dokunuş bir atağı hekime yönlendirmesin. */
+  | { k: 'redflagConfirm'; i: number; answers: Record<string, YesNo> }
   | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[] }
   | { k: 'calibrate' }
   | { k: 'sideConfirm'; known: Side }
@@ -60,7 +65,7 @@ type Stage =
   | { k: 'maneuver'; side: Side }
   | { k: 'after'; side: Side }
   | { k: 'retestRun'; side: Side }
-  | { k: 'end'; tone: 'ok' | 'warn' | 'danger' | 'info'; title: string; text: string; testid: string; extra?: 'treat' };
+  | { k: 'end'; tone: 'ok' | 'warn' | 'danger' | 'info'; title: string; text: string; testid: string; extra?: 'treat'; remindAt?: number; remindTitle?: string };
 
 function updateEpisode(id: string, fn: (e: Episode) => Episode) {
   store.update((d) => ({ ...d, episodes: d.episodes.map((e) => (e.id === id ? fn(e) : e)) }));
@@ -74,6 +79,12 @@ export function EpisodeFlow() {
   const profile = d.patient;
   const [episodeId, setEpisodeId] = useState<string | null>(() => activeEpisode(d)?.id ?? null);
   const [cal, setCal] = useState<Calibration | null>(null);
+  /** Kayıtlı kalibrasyon varken tanıtma ekranı atlanır (telefon her manevra başında yine yerleştirilip ölçülür). */
+  const [forceCal, setForceCal] = useState(false);
+  const recalibrate = () => {
+    setForceCal(true);
+    setStage({ k: 'calibrate' });
+  };
 
   // Deneme manevrasında "aynı baş dönmesi mi" sorusu anlamsızdır; diğer güvenlik soruları her seferinde sorulur.
   const flags = mode === 'practice' ? RED_FLAGS.filter((q) => q.id !== 'same') : RED_FLAGS;
@@ -372,7 +383,9 @@ export function EpisodeFlow() {
               tone: 'ok',
               title: 'Test baş dönmesini tetiklemedi',
               text: 'Manevra işe yaramış görünüyor. Kristallerin yerinde kaldığını görmek için yarın sabah bir kez daha test edelim.',
-              testid: 'end-retest-negative'
+              testid: 'end-retest-negative',
+              remindAt: nextMorning(Date.now()),
+              remindTitle: 'DengeYol: sabah testi'
             }
       );
       return;
@@ -430,7 +443,8 @@ export function EpisodeFlow() {
       const q = flags[stage.i]!;
       const answer = (v: YesNo) => {
         const answers = { ...stage.answers, [q.id]: v };
-        if (v === q.stopsOn || stage.i === flags.length - 1) onRedFlagsDone(answers);
+        if (v === q.stopsOn) setStage({ k: 'redflagConfirm', i: stage.i, answers });
+        else if (stage.i === flags.length - 1) onRedFlagsDone(answers);
         else setStage({ k: 'redflags', i: stage.i + 1, answers });
       };
       return (
@@ -442,11 +456,36 @@ export function EpisodeFlow() {
           <p className="small muted">
             Soru {stage.i + 1} / {flags.length}
           </p>
-          <h1 data-testid="redflag-question" data-qid={q.id}>
-            {q.text}
-          </h1>
+          <SpokenQuestion text={q.text} qid={q.id} />
           <div className="spacer" />
-          <YesNoButtons onAnswer={answer} value={stage.answers[q.id]} />
+          <YesNoButtons onAnswer={answer} value={stage.answers[q.id]} yesLabel="Evet, var" noLabel="Hayır, yok" lockKey={q.id} />
+        </Screen>
+      );
+    }
+
+    case 'redflagConfirm': {
+      const q = flags[stage.i]!;
+      const back = () => {
+        const answers = { ...stage.answers };
+        delete answers[q.id];
+        setStage({ k: 'redflags', i: stage.i, answers });
+      };
+      return (
+        <Screen title="Güvenlik soruları" onBack={back}>
+          <div className="card tint-warn stack" data-testid="redflag-confirm">
+            <p className="small muted">Yanıtınız:</p>
+            <h2>{q.text}</h2>
+            <p className="lead">
+              <strong>Evet</strong>
+            </p>
+            <p>Bu yanıt nedeniyle manevra yapılmayacak. Doğru mu?</p>
+          </div>
+          <button className="btn warn block xl" onClick={() => onRedFlagsDone(stage.answers)} data-testid="redflag-confirm-yes">
+            Evet, doğru
+          </button>
+          <button className="btn secondary block xl" onClick={back} data-testid="redflag-confirm-back">
+            Yanlış dokundum, soruya dön
+          </button>
         </Screen>
       );
     }
@@ -484,6 +523,7 @@ export function EpisodeFlow() {
       );
 
     case 'calibrate':
+      if (profile.calibration && !forceCal) return <RunOnce key="saved-cal" run={() => afterCalibration(profile.calibration!)} />;
       return (
         <Screen title="Telefonu tanıtma" back="/hasta">
           <Calibrate audience="patient" onDone={afterCalibration} onCancel={() => nav('/hasta')} />
@@ -545,6 +585,7 @@ export function EpisodeFlow() {
           side={side}
           mode="patient"
           calibration={cal}
+          onRecalibrate={recalibrate}
           onExit={(o) => onSideRunExit(o, stage.order, stage.results)}
           intro={
             <div className="notice info">
@@ -602,6 +643,7 @@ export function EpisodeFlow() {
           side={stage.side}
           mode="patient"
           calibration={cal}
+          onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage.side)}
           intro={
             mode === 'practice' ? (
@@ -644,7 +686,8 @@ export function EpisodeFlow() {
               mode === 'practice'
                 ? 'Artık adımları biliyorsunuz. Baş dönmeniz başladığında aynı yönergelerle yapacaksınız.'
                 : `10 dakika oturarak dinlenin; ani baş hareketlerinden kaçının. ${formatTime(Date.now() + EARLY_RETEST_MS)} civarında ana ekrandan tekrar testini yapın.`,
-            testid: 'end-maneuver-done'
+            testid: 'end-maneuver-done',
+            ...(mode === 'practice' ? {} : { remindAt: Date.now() + EARLY_RETEST_MS, remindTitle: 'DengeYol: 30 dakika tekrar testi' })
           });
         }
       }} />;
@@ -657,6 +700,7 @@ export function EpisodeFlow() {
           side={stage.side}
           mode="patient"
           calibration={cal}
+          onRecalibrate={recalibrate}
           onExit={(o) => onRetestExit(o, stage.side)}
           intro={
             <div className="notice info">
@@ -692,6 +736,15 @@ export function EpisodeFlow() {
               <Icon name="alert" />
               <span>{(() => { const ds = episodeDose(ep, profile, Date.now(), d.episodes); return ds.allowed ? '' : DOSE_TEXT[ds.reason]; })()}</span>
             </div>
+          )}
+          {stage.remindAt && (
+            <button
+              className="btn secondary block"
+              onClick={() => downloadReminder(stage.remindAt!, stage.remindTitle ?? 'DengeYol', 'DengeYol uygulamasını açıp ana ekrandaki testi yapın.')}
+              data-testid="add-reminder"
+            >
+              <Icon name="calendar" /> Takvime hatırlatıcı ekle ({formatTime(stage.remindAt)})
+            </button>
           )}
           <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })} data-testid="go-home">
             Ana ekran
@@ -747,4 +800,27 @@ function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | '
       />
     </Screen>
   );
+}
+
+/** Soruyu ekranda gösterir ve (ses açıksa) bir kez sesli okur. */
+function SpokenQuestion({ text, qid }: { text: string; qid: string }) {
+  useEffect(() => {
+    speech.speak(text, 'high');
+  }, [text]);
+  return (
+    <h1 data-testid="redflag-question" data-qid={qid}>
+      {text}
+    </h1>
+  );
+}
+
+/** Bir kez çalıştırır (render sırasında durum değiştirmemek için effect içinde). */
+function RunOnce({ run }: { run: () => void }) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current) return;
+    done.current = true;
+    run();
+  });
+  return null;
 }

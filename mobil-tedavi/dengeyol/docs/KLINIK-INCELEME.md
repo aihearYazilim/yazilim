@@ -110,7 +110,7 @@ Aynalama da kontrol edildi: `mirrorTarget` θ'yı −θ yapar ve `wrapDeg(−180
 | Yacovino `ya-1…ya-3` | 30 s (+30 / +15 / +15 s) | K10a: özgün manevrada her pozisyon ~30 s | DOĞRU. `ya-2` için **BELİRSİZ** öneri: `afterVertigoSec` 15 → 0. Gerekçe: K10a'ya göre çene-göğüs pozisyonu uzadıkça kanal dönüşümü riski artıyor (yalnızca simülasyon kanıtı). |
 | Dix-Hallpike `dh-lie` | 45 s taban | K1: tipik gecikme 5–20 s, *"In rare cases … as long as 1 minute"* | **BELİRSİZ.** 45 s pratikte yeterli. Klinisyen modunda gecikmesi uzun vakaları kaçırmamak için 60 s düşünülebilir. |
 
-**D4 gerekçesi (apogeotropik Gufoni):** Apogeotropik formun çoğunda mekanizma kupulolitiyazistir. Kupulolitiyaziste nistagmus, provoke edici pozisyon korunduğu sürece devam eder (K1 Tablo 7 ve K2b: ≥1 dk). "Baş dönmesi bitince +30 s" kuralı bu nedenle adımı belirsiz süre uzatabilir. Ayrıca kod, RKÇ'de etkinliği gösterilmiş sabit zamanlamadan (K3: 1 dk + ~2 dk) sapmış olur. `maxVertigoSec` değeri null olduğu için bir üst sınır da yok.
+**D4 gerekçesi (apogeotropik Gufoni):** Apogeotropik formun çoğunda mekanizma kupulolitiazistir. Kupulolitiaziste nistagmus, provoke edici pozisyon korunduğu sürece devam eder (K1 Tablo 7 ve K2b: ≥1 dk). "Baş dönmesi bitince +30 s" kuralı bu nedenle adımı belirsiz süre uzatabilir. Ayrıca kod, RKÇ'de etkinliği gösterilmiş sabit zamanlamadan (K3: 1 dk + ~2 dk) sapmış olur. `maxVertigoSec` değeri null olduğu için bir üst sınır da yok.
 
 ---
 
@@ -132,12 +132,12 @@ Aynalama da kontrol edildi: `mirrorTarget` θ'yı −θ yapar ve `wrapDeg(−180
 
 | Kural | Kod | Kaynak | Durum |
 |---|---|---|---|
-| PC kanalitiyazis | Yukarı vuran + torsiyonel; süre <60 s ise kanalitiyazis; gecikme ≤20 s ise "tipik" | K2a (Bárány PC-ca): *"latency of 1 or a few seconds … torsional … upper pole … toward the lower ear … upbeating … <1 min"*. K1 Tablo 6: gecikme 5–20 s, 60 s içinde düzelme. | **DOĞRU** |
-| PC kupulolitiyazis | Süre ≥60 s ise "kupulolitiyazis (olası)" | K2a (Bárány PC-cu, "emerging"): *"brief or no latency … lasts more than 1 minute"* | **DOĞRU**, ancak önerilen manevra listesi düzeltilmeli (bkz. D2) |
-| Gecikmesiz PC deseni uyarısı | latency=0 ve süre kısa ise santral uyarısı | K2a: kanalitiyazis gecikmelidir | DOĞRU |
+| PC kanalolitiazis | Yukarı vuran + torsiyonel; süre <60 s ise kanalolitiazis; gecikme ≤20 s ise "tipik" | K2a (Bárány PC-ca): *"latency of 1 or a few seconds … torsional … upper pole … toward the lower ear … upbeating … <1 min"*. K1 Tablo 6: gecikme 5–20 s, 60 s içinde düzelme. | **DOĞRU** |
+| PC kupulolitiazis | Süre ≥60 s ise "kupulolitiazis (olası)" | K2a (Bárány PC-cu, "emerging"): *"brief or no latency … lasts more than 1 minute"* | **DOĞRU**, ancak önerilen manevra listesi düzeltilmeli (bkz. D2) |
+| Gecikmesiz PC deseni uyarısı | latency=0 ve süre kısa ise santral uyarısı | K2a: kanalolitiazis gecikmelidir | DOĞRU |
 | HC geotropik | Güçlü taraf hasta | K1 Tablo 7: *"Geotropic form: the side with the strongest nystagmus is the affected ear."* | **DOĞRU** |
 | HC apogeotropik | Zayıf taraf hasta | K1 Tablo 7: *"Apogeotropic form: the side opposite the strongest nystagmus is the affected ear."* | **DOĞRU** |
-| HC apogeotropik etiketi | "apogeotropik (kupulolitiyazis)" | Bárány: apogeotropik ve ≥1 dk ise kupulolitiyazis (K2b). Appiani'nin (K5) tezi ise ön kolda serbest debris, yani kanalitiyazis. K1 Tablo 15 de iki olasılığı birlikte anıyor. | **DÜZELTİLMELİ, etiket** (bkz. D5) |
+| HC apogeotropik etiketi | "apogeotropik (kupulolitiazis)" | Bárány: apogeotropik ve ≥1 dk ise kupulolitiazis (K2b). Appiani'nin (K5) tezi ise ön kolda serbest debris, yani kanalolitiazis. K1 Tablo 15 de iki olasılığı birlikte anıyor. | **DÜZELTİLMELİ, etiket** (bkz. D5) |
 | Geotropik ≥1 dk, apogeotropik <1 dk notları | Rationale metni | K2b | DOĞRU |
 | İki tarafta farklı tipte yatay nistagmus | Tutarsız desen, santral uyarısı | K1 (santral bulgular) | DOĞRU (tutucu) |
 | AC (aşağı vuran + torsiyonel) | Olası, taraf yok, santral uyarısı | K1: *"downbeating vertical component … could imply anterior canal … should be considered with caution because downbeating positional nystagmus related to brainstem or cerebellar lesion can produce a similar pattern"*. K2b: AC "emerging". | **DOĞRU** |
@@ -148,7 +148,7 @@ Aynalama da kontrol edildi: `mirrorTarget` θ'yı −θ yapar ve `wrapDeg(−180
 **Eksik kurallar (öneri, BELİRSİZ):**
 1. **Çok kanallı BPPV uyarısı:** Hem PC hem HC önerisi aynı anda çıkarsa ayrı bir uyarı yok. K1'e göre çift taraflı ya da çok kanallı tutulum özellikle kafa travmasından sonra görülür. K12 de çok kanallı BPPV'yi kendi kendine tedaviden dışlamıştır. Öneri: "Çok kanallı BPPV olasılığı: tedavi sırasını klinisyen belirlesin" uyarısı eklensin.
 2. **Tedaviye yanıtsızlık:** K1, 2–3 manevraya yanıt yoksa santral nedenlerin araştırılmasını ve MR'ı önerir: *"especially after 2 or 3 attempted maneuvers … magnetic resonance imaging"*. Klinisyen modunda aynı tanıyla tekrar eden başarısız seanslar için bir uyarı eklenebilir.
-3. **Aşağı vuran + torsiyonel desen için ayırıcı tanı:** Bu desen arka kanalın ampulla dışı kolundaki kanalitiyazisle de görülebilir ("apogeotropik PC" varyantı). Bu bilgi bu incelemede birincil kaynakla doğrulanamadı. Rationale metnine "ayırıcı tanı: atipik arka kanal varyantları" eklenmesi düşünülebilir.
+3. **Aşağı vuran + torsiyonel desen için ayırıcı tanı:** Bu desen arka kanalın ampulla dışı kolundaki kanalolitiazisle de görülebilir ("apogeotropik PC" varyantı). Bu bilgi bu incelemede birincil kaynakla doğrulanamadı. Rationale metnine "ayırıcı tanı: atipik arka kanal varyantları" eklenmesi düşünülebilir.
 
 ---
 
@@ -206,9 +206,9 @@ Aynalama da kontrol edildi: `mirrorTarget` θ'yı −θ yapar ve `wrapDeg(−180
 |---|---|---|---|---|---|
 | D1 | `protocols.ts` | `BBQ_ROLL.sources[1]`, `GUFONI_GEO.sources[1]` | "Kim JS ve ark. Neurology 2012;78:159–166 (geotropik…)" | "Kim JS ve ark. Neurology 2012;79(7):700–707 (geotropik HC RKÇ: BBQ, Gufoni, sham)" | PubMed 22855868 |
 | D1 | `protocols.ts` | `GUFONI_APO.sources[1]` | "Kim JS ve ark. Neurology 2012;79:700–707 (apogeotropik…)" | "Kim JS ve ark. Neurology 2012;78(3):159–166 (apogeotropik HC RKÇ: Gufoni, baş sallama, sham)" | PubMed 22170885 |
-| D2 | `diagnosis.ts` | PC önerisi, `maneuvers: maneuversFor('PC','canalithiasis')` (satır 128) | Kupulolitiyazis olsa da ['epley','semont'] | `cupulo` ise ['semont','epley'] (`maneuversFor('PC', mech)` ve `protocols.ts` `maneuversFor` içinde `PC + cupulolithiasis → ['semont','epley']`) | K1: LM *"principally breaking the canaliths free from adherence to the cupula (cupulolithiasis)"*. Kanıt düzeyi düşük, öneri niteliğinde. |
+| D2 | `diagnosis.ts` | PC önerisi, `maneuvers: maneuversFor('PC','canalithiasis')` (satır 128) | Kupulolitiazis olsa da ['epley','semont'] | `cupulo` ise ['semont','epley'] (`maneuversFor('PC', mech)` ve `protocols.ts` `maneuversFor` içinde `PC + cupulolithiasis → ['semont','epley']`) | K1: LM *"principally breaking the canaliths free from adherence to the cupula (cupulolithiasis)"*. Kanıt düzeyi düşük, öneri niteliğinde. |
 | D4 | `protocols.ts` | `ga-1.afterVertigoSec`, `ga-2.afterVertigoSec` | 30, 30 | 0, 0 (sabit 60 s + 120 s). Alternatif: klinisyen el ile geçebilsin. | K3 protokolü: "after one minute … approximately 2 minutes later" |
-| D5 | `diagnosis.ts` | HC apogeotropik `label` | "apogeotropik (kupulolitiyazis)" | "apogeotropik (kupulolitiyazis ya da ön kol kanalitiyazisi)". `maneuversFor` yönlendirmesi `gufoni-apo` olarak kalsın; `mechanism` 'unknown' yapılmasın, aksi halde geotropik manevralara yönlenir. | K5 (ön kol tezi), K1 Tablo 15 |
+| D5 | `diagnosis.ts` | HC apogeotropik `label` | "apogeotropik (kupulolitiazis)" | "apogeotropik (kupulolitiazis ya da ön kol kanalolitiazisi)". `maneuversFor` yönlendirmesi `gufoni-apo` olarak kalsın; `mechanism` 'unknown' yapılmasın, aksi halde geotropik manevralara yönlenir. | K5 (ön kol tezi), K1 Tablo 15 |
 | D6 | `safety.ts` | `RED_FLAGS` | Yok | (a) `trauma`: "Son 2 hafta içinde başınızı çarptınız ya da kaza geçirdiniz mi?" → evet ise `doctor`. (b) `spontaneous`: "Baş dönmesi, başınızı hiç hareket ettirmeden kendiliğinden gelen ve dakikalar–saatler süren ataklar halinde mi?" → evet ise `doctor`. | K1 (travma ve çift taraflı tutulum; ayırıcı tanı), K12 tarama soruları |
 | D7 | `safety.ts` | `CONTRAINDICATIONS` | Boyun, karotis/kalp, mobilite | Yeni madde: "Ankilozan spondilit, ağır romatoid artrit, ileri kifoskolyoz, ciddi bel sorunu, omurilik yaralanması, morbid obezite, geçirilmiş inme ya da beyin damar hastalığı". Ayrı madde: bilişsel bozukluk. | K1 s. S12; K12 dışlama ölçütleri |
 | D8 | `protocols.ts` | `se-sit.say` | "Yatağın ortasında, bacaklarınız … sarkacak" | §6.1'deki metin | Açıklık |

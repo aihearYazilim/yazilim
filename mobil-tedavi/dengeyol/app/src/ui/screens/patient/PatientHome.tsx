@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { diagnosisGate, DOSE_TEXT, frequentRecurrence, GATE_TEXT } from '../../../core/safety';
 import { episodeDose, episodeSide, formatDateTime, formatTime, maneuversToday, nextAction, doseLimitsFor } from '../../../state/episodes';
+import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
 import { activeEpisode, store, useData } from '../../../state/store';
 import { Icon, Logo } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
@@ -48,9 +49,11 @@ export function PatientHome() {
           Kuruluma başla
         </button>
         <div className="card soft small stack">
-          <strong>Odyologunuz size bir reçete bağlantısı ya da QR kodu verdiyse</strong>
+          <strong>Odyoloğunuz ya da hekiminiz size bir reçete bağlantısı ya da QR kodu verdiyse</strong>
           <p>Bağlantıyı bu telefonda açın ya da QR kodu telefon kamerasıyla okutun; bilgiler otomatik yüklenir.</p>
+          <RxPaste />
         </div>
+        <InstallCard />
       </Screen>
     );
   }
@@ -121,10 +124,12 @@ export function PatientHome() {
             </>
           )}
         </dl>
-        <Link to="/hasta/kurulum" className="small">
-          Düzenle
+        <Link to="/hasta/kurulum" className="btn ghost">
+          Bilgilerimi düzenle
         </Link>
       </div>
+
+      <InstallCard />
 
       <div className="card soft row">
         <Icon name="phone" />
@@ -146,6 +151,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
   const side = episodeSide(ep, d.patient);
   const limits = doseLimitsFor(d.patient);
   const today = maneuversToday(ep, now);
+  const [confirmClose, setConfirmClose] = useState(false);
 
   const close = (status: 'resolved' | 'closed', note: string) =>
     store.update((x) => ({
@@ -190,6 +196,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
               </span>
             </div>
           )}
+          {!na.ready && <ReminderButton at={na.at} title="DengeYol: tekrar testi zamanı" />}
         </div>
       )}
 
@@ -217,6 +224,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
               </span>
             </div>
           )}
+          {!na.ready && <ReminderButton at={na.at} title="DengeYol: sabah testi zamanı" />}
         </div>
       )}
 
@@ -259,10 +267,116 @@ function ActiveEpisodeCard({ now }: { now: number }) {
         <button className="btn secondary grow" onClick={() => nav(`/hasta/rapor/${ep.id}`)}>
           <Icon name="print" /> Rapor
         </button>
-        <button className="btn ghost grow" onClick={() => close('closed', 'Kullanıcı kapattı')}>
-          Atak geçti, kapat
+        {!confirmClose && (
+          <button className="btn ghost grow" onClick={() => setConfirmClose(true)} data-testid="close-episode">
+            Atak geçti, kapat
+          </button>
+        )}
+      </div>
+      {confirmClose && (
+        <div className="card tint-warn stack" data-testid="close-confirm">
+          <p>
+            Atağı kapatırsanız kalan tekrar testleri yapılmaz. Tekrar testleri, kristallerin yerinde kalıp kalmadığını gösterir. Yine de kapatılsın mı?
+          </p>
+          <div className="row wrap">
+            <button className="btn warn grow" onClick={() => close('closed', 'Kullanıcı kapattı')} data-testid="close-confirm-yes">
+              Evet, kapat
+            </button>
+            <button className="btn secondary grow" onClick={() => setConfirmClose(false)}>
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReminderButton({ at, title }: { at: number; title: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      className="btn secondary"
+      onClick={() => {
+        downloadReminder(at, title, 'DengeYol uygulamasını açıp ana ekrandaki testi yapın. Yaklaşık 2 dakika sürer.');
+        setDone(true);
+      }}
+      data-testid="add-reminder"
+    >
+      <Icon name="calendar" /> {done ? 'Takvim dosyası indirildi — açıp kaydedin' : 'Takvime hatırlatıcı ekle'}
+    </button>
+  );
+}
+
+/** Ana ekrana ekleme rehberi (yüklü değilse). iPhone'da Safari verisi ile ana ekran uygulaması ayrı tutulur. */
+function InstallCard() {
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem('dengeyol:installHidden') === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (hidden || isStandalone()) return null;
+  const ios = isIos();
+  return (
+    <div className="card soft stack small" data-testid="install-card">
+      <strong>Uygulamayı ana ekrana ekleyin</strong>
+      <p>
+        {ios
+          ? 'Safari\'de alttaki Paylaş düğmesine, ardından "Ana Ekrana Ekle"ye dokunun. Atak geldiğinde DengeYol\'u ana ekrandan açın. Not: iPhone\'da ana ekrandaki uygulama Safari\'deki bilgileri görmez; reçeteniz varsa bağlantıyı ana ekrandan açtığınız uygulamada yeniden açın ya da yapıştırın.'
+          : 'Tarayıcı menüsünden "Uygulamayı yükle" ya da "Ana ekrana ekle"yi seçin. Atak geldiğinde DengeYol\'u ana ekrandan açın; internet olmadan da çalışır.'}
+      </p>
+      <button
+        className="btn ghost"
+        onClick={() => {
+          try {
+            localStorage.setItem('dengeyol:installHidden', '1');
+          } catch {
+            /* yok say */
+          }
+          setHidden(true);
+        }}
+      >
+        Anladım, gizle
+      </button>
+    </div>
+  );
+}
+
+/** Reçete bağlantısını uygulamanın içine yapıştırma (QR okutulamadığında ya da iPhone ana ekran uygulamasında). */
+export function RxPaste() {
+  const nav = useNavigate();
+  const [v, setV] = useState('');
+  const [err, setErr] = useState(false);
+  return (
+    <div className="stack" style={{ gap: 8 }}>
+      <label htmlFor="rxpaste">Ya da bağlantıyı buraya yapıştırın:</label>
+      <div className="row">
+        <input
+          id="rxpaste"
+          className="input grow"
+          value={v}
+          onChange={(e) => {
+            setV(e.target.value);
+            setErr(false);
+          }}
+          placeholder="https://…#/recete/…"
+          data-testid="rx-paste"
+        />
+        <button
+          className="btn secondary"
+          onClick={() => {
+            const t = extractRxToken(v);
+            if (t) nav(`/recete/${t}`);
+            else setErr(true);
+          }}
+          data-testid="rx-paste-open"
+        >
+          Aç
         </button>
       </div>
+      {err && <span className="small" style={{ color: 'var(--danger)' }}>Bu bir reçete bağlantısına benzemiyor.</span>}
     </div>
   );
 }

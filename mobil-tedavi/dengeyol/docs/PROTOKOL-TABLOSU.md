@@ -68,7 +68,7 @@ Kaynaklar:
 Uyarılar:
 - Boyun hastalığı, yakın boyun cerrahisi/travması, ciddi karotis darlığı, kararsız kalp hastalığı olanlarda hekim kararı gerekir.
 
-## Semont (kurtarıcı) manevrası
+## Semont (serbestleştirici) manevrası
 
 - Kanal: PC · Tür: manevra · Kullanım: klinisyen; hastada yalnız reçeteyle
 - Özet: Arka kanal BPPV tedavisi. Baş sağlam tarafa 45° çevrilmişken etkilenen tarafa yan yatılır, ardından tek hızlı hareketle karşı tarafa geçilir.
@@ -115,7 +115,7 @@ Uyarılar:
 ## Gufoni manevrası (geotropik yatay kanal)
 
 - Kanal: HC · Tür: manevra · Kullanım: yalnız klinisyen
-- Özet: Yatay kanal geotropik (kanalitiyazis) tedavisi. Sağlam tarafa hızla yan yatılır, ardından baş 45° yere doğru çevrilir.
+- Özet: Yatay kanal geotropik (kanalolitiazis) tedavisi. Sağlam tarafa hızla yan yatılır, ardından baş 45° yere doğru çevrilir.
 - Kanıt notu: Sınıf I kanıt (Kim 2012).
 
 | # | Adım | Hedef | En az bekleme | Belirti bitince + | Belirti üst sınırı (hasta) | Not |

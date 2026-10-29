@@ -100,17 +100,26 @@ async function answerRedFlags(page, stopOn = null) {
     const q = page.getByTestId('redflag-question');
     if (!(await q.isVisible().catch(() => false))) return;
     const id = await q.getAttribute('data-qid');
+    // Yanıt düğmeleri her yeni soruda kısa süre kilitli (çift dokunuş koruması)
+    await page.locator('.yesno:not([data-locked])').waitFor();
     if (stopOn && id === stopOn) {
-      await page.getByRole('button', { name: 'Evet', exact: true }).click();
+      await page.getByTestId('yn-yes').click();
+      await page.getByTestId('redflag-confirm-yes').click();
       return;
     }
-    // "same" sorusu: Evet = güvenli; diğerleri: Hayır = güvenli
-    await page.getByRole('button', { name: id === 'same' ? 'Evet' : 'Hayır', exact: true }).click();
-    await page.waitForTimeout(80);
+    // Her soruda güvenli yanıt "Hayır, yok"
+    await page.getByTestId('yn-no').click();
+    await page.waitForFunction((prev) => {
+      const el = document.querySelector('[data-testid="redflag-question"]');
+      return !el || el.getAttribute('data-qid') !== prev;
+    }, id);
   }
 }
 
 async function calibrate(page) {
+  // Kayıtlı kalibrasyon varsa tanıtma ekranı atlanır (telefon her başlatmada yeniden yerleştirilir).
+  await page.locator('[data-testid="cal-start"], [data-testid="runner-ready"], [role="radio"]').first().waitFor({ timeout: 15000 });
+  if (!(await page.getByTestId('cal-start').isVisible().catch(() => false))) return;
   await page.getByTestId('cal-start').click();
   await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
   await page.getByTestId('cal-continue').click();
@@ -316,6 +325,62 @@ await step('Hasta: hekime yönlendirilen ataktan sonra yeni atak onay ister; den
   await page.goto(BASE + '#/hasta');
   await page.goto(BASE + '#/hasta/atak/practice');
   await page.getByTestId('blocked-practice').waitFor();
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekranı çevir, ekrana dokunarak işaret', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 5 }, data: { patient: PATIENT_OK } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  // İlk soruya yanlışlıkla "Evet" → onay ekranı → "Yanlış dokundum" → aynı soru
+  const q = page.getByTestId('redflag-question');
+  const firstId = await q.getAttribute('data-qid');
+  await page.locator('.yesno:not([data-locked])').waitFor();
+  await page.getByTestId('yn-yes').click();
+  await page.getByTestId('redflag-confirm').waitFor();
+  await snap(page, 'yanlis-dokunus-onayi');
+  await page.getByTestId('redflag-confirm-back').click();
+  if ((await q.getAttribute('data-qid')) !== firstId) throw new Error('yanlış dokunuştan sonra aynı soruya dönülmedi');
+  await answerRedFlags(page);
+  await calibrate(page);
+  await page.getByRole('radio', { name: /Evet, sağ taraf/ }).click();
+  await page.getByTestId('runner-ready').waitFor();
+  await page.getByTestId('runner-assist').getByRole('button', { name: 'Bir yakınımla' }).click();
+  await page.getByTestId('helper-card').waitFor();
+  await page.getByTestId('runner-steps-preview').locator('summary').click();
+  await snap(page, 'yardimci-hazirlik');
+  await page.getByTestId('runner-start').click();
+  await page.getByTestId('runner').waitFor({ timeout: 30000 });
+  // Pozisyon aranırken düzeltme yönü ekranda yazılı (demo başı oturur durumda: "Şimdi yatın" vb.)
+  await page.getByTestId('runner-hint').waitFor({ timeout: 20000 });
+  await page.getByTestId('runner-flip').click();
+  if (!(await page.getByTestId('runner').evaluate((el) => el.classList.contains('flipped')))) throw new Error('ekran çevrilmedi');
+  await snap(page, 'yardimci-ekran-cevrik');
+  await page.getByTestId('runner-flip').click();
+  // Ekranın ortasına (başlık) dokunmak baş dönmesini işaretler
+  await page.getByTestId('runner-step-title').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="vertigo-pad"]')?.getAttribute('aria-pressed') === 'true');
+  await snap(page, 'ekrana-dokunarak-isaret');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Klinisyen: tanı onaylanmadan reçete kilitli; aynı kod ikinci hasta açmaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await page.goto(BASE + '#/odyolog');
+  await page.getByTestId('clin-new').click();
+  await page.getByTestId('clin-code').fill('K-7');
+  await page.getByTestId('clin-create').click();
+  await page.getByRole('button', { name: 'Reçete' }).click();
+  await page.getByTestId('rx-blocked').waitFor();
+  await page.goto(BASE + '#/odyolog');
+  await page.getByTestId('clin-new').click();
+  await page.getByTestId('clin-code').fill('k-7');
+  await page.getByTestId('clin-existing').waitFor();
+  await page.getByTestId('clin-create').click();
+  const n = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')).clinicPatients.length);
+  if (n !== 1) throw new Error('aynı kodla ikinci hasta kaydı açıldı: ' + n);
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });

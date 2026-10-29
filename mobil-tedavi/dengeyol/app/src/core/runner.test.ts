@@ -294,3 +294,36 @@ describe('Semont hızlı geçiş ölçümü', () => {
     expect(rec.transitionSec!).toBeGreaterThan(2);
   });
 });
+
+describe('kullanıcı ajanı düzeltmeleri', () => {
+  it('baş dönmesi işaretliyken 30 sn arayla "geçtiyse dokunun" hatırlatılır, durdurma kuralı aynen kalır', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    let markedAt: number | null = null;
+    while (x.t < 400000 && x.s.phase !== 'safetyStop') {
+      x.t += 100;
+      const st = x.cfg.protocol.steps[x.s.stepIndex]!;
+      send(x, { type: 'tick', pose: ideal(st.target) });
+      if (x.s.stepIndex === 1 && markedAt === null) {
+        send(x, { type: 'vertigoToggle' });
+        markedAt = x.t;
+      }
+    }
+    const reminders = x.cues.filter((c) => c.kind === 'speak' && c.text.startsWith('Baş dönmesi geçtiyse'));
+    // 30, 60 ve 90. saniyede; 120 s sınırında hatırlatma yerine durdurma gelir.
+    expect(reminders.length).toBe(3);
+    expect(x.s.phase).toBe('safetyStop');
+  });
+
+  it('baş dönmesi başlangıcı ve bitişi farklı titreşimle bildirilir', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    x.t += 500;
+    send(x, { type: 'vertigoToggle' });
+    x.t += 2000;
+    send(x, { type: 'vertigoToggle' });
+    const h = x.cues.filter((c) => c.kind === 'haptic').map((c) => (c as { pattern: string }).pattern);
+    expect(h).toContain('markOn');
+    expect(h).toContain('markOff');
+  });
+});

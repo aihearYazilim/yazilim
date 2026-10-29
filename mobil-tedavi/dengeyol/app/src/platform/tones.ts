@@ -2,7 +2,18 @@
  * Ses tonları (Web Audio): olay bipleri ve "park sensörü" tarzı yaklaşma sesi.
  * Yaklaşma sesi: hedefe yaklaştıkça bipler sıklaşır ve tizleşir; hedefe girince susar.
  */
-type ToneName = 'reached' | 'stepDone' | 'countdown' | 'done' | 'alarm' | 'test';
+export type ToneName =
+  | 'reached'
+  | 'stepDone'
+  | 'countdown'
+  | 'done'
+  | 'alarm'
+  | 'test'
+  | 'move'
+  | 'drift'
+  | 'markOn'
+  | 'markOff'
+  | 'pause';
 
 class Tones {
   enabled = true;
@@ -25,7 +36,8 @@ class Tones {
     }
   }
 
-  private beep(freq: number, ms: number, when = 0, gain = 0.18) {
+  /** Tonlar bilerek pes (≤ 1 kHz) ve yüksektir: yaşa bağlı işitme kaybı önce tizleri etkiler. */
+  private beep(freq: number, ms: number, when = 0, gain = 0.3) {
     if (!this.enabled || !this.ctx) return;
     const t0 = this.ctx.currentTime + when;
     const o = this.ctx.createOscillator();
@@ -43,25 +55,43 @@ class Tones {
   play(name: ToneName) {
     switch (name) {
       case 'reached':
-        this.beep(880, 180);
-        this.beep(1175, 260, 0.18);
+        this.beep(523, 200);
+        this.beep(784, 400, 0.22);
         break;
       case 'stepDone':
-        this.beep(660, 120);
-        this.beep(880, 120, 0.15);
-        this.beep(1320, 220, 0.3);
+        this.beep(440, 120);
+        this.beep(587, 120, 0.15);
+        this.beep(784, 220, 0.3);
         break;
       case 'countdown':
-        this.beep(740, 120);
+        this.beep(587, 140);
         break;
       case 'done':
-        [523, 659, 784, 1047].forEach((f, i) => this.beep(f, 200, i * 0.16));
+        [392, 494, 587, 784].forEach((f, i) => this.beep(f, 220, i * 0.18));
         break;
       case 'alarm':
-        [0, 0.35, 0.7].forEach((w) => this.beep(440, 250, w, 0.3));
+        [0, 0.35, 0.7].forEach((w) => this.beep(392, 280, w, 0.4));
         break;
       case 'test':
-        this.beep(660, 200);
+        this.beep(523, 250);
+        break;
+      case 'move':
+        this.beep(440, 260);
+        this.beep(440, 260, 0.42);
+        break;
+      case 'drift':
+        [0, 0.16, 0.32].forEach((w) => this.beep(330, 110, w, 0.35));
+        break;
+      case 'markOn':
+        this.beep(660, 220);
+        break;
+      case 'markOff':
+        this.beep(660, 140);
+        this.beep(440, 200, 0.2);
+        break;
+      case 'pause':
+        this.beep(392, 350);
+        this.beep(330, 350, 0.45);
         break;
     }
   }

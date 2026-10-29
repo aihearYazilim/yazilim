@@ -20,7 +20,7 @@ describe('tanı önerisi', () => {
     expect(r.suggestions[0]!.maneuvers[0]).toBe('epley');
   });
 
-  it('≥1 dk süren arka kanal → kupulolitiyazis (olası)', () => {
+  it('≥1 dk süren arka kanal → kupulolitiazis (olası)', () => {
     const r = suggestDiagnosis({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 90 }), dhR: f({}) });
     expect(r.suggestions[0]).toMatchObject({ canal: 'PC', side: 'L', mechanism: 'cupulolithiasis', confidence: 'olası' });
     expect(r.suggestions[0]!.maneuvers[0]).toBe('semont');
@@ -84,5 +84,29 @@ describe('tanı önerisi', () => {
     const r = suggestDiagnosis({ dhR: f({}), dhL: f({}) });
     expect(r.negative).toBe(true);
     expect(r.suggestions).toHaveLength(0);
+  });
+});
+
+describe('kullanıcı ajanı bulguları', () => {
+  it('diğer tarafta saf aşağı vuran nistagmus varken arka kanal "tipik" sayılmaz', () => {
+    const r = suggestDiagnosis({
+      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20, vertigo: true }),
+      dhL: f({ nystagmus: 'downbeat-pure' })
+    });
+    expect(r.warnings.length).toBeGreaterThan(0);
+    expect(r.suggestions.find((s) => s.canal === 'PC')!.confidence).toBe('olası');
+  });
+  it('gecikmesiz ve uzun arka kanal yanıtında uyarı verilir', () => {
+    const r = suggestDiagnosis({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 0, durationSec: 95 }) });
+    expect(r.warnings.some((w) => w.includes('kupulolitiazisi'))).toBe(true);
+  });
+  it('apogeotropik roll: bir tarafın şiddeti girilmemişse taraf seçilmez', () => {
+    const r = suggestDiagnosis({
+      rollR: f({ nystagmus: 'horizontal-apogeotropic', intensity: 2, durationSec: 70 }),
+      rollL: f({ nystagmus: 'horizontal-apogeotropic', intensity: 0, durationSec: 70 })
+    });
+    const hc = r.suggestions.find((s) => s.canal === 'HC')!;
+    expect(hc.side).toBeNull();
+    expect(hc.maneuvers).toEqual([]);
   });
 });

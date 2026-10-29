@@ -10,7 +10,7 @@
   --line: #e2e7ee;
   --text: #0d1726;
   --text-2: #4a5668;
-  --muted: #6b7789;
+  --muted: #566173;
   --primary: #0f766e;
   --primary-strong: #0b5f58;
   --primary-soft: #d8f2ee;
@@ -19,7 +19,7 @@
   --accent-soft: #e6e5ff;
   --ok: #15803d;
   --ok-soft: #dcf5e4;
-  --warn: #b45309;
+  --warn: #96440a;
   --warn-soft: #fdf0d9;
   --danger: #c81e1e;
   --danger-soft: #fde4e4;
@@ -34,6 +34,7 @@
   --gauge-target-line: #0f766e;
   --gauge-head: #ffffff;
   --gauge-head-line: #9aa6b6;
+  --on-strong: #ffffff;
   color-scheme: light;
 }
 
@@ -67,6 +68,7 @@
     --gauge-target-line: #2dd4bf;
     --gauge-head: #22314d;
     --gauge-head-line: #6b7a96;
+    --on-strong: #1a0808;
     color-scheme: dark;
   }
 }
@@ -100,6 +102,7 @@
   --gauge-head: #22314d;
   --gauge-head-line: #6b7a96;
   color-scheme: dark;
+  --on-strong: #1a0808;
 }
 
 :root[data-font='large'] {
@@ -357,11 +360,11 @@ p {
 }
 .btn.danger {
   background: var(--danger);
-  color: #fff;
+  color: var(--on-strong);
 }
 .btn.warn {
   background: var(--warn);
-  color: #fff;
+  color: var(--on-strong);
 }
 .btn.xl {
   min-height: 72px;
@@ -890,6 +893,20 @@ textarea.input {
   width: 100%;
   max-width: 300px;
   align-self: center;
+  /* Esnek sütunda küçülüp okunmaz hale gelmesin */
+  flex-shrink: 0;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  accent-color: var(--primary);
+}
+
+.signature {
+  min-height: 72px;
 }
 
 /* --- Yazdırma (rapor) --------------------------------------------------- */
@@ -901,6 +918,9 @@ textarea.input {
   .topbar,
   .footer-actions,
   .no-print,
+  .btn,
+  .seg,
+  .notice.no-print,
   .sim-badge,
   .sim-panel,
   .sim-toggle {
@@ -920,5 +940,106 @@ textarea.input {
   * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* --- Kullanıcı ajanı iyileştirmeleri: yürütücü ------------------------------------------ */
+/* Başucundaki yardımcı/klinisyen için ekranı 180° çevir (elle; otomatik dönmez). */
+.runner.flipped {
+  transform: rotate(180deg);
+}
+.runner .runner-head .btn.secondary {
+  min-height: 48px;
+}
+.hold-btn {
+  position: relative;
+  overflow: hidden;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.1;
+}
+.hold-btn .small {
+  font-weight: 600;
+  opacity: 0.8;
+}
+.hold-btn::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 0;
+  background: var(--primary);
+}
+.hold-btn.pressing::after {
+  width: 100%;
+  transition: width var(--hold-ms, 700ms) linear;
+}
+.hint-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-soft);
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.hint-arrow {
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--warn);
+  flex: none;
+}
+.caption {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 1.15rem;
+  font-weight: 600;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.caption svg {
+  flex: none;
+  margin-top: 3px;
+}
+.runner-actions {
+  display: flex;
+  gap: 10px;
+  padding: 8px 16px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+.runner-actions .btn {
+  min-height: 56px;
+}
+
+/* Yatay ekranda gösterge ve sayaç kaybolmasın: iki sütun, daha küçük dokunma alanı */
+@media (orientation: landscape) and (max-height: 520px) {
+  .runner-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+    max-width: none;
+  }
+  .runner-body > .runner-title,
+  .runner-body > .runner-instr {
+    grid-column: 1;
+  }
+  .runner-visual {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+  }
+  .runner-visual svg {
+    max-height: 52vh;
+  }
+  .vertigo-pad {
+    min-height: 60px;
   }
 }

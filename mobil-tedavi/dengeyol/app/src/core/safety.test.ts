@@ -22,10 +22,13 @@ describe('kırmızı bayraklar', () => {
     a.neuro = 'yes';
     expect(evaluateRedFlags(a)).toMatchObject({ stop: true, action: 'emergency' });
   });
-  it('"aynı baş dönmesi mi?" sorusuna hayır → hekim', () => {
+  it('"önceki BPPV\'den farklı mı?" sorusuna evet → hekim', () => {
     const a = allSafe();
-    a.same = 'no';
+    a.same = 'yes';
     expect(evaluateRedFlags(a)).toMatchObject({ stop: true, action: 'doctor' });
+  });
+  it('her soruda güvenli yanıt "Hayır" (alışkanlıkla yanlış basmayı önler)', () => {
+    expect(RED_FLAGS.every((q) => q.stopsOn === 'yes')).toBe(true);
   });
   it('acil + hekim birlikte → acil öncelikli', () => {
     const a = allSafe();

@@ -17,11 +17,25 @@ export function ClinicianHome() {
   const [editProfile, setEditProfile] = useState(!d.clinician.name);
   const [name, setName] = useState(d.clinician.name ?? '');
   const [clinic, setClinic] = useState(d.clinician.clinic ?? '');
+  const [sensorless, setSensorless] = useState(!!d.clinician.sensorless);
+  const [query, setQuery] = useState('');
+  const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
+  const existing = code.trim() ? d.clinicPatients.find((p) => norm(p.code) === norm(code)) : undefined;
 
-  const exams = [...d.clinicExams].sort((a, b) => b.at - a.at);
+  const allExams = [...d.clinicExams].sort((a, b) => b.at - a.at);
+  const exams = query.trim()
+    ? allExams.filter((e) => norm(d.clinicPatients.find((p) => p.id === e.patientId)?.code ?? '').includes(norm(query)))
+    : allExams;
   const patientOf = (id: string) => d.clinicPatients.find((p) => p.id === id);
 
   const create = () => {
+    // Aynı kodla kayıtlı hasta varsa yeni kayıt açılmaz; muayene o hastaya eklenir.
+    if (existing) {
+      const e: ClinicExam = { id: uid(), patientId: existing.id, at: Date.now(), findings: {}, maneuvers: [], retestFindings: {} };
+      store.update((x) => ({ ...x, clinicExams: [...x.clinicExams, e] }));
+      nav(`/odyolog/muayene/${e.id}`);
+      return;
+    }
     const byNum = Number(birthYear);
     const p: ClinicPatient = {
       id: uid(),
@@ -37,7 +51,7 @@ export function ClinicianHome() {
 
   return (
     <Screen
-      title="Odyolog modu"
+      title="Klinisyen modu"
       wide
       right={
         <button className="btn icon" aria-label="Ayarlar" onClick={() => nav('/ayarlar')}>
@@ -58,16 +72,28 @@ export function ClinicianHome() {
           <h3>Bilgileriniz (reçete ve raporlarda görünür)</h3>
           <div className="field">
             <label htmlFor="cn">Ad soyad, unvan</label>
-            <input id="cn" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ör. Odyolog Ayşe Yılmaz" maxLength={80} />
+            <input id="cn" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ör. Odyolog Ayşe Yılmaz / Dr. Can Demir" maxLength={80} />
           </div>
           <div className="field">
             <label htmlFor="cc">Kurum</label>
             <input id="cc" className="input" value={clinic} onChange={(e) => setClinic(e.target.value)} placeholder="Ör. ... Hastanesi KBB / Odyoloji" maxLength={80} />
           </div>
+          <label className="row">
+            <input type="checkbox" className="check-lg" checked={sensorless} onChange={(e) => setSensorless(e.target.checked)} data-testid="clin-sensorless" />
+            <span>
+              Testlerde VNG / Frenzel gözlüğü kullanıyorum
+              <span className="small muted" style={{ display: 'block' }}>
+                Telefon alına konmaz; testler sensörsüz (zamanlayıcı ve elle onay) başlar.
+              </span>
+            </span>
+          </label>
           <button
             className="btn primary"
             onClick={() => {
-              store.update((x) => ({ ...x, clinician: { name: name.trim() || undefined, clinic: clinic.trim() || undefined } }));
+              store.update((x) => ({
+                ...x,
+                clinician: { name: name.trim() || undefined, clinic: clinic.trim() || undefined, sensorless: sensorless || undefined }
+              }));
               setEditProfile(false);
             }}
             data-testid="clin-save-profile"
@@ -80,7 +106,10 @@ export function ClinicianHome() {
           <Icon name="steth" />
           <div className="grow">
             <strong>{d.clinician.name}</strong>
-            <div className="small muted">{d.clinician.clinic}</div>
+            <div className="small muted">
+              {d.clinician.clinic}
+              {d.clinician.sensorless ? ' · VNG/Frenzel (sensörsüz)' : ''}
+            </div>
           </div>
           <button className="btn ghost" onClick={() => setEditProfile(true)}>
             Düzenle
@@ -121,6 +150,14 @@ export function ClinicianHome() {
               />
             </div>
           </div>
+          {existing && (
+            <div className="notice info" data-testid="clin-existing">
+              <Icon name="info" />
+              <span>
+                <strong>{existing.code}</strong> kodlu hasta kayıtlı. Yeni muayene bu hastaya eklenecek.
+              </span>
+            </div>
+          )}
           <div className="row">
             <button className="btn primary grow" onClick={create} data-testid="clin-create">
               Muayeneyi başlat
@@ -133,8 +170,19 @@ export function ClinicianHome() {
       )}
 
       <h3>Son muayeneler</h3>
+      {allExams.length > 3 && (
+        <input
+          className="input"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Hasta kodu ile ara"
+          aria-label="Hasta kodu ile ara"
+          data-testid="clin-search"
+        />
+      )}
       {exams.length === 0 ? (
-        <div className="card soft center muted">Henüz muayene yok.</div>
+        <div className="card soft center muted">{allExams.length ? 'Bu kodla muayene yok.' : 'Henüz muayene yok.'}</div>
       ) : (
         <div className="list">
           {exams.slice(0, 50).map((e) => {

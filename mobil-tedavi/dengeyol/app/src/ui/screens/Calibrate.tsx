@@ -6,6 +6,8 @@
  * Telefon alındayken ekran görünmediği için 2. ve 3. adım sesli ve geri sayımlıdır.
  */
 import { useEffect, useRef, useState } from 'react';
+import { estimateSpeechSec } from '../../core/runner';
+import { store } from '../../state/store';
 import {
   type Calibration,
   CALIBRATION_ERROR_TEXT,
@@ -58,12 +60,19 @@ export function Calibrate({
 
   const P = audience === 'patient';
   const say = (t: string) => speech.speak(t, 'high');
+  /** Söyler ve konuşma bitene kadar (tahmini) + ek süre bekler: ölçüm yönerge bitmeden başlamasın. */
+  const sayAndWait = async (t: string, extraMs: number) => {
+    say(t);
+    const st = store.get().settings;
+    await wait((st.speech ? estimateSpeechSec(t, st.speechRate) * 1000 : 0) + extraMs);
+  };
 
   async function countdown(n: number) {
     for (let i = n; i > 0; i--) {
       if (!alive.current) return false;
       setCount(i);
       tones.play('countdown');
+      if (P) say(String(i));
       await wait(1000);
     }
     setCount(0);
@@ -93,12 +102,12 @@ export function Calibrate({
     }
     // 2) Alına yerleştir
     setStage('place');
-    say(
+    await sayAndWait(
       P
-        ? 'Telefonu ekranı dışa bakacak şekilde alnınıza yaslayın. Telefonun üst kenarı başınızın tepesine doğru olsun. Dik oturun ve tam karşıya bakın. Kıpırdamayın.'
-        : 'Telefonu ekranı dışa bakacak şekilde hastanın alnına yaslayın; üst kenar başın tepesine doğru. Hasta dik oturup karşıya baksın.'
+        ? 'Telefonun arkasını alnınıza yaslayın; ekranı karşıya baksın, üst kenarı saçlarınıza doğru olsun. Dik oturun ve tam karşıya bakın. Kıpırdamayın.'
+        : 'Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın; üst kenar saç çizgisine doğru. Hasta dik oturup karşıya baksın.',
+      P ? 2500 : 1500
     );
-    await wait(P ? 7500 : 5000);
     if (!alive.current) return;
     sim.upright();
     setStage('upright');
@@ -108,11 +117,11 @@ export function Calibrate({
       fail(null, P ? 'Telefon ölçüm sırasında kıpırdadı. Tekrar deneyelim; bu kez tamamen hareketsiz kalın.' : 'Ölçüm sırasında hareket oldu; tekrar deneyin.');
       return;
     }
-    haptics.play('tap');
+    haptics.play('move');
+    tones.play('move');
     // 3) Tavana bak
     setStage('lookup');
-    say(P ? 'Şimdi başınızı yavaşça geriye yatırın ve tavana bakın. Öyle kalın.' : 'Hasta başını geriye yatırıp tavana baksın.');
-    await wait(3200);
+    await sayAndWait(P ? 'Şimdi başınızı yavaşça geriye yatırın ve tavana bakın. Öyle kalın.' : 'Hastanın başını geriye yatırıp tavana baktırın.', 1200);
     if (!alive.current) return;
     sim.lookUp();
     if (!(await countdown(2))) return;
@@ -130,7 +139,11 @@ export function Calibrate({
     setStage('done');
     tones.play('reached');
     haptics.play('reached');
-    say(P ? 'Kalibrasyon tamam. Başınızı düzeltip telefona bakabilirsiniz.' : 'Kalibrasyon tamam.');
+    say(
+      P
+        ? 'Tamam, telefon tanındı. Başınızı düzeltin; telefonu alnınızdan alabilirsiniz. Başlarken yeniden yerleştirmenizi isteyeceğim.'
+        : 'Kalibrasyon tamam.'
+    );
     sim.upright();
   }
 
@@ -154,11 +167,32 @@ export function Calibrate({
                 ? 'Telefon, başınızın açısını ölçmek için alnınıza yaslanacak. Önce 20 saniyelik kısa bir ayar yapacağız.'
                 : 'Telefon hastanın alnına yaslanır; ekran dışa baktığı için açıları siz görürsünüz.'}
             </p>
-            <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
-              <li>Şimdi telefonu normal tutun ve "Başla"ya dokunun.</li>
-              <li>Sesli yönergeyle telefonu ekranı dışa bakacak şekilde alnınıza yaslayın; dik oturun, karşıya bakın.</li>
-              <li>Ardından başınızı geriye yatırıp tavana bakın.</li>
-            </ol>
+            {P ? (
+              <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
+                <li>Şimdi telefonu normal tutun ve "Başla"ya dokunun.</li>
+                <li>Sesli yönergeyle telefonun arkasını alnınıza yaslayın (ekran karşıya baksın); dik oturun, karşıya bakın.</li>
+                <li>Ardından başınızı geriye yatırıp tavana bakın.</li>
+              </ol>
+            ) : (
+              <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
+                <li>Telefonu elinizde normal tutup "Başla"ya dokunun (cihazın yön kuralı ölçülür).</li>
+                <li>Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın; hasta dik oturup karşıya baksın.</li>
+                <li>Ardından hastanın başını geriye yatırıp tavana baktırın.</li>
+              </ol>
+            )}
+            {P && (
+              <button
+                className="btn secondary"
+                onClick={() => {
+                  unlockAudio();
+                  tones.play('test');
+                  say('Beni duyuyor musunuz? Duyuyorsanız Başla düğmesine dokunun.');
+                }}
+                data-testid="cal-sound-test"
+              >
+                <Icon name="volume" /> Sesi dene: beni duyuyor musunuz?
+              </button>
+            )}
             <p className="small muted">Sesi açık tutun. Telefonun sessiz modu kapalı olmalı.</p>
           </div>
           <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">

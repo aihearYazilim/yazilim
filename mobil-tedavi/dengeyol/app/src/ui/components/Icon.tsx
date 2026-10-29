@@ -27,7 +27,8 @@ const P: Record<string, string> = {
   calendar: 'M3 5h18v16H3zM16 3v4M8 3v4M3 10h18',
   shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z',
   sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z',
-  timer: 'M12 22a8 8 0 100-16 8 8 0 000 16zM12 10v4l2 2M9 2h6'
+  timer: 'M12 22a8 8 0 100-16 8 8 0 000 16zM12 10v4l2 2M9 2h6',
+  rotate: 'M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5'
 };
 
 export function Icon({ name, size = 24, stroke = 2, title }: { name: keyof typeof P | string; size?: number; stroke?: number; title?: string }) {
