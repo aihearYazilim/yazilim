@@ -31,3 +31,10 @@ Dosya: `mobil-tedavi/dengeyol/docs/inceleme/<tur>/<kod>.md`, Türkçe, en fazla 
 3. Kaldırılabilecekler (minimalizm: gereksiz ekran, metin, düğme, ayar).
 4. En önemli 5 madde.
 Bitince son mesajında rapor yolunu ve en önemli 5 maddeyi ver.
+
+## 2. tur notu
+1. turun raporları `docs/inceleme/tur-1/` altında; bulguların neredeyse tamamı uygulandı (commit geçmişi:
+`git -C /home/user/yazilim log --oneline -8`). Bu turda: (a) 1. tur düzeltmelerinin gerçekten doğru ve yan etkisiz olduğunu
+doğrula, (b) özellikle yeni eklenen akışı denetle: soru → taraf sorusu → **Hazırlık** ekranı → (ilk kez) tanıtma → testler ve
+manevra **telefon alında kesintisiz** (kendiliğinden başlama, zincir, tek dokunuş geçiş ekranları), (c) yeni sorunları bul.
+Raporun 2. bölümüne "1. tur düzeltmesi doğrulandı / hatalı" satırlarını da ekle. Raporu `docs/inceleme/tur-2/<kod>.md` yaz.
