@@ -22,14 +22,19 @@ yeterlidir (pusula/manyetometre kullanılmaz; yatak yayları ve metal karyola ma
 Bu yüzden "oturup başı 45° çevir" adımı yalnızca yönergeyle yapılır ve **bir sonraki adımda** (sırtüstü yatınca) θ = ±45° olarak
 doğrulanır. Hasta başını çevirmeyi unutursa yatınca θ ≈ 0 ölçülür ve uygulama "başınızı sağa çevirin" der.
 
-**Kalibrasyon (her seans, ~20 s):**
-1. Telefon elde, okuma duruşunda → ivmeölçer işaret kuralı (Android ve iOS tarayıcıları ters işaret verebilir).
+**Tanıtma (yalnız ilk kullanımda, ~30 s) ve yerleştirme (her test/manevra başında, ~15–30 s):**
+1. Telefon elde, okuma duruşunda → ivmeölçer işaret kuralı (Android ve iOS tarayıcıları ters işaret verebilir). Kaydedilir.
 2. Telefon alında, dik oturuş ve karşıya bakış → nötr referans.
-3. Başı geriye yatırıp tavana bakış → ekranın içe mi dışa mı baktığı ve telefonun alındaki eğikliği.
-İki ölçümden TRIAD yöntemiyle düzeltme rotasyonu hesaplanır; alın eğimi ve telefonun alındaki küçük dönüklüğü otomatik
-düzeltilir. Telefon dikeyden 40°'den fazla eğikse, ters tutuluyorsa ya da tavana bakış yetersizse yeniden yerleştirme istenir.
-Testler 5 farklı telefon/yerleşim modelinde sağ/sol, sarkık ve yüz yere pozlarının 0,5°'den küçük hatayla geri kazanıldığını doğrular
-(`calibration.test.ts`). **Gerçek telefonlarda doğruluk henüz ölçülmedi** (Faz A, [YOL-HARITASI.md](YOL-HARITASI.md)).
+3. Başı geriye yatırıp tavana bakış (en az 25°) → ekranın içe mi dışa mı baktığı ve kulaktan kulağa eksen.
+İki ölçümden TRIAD yöntemiyle düzeltme rotasyonu hesaplanır; alın eğimi ve telefonun alındaki küçük dönüklüğü düzeltilir.
+Tavana bakarken baş yana da yatarsa kulak ekseni kayar ve yatar adımların hepsinde aynı yönde dönüş hatası oluşur
+(≈ atan(yana yatma / bakış); 25° bakış + 5° yana yatma ≈ 11°). Bu yüzden ölçülen "örtük yana dönüklük" 10°'yi aşarsa
+ölçüm tekrarlanır ("telefonu alnın ortasına düz yaslayın, başı yana yatırmadan tavana bakın"). Telefon dikeyden 40°'den
+fazla eğikse, ters tutuluyorsa ya da tavana bakış yetersizse de yeniden yerleştirme istenir. Ölçümler, sesli yönergenin
+bitmesi (konuşma motorunun "bitti" olayı) beklendikten sonra başlar.
+Testler 5 farklı telefon/yerleşim modelinde sağ/sol, sarkık ve yüz yere pozlarının 0,5°'den küçük hatayla geri kazanıldığını,
+yana yatmalı bakışın reddedildiğini doğrular (`calibration.test.ts`). **Gerçek telefonlarda doğruluk henüz ölçülmedi**
+(Faz A, [YOL-HARITASI.md](YOL-HARITASI.md)).
 
 ## 2. Toleranslar
 
@@ -55,57 +60,72 @@ Testler 5 farklı telefon/yerleşim modelinde sağ/sol, sarkık ve yüz yere poz
 
 **Tanı kapısı (kurulumda):**
 - Hekim/odyolog tanısı yoksa (ilk atak) manevralar kilitli. İlk baş dönmesinin başka ve ciddi nedenleri olabilir.
-- Yatay kanal tanısı → kilitli (evde yatay kanal manevrası bu sürümde yok; odyolog modunda var).
+- Yatay kanal tanısı → kilitli (evde yatay kanal manevrası bu sürümde yok; klinisyen modunda var).
 - Kontrendikasyonlardan biri işaretliyse kilitli (boyun/omurga hastalığı, karotis darlığı/dengesiz kalp hastalığı, inme,
-  retina/göz ameliyatı, ileri gebelik, hareket kısıtlılığı, sesli yönergeyi takip edememe, bilişsel güçlük).
-- Odyolog reçetesi, tanı yerine geçer (taraf, kanal = arka, manevra ve doz reçeteden gelir).
+  retina/göz ameliyatı, ileri gebelik, yardımcısız hareket kısıtlılığı, sesli yönergeyi hiçbir yolla duyamama ve yardımcı
+  yokluğu, bilişsel güçlük). İşitme kaybı tek başına kapatmaz (Bluetooth cihaz/kulaklık/yardımcı; titreşim, ton, altyazı).
 
-**Kırmızı bayrak soruları (her seans; 6 saatten eskiyse yeniden):** Her soruda güvenli yanıt "Hayır"dır (son soru
-"önceki BPPV'den farklı mı?" biçimindedir). Sorular sesli okunur; yanıt düğmeleri her yeni soruda 0,6 s kilitlidir; durduran
-bir yanıttan sonra "Yanlış dokundum" seçeneğiyle onay istenir. Sorular: sürekli baş dönmesi; nörolojik belirti ("5D");
-yeni şiddetli baş/boyun ağrısı; göğüs ağrısı/çarpıntı/bayılma; kan sulandırıcı + baş ağrısı/çarpma; kendiliğinden gelen
-uzun ataklar; yakın kafa travması; ani işitme kaybı/kulak belirtisi; boyun travması/manipülasyonu; ateş/sıvı alamama;
-"bu, önceki BPPV'nizden farklı mı?". Acil olanlarda 112 ekranı, diğerlerinde hekime yönlendirme.
+**Her atakta akış (telefona dokunmadan önce sorular, sonra kesintisiz):**
+1. **Kırmızı bayrak soruları** (her seans; 6 saatten eskiyse yeniden). Her soruda güvenli yanıt "Hayır"dır (son soru "önceki
+   BPPV'den farklı mı?"). Sorular sesli okunur; düğmeler her soruda 0,6 s kilitli; durduran yanıtta "Yanlış dokundum" onayı.
+   Sorular: sürekli baş dönmesi; nörolojik belirti ("5D"); yeni şiddetli baş/boyun ağrısı; göğüs ağrısı/çarpıntı/bayılma;
+   kan sulandırıcı + baş ağrısı/çarpma; kendiliğinden gelen uzun ataklar; yakın kafa travması; ani işitme kaybı/kulak
+   belirtisi; boyun travması/manipülasyonu; ateş/sıvı alamama; önceki BPPV'den farklı mı. Acil olanlarda 112 ekranı.
+2. **Alt tip soruları** (Kim HJ ve ark. JAMA Neurol 2023;80:244–250): (a) "En çok hangisi başlatıyor: yatarken/kalkarken mi,
+   yatakta sağa-sola dönerken mi?" — "dönerken" yatay kanalı düşündürür; onaydan sonra hekime yönlendirilir. (b) "Dönme hissi
+   ne kadar sürüyor?" (sersemlik/bulantı hariç) — "1 dakikadan uzun" hekime yönlendirir. Nükste BPPV tipi ve tarafı sıklıkla
+   değişir (Kim 2023: kontrol kolu hastalarının %56'sında farklı); bu yüzden her atakta yeniden belirlenir.
+3. **Taraf sorusu** ("hangi tarafa dönünce daha çok?"): yalnız test sırasını belirler (önce şüpheli olmayan taraf).
+4. **Hazırlık** (yatak, yastık, telefonun tutuluşu, kim yapıyor, süre). "Hazırım" dokunuşu ses kilidini, iOS hareket iznini ve
+   ekranı açık tutmayı başlatır. Sonra telefon alna konur ve akış dokunmadan ilerler: (ilk kez) tanıtma → 1. taraf testi →
+   30 s dinlenme → 2. taraf testi → karar → tek dokunuşla manevra. Zincirdeki her adımdan önce 1 s'lik sessiz yer kontrolü
+   yapılır; telefon 12°'den fazla kaymışsa tam yerleştirme ölçümü istenir.
+5. **Reçeteli kısa yol:** Klinisyen reçetesi 14 gün geçerlidir ve yalnız reçetenin verildiği atak için taraf testi yapılmadan
+   reçetedeki tarafa manevra yapılır. Reçeteden sonra kapanmış başka bir atak varsa (nüks) tam akış uygulanır.
 
-**Seans içi:** Bir pozisyonda baş dönmesi 2 dakikayı aşarsa manevra durur ve hekime yönlendirilir (tipik BPPV <1 dk).
-Baş dönmesi işaretliyken her 30 saniyede "geçtiyse dokunun" hatırlatması yapılır (unutulan bitiş işaretinin gereksiz
-durdurmaya yol açmaması için; durdurma kuralı değişmez). Hasta modunda duraklatma basılı tutmayla yapılır.
-Hasta "kendimi iyi hissetmiyorum" ile istediği an durdurabilir. Uygulama arka plana geçerse manevra otomatik duraklar;
-ekran kapatılır/geri tuşuna basılırsa yapılan kısım "kesildi" olarak kaydedilir ve doza sayılır. Baş dönmesi işaretinde
-1 saniye içindeki ikinci dokunuş (kazara çift dokunma) yok sayılır; süre ilk işaretin başından son işaretin sonuna kadar
-ölçülür.
+**Taraf testinin yorumu:** Tek taraf pozitif ve <1 dk → o tarafa manevra; geçerli reçetenin tarafıyla çelişki → hekime;
+iki taraf da pozitif → hangisinin daha şiddetli olduğu sorulur, eşitse hekime; ≥1 dk ya da bitişi işaretlenmemiş → hekime;
+hiç tetiklenmezse manevra yapılmaz ve ertesi sabah yeniden test önerilir; ikinci kez de tetiklenmezse atak kapanır ve
+"baş dönmesi sürüyorsa hekime başvurun (evde test edilemeyen yatay kanal olabilir)" denir (kilit konmaz).
 
-**Hastanın kendi taraf testi:** Önce şüpheli olmayan taraf, sonra şüpheli taraf; her birinde baş dönmesinin başlangıç/bitişi
-ekrana dokunarak işaretlenir. Karar: tek taraf pozitif ve <1 dk → o tarafa manevra; hekim tarafıyla çelişki → hekime;
-iki taraf da pozitif → hangisinin daha şiddetli olduğu sorulur, eşitse ya da hekim tarafıyla uyuşmazsa hekime; ≥1 dk ya da
-bitişi işaretlenmemiş → hekime; hiç tetiklenmezse manevra yapılmaz.
+**Seans içi:** Hasta modunda her gözlem adımında baş dönmesi 2 dakikayı aşarsa manevra durur ve hekime yönlendirilir
+(tipik BPPV <1 dk). Baş dönmesi işaretliyken her 30 saniyede "geçtiyse dokunun" hatırlatması yapılır; duraklatmada "geçti"
+işaretlenebilir ve duraklatma süresi sınıra sayılmaz. Manevranın herhangi bir pozisyonunda tek bir baş dönmesi dalgası
+≥1 dk sürdüyse (tamamlanan ya da yarıda bırakılan manevrada) hekime yönlendirilir. Süre en uzun tek dalgadır (aralıklı kısa
+dalgalar toplanmaz). Duraklatma basılı tutmayla; geri tuşu manevrayı bitirmez, duraklatır; ekran kapatılırsa yapılan kısım
+"kesildi" olarak kaydedilir ve doza sayılır. Manevra sonrası "yeni nörolojik belirti" yanıtı acil ekranı açar ve kilit koyar.
 
-**Doz:** Reçetesiz günde en fazla 3, en fazla 3 gün, toplam 9 manevra; sonra hekime. Reçeteyle en fazla günde 3 × 7 gün.
-Sınırlar ataktan bağımsız sayılır: günlük sınır takvim gününe, toplam sınır son 3 (reçeteyle 7) günlük kayan pencereye göre;
-atağı kapatıp yeniden açmak sınırı sıfırlamaz. Yarıda bırakılan ama pozisyon değiştirilmiş manevra da sayılır.
-Hekime ya da acile yönlendirmeyle biten bir ataktan sonra yeni atak (ve deneme manevrası), hasta "hekimimle görüştüm"
-onayını verene kadar açılmaz.
-Manevradan 1 saat sonra tekrar testi (yayımlanmış çalışmalardaki erken değerlendirme zamanı); negatifse ertesi sabah 06:00'dan sonra ikinci test (gece yarısından sonra yapılan
-testte aynı günün 06:00'sı); ikisi de negatifse atak kapatılabilir. Taraf testi hiç tetiklenmediyse sabah tek taraflı
-tekrar testi değil, iki yönlü taraf testi yapılır.
+**Doz (14 günlük tedavi dönemi):** Reçetesiz günde en fazla 3 manevra, en fazla 3 farklı gün, toplam 9; reçeteyle günde en
+fazla 3, en fazla 7 gün, toplam 21. Sınırlar son 14 günde TÜM ataklar ve deneme manevraları birlikte sayılır; atağı kapatıp
+açmak sınırı sıfırlamaz. Yarıda bırakılan ama pozisyon değiştirilmiş manevra da sayılır. 3 günden uzun süre işlem görmeyen
+aktif atak kendiliğinden kapanır (doz sayımı etkilenmez).
 
-**Deneme manevrası:** Baş dönmesi yokken adımları öğrenmek için. Atağa kaydedilmez ve tedavi dozuna sayılmaz; ancak
-kırmızı bayrak soruları ("aynı baş dönmesi mi" hariç) her seferinde sorulur ve günde en fazla 2 kez yapılabilir.
+**Hekime yönlendirme kilidi:** Hekime ya da acile yönlendirmeyle biten bir ataktan sonra yeni atak ve deneme manevrası, hasta
+iki adımlı onayla "hekimim evde manevra yapmamda sakınca olmadığını söyledi" diyene kadar açılmaz (beyana dayalıdır).
 
-**Telefonun yeri (her manevra/test başında):** Kalibrasyondan sonra telefon alından alınıp yeniden takılmış, hatta ekranı
-içe dönük takılmış olabilir. Yalnız dik duruş ölçümü içe/dışa dönüklüğü ayırt edemez (sağ/sol karışır). Bu yüzden Başlat'a
-basınca her seferinde dik duruş + "tavana bak" ölçülür ve yerleşim yeniden hesaplanır (~15 s; cihazın işaret kuralı ilk
-tanıtmadan kayıtlı). Ölçüm hareketliyse ya da yerleşim geçersizse manevra başlamaz. Kayıtlı tanıtma varsa ayrı tanıtma ekranı
-atlanır. Ölçümler, sesli yönergenin bitmesi (konuşma süresi tahmini) beklendikten sonra başlar.
-Son 30 günde 3+ atak → hekim önerisi.
+**Tekrar testleri:** Manevradan 1 saat sonra (yayımlanmış çalışmalardaki erken değerlendirme zamanı); negatifse ertesi sabah
+06:00'dan sonra; ikisi de negatifse atak kapatılabilir. Takvime hatırlatıcı (.ics) eklenebilir.
 
-## 5. Odyolog modu tanı önerisi
+**Deneme manevrası:** Baş dönmesi yokken adımları öğrenmek için; atağa kaydedilmez ama doz sınırına sayılır. Kırmızı bayrak
+soruları ("farklı mı" hariç) sorulur; günde en fazla 2. Deneme sırasında baş dönmesi işaretlenirse gerçek akışa yönlendirilir.
+
+Son 30 günde 3+ atak → hekim önerisi (D vitamini düzeyine bakılabilir; Jeong SH ve ark. Neurology 2020).
+
+## 5. Klinisyen modu tanı önerisi
 
 Bárány Derneği 2015 ölçütleri (von Brevern ve ark.) ve AAO-HNSF 2017 kılavuzuna göre: arka kanal (yukarı vuran + torsiyonel,
 <1 dk; ≥1 dk → kupulolitiazis olası, Semont önce önerilir), yatay kanal geotropik (güçlü taraf hasta), apogeotropik (zayıf
 taraf hasta; kupulolitiazis ya da ön kol kanalolitiazisi), ön kanal (aşağı vuran + torsiyonel → olası; santral neden uyarısı),
 saf aşağı vuran / atipik desen → santral uyarısı, nistagmussuz pozisyonel vertigo → Bárány kategorileri klinisyene bırakılır.
 Uygulama yalnızca öneri sunar; tanıyı klinisyen onaylar ya da elle girer.
+
+Ek kurallar: "tipik" için gecikme (1–20 s) ve süre kaydı şarttır; herhangi bir uyarı varsa hiçbir öneri "tipik" sayılmaz ve
+onay "Uyarıları okudum, yine de onayla" olur (uyarılar rapora yazılır). Süre-desen uyumsuzluğu (≥1 dk geotropik, <1 dk
+apogeotropik) en fazla "olası"dır. Yatay kanalda taraf yalnız iki tarafta da yatay nistagmus görülüp ikisinin şiddeti
+girilmişken belirlenir. Birden çok kanalda öneri → çok kanallı uyarısı. Bulgu değişince onaylı tanı geçersizdir.
+Ev reçetesi yalnız geçerli, taraflı arka kanal kanalolitiazisi tanısında verilir (çok kanallı ya da kupulolitiazis şüphesinde
+verilmez; uyarılı ya da "belirsiz" tanıda ek onay); taraf tanıdan gelir. Klinikte Epley pozisyonları en az 30 s (AAO-HNSF
+2017: 20–30 s ya da nistagmus sönene kadar); hasta modunda 45 s.
 
 ## 6. Bilinçli olarak yapılmayanlar
 

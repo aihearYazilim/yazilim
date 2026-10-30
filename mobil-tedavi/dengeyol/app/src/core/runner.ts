@@ -299,7 +299,8 @@ function finishStep(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[])
   cues.push({ kind: 'tone', pattern: 'stepDone' });
   cues.push({
     kind: 'speak',
-    text: cfg.mode === 'patient' ? 'Bu adım tamam. Bir sonraki hareket için hazır olun.' : 'Adım tamam. Sıradaki adım.',
+    // Kısa: adımlar arası 4 s içinde biter, sıradaki yönergeyle kesilmez.
+    text: cfg.mode === 'patient' ? 'Bu adım tamam.' : 'Adım tamam. Sıradaki adım.',
     priority: 'high'
   });
   next = { ...next, phase: 'between', phaseSince: now };
@@ -448,7 +449,7 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
         kind: 'speak',
         text:
           cfg.mode === 'patient'
-            ? `Geçti olarak işaretlendi. ${step.afterVertigoSec} saniye daha bu pozisyonda bekleyin.`
+            ? `Geçti olarak işaretlendi. ${Math.max(step.afterVertigoSec, Math.ceil(step.minHoldSec - s.holdSec))} saniye daha bu pozisyonda bekleyin.`
             : 'Bitiş işaretlendi.',
         priority: 'normal'
       });
@@ -577,7 +578,8 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
         cues.push({
           kind: 'speak',
           text: cfg.mode === 'patient' ? 'Tamam, böyle kalın.' : 'Pozisyon doğru.',
-          priority: 'high'
+          // Hasta modunda adım yönergesini kesmesin (kuyruğa girer); "doğru" bilgisi titreşim ve tonla hemen verilir.
+          priority: cfg.mode === 'patient' ? 'normal' : 'high'
         });
         const transition =
           step.fastTransitionSec !== undefined && s.leftPreviousAt !== null ? sec(settlingSince - s.leftPreviousAt) : null;

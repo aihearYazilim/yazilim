@@ -803,6 +803,7 @@ export function EpisodeFlow() {
           calibration={ch.calibration}
           chained={ch.chained}
           autoStart={ch.autoStart}
+          startNote={stage.results.length === 0 ? `Önce ${sideName(side)}, sonra ${sideName(other)} tarafı test ediyoruz.` : undefined}
           onPlaced={onPlaced}
           onSensorless={() => {
             setCal(null);
@@ -1133,6 +1134,7 @@ function TapSurface({
 function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | 'severe' | 'neuro') => void; practice: boolean }) {
   return (
     <Screen title={practice ? 'Deneme bitti' : 'Manevra bitti'}>
+      <SpeakOnce text="Yavaşça telefonu alnınızdan alın ve ekrandaki soruyu yanıtlayın: şu an nasılsınız?" />
       <h1>Şu an nasılsınız?</h1>
       <Choice
         name="Manevra sonrası"
@@ -1205,8 +1207,18 @@ function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean
       <ol className="stack" style={{ margin: 0, paddingLeft: 22 }} data-testid="prep">
         <li>Yatağın üzerine oturun; yastık, sırtüstü yattığınızda omuzlarınızın altına gelsin.</li>
         <li>Sesi açın, sessiz modu kapatın.</li>
+        <li>Telefonu yan kenarlarından parmak uçlarınızla tutun; avucunuz ekrana değmesin.</li>
         <li>Telefonu alnınıza koyduktan sonra her şeyi sesle söyleyeceğim. Baş dönmesi olursa ekranın herhangi bir yerine dokunun.</li>
       </ol>
+      {!speech.usable() && (
+        <div className="notice" data-testid="prep-no-voice">
+          <Icon name="alert" />
+          <span>Bu telefonda Türkçe sesli okuma bulunamadı. Manevrayı bir yakınınızla yapın; yönergeleri ekrandan okusun.</span>
+        </div>
+      )}
+      {!haptics.supported() && (
+        <p className="small muted">Bu telefonda titreşim yok; uyarılar ses ve bip ile verilir. iPhone'da sessiz anahtarı kapalı ve sesi yüksek tutun.</p>
+      )}
       <div className="card stack">
         <strong>Kim yapıyor?</strong>
         <Segmented
@@ -1219,6 +1231,17 @@ function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean
           ]}
         />
         {helper && <HelperCard />}
+        {helper && (
+          <label className="row">
+            <input
+              type="checkbox"
+              checked={!!d.settings.screenFlip}
+              onChange={(e) => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: e.target.checked } }))}
+              data-testid="prep-flip"
+            />
+            <span>Hastanın başucunda duracağım (ekranı bana göre çevir)</span>
+          </label>
+        )}
       </div>
       <p className="small muted">Süre: {duration}.</p>
       <button
@@ -1238,10 +1261,13 @@ function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean
   );
 }
 
-/** Ekran açıldığında metni bir kez sesli okur (zincirden sonra telefon alındayken hasta sessiz kalmasın). */
+/**
+ * Ekran açıldığında metni bir kez sesli okur (zincirden sonra telefon alındayken hasta sessiz kalmasın). Normal öncelik:
+ * yürütücünün son cümlesini ("Test tamamlandı") kesmez, ardından okunur.
+ */
 function SpeakOnce({ text }: { text: string }) {
   useEffect(() => {
-    speech.speak(text, 'high');
+    speech.speak(text, 'normal');
   }, [text]);
   return null;
 }

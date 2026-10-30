@@ -54,7 +54,8 @@ export function RunnerView({
   chained = false,
   autoStart = false,
   onPlaced,
-  onSensorless
+  onSensorless,
+  startNote
 }: {
   protocolId: ProtocolId;
   side: Side | null;
@@ -77,6 +78,8 @@ export function RunnerView({
   onPlaced?: (c: Calibration) => void;
   /** Kullanıcı bu ekranda "Sensörsüz devam et"i seçti: akışın geri kalanı da sensörsüz sürsün. */
   onSensorless?: () => void;
+  /** Başlarken söylenecek ek bilgi (ör. "Önce sol tarafı, sonra sağ tarafı test ediyoruz."). */
+  startNote?: string;
 }) {
   const { settings } = useData();
   const { source } = useMotion();
@@ -386,7 +389,7 @@ export function RunnerView({
         onPlaced?.(c);
       }
     }
-    speech.speak(P ? (manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.') : 'Başlıyoruz.', 'high');
+    speech.speak(P ? `${startNote ? `${startNote} ` : ''}${manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.'}` : 'Başlıyoruz.', 'high');
     for (let i = 3; i > 0; i--) {
       setPreCount(i);
       tones.play('countdown');
@@ -842,7 +845,15 @@ export function turnText(theta: number): string {
 function HintBanner({ hint, flipped, patient }: { hint: HintKey; flipped: boolean; patient: boolean }) {
   const toRightOfScreen = hint === 'TURN_RIGHT' ? flipped : hint === 'TURN_LEFT' ? !flipped : null;
   const arrow = toRightOfScreen === null ? null : toRightOfScreen ? '→' : '←';
-  const text = patient ? HINT_TEXT_PATIENT[hint] : HINT_TEXT_CLINICIAN[hint];
+  // Ekran yardımcıya/klinisyene bakar: yön sözü kişiye göre ("hastanın sağına") yazılır; ses hastaya kendi sözüyle söyler.
+  const text =
+    hint === 'TURN_RIGHT'
+      ? 'Başı HASTANIN SAĞINA biraz daha çevirin'
+      : hint === 'TURN_LEFT'
+        ? 'Başı HASTANIN SOLUNA biraz daha çevirin'
+        : patient
+          ? HINT_TEXT_PATIENT[hint]
+          : HINT_TEXT_CLINICIAN[hint];
   return (
     <div className="hint-banner" role="status" data-testid="runner-hint" data-hint={hint}>
       {arrow && toRightOfScreen === false && <span className="hint-arrow" aria-hidden="true">{arrow}</span>}
@@ -915,7 +926,7 @@ export function HelperCard() {
     <ol className="small stack" style={{ margin: 0, paddingLeft: 20, gap: 6 }} data-testid="helper-card">
       <li>Yastığı, hasta yattığında omuzlarının altına gelecek şekilde koyun; baş yastıktan geriye sarkabilsin.</li>
       <li>Hastanın başucunda ya da yanında durun. Başucundaysanız ekrandaki <strong>⟲ Ekranı çevir</strong> düğmesine basın; yazılar size düz görünür.</li>
-      <li>Telefonu hasta kendi eliyle alnına bastırsın; siz iki elinizle başını tutup çevirin.</li>
+      <li>Telefonu iki yan kenarından parmak uçlarıyla alna bastırın (avuç ekrana değmesin; ekran dokunuşu baş dönmesi işaretidir). Başı iki elle tutup çevirin.</li>
       <li>Hasta "dönüyor" deyince ekranın herhangi bir yerine siz dokunun; geçince yeniden dokunun.</li>
       <li>Ekrandaki ok ve yazı, başı hangi yöne çevireceğinizi söyler ("hastanın sağı/solu"). Durdurmak için "Duraklat"ı basılı tutun.</li>
       <li>Telefonun otomatik ekran döndürmesini kapatın; yan yatışlarda yazılar yer değiştirmesin.</li>
