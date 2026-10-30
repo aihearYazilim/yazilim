@@ -57,11 +57,20 @@ export const CALIBRATION_LIMITS = {
   signMinFraction: 0.35,
   /** Alındaki telefonun dikeyle yaptığı açı bundan büyükse tekrar yerleştirilmesi istenir. */
   maxMountTiltDeg: 40,
-  /** Tavana bakış en az bu kadar baş hareketi üretmeli. */
-  minLookUpDeg: 15,
+  /**
+   * Tavana bakış en az bu kadar baş hareketi üretmeli. Kulaktan kulağa eksen bu hareketten çıkarıldığı için, bakış sırasında
+   * başın yana yatması dönüş açısında ≈ atan(yana yatma / bakış) kadar sabit hata üretir: bakış ne kadar büyükse hata o kadar küçük.
+   */
+  minLookUpDeg: 25,
   maxLookUpDeg: 85,
   /** Tavana bakarken yana kayma bu oranı geçmemeli (başı yana yatırmış olabilir). */
-  maxSidewaysFraction: 0.6
+  maxSidewaysFraction: 0.6,
+  /**
+   * Ölçülen kulaktan kulağa eksenin telefonun yatay ekseninden sapması (alındaki örtük "yana dönüklük"). Telefon alna düz
+   * yaslandığında gerçek değer küçüktür; büyük bir değer çoğunlukla bakış sırasında başın yana yatmasıdır ve yatar adımların
+   * hepsinde aynı yönde dönüş hatası üretir. Bu sınırın üstünde ölçüm tekrarlanır.
+   */
+  maxImpliedYawDeg: 10
 } as const;
 
 /** Okuma duruşundaki örnekten işaret kuralını belirler. */
@@ -114,6 +123,10 @@ export function computeCalibration(
   // TRIAD: ölçülen üçlü (t) → referans üçlü (r).
   const t1 = h1;
   const t2 = normalize(cross(h1, h2));
+  // Örtük yana dönüklük: ölçülen kulak ekseni ile telefonun x ekseninin (t1'e dik izdüşümü) arasındaki açı.
+  const xPerp = normalize(sub(vec(1, 0, 0), scale(t1, dot(vec(1, 0, 0), t1))));
+  const impliedYaw = Math.acos(Math.max(-1, Math.min(1, dot(t2, xPerp)))) * DEG;
+  if (impliedYaw > CALIBRATION_LIMITS.maxImpliedYawDeg) return { ok: false, error: 'SIDEWAYS_TILT' };
   const t3 = cross(t1, t2);
   const r1 = vec(0, 1, 0);
   const r2 = vec(1, 0, 0);
@@ -146,5 +159,6 @@ export const CALIBRATION_ERROR_TEXT: Record<CalibrationError, string> = {
     'Telefon alnınızda çok eğik duruyor. Telefonun sırtını alnınıza düz yaslayın, uzun kenarı dik olsun.',
   NOT_ENOUGH_TILT: 'Başınızı biraz daha geriye yatırıp tavana bakın, sonra tekrar deneyin.',
   TOO_MUCH_TILT: 'Başınızı çok fazla geriye yatırdınız. Rahat bir şekilde tavana bakmanız yeterli.',
-  SIDEWAYS_TILT: 'Tavana bakarken başınızı yana yatırmayın; yalnızca geriye doğru yatırın.'
+  SIDEWAYS_TILT:
+    'Ölçüm yamuk çıktı. Telefonu alnınızın tam ortasına düz yaslayın ve tavana bakarken başınızı yana yatırmadan yalnızca geriye doğru yatırın.'
 };

@@ -42,7 +42,40 @@ export class Speech {
     }
   }
 
-  speak(text: string, priority: 'high' | 'normal' = 'normal'): void {
+  /** Türkçe sesli okuma gerçekten kullanılabilir mi? (ses kapalıysa ya da Türkçe ses yoksa false) */
+  usable(): boolean {
+    return this.enabled && Speech.supported() && !!this.voice;
+  }
+
+  /**
+   * Söyler ve konuşma bitince çözülür (onend/onerror). Ses yoksa hemen; olay hiç gelmezse `maxMs` sonra çözülür.
+   * Ölçüm yönergenin bitmesini beklesin diye: yavaş bir ses tahmini süreyi aşabilir.
+   */
+  speakAsync(text: string, maxMs: number): Promise<void> {
+    if (!this.enabled || !Speech.supported() || !text) return Promise.resolve();
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        resolve();
+      };
+      setTimeout(finish, maxMs);
+      this.speak(text, 'high', finish);
+    });
+  }
+
+  speak(text: string, priority: 'high' | 'normal' = 'normal', onDone?: () => void): void {
+    try {
+      this.speakInner(text, priority, onDone);
+    } catch {
+      // Konuşma motoru hatası uygulamayı düşürmesin: sesi kapat, görsel/ton yönlendirmeyle devam et.
+      this.enabled = false;
+      onDone?.();
+    }
+  }
+
+  private speakInner(text: string, priority: 'high' | 'normal', onDone?: () => void): void {
     if (!this.enabled || !Speech.supported() || !text) return;
     const synth = window.speechSynthesis;
     if (priority === 'high') {
@@ -59,6 +92,7 @@ export class Speech {
     this.queueLen++;
     const done = () => {
       this.queueLen = Math.max(0, this.queueLen - 1);
+      onDone?.();
     };
     u.onend = done;
     u.onerror = done;

@@ -47,7 +47,9 @@ function rangeDistance(v: number, lo: number, hi: number): number {
 
 export function evaluate(pose: HeadPose, target: Target): Evaluation {
   if (target.kind === 'sitting') {
-    const postureOk = pose.tiltFromUpright <= SITTING_MAX_TILT;
+    // Çene göğüste oturuş (ör. Yacovino son adımı, ψ ≤ 60°) "yatıyor" sanılmasın: eşik hedefe göre genişler.
+    const maxTilt = Math.max(SITTING_MAX_TILT, target.psiMax + 10);
+    const postureOk = pose.tiltFromUpright <= maxTilt;
     if (!postureOk) {
       return {
         inRange: false,
@@ -56,7 +58,7 @@ export function evaluate(pose: HeadPose, target: Target): Evaluation {
         phiErr: null,
         psiErr: null,
         errorDeg: pose.tiltFromUpright,
-        closeness: closenessFrom(pose.tiltFromUpright - SITTING_MAX_TILT + 20),
+        closeness: closenessFrom(pose.tiltFromUpright - maxTilt + 20),
         hint: 'SIT_UP'
       };
     }
@@ -72,8 +74,10 @@ export function evaluate(pose: HeadPose, target: Target): Evaluation {
     return { inRange, postureOk, thetaErr: null, phiErr: null, psiErr, errorDeg, closeness: closenessFrom(errorDeg), hint };
   }
 
-  // Yatar hedef
-  const postureOk = pose.tiltFromUpright >= LYING_MIN_TILT;
+  // Yatar hedef. Sırtüstü başı öne eğik hedeflerde (ör. Yacovino, φ ≥ −42°) baş dikeye yaklaşır; eşik hedefe göre düşer,
+  // böylece yatan hastaya "Şimdi yatın" denmez.
+  const minTilt = Math.min(LYING_MIN_TILT, 90 + target.phiMin - 10);
+  const postureOk = pose.tiltFromUpright >= minTilt;
   if (!postureOk) {
     return {
       inRange: false,

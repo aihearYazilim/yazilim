@@ -30,7 +30,8 @@ class Tones {
         if (!C) return;
         this.ctx = new C();
       }
-      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      // iOS: arama/Siri sonrası durum 'interrupted' olabilir; çalışmıyorsa her durumda sürdür.
+      if (this.ctx.state !== 'running') void this.ctx.resume().catch(() => undefined);
     } catch {
       this.ctx = null;
     }

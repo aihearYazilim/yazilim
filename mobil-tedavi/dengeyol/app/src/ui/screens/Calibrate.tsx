@@ -21,6 +21,7 @@ import { speech } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
 import { unlockAudio } from '../../platform/feedback';
+import { keepAwake } from '../../platform/wakeLock';
 import { Icon } from '../components/Icon';
 import { useSimAuto } from '../components/SimPanel';
 import { PhoneOnForehead } from './Illustrations';
@@ -62,9 +63,14 @@ export function Calibrate({
   const say = (t: string) => speech.speak(t, 'high');
   /** Söyler ve konuşma bitene kadar (tahmini) + ek süre bekler: ölçüm yönerge bitmeden başlamasın. */
   const sayAndWait = async (t: string, extraMs: number) => {
-    say(t);
     const st = store.get().settings;
-    await wait((st.speech ? estimateSpeechSec(t, st.speechRate) * 1000 : 0) + extraMs);
+    const est = st.speech ? estimateSpeechSec(t, st.speechRate) * 1000 : 0;
+    // Konuşmanın gerçek bitişini bekle (yavaş seslerde tahmin yetmez); olay gelmezse tahminin 2 katı + 2 s.
+    if (st.simulation) {
+      say(t);
+      await wait(est);
+    } else await speech.speakAsync(t, est * 2 + 2000);
+    await wait(extraMs);
   };
 
   async function countdown(n: number) {
@@ -81,6 +87,7 @@ export function Calibrate({
 
   async function run() {
     unlockAudio();
+    void keepAwake();
     setError(null);
     sim.reading();
     const st = await source.start();
@@ -88,7 +95,9 @@ export function Calibrate({
       setSensorMsg(
         st === 'denied'
           ? 'Hareket sensörü izni verilmedi. Telefonun ayarlarından bu site için "Hareket ve Yönelim" iznini açın ya da sayfayı yenileyip izin verin.'
-          : 'Bu cihazdan hareket sensörü verisi alınamadı. DengeYol bir akıllı telefonda çalışmalıdır. Bilgisayarda denemek için Ayarlar > Demo modunu açabilirsiniz.'
+          : !window.isSecureContext
+            ? 'Hareket sensörü yalnızca güvenli (https://) adreste çalışır. Uygulamayı https ile başlayan adresinden açın.'
+            : 'Bu cihazdan hareket sensörü verisi alınamadı. Telefonun ayarlarında bu site için "Hareket sensörleri" izni kapalı olabilir. Bilgisayarda denemek için Ayarlar > Demo modunu açabilirsiniz.'
       );
       setStage('nosensor');
       return;
@@ -164,7 +173,7 @@ export function Calibrate({
             <h2>{P ? 'Telefonu başınıza tanıtalım' : 'Sensör kalibrasyonu'}</h2>
             <p className="lead">
               {P
-                ? 'Telefon, başınızın açısını ölçmek için alnınıza yaslanacak. Önce 20 saniyelik kısa bir ayar yapacağız.'
+                ? 'Telefon, başınızın açısını ölçmek için alnınıza yaslanacak. Önce yaklaşık 30 saniyelik kısa bir ayar yapacağız (yalnız ilk kullanımda).'
                 : 'Telefon hastanın alnına yaslanır; ekran dışa baktığı için açıları siz görürsünüz.'}
             </p>
             {P ? (
@@ -192,6 +201,12 @@ export function Calibrate({
               >
                 <Icon name="volume" /> Sesi dene: beni duyuyor musunuz?
               </button>
+            )}
+            {P && !speech.usable() && (
+              <div className="notice small" data-testid="cal-no-voice">
+                <Icon name="alert" />
+                <span>Bu telefonda Türkçe sesli okuma bulunamadı. Bir yakınınızın yanınızda olmasını ve yönergeleri ekrandan okumasını öneririz.</span>
+              </div>
             )}
             <p className="small muted">Sesi açık tutun. Telefonun sessiz modu kapalı olmalı.</p>
           </div>

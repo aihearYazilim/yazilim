@@ -15,6 +15,8 @@ export interface MotionSample {
   gravity: Vec3;
   /** Doğrusal ivme büyüklüğü (m/s²) — sarsıntı tespiti için; bilinmiyorsa null. */
   linearMag: number | null;
+  /** Ham toplam ivme büyüklüğü (m/s²): serbest düşüşte ≈0, çarpmada büyük. */
+  rawMag?: number;
   t: number;
 }
 
@@ -113,7 +115,7 @@ export class WebMotionSource implements MotionSource {
       gravity = this.lp.push(total);
     }
     if (!(norm(gravity) > 1)) return;
-    const sample: MotionSample = { gravity, linearMag, t: performance.now() };
+    const sample: MotionSample = { gravity, linearMag, rawMag: norm(total), t: performance.now() };
     this.last = sample;
     this.listeners.forEach((l) => l(sample));
   }

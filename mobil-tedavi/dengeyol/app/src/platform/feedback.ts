@@ -13,9 +13,13 @@ export function applySettings(s: { speech: boolean; speechRate: number; haptics:
 
 export function playCues(cues: Cue[]) {
   for (const c of cues) {
-    if (c.kind === 'speak') speech.speak(c.text, c.priority);
-    else if (c.kind === 'haptic') haptics.play(c.pattern);
-    else tones.play(c.pattern);
+    try {
+      if (c.kind === 'speak') speech.speak(c.text, c.priority);
+      else if (c.kind === 'haptic') haptics.play(c.pattern);
+      else tones.play(c.pattern);
+    } catch {
+      /* bir çıkışın hatası diğerlerini ve yürütücüyü durdurmasın */
+    }
   }
 }
 

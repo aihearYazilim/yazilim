@@ -85,6 +85,8 @@ export function RunnerView({
   const [prepError, setPrepError] = useState<null | { text: string; sensor: boolean }>(null);
   /** Son söylenen cümle (altyazı): sesi duyamayan hasta ya da yardımcı ekrandan okuyabilsin. */
   const [caption, setCaption] = useState<string | null>(null);
+  /** Ekran açık tutulamadı (API yok ya da istek reddedildi): kullanıcı ekran zaman aşımını artırmalı. */
+  const [wakeFailed, setWakeFailed] = useState(false);
   const flipped = !!settings.screenFlip;
   const helper = settings.assist === 'helper';
   const setFlip = (v: boolean) => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: v } }));
@@ -170,6 +172,24 @@ export function RunnerView({
 
   // Çalışırken sayfa kapatılmak/yenilenmek istenirse uyar
   const running = started && !['done', 'aborted', 'safetyStop'].includes(state.phase);
+
+  // Geri tuşu / kenardan kaydırma manevrayı onaysız bitirmesin: geçmişe bir girdi eklenir, geri gelince duraklatılır.
+  useEffect(() => {
+    if (!running) return;
+    const marker = { dengeyolRunner: true };
+    window.history.pushState(marker, '');
+    const onPop = () => {
+      dispatch({ type: 'pause', now: now() });
+      window.history.pushState(marker, '');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // Kendi girdimiz hâlâ en üstteyse temizle (adres değişmez).
+      if ((window.history.state as { dengeyolRunner?: boolean } | null)?.dengeyolRunner) window.history.back();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running]);
   useEffect(() => {
     if (!running) return;
     const onBefore = (e: BeforeUnloadEvent) => {
@@ -245,10 +265,12 @@ export function RunnerView({
 
   /** Söyler ve konuşmanın bitmesini (tahmini süre) artı ek süreyi bekler: ölçüm, yönerge bitmeden başlamasın. */
   const sayAndWait = async (text: string, extraMs: number) => {
-    speech.speak(text, 'high');
     setCaption(text);
-    const speechMs = settings.speech ? estimateSpeechSec(text, settings.speechRate) * 1000 : 0;
-    await sleep(speechMs + extraMs);
+    // Konuşmanın gerçek bitişi beklenir (yavaş seslerde tahmin yetmez); olay gelmezse tahminin 2 katı + 2 s sonra devam.
+    const est = settings.speech ? estimateSpeechSec(text, settings.speechRate) * 1000 : 0;
+    if (settings.simulation) await sleep(est);
+    else await speech.speakAsync(text, est * 2 + 2000);
+    await sleep(extraMs);
   };
 
   /**
@@ -310,7 +332,7 @@ export function RunnerView({
 
   async function beginInner() {
     unlockAudio();
-    void keepAwake();
+    void keepAwake().then((ok) => setWakeFailed(!ok));
     setPrepError(null);
     // Android'de (yüklü uygulama/tam ekran) dikey kilit denenir; desteklenmezse sessizce geçilir.
     try {
@@ -407,6 +429,12 @@ export function RunnerView({
                 Bu telefonda titreşim yok; uyarılar ses ve bip ile verilir. iPhone'da yan taraftaki sessiz anahtarı kapalı ve ses düzeyini yüksek tutun.
               </p>
             )}
+            {P && !speech.usable() && (
+              <p className="small" style={{ color: 'var(--warn)' }} data-testid="runner-no-voice">
+                <strong>Bu telefonda Türkçe sesli okuma bulunamadı.</strong> Manevrayı bir yakınınızla yapın; yönergeleri ekrandan okusun.
+                Ayarlar'dan "Sesi dene" ile kontrol edebilirsiniz.
+              </p>
+            )}
             {!wakeLockSupported() && (
               <p className="small muted">
                 Bu tarayıcı ekranı açık tutmayı desteklemiyor. Manevra sırasında ekran kararmasın diye telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.
@@ -414,7 +442,7 @@ export function RunnerView({
             )}
             {P && !manual && (
               <p className="small muted">
-                Başlat'a basınca telefonu alnınıza yerleştirmenizi isteyeceğim; dik dururken ve tavana bakarken birer kısa ölçüm alacağım (yaklaşık 15 saniye).
+                Başlat'a basınca telefonu alnınıza yerleştirmenizi isteyeceğim; dik dururken ve tavana bakarken birer kısa ölçüm alacağım (yaklaşık 30 saniye).
               </p>
             )}
           </div>
@@ -638,6 +666,13 @@ export function RunnerView({
           </div>
         )}
 
+        {wakeFailed && P && (
+          <div className="notice" role="status">
+            <Icon name="alert" />
+            <span>Ekran açık tutulamıyor. Ekran kararırsa manevra duraklar; telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.</span>
+          </div>
+        )}
+
         {state.notice && (
           <div className="notice" role="status">
             <Icon name="alert" />
@@ -708,6 +743,8 @@ export function RunnerView({
               className="btn primary block"
               autoFocus
               onClick={() => {
+                // Arama/arka plandan sonra ses motorları yeniden açılır (bu dokunuş iOS için gereklidir).
+                unlockAudio();
                 void keepAwake();
                 dispatch({ type: 'resume', now: now() });
               }}
@@ -806,6 +843,7 @@ function HelperCard() {
       <li>Telefonu hasta kendi eliyle alnına bastırsın; siz iki elinizle başını tutup çevirin.</li>
       <li>Hasta "dönüyor" deyince ekranın herhangi bir yerine siz dokunun; geçince yeniden dokunun.</li>
       <li>Ekrandaki ok ve yazı, başı hangi yöne çevireceğinizi söyler ("hastanın sağı/solu"). Durdurmak için "Duraklat"ı basılı tutun.</li>
+      <li>Telefonun otomatik ekran döndürmesini kapatın; yan yatışlarda yazılar yer değiştirmesin.</li>
     </ol>
   );
 }
