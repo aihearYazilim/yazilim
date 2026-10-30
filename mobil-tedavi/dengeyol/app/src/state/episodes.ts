@@ -5,15 +5,50 @@ import type { Side } from '../core/protocols';
 import { clampDose, DEFAULT_DOSE, type DoseLimits, doseStatus, localDayKey, type DoseStatus } from '../core/safety';
 import type { AppData, Episode, PatientProfile } from './types';
 
-/** Tekrar testi için manevradan sonra beklenecek süre (ms). Plan §2.3: 30 dk. */
-export const EARLY_RETEST_MS = 30 * 60 * 1000;
+/**
+ * Erken tekrar testi için manevradan sonra beklenecek süre (ms): 1 saat. Yayımlanmış manevra çalışmalarında erken
+ * değerlendirme 1. saatte yapılmıştır (Kim HJ 2023; Mandalà 2012; Kim JS 2012; Callejas Pastor 2023).
+ */
+export const EARLY_RETEST_MS = 60 * 60 * 1000;
 /** Kırmızı bayraklar bu süreden eskiyse yeniden sorulur (ms). */
 export const REDFLAG_VALID_MS = 6 * 60 * 60 * 1000;
 /** Sabah testi en erken saat. */
 export const MORNING_HOUR = 6;
 
-export function doseLimitsFor(profile: PatientProfile | undefined): DoseLimits {
-  if (profile?.prescription) return clampDose({ maxPerDay: profile.prescription.perDay, maxDays: profile.prescription.days });
+/**
+ * Reçetenin geçerlilik süresi (muayene tarihinden itibaren gün). Reçete o muayenedeki atak içindir: nükste BPPV tipi ve
+ * tarafı sıklıkla değişir (Kim HJ ve ark. JAMA Neurol 2023;80:244–250: nükslerin %56'sı ilk tanıdan farklı). Süre dolunca
+ * varsayılan doz ve her atakta iki taraflı test uygulanır. Değer klinik danışmanla gözden geçirilmelidir.
+ */
+export const RX_VALID_DAYS = 14;
+
+/** Reçete bu atak için hâlâ geçerli mi? */
+export function rxActive(profile: PatientProfile | undefined, now: number = Date.now()): boolean {
+  const rx = profile?.prescription;
+  if (!rx) return false;
+  const issued = new Date(`${rx.date}T00:00:00`).getTime();
+  if (!Number.isFinite(issued)) return false;
+  return now - issued <= RX_VALID_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Yakın zamanda (reçete ya da son 14 gün içindeki hekim tanısı) bilinen taraf: taraf testiyle çelişirse hekime yönlendirmek
+ * için. Eski tanıdaki taraf kullanılmaz (nükste taraf değişebilir).
+ */
+export function recentKnownSide(profile: PatientProfile | undefined, now: number = Date.now()): Side | null {
+  if (!profile) return null;
+  if (rxActive(profile, now)) return profile.prescription!.side;
+  if (profile.side === 'R' || profile.side === 'L') {
+    const t = profile.dxDate ? new Date(`${profile.dxDate}T00:00:00`).getTime() : NaN;
+    if (Number.isFinite(t) && now - t <= RX_VALID_DAYS * 24 * 60 * 60 * 1000) return profile.side;
+  }
+  return null;
+}
+
+export function doseLimitsFor(profile: PatientProfile | undefined, now: number = Date.now()): DoseLimits {
+  if (profile?.prescription && rxActive(profile, now)) {
+    return clampDose({ maxPerDay: profile.prescription.perDay, maxDays: profile.prescription.days });
+  }
   return DEFAULT_DOSE;
 }
 
@@ -27,7 +62,7 @@ function countedTimes(episodes: Episode[]): number[] {
  * günlük sınır takvim gününe, toplam sınır son `maxDays` günlük kayan pencereye göre; gün sınırı bu atağın başlangıcına göre.
  */
 export function episodeDose(e: Episode, profile: PatientProfile | undefined, now: number, allEpisodes: Episode[] = [e]): DoseStatus {
-  const limits = doseLimitsFor(profile);
+  const limits = doseLimitsFor(profile, now);
   const windowMs = limits.maxDays * 24 * 60 * 60 * 1000;
   const eps = allEpisodes.some((x) => x.id === e.id) ? allEpisodes : [...allEpisodes, e];
   const times = countedTimes(eps).filter((t) => now - t < windowMs);
@@ -104,15 +139,10 @@ export function nextAction(e: Episode, now: number): NextAction {
   return { kind: 'morning-retest', at, ready: now >= at, needsSideTest: false };
 }
 
-export function maneuversToday(e: Episode, now: number): number {
-  const k = localDayKey(now);
-  return e.maneuvers.filter((m) => m.completed && localDayKey(m.at) === k).length;
-}
-
 /** Hangi taraf tedavi edilir? Reçete/profil tarafı ya da bu ataktaki test sonucu. */
 export function episodeSide(e: Episode, profile: PatientProfile | undefined): Side | null {
   if (e.side) return e.side;
-  if (profile?.prescription) return profile.prescription.side;
+  if (profile?.prescription && rxActive(profile)) return profile.prescription.side;
   if (profile && profile.side !== 'unknown') return profile.side;
   return null;
 }

@@ -9,7 +9,9 @@
 - **DÜZELTİLMELİ:** Değişiklik önerilir. Dosya, adım ve önerilen değer belirtilmiştir.
 - **BELİRSİZ:** Kaynaklar arasında görüş ayrılığı var, kanıt zayıf ya da birincil metin görülemedi. Klinik danışman karar vermelidir.
 
-> **Not:** Kodda gerekçe kaynağı olarak gösterilen `docs/KLINIK-PROTOKOL.md` dosyası depoda yok. Bu dosyanın oluşturulması ya da kod yorumlarındaki atıfların güncellenmesi gerekir.
+> **Durum (2026-10-30):** Bu belge ilk klinik incelemenin kaydıdır. D1–D11 ve 6.x maddeleri koda uygulanmıştır;
+> "DÜZELTİLMELİ" etiketleri tarihsel kayıttır. Güncel değerler için `KLINIK-PROTOKOL.md` ve `PROTOKOL-TABLOSU.md`'ye,
+> sonraki denetimler için `docs/inceleme/` klasörüne bakın (ör. Dix-Hallpike gözlem penceresi artık 60 s).
 
 ---
 

@@ -54,7 +54,13 @@ export function findingsKeyOf(f: Findings): string {
 export function dxValid(exam: ClinicExam): boolean {
   const dx = exam.diagnosis;
   if (!dx) return false;
-  return dx.findingsKey === undefined || dx.findingsKey === findingsKeyOf(exam.findings);
+  // Eski sürümde onaylanmış (imzasız) tanı: hangi bulgulara dayandığı bilinmez → yeniden onay istenir.
+  return dx.findingsKey !== undefined && dx.findingsKey === findingsKeyOf(exam.findings);
+}
+
+/** Verilmiş reçete hâlâ geçerli tanıya mı dayanıyor? */
+export function rxCurrent(exam: ClinicExam): boolean {
+  return !!exam.prescriptionToken && dxValid(exam) && exam.prescriptionFindingsKey === exam.diagnosis?.findingsKey;
 }
 
 function updateExam(id: string, fn: (e: ClinicExam) => ClinicExam) {
@@ -106,6 +112,8 @@ export function Exam() {
 
   const onRunExit = (o: RunnerOutcome, r: RunReq) => {
     setRun(null);
+    // Başlatılmadan kapatıldı: yapılmamış manevra/test kaydedilmez.
+    if (o.started === false) return;
     if (r.purpose === 'maneuver') {
       const log: ManeuverLog = {
         id: uid(),
@@ -462,14 +470,15 @@ const MANEUVER_IDS: ProtocolId[] = ['epley', 'semont', 'bbq-roll', 'gufoni-geo',
 
 function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => void }) {
   const dx = exam.diagnosis;
-  const suggested = dx?.canal ? maneuversFor(dx.canal, dx.mechanism) : [];
+  const valid = dxValid(exam);
+  // Bayat (bulgu değişmiş) tanıdan öneri ve varsayılan taraf alınmaz.
+  const suggested = valid && dx?.canal ? maneuversFor(dx.canal, dx.mechanism) : [];
   const [showAll, setShowAll] = useState(false);
   // Varsayılan taraf yok: tanıda taraf belirsizse klinisyen bilinçli seçsin.
-  const [side, setSide] = useState<Side | null>(dx?.side ?? null);
+  const [side, setSide] = useState<Side | null>(valid ? (dx?.side ?? null) : null);
   useEffect(() => {
-    if (dx?.side) setSide(dx.side);
-  }, [dx?.side]);
-  const valid = dxValid(exam);
+    if (valid && dx?.side) setSide(dx.side);
+  }, [valid, dx?.side]);
   const list = showAll ? MANEUVER_IDS : suggested.length ? suggested : MANEUVER_IDS;
 
   return (
@@ -614,7 +623,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       </div>
     );
   }
-  const needAck = !!dx?.warnings?.length;
+  // Onaydaki ya da şu anki bulgulardan çıkan uyarı varsa reçete için ek onay istenir.
+  const needAck = !!dx?.warnings?.length || suggestDiagnosis(exam.findings).warnings.length > 0;
 
   const make = () => {
     if (!side) return;
@@ -631,7 +641,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       note: note.trim() || undefined
     };
     const token = encodePrescription(p);
-    updateExam(exam.id, (e) => ({ ...e, prescriptionToken: token }));
+    updateExam(exam.id, (e) => ({ ...e, prescriptionToken: token, prescriptionFindingsKey: e.diagnosis?.findingsKey }));
   };
 
   return (
@@ -697,6 +707,12 @@ function RxTab({ exam }: { exam: ClinicExam }) {
         </button>
       </div>
 
+      {url && !stale && !rxCurrent(exam) && (
+        <div className="notice" role="status" data-testid="rx-outdated">
+          <Icon name="alert" />
+          <span>Tanı, reçete verildikten sonra değişti. Hastaya göstermeden önce "Reçeteyi güncelle"ye basın; eski QR kod gizlendi.</span>
+        </div>
+      )}
       {url && stale && (
         <div className="notice" role="status" data-testid="rx-stale">
           <Icon name="alert" />
@@ -704,7 +720,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
         </div>
       )}
 
-      {url && issued && !stale && (
+      {url && issued && !stale && rxCurrent(exam) && (
         <div className="card stack center" data-testid="rx-output">
           <h3>Hastaya gösterin</h3>
           <p className="small" data-testid="rx-summary">
@@ -761,7 +777,7 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
   }
   const rk = Object.keys(exam.retestFindings) as FindingKey[];
   if (rk.length) lines.push(`Tekrar test: ${rk.map((k) => `${keyLabel(k)}: ${findingSummary(exam.retestFindings[k])}`).join('; ')}.`);
-  if (exam.prescriptionToken) {
+  if (exam.prescriptionToken && rxCurrent(exam)) {
     const r = decodePrescription(exam.prescriptionToken);
     if (r.ok) {
       lines.push(
@@ -874,7 +890,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
       {fx('Tekrar test', exam.retestFindings)}
       {rx?.ok && (
         <div className="card stack">
-          <h3>Ev manevrası reçetesi</h3>
+          <h3>Ev manevrası reçetesi{rxCurrent(exam) ? '' : ' (güncel tanıya dayanmıyor)'}</h3>
           <p>
             {sideName(rx.value.side).toLocaleUpperCase('tr-TR')} arka kanal · {rx.value.maneuver === 'epley' ? 'Epley' : 'Semont'} · günde en fazla{' '}
             {rx.value.perDay}, {rx.value.days} gün{rx.value.note ? ` · Not: ${rx.value.note}` : ''}

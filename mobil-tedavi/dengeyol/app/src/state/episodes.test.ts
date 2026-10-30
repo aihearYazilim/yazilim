@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral } from './episodes';
+import { doseLimitsFor, EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral, recentKnownSide, rxActive } from './episodes';
 import { emptyData } from './types';
 import type { Episode, ManeuverLog } from './types';
 
@@ -28,7 +28,7 @@ const ep = (p: Partial<Episode>): Episode => ({
 });
 
 describe('sıradaki eylem', () => {
-  it('manevradan sonra 30 dk tekrar testi', () => {
+  it('manevradan sonra erken (1 saat) tekrar testi', () => {
     const e = ep({ maneuvers: [man(base)] });
     expect(nextAction(e, base + 10 * 60000)).toMatchObject({ kind: 'early-retest', ready: false });
     expect(nextAction(e, base + EARLY_RETEST_MS)).toMatchObject({ kind: 'early-retest', ready: true });
@@ -103,5 +103,22 @@ describe('hekime yönlendirme kilidi', () => {
     expect(pendingReferral(d)).not.toBeNull();
     d.patient = { contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R', doctorClearedAt: base + 2000 };
     expect(pendingReferral(d)).toBeNull();
+  });
+});
+
+describe('reçete geçerlilik süresi', () => {
+  const rx = { v: 1 as const, side: 'L' as const, canal: 'PC' as const, maneuver: 'epley' as const, date: '2026-10-01', perDay: 3, days: 7 };
+  const profile = { contraindications: [], diagnosedByDoctor: true, canal: 'PC' as const, side: 'L' as const, prescription: rx };
+  it('14 gün içinde geçerli: reçete dozu ve tarafı', () => {
+    const now = new Date('2026-10-10T12:00:00').getTime();
+    expect(rxActive(profile, now)).toBe(true);
+    expect(doseLimitsFor(profile, now).maxDays).toBe(7);
+    expect(recentKnownSide(profile, now)).toBe('L');
+  });
+  it('süresi dolunca varsayılan doz, taraf bilinmiyor sayılır', () => {
+    const now = new Date('2026-11-20T12:00:00').getTime();
+    expect(rxActive(profile, now)).toBe(false);
+    expect(doseLimitsFor(profile, now).maxDays).toBe(3);
+    expect(recentKnownSide(profile, now)).toBeNull();
   });
 });

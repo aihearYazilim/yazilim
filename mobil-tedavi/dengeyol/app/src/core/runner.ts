@@ -10,7 +10,7 @@
  */
 import type { HeadPose } from './geometry';
 import { evaluate, type Evaluation, HINT_TEXT_CLINICIAN, HINT_TEXT_PATIENT, type HintKey } from './evaluator';
-import type { ResolvedProtocol, StepDef, Target } from './protocols';
+import { LIMITS, type ResolvedProtocol, type StepDef, type Target } from './protocols';
 
 export type RunnerMode = 'patient' | 'clinician';
 
@@ -227,12 +227,17 @@ function updateRecord(s: RunnerState, fn: (r: StepRecord) => StepRecord): Runner
 }
 
 /** Bir adımın tamamlanıp tamamlanmadığı. */
-function holdComplete(cfg: RunnerConfig, s: RunnerState, step: StepDef, now: number): boolean {
+function holdComplete(s: RunnerState, step: StepDef, now: number): boolean {
   if (s.holdSec < step.minHoldSec) return false;
   if (s.vertigoActive) return false;
   if (s.vertigoEndedAt !== null && sec(now - s.vertigoEndedAt) < step.afterVertigoSec) return false;
-  void cfg;
   return true;
+}
+
+/** Adımın baş dönmesi üst sınırı (s); hasta modunda gözlem adımlarında hiçbir zaman sınırsız değildir. */
+export function vertigoLimitFor(cfg: RunnerConfig, step: StepDef): number | null {
+  if (step.maxVertigoSec !== null) return step.maxVertigoSec;
+  return cfg.mode === 'patient' && step.observe !== false ? LIMITS.maxVertigoSec : null;
 }
 
 function startStep(cfg: RunnerConfig, s: RunnerState, index: number, now: number, cues: Cue[]): RunnerState {
@@ -281,7 +286,7 @@ function finishStep(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[])
       text:
         cfg.protocol.kind === 'maneuver'
           ? cfg.mode === 'patient'
-            ? 'Manevra tamamlandı. 10 dakika oturarak dinlenin; ani baş hareketi yapmayın.'
+            ? 'Manevra tamamlandı. 10 dakika oturarak dinlenin; kalkarken dikkatli olun.'
             : 'Manevra tamamlandı.'
           : cfg.mode === 'patient'
             ? 'Test tamamlandı.'
@@ -410,7 +415,10 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
     }
 
     case 'vertigoToggle': {
-      if (s.phase === 'idle' || s.phase === 'between' || s.phase === 'paused') return { state: s, cues };
+      if (s.phase === 'idle' || s.phase === 'between') return { state: s, cues };
+      // Duraklatmadayken yalnız "geçti" işaretine izin verilir (duraklatma süresi baş dönmesi süresine sayılır;
+      // geçtiği işaretlenemezse devamda yanlış güvenlik durdurması olurdu).
+      if (s.phase === 'paused' && !s.vertigoActive) return { state: s, cues };
       const step = currentStep(cfg, s);
       if (!step) return { state: s, cues };
       // Alındaki telefona körlemesine yapılan kazara çift dokunuşu yok say.
@@ -490,10 +498,12 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
   const step = currentStep(cfg, s);
   if (!step) return { state: s, cues };
 
-  // Baş dönmesi süresi güvenlik kontrolü
-  if (s.vertigoActive && s.vertigoSince !== null && step.maxVertigoSec !== null) {
+  // Baş dönmesi süresi güvenlik kontrolü. Hasta modunda sınırı tanımlanmamış gözlem adımlarına da (ör. Dix-Hallpike
+  // sonrası oturma) aynı üst sınır uygulanır: "geçti" işareti unutulursa akış sonsuza dek beklemesin.
+  const vertigoLimit = vertigoLimitFor(cfg, step);
+  if (s.vertigoActive && s.vertigoSince !== null) {
     const vSec = sec(now - s.vertigoSince);
-    if (vSec > step.maxVertigoSec) {
+    if (vertigoLimit !== null && vSec > vertigoLimit) {
       if (cfg.mode === 'patient') {
         cues.push({ kind: 'haptic', pattern: 'alarm' });
         cues.push({ kind: 'tone', pattern: 'alarm' });
@@ -514,7 +524,7 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
     // Hasta "geçti" dokunuşunu unutmasın: her 30 saniyede bir hatırlat (durdurma kuralı aynen kalır).
     if (cfg.mode === 'patient') {
       const mark = Math.floor(vSec / VERTIGO_REMIND_EVERY_SEC) * VERTIGO_REMIND_EVERY_SEC;
-      if (mark > 0 && mark > s.vertigoRemindMark && mark < step.maxVertigoSec) {
+      if (mark > 0 && mark > s.vertigoRemindMark && (vertigoLimit === null || mark < vertigoLimit)) {
         s.vertigoRemindMark = mark;
         cues.push({ kind: 'haptic', pattern: 'markOn' });
         cues.push({ kind: 'speak', text: 'Baş dönmesi geçtiyse ekrana dokunun. Sürüyorsa böyle kalın.', priority: 'normal' });
@@ -702,7 +712,7 @@ function holdingTick(
     });
   }
 
-  if (s.phase === 'holding' && holdComplete(cfg, s, step, now)) {
+  if (s.phase === 'holding' && holdComplete(s, step, now)) {
     return { state: finishStep(cfg, s, now, cues), cues };
   }
   return { state: s, cues };

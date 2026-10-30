@@ -39,7 +39,6 @@ export function About() {
           {sources.map((s) => (
             <li key={s}>{s}</li>
           ))}
-          <li>Kim HJ ve ark. JAMA Neurol 2023;80:244–250 (kendi kendine manevra, randomize kontrollü çalışma).</li>
         </ul>
       </section>
       <p className="small muted center">DengeYol sürüm {__APP_VERSION__}</p>

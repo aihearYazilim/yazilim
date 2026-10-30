@@ -68,7 +68,8 @@ export class WebMotionSource implements MotionSource {
     }
     // Veri geliyor mu? (Masaüstü tarayıcılar olayı destekler ama veri göndermez.)
     const got = await new Promise<boolean>((resolve) => {
-      if (this.last) return resolve(true);
+      // Yalnız taze bir örnek veri akışını kanıtlar (izin geri alınmış ya da sensör durmuş olabilir).
+      if (this.last && performance.now() - this.last.t < 500) return resolve(true);
       const timer = setTimeout(() => {
         off();
         resolve(false);

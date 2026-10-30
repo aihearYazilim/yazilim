@@ -327,3 +327,51 @@ describe('kullanıcı ajanı düzeltmeleri', () => {
     expect(h).toContain('markOff');
   });
 });
+
+describe('tur 1 denetim düzeltmeleri', () => {
+  it('Dix-Hallpike oturma adımında da (sınırsız adım) hasta modunda hatırlatma ve üst sınır vardır', () => {
+    const x = sim('dix-hallpike');
+    send(x, { type: 'start' });
+    let marked = false;
+    while (x.t < 900000 && x.s.phase !== 'safetyStop' && x.s.phase !== 'done') {
+      x.t += 100;
+      const st = x.cfg.protocol.steps[x.s.stepIndex]!;
+      send(x, { type: 'tick', pose: ideal(st.target) });
+      if (st.id === 'dh-up' && !marked && x.s.phase === 'holding') {
+        send(x, { type: 'vertigoToggle' });
+        marked = true;
+      }
+    }
+    expect(marked).toBe(true);
+    expect(x.s.phase).toBe('safetyStop');
+    expect(x.cues.filter((c) => c.kind === 'speak' && c.text.startsWith('Baş dönmesi geçtiyse')).length).toBe(3);
+  });
+
+  it('duraklatmadayken baş dönmesi "geçti" olarak işaretlenebilir; devamda yanlış durdurma olmaz', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    while (x.s.stepIndex < 1) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    }
+    send(x, { type: 'vertigoToggle' });
+    x.t += 20000;
+    send(x, { type: 'pause' });
+    x.t += 30000;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+    x.t += 80000;
+    send(x, { type: 'resume' });
+    x.t += 100;
+    send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    expect(x.s.phase).not.toBe('safetyStop');
+  });
+
+  it('duraklatmadayken yeni baş dönmesi başlatılamaz (yalnız bitiş)', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    send(x, { type: 'pause' });
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+  });
+});

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { diagnosisGate, DOSE_TEXT, frequentRecurrence, GATE_TEXT } from '../../../core/safety';
-import { episodeDose, episodeSide, formatDateTime, formatTime, maneuversToday, nextAction, doseLimitsFor } from '../../../state/episodes';
+import { episodeDose, episodeSide, formatDateTime, formatTime, nextAction, doseLimitsFor } from '../../../state/episodes';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
 import { activeEpisode, store, useData } from '../../../state/store';
 import { Icon, Logo } from '../../components/Icon';
@@ -103,7 +103,7 @@ export function PatientHome() {
       {recurrent && (
         <div className="notice">
           <Icon name="alert" />
-          <span>Son 30 günde 3 ya da daha fazla atak yaşadınız. Sık tekrarlayan BPPV'de hekiminizle görüşmeniz önerilir.</span>
+          <span>Son 30 günde 3 ya da daha fazla atak yaşadınız. Sık tekrarlayan BPPV'de hekiminizle görüşün; hekiminiz D vitamini düzeyinize de bakabilir.</span>
         </div>
       )}
 
@@ -150,7 +150,8 @@ function ActiveEpisodeCard({ now }: { now: number }) {
   const dose = episodeDose(ep, d.patient, now, d.episodes);
   const side = episodeSide(ep, d.patient);
   const limits = doseLimitsFor(d.patient);
-  const today = maneuversToday(ep, now);
+  // Doz sınırıyla aynı sayım (yarıda kalan manevralar ve diğer ataklar dahil).
+  const today = dose.allowed ? limits.maxPerDay - dose.remainingToday : dose.reason === 'DAILY_LIMIT' ? limits.maxPerDay : null;
   const [confirmClose, setConfirmClose] = useState(false);
 
   const close = (status: 'resolved' | 'closed', note: string) =>
@@ -171,7 +172,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           <dd>{side === 'R' ? 'Sağ' : side === 'L' ? 'Sol' : 'Henüz belirlenmedi'}</dd>
           <dt>Bugün</dt>
           <dd>
-            {today} / {limits.maxPerDay} manevra
+            {today === null ? 'sınıra ulaşıldı' : `${today} / ${limits.maxPerDay} manevra`}
           </dd>
           <dt>Gün</dt>
           <dd>
@@ -183,7 +184,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
       {na.kind === 'early-retest' && (
         <div className="card stack">
           <h2>Tekrar testi</h2>
-          <p>Manevranın işe yarayıp yaramadığını görmek için 30 dakika sonra kısa bir test yapacağız.</p>
+          <p>Manevranın işe yarayıp yaramadığını görmek için 1 saat sonra kısa bir test yapacağız.</p>
           {na.ready ? (
             <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest')} data-testid="do-retest">
               Tekrar testini yap
@@ -256,7 +257,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
       {na.kind === 'resolved-suggest' && (
         <div className="card tint-ok stack">
           <h2>Düzelmiş görünüyor</h2>
-          <p>Hem 30 dakika sonraki hem de sabah testi baş dönmesini tetiklemedi.</p>
+          <p>Hem 1 saat sonraki hem de sabah testi baş dönmesini tetiklemedi.</p>
           <button className="btn primary block" onClick={() => close('resolved', 'Tekrar testleri negatif')} data-testid="close-resolved">
             Atağı kapat
           </button>

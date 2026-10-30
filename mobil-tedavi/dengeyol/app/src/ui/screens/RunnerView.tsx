@@ -32,6 +32,8 @@ import { BedSetup } from './Illustrations';
 
 
 export interface RunnerOutcome {
+  /** Yürütücü hiç başlatılmadan kapatıldıysa false: kayıt yazılmamalı. */
+  started?: boolean;
   phase: 'done' | 'aborted' | 'safetyStop';
   state: RunnerState;
   protocol: ResolvedProtocol;
@@ -211,6 +213,10 @@ export function RunnerView({
     alive.current = true;
     return () => {
       alive.current = false;
+      // Başlamadan ya da yarıda kapanırsa kuyruktaki yönerge ("başınızı geriye yatırın") ana ekranda söylenmesin;
+      // olağan bitişteki son cümle ("10 dakika dinlenin") kesilmez.
+      const ph = sRef.current.phase;
+      if (ph !== 'done' && ph !== 'safetyStop') speech.cancel();
       tones.stopGuidance();
       publishSimTarget(null);
       void releaseAwake();
@@ -338,7 +344,7 @@ export function RunnerView({
           <button className="btn icon" aria-label="Kapat" onClick={() => {
               exited.current = true;
               delivered.current = true;
-              onExit({ phase: 'aborted', state: sRef.current, protocol, manual });
+              onExit({ started: false, phase: 'aborted', state: sRef.current, protocol, manual });
             }}>
             <Icon name="close" />
           </button>
@@ -689,6 +695,15 @@ export function RunnerView({
                 ? 'Devam ettiğinizde aynı adımdan, pozisyonunuz yeniden doğrulanarak sürer.'
                 : 'Devam edildiğinde pozisyon yeniden doğrulanır.'}
             </p>
+            {state.vertigoActive && (
+              <button
+                className="btn secondary block"
+                onClick={() => dispatch({ type: 'vertigoToggle', now: now() })}
+                data-testid="runner-paused-vertigo-end"
+              >
+                {P ? 'Baş dönmesi geçti' : 'Belirti / nistagmus bitti'}
+              </button>
+            )}
             <button
               className="btn primary block"
               autoFocus

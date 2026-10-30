@@ -201,7 +201,7 @@ function ReportBody({ e }: { e: Episode }) {
           <h3>Tekrar testleri</h3>
           {e.retests.map((r, i) => (
             <div key={i} className="small">
-              <strong>{formatDateTime(r.at)}</strong> ({r.kind === 'early' ? '30 dk' : r.kind === 'morning' ? 'sabah' : 'diğer'}, {sideName(r.side)}):{' '}
+              <strong>{formatDateTime(r.at)}</strong> ({r.kind === 'early' ? 'erken' : r.kind === 'morning' ? 'sabah' : 'diğer'}, {sideName(r.side)}):{' '}
               {r.vertigo ? `baş dönmesi var (gecikme ${r.latencySec ?? '?'} s, süre ${r.durationSec ?? '?'} s)` : 'tetiklenmedi'}
             </div>
           ))}

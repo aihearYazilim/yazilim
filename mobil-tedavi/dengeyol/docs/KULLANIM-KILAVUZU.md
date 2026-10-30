@@ -32,7 +32,7 @@
    - Baş dönmesi olursa **ekranın herhangi bir yerine** dokunun; geçince yeniden dokunun. Unutursanız uygulama her 30 saniyede bir
      hatırlatır.
    - Durdurmak için sol üstteki **Duraklat** düğmesini basılı tutun (kazara dokunuş manevrayı durdurmasın diye).
-6. **Sonrası:** 10 dakika oturarak dinlenin. **30 dakika sonra** ana ekrandan tekrar testini yapın; **"Takvime hatırlatıcı ekle"**
+6. **Sonrası:** 10 dakika oturarak dinlenin. **1 saat sonra** ana ekrandan tekrar testini yapın; **"Takvime hatırlatıcı ekle"**
    ile telefonunuzun takvimi sizi uyarır. Test negatifse **ertesi sabah** bir kez daha test edin. İkisi de negatifse atağı
    kapatabilirsiniz.
 7. **Rapor:** Ana ekrandan ya da Geçmiş'ten raporu açıp yazdırabilir ya da PDF kaydedebilirsiniz; hekiminize götürün.

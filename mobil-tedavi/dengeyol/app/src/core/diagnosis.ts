@@ -115,7 +115,8 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       f.latencySec !== null ? `Gecikme ${f.latencySec} s.` : 'Gecikme kaydedilmedi.',
       f.durationSec !== null ? `Süre ${f.durationSec} s${cupulo ? ' (≥1 dk)' : ' (<1 dk)'}.` : 'Süre kaydedilmedi.'
     ];
-    const typical = !cupulo && f.durationSec !== null && (f.latencySec === null || f.latencySec <= 20);
+    // "Tipik": gecikme ve süre kaydedilmiş ve ölçütlere uyuyor (gecikme 1–20 s, süre <1 dk).
+    const typical = !cupulo && f.durationSec !== null && f.latencySec !== null && f.latencySec >= 1 && f.latencySec <= 20;
     suggestions.push({
       canal: 'PC',
       side,
@@ -214,13 +215,18 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
               : 'taraf belirlenemedi (eşit şiddet)'
         }.`
       ];
-      if (geo && longAny) rationale.push('Geotropik nistagmus ≥1 dk sürdü (tipik değil; hafif kupula / "light cupula" ayırıcı tanısı).');
+      // Süre, desenle uyumlu değilse öneri "tipik" sayılmaz (Bárány 2015: geotropik kanalolitiazis <1 dk, kupulolitiazis ≥1 dk).
+      const durationMismatch = (geo && longAny) || (!geo && !longAny);
+      if (geo && longAny) {
+        rationale.push('Geotropik nistagmus ≥1 dk sürdü (tipik değil; hafif kupula / "light cupula" ayırıcı tanısı).');
+        warnings.push('Geotropik yatay nistagmus 1 dakikadan uzun sürdü: hafif kupula ya da santral pozisyonel nistagmus açısından değerlendirin.');
+      }
       if (!geo && !longAny) rationale.push('Apogeotropik nistagmus genellikle ≥1 dk sürer; süre kısa ise ön kol kanalolitiazisi olabilir.');
       suggestions.push({
         canal: 'HC',
         side,
         mechanism: mech,
-        confidence: side && bothSides ? 'tipik' : side ? 'olası' : 'belirsiz',
+        confidence: side && bothSides && !durationMismatch ? 'tipik' : side ? 'olası' : 'belirsiz',
         label: side
           ? `${cap(sideLabel(side))} yatay kanal BPPV — ${geo ? 'geotropik (kanalolitiazis)' : 'apogeotropik (kupulolitiazis ya da ön kol kanalolitiazisi)'}`
           : `Yatay kanal BPPV — ${geo ? 'geotropik' : 'apogeotropik'}, taraf belirsiz`,
@@ -257,6 +263,12 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       ],
       maneuvers: side ? maneuversFor('PC', 'unknown') : []
     });
+  }
+
+  // Birden çok kanal önerisi: çok kanallı tutulum (kendi kendine tedavi çalışmalarının dışlama ölçütü; Kim 2023).
+  const canals = new Set(suggestions.map((s) => s.canal).filter((c): c is Canal => c !== null));
+  if (canals.size >= 2) {
+    warnings.push('Birden çok kanalda pozisyonel nistagmus: çok kanallı BPPV olası. Tedavi sırasını siz belirleyin; evde manevra reçetesi önerilmez.');
   }
 
   // Herhangi bir uyarı varsa hiçbir öneri "tipik" sayılmaz: klinisyen uyarıyı görmeden tek dokunuşla onaylamasın.

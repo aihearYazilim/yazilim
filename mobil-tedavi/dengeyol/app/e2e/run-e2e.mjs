@@ -116,6 +116,23 @@ async function answerRedFlags(page, stopOn = null) {
   }
 }
 
+/** Yeni atakta alt tip soruları (arka kanala uyan yanıtlar). */
+async function answerSubtype(page) {
+  await page.getByRole('radio', { name: /Yatarken, yataktan kalkarken/ }).click();
+  await page.getByRole('radio', { name: /1 dakikadan kısa/ }).click();
+}
+
+/** İki yönlü taraf testi: sol negatif, sağ pozitif → sağ tarafa manevra hazır ekranı. */
+async function sideTestRightPositive(page) {
+  await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
+  await page.getByTestId('runner-ready').waitFor();
+  await driveRunner(page);
+  await page.getByTestId('rest-continue').click({ timeout: 10000 });
+  await page.getByTestId('runner-ready').waitFor();
+  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  await page.getByTestId('runner-ready').waitFor();
+}
+
 async function calibrate(page) {
   // Kayıtlı kalibrasyon varsa tanıtma ekranı atlanır (telefon her başlatmada yeniden yerleştirilir).
   await page.locator('[data-testid="cal-start"], [data-testid="runner-ready"], [role="radio"]').first().waitFor({ timeout: 15000 });
@@ -160,7 +177,7 @@ async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, t
 }
 
 // ------------------------------------------------------------------------------------------------
-await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 30 dk tekrar testi → rapor', async () => {
+await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1 saat tekrar testi → rapor', async () => {
   const { ctx, page, errors } = await newPage(seed());
   await page.goto(BASE);
   await snap(page, 'karsilama');
@@ -182,10 +199,11 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 3
   await page.getByTestId('start-episode').click();
   await snap(page, 'kirmizi-bayrak');
   await answerRedFlags(page);
+  await snap(page, 'alt-tip-sorusu');
+  await answerSubtype(page);
   await snap(page, 'kalibrasyon');
   await calibrate(page);
-  await page.getByRole('radio', { name: /Evet, sağ taraf/ }).click();
-  await page.getByTestId('runner-ready').waitFor();
+  await sideTestRightPositive(page);
   await snap(page, 'manevra-hazir');
   let shotDone = false;
   const phase = await driveRunner(page, {
@@ -211,12 +229,12 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 3
   await page.getByTestId('go-home').click();
   await page.getByTestId('active-episode').waitFor();
   await snap(page, 'aktif-atak');
-  // 30 dk geçmiş gibi: manevra zamanını geri al
+  // 1 saat geçmiş gibi: manevra zamanını geri al
   await page.evaluate(() => {
     const d = JSON.parse(localStorage.getItem('dengeyol:v1'));
     const e = d.episodes[0];
-    e.maneuvers.forEach((m) => (m.at -= 31 * 60000));
-    e.redFlags.forEach((r) => (r.at -= 31 * 60000));
+    e.maneuvers.forEach((m) => (m.at -= 61 * 60000));
+    e.redFlags.forEach((r) => (r.at -= 61 * 60000));
     localStorage.setItem('dengeyol:v1', JSON.stringify(d));
   });
   await page.reload();
@@ -247,6 +265,7 @@ await step('Hasta: taraf bilinmiyor → iki yönlü semptom testi → sağ taraf
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
+  await answerSubtype(page);
   await calibrate(page);
   await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
   // Önce sol (şüpheli olmayan) test: baş dönmesi yok
@@ -343,8 +362,9 @@ await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekr
   await page.getByTestId('redflag-confirm-back').click();
   if ((await q.getAttribute('data-qid')) !== firstId) throw new Error('yanlış dokunuştan sonra aynı soruya dönülmedi');
   await answerRedFlags(page);
+  await answerSubtype(page);
   await calibrate(page);
-  await page.getByRole('radio', { name: /Evet, sağ taraf/ }).click();
+  await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
   await page.getByTestId('runner-ready').waitFor();
   await page.getByTestId('runner-assist').getByRole('button', { name: 'Bir yakınımla' }).click();
   await page.getByTestId('helper-card').waitFor();
@@ -381,6 +401,18 @@ await step('Klinisyen: tanı onaylanmadan reçete kilitli; aynı kod ikinci hast
   await page.getByTestId('clin-create').click();
   const n = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')).clinicPatients.length);
   if (n !== 1) throw new Error('aynı kodla ikinci hasta kaydı açıldı: ' + n);
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Hasta: "sırtüstü baş çevirince" yanıtı yatay kanal şüphesiyle hekime yönlendirir', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page);
+  await page.getByRole('radio', { name: /Sırtüstü yatarken başımı/ }).click();
+  await page.getByTestId('end-refer').waitFor();
+  await snap(page, 'alt-tip-yatay-kanal');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });

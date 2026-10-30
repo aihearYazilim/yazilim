@@ -8,7 +8,7 @@ gelince haber verir, pozisyon bozulursa sayacı durdurur ve hangi yöne düzelti
 
 | Mod | Kim için | Ne yapar |
 |---|---|---|
-| **Hasta** | Daha önce hekim/odyolog tanısı almış, BPPV atağı tekrarlayan yetişkin | Her seansta güvenlik soruları → telefonu başa tanıtma (kalibrasyon) → gerekirse iki yönlü kısa test ile taraf belirleme → açı ölçümlü Epley (reçeteyle Semont) → 30 dk ve ertesi sabah tekrar testi → hekime götürülecek rapor |
+| **Hasta** | Daha önce hekim/odyolog tanısı almış, BPPV atağı tekrarlayan yetişkin | Her seansta güvenlik soruları → telefonu başa tanıtma (kalibrasyon) → gerekirse iki yönlü kısa test ile taraf belirleme → açı ölçümlü Epley (reçeteyle Semont) → 1 saat sonra ve ertesi sabah tekrar testi → hekime götürülecek rapor |
 | **Odyolog / hekim** | Klinikte BPPV muayenesi yapan | Telefon hastanın alnında, ekran klinisyene bakar: Dix-Hallpike ve supine roll testleri açı doğrulamalı, nistagmus başlangıç/bitiş işaretleme, Bárány 2015 ölçütlerine dayalı tanı önerisi, 6 manevra (Epley, Semont, BBQ roll, Gufoni geotropik/apogeotropik, Yacovino), tekrar test, **QR kodlu ev reçetesi**, yazdırılabilir rapor |
 
 > **Önemli:** Bu bir araştırma prototipidir; tıbbi cihaz onayı yoktur. Tanı koymaz, hekim muayenesinin yerine geçmez.

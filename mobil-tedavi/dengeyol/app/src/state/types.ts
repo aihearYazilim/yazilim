@@ -122,6 +122,8 @@ export interface ClinicExam {
   maneuvers: ManeuverLog[];
   retestFindings: Findings;
   prescriptionToken?: string;
+  /** Reçetenin dayandığı tanının bulgu imzası: tanı değişirse eski QR gösterilmez. */
+  prescriptionFindingsKey?: string;
   notes?: string;
 }
 

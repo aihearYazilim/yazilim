@@ -35,7 +35,7 @@ Testler 5 farklı telefon/yerleşim modelinde sağ/sol, sarkık ve yüz yere poz
 
 | Değer | Seçim | Gerekçe |
 |---|---|---|
-| θ toleransı (kritik dönüş) | ±10° | IMU sesli geri bildirimli kendi kendine Epley'de mutlak hata ~7,6° (Sci Rep 2023 pilot); <15° sapmanın 1 haftalık sonucu değiştirmediği bildirilmiştir (Audiol Neurotol RKÇ; tam metin görülemedi) |
+| θ toleransı (kritik dönüş) | ±10° | IMU sesli geri bildirimli kendi kendine Epley'de ortalama mutlak hata 7,6° (Callejas Pastor CA ve ark. Sci Rep 2023;13:3169; sağlıklı ≥60 yaş gönüllüler, n=19); <15° sapmanın 1 haftalık sonucu değiştirmediği bildirilmiştir (Chowsilpa S ve ark. Audiol Neurotol 2025;30(3):272–281, n=31; tam metin görülemedi) |
 | θ toleransı (yüz yere 45° adımı) | ±15° | En çok hata yapılan adım; aynı kaynaklar |
 | Dix-Hallpike/Epley sarkıklık φ | 15…40° | Kılavuz 20–30°; ölçüm ve alın eğimi payı |
 | Pozisyon onayı | Hedefte 1 s kesintisiz | Geçerken yanlışlıkla "tamam" denmesini önler |
@@ -44,7 +44,7 @@ Testler 5 farklı telefon/yerleşim modelinde sağ/sol, sarkık ve yüz yere poz
 ## 3. Süreler
 
 - **Epley:** her pozisyonda en az 45 s; baş dönmesi işaretlendiyse geçtikten sonra en az 30 s daha. Kılavuz 20–30 s der;
-  uzatmanın zararı yoktur, kısaltma risklidir. Son oturuş 60 s.
+  daha uzun bekleme için bildirilmiş bir zarar yoktur; kılavuz alt sınırının altına inilmez. Son oturuş 60 s.
 - **Semont:** 60 s + baş dönmesi geçince 30 s. Ara geçişin hızı ölçülür (hedef ≤2 s; birincil kaynakta sayı doğrulanamadı,
   bu yüzden yalnızca geri bildirim verilir, adımı engellemez).
 - **Dix-Hallpike (test):** 60 s gözlem penceresi (gecikme nadiren 1 dakikaya uzayabilir).
@@ -85,7 +85,7 @@ Sınırlar ataktan bağımsız sayılır: günlük sınır takvim gününe, topl
 atağı kapatıp yeniden açmak sınırı sıfırlamaz. Yarıda bırakılan ama pozisyon değiştirilmiş manevra da sayılır.
 Hekime ya da acile yönlendirmeyle biten bir ataktan sonra yeni atak (ve deneme manevrası), hasta "hekimimle görüştüm"
 onayını verene kadar açılmaz.
-Manevradan 30 dk sonra tekrar testi; negatifse ertesi sabah 06:00'dan sonra ikinci test (gece yarısından sonra yapılan
+Manevradan 1 saat sonra tekrar testi (yayımlanmış çalışmalardaki erken değerlendirme zamanı); negatifse ertesi sabah 06:00'dan sonra ikinci test (gece yarısından sonra yapılan
 testte aynı günün 06:00'sı); ikisi de negatifse atak kapatılabilir. Taraf testi hiç tetiklenmediyse sabah tek taraflı
 tekrar testi değil, iki yönlü taraf testi yapılır.
 

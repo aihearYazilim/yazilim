@@ -6,8 +6,29 @@ function icsDate(t: number): string {
   return new Date(t).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
+/** RFC 5545 TEXT kaçışı: ters bölü, noktalı virgül, virgül ve satır sonu. */
 function esc(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+  return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+/** RFC 5545 satır katlama: 75 oktetten uzun satırlar CRLF + boşlukla bölünür (UTF-8 karakterleri bölünmeden). */
+function fold(line: string): string {
+  const enc = new TextEncoder();
+  const out: string[] = [];
+  let cur = '';
+  let bytes = 0;
+  for (const ch of line) {
+    const b = enc.encode(ch).length;
+    if (bytes + b > (out.length === 0 ? 75 : 74)) {
+      out.push(cur);
+      cur = '';
+      bytes = 0;
+    }
+    cur += ch;
+    bytes += b;
+  }
+  out.push(cur);
+  return out.join('\r\n ');
 }
 
 export function buildIcs(at: number, title: string, description: string, url?: string): string {
@@ -31,7 +52,9 @@ export function buildIcs(at: number, title: string, description: string, url?: s
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR'
-  ].join('\r\n');
+  ]
+    .map(fold)
+    .join('\r\n');
 }
 
 export function downloadReminder(at: number, title: string, description: string): void {

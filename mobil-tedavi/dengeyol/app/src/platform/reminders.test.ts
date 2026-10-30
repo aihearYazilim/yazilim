@@ -14,3 +14,11 @@ describe('hatırlatıcı ve reçete bağlantısı', () => {
     expect(extractRxToken('merhaba')).toBeNull();
   });
 });
+
+describe('ics kaçış ve katlama', () => {
+  it('noktalı virgül kaçışlanır, uzun satır 75 okteti aşmaz', () => {
+    const ics = buildIcs(Date.UTC(2026, 9, 29, 6, 0), 'a;b', 'ç'.repeat(200));
+    expect(ics).toContain(String.raw`SUMMARY:a\;b`);
+    for (const line of ics.split('\r\n')) expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+  });
+});

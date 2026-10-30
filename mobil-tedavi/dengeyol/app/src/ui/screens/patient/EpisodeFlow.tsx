@@ -2,7 +2,7 @@
  * Hasta atak akışı.
  * Modlar:
  *   start    — yeni atak (ya da yarım kalan ataka devam): kırmızı bayrak → kalibrasyon → taraf → manevra → sonrası
- *   retest   — 30 dk / sabah tekrar testi: (kırmızı bayrak) → kalibrasyon → Dix-Hallpike (tedavi edilen taraf) → sonuç
+ *   retest   — 1 saat / sabah tekrar testi: (kırmızı bayrak) → kalibrasyon → Dix-Hallpike (tedavi edilen taraf) → sonuç
  *   treat    — pozitif tekrar testi sonrası yeniden manevra
  *   practice — deneme manevrası (atak kaydı tutulmaz; güvenlik soruları sorulur, günde en fazla 2)
  */
@@ -34,6 +34,9 @@ import {
   nextAction,
   nextMorning,
   pendingReferral,
+  doseLimitsFor,
+  recentKnownSide,
+  rxActive,
   practiceAllowed,
   PRACTICE_PER_DAY
 } from '../../../state/episodes';
@@ -56,7 +59,8 @@ type Stage =
   | { k: 'redflagConfirm'; i: number; answers: Record<string, YesNo> }
   | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[] }
   | { k: 'calibrate' }
-  | { k: 'sideConfirm'; known: Side }
+  /** Alt tip soruları (Kim HJ ve ark. JAMA Neurol 2023): yatay kanal ve uzun atak şüphesi hekime yönlendirir. */
+  | { k: 'subtype'; q: 1 | 2 }
   | { k: 'sideQ' }
   | { k: 'sideRun'; order: Side[]; results: SideTestResult[] }
   | { k: 'sideRest'; order: Side[]; results: SideTestResult[] }
@@ -81,13 +85,34 @@ export function EpisodeFlow() {
   const [cal, setCal] = useState<Calibration | null>(null);
   /** Kayıtlı kalibrasyon varken tanıtma ekranı atlanır (telefon her manevra başında yine yerleştirilip ölçülür). */
   const [forceCal, setForceCal] = useState(false);
+  /** Yeniden tanıtmadan sonra dönülecek sahne (ör. 2. taraf testi: 1. tarafın sonucu kaybolmasın). */
+  const resumeRef = useRef<Stage | null>(null);
+  /** Manevrada ≥1 dk baş dönmesi oldu: "nasılsınız" sorusundan sonra hekime yönlendirme ekranı. */
+  const longVertigoRef = useRef(false);
   const recalibrate = () => {
+    resumeRef.current = stage;
     setForceCal(true);
     setStage({ k: 'calibrate' });
+  };
+  /** Yürütücü hiç başlatılmadan kapatıldı: kayıt yazma, ana ekrana dön. */
+  const notStarted = (o: RunnerOutcome) => {
+    if (o.started !== false) return false;
+    nav('/hasta', { replace: true });
+    return true;
   };
 
   // Deneme manevrasında "aynı baş dönmesi mi" sorusu anlamsızdır; diğer güvenlik soruları her seferinde sorulur.
   const flags = mode === 'practice' ? RED_FLAGS.filter((q) => q.id !== 'same') : RED_FLAGS;
+
+  /** Güvenlik sorularından sonra: yeni bir atakta önce alt tip soruları, sonra telefon. */
+  const afterSafetyStage = (): Stage => {
+    if (mode !== 'start') return { k: 'calibrate' };
+    const cur = store.get();
+    const ep = activeEpisode(cur);
+    if (ep && (ep.side || ep.sideTests.length > 0)) return { k: 'calibrate' };
+    if (rxActive(cur.patient)) return { k: 'calibrate' };
+    return { k: 'subtype', q: 1 };
+  };
 
   const initialStage = (): Stage => {
     const cur = store.get();
@@ -98,7 +123,7 @@ export function EpisodeFlow() {
       return { k: 'redflags', i: 0, answers: {} };
     }
     if (needsRedFlags(ep, Date.now())) return { k: 'redflags', i: 0, answers: {} };
-    return { k: 'calibrate' };
+    return afterSafetyStage();
   };
   const [stage, setStage] = useState<Stage>(initialStage);
 
@@ -150,12 +175,18 @@ export function EpisodeFlow() {
     );
   }
 
-  const requireSideTest = gate.requireSideTest;
 
   // ---- Akış geçişleri --------------------------------------------------------------------------
-  const afterCalibration = (c: Calibration) => {
+  /** c = null: sensör yok, hasta sensörsüz (elle onaylı) devam etmeyi seçti. */
+  const afterCalibration = (c: Calibration | null) => {
     setCal(c);
-    store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, calibration: c } : x.patient }));
+    if (c) store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, calibration: c } : x.patient }));
+    if (resumeRef.current) {
+      const back = resumeRef.current;
+      resumeRef.current = null;
+      setStage(back);
+      return;
+    }
     if (mode === 'practice') {
       const s = profile.prescription?.side ?? (profile.side !== 'unknown' ? profile.side : null);
       if (s) setStage({ k: 'maneuver', side: s });
@@ -189,10 +220,18 @@ export function EpisodeFlow() {
       setStage({ k: 'maneuver', side: ep.side });
       return;
     }
-    const known = profile.prescription?.side ?? (profile.side !== 'unknown' ? profile.side : null);
+    // Geçerli (son 14 gün) klinisyen reçetesi aynı atağı tanımlar: taraf testi yapılmadan reçetedeki tarafa manevra.
+    // Diğer her atakta iki taraflı test yapılır (nükste taraf/tip sıklıkla değişir).
     const testedBefore = !!ep && ep.sideTests.length > 0;
-    if (known && !requireSideTest && !testedBefore) setStage({ k: 'sideConfirm', known });
-    else setStage({ k: 'sideQ' });
+    if (rxActive(profile) && !testedBefore) {
+      const s = profile.prescription!.side;
+      const id = ensureEpisode();
+      updateEpisode(id, (e) => ({ ...e, side: s }));
+      if (!checkDose()) return;
+      setStage({ k: 'maneuver', side: s });
+      return;
+    }
+    setStage({ k: 'sideQ' });
   };
 
   const toStart = () => {
@@ -238,7 +277,7 @@ export function EpisodeFlow() {
       }
     }
     if (out.stop && out.action) setStage({ k: 'stop', action: out.action, triggered: out.triggered });
-    else setStage({ k: 'calibrate' });
+    else setStage(afterSafetyStage());
   };
 
   const logSideTest = (results: SideTestResult[], stronger: Side | 'equal' | null, decision: SideDecision) => {
@@ -251,8 +290,7 @@ export function EpisodeFlow() {
     }));
   };
 
-  const knownSideForConflict = (): Side | null =>
-    profile.prescription?.side ?? (profile.side !== 'unknown' ? profile.side : null);
+  const knownSideForConflict = (): Side | null => recentKnownSide(profile);
 
   const decide = (results: SideTestResult[], stronger: Side | 'equal' | null) => {
     const dec = interpretSideTests(results, knownSideForConflict(), stronger);
@@ -260,7 +298,15 @@ export function EpisodeFlow() {
       setStage({ k: 'stronger', results });
       return;
     }
+    const triggeredNotBefore = !!activeEpisode(store.get())?.sideTests.some((t) => t.decision.kind === 'NOT_TRIGGERED');
     logSideTest(results, stronger, dec);
+    if (dec.kind === 'NOT_TRIGGERED' && triggeredNotBefore) {
+      // İkinci kez tetiklenmedi: arka kanal testi negatif pozisyonel baş dönmesi evde değerlendirilemez (yatay kanal?).
+      const ep = activeEpisode(store.get());
+      if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'Taraf testi iki kez baş dönmesini tetiklemedi' }));
+      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize ya da odyoloğunuza başvurun', text: NOT_TRIGGERED_TWICE_TEXT, testid: 'end-refer' });
+      return;
+    }
     if (dec.kind === 'TREAT') {
       if (!checkDose()) return;
       setStage({ k: 'maneuver', side: dec.side });
@@ -269,7 +315,7 @@ export function EpisodeFlow() {
         k: 'end',
         tone: 'info',
         title: 'Bugün baş dönmesi tetiklenmedi',
-        text: 'Pozisyon testleri baş dönmesini başlatmadı. Bu durumda manevra yapılmaz. Kristaller kendiliğinden yerine oturmuş olabilir. Yarın sabah yeniden test edebilirsiniz. Baş dönmesi farklı ya da sürekli ise hekiminize başvurun.',
+        text: 'Pozisyon testleri baş dönmesini başlatmadı; bu durumda manevra yapılmaz. Kristaller kendiliğinden yerine oturmuş olabilir. Yarın sabah bir kez daha test edelim. Yatarken ya da yatakta dönerken baş dönmeniz sürüyorsa bu, evde test edilemeyen yatay kanal BPPV olabilir; hekiminize başvurun.',
         testid: 'end-not-triggered'
       });
     } else if (dec.kind === 'REFER') {
@@ -278,6 +324,7 @@ export function EpisodeFlow() {
   };
 
   const onSideRunExit = (o: RunnerOutcome, order: Side[], results: SideTestResult[]) => {
+    if (notStarted(o)) return;
     const side = order[results.length]!;
     if (o.phase === 'aborted') {
       setStage({ k: 'end', tone: 'info', title: 'Test yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden başlayabilirsiniz.', testid: 'end-aborted' });
@@ -327,7 +374,18 @@ export function EpisodeFlow() {
   };
 
   const onManeuverExit = (o: RunnerOutcome, side: Side) => {
+    if (notStarted(o)) return;
     logManeuver(o, side);
+    // Manevranın herhangi bir pozisyonunda baş dönmesi ≥1 dk sürdüyse (taraf testiyle aynı eşik): atipik → hekime.
+    const long = mode !== 'practice' && o.state.records.some((r) => {
+      const v = vertigoSummary(r);
+      return !!v && (v.durationSec === null || v.durationSec >= ATYPICAL_VERTIGO_SEC);
+    });
+    if (long && o.phase === 'done') {
+      longVertigoRef.current = true;
+      const ep = activeEpisode(store.get());
+      if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'ATYPICAL_LONG' }));
+    }
     if (o.phase === 'done') {
       setStage({ k: 'after', side });
     } else if (o.phase === 'safetyStop') {
@@ -348,6 +406,7 @@ export function EpisodeFlow() {
   };
 
   const onRetestExit = (o: RunnerOutcome, side: Side) => {
+    if (notStarted(o)) return;
     if (o.phase === 'aborted') {
       setStage({ k: 'end', tone: 'info', title: 'Test yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden deneyin.', testid: 'end-aborted' });
       return;
@@ -382,7 +441,7 @@ export function EpisodeFlow() {
               k: 'end',
               tone: 'ok',
               title: 'Test baş dönmesini tetiklemedi',
-              text: 'Manevra işe yaramış görünüyor. Kristallerin yerinde kaldığını görmek için yarın sabah bir kez daha test edelim.',
+              text: 'Şimdilik baş dönmesi tetiklenmedi. Kristallerin yerinde kaldığını görmek için yarın sabah bir kez daha test edelim.',
               testid: 'end-retest-negative',
               remindAt: nextMorning(Date.now()),
               remindTitle: 'DengeYol: sabah testi'
@@ -394,7 +453,7 @@ export function EpisodeFlow() {
       k: 'end',
       tone: 'warn',
       title: 'Baş dönmesi hâlâ tetikleniyor',
-      text: 'Manevrayı yeniden yapabilirsiniz. Sınırlar: günde en fazla 3 manevra.',
+      text: `Manevrayı yeniden yapabilirsiniz (günde en fazla ${doseLimitsFor(profile).maxPerDay} manevra).`,
       testid: 'end-retest-positive',
       extra: 'treat'
     });
@@ -526,33 +585,55 @@ export function EpisodeFlow() {
       if (profile.calibration && !forceCal) return <RunOnce key="saved-cal" run={() => afterCalibration(profile.calibration!)} />;
       return (
         <Screen title="Telefonu tanıtma" back="/hasta">
-          <Calibrate audience="patient" onDone={afterCalibration} onCancel={() => nav('/hasta')} />
+          <Calibrate audience="patient" onDone={afterCalibration} onCancel={() => nav('/hasta')} onNoSensor={() => afterCalibration(null)} />
         </Screen>
       );
 
-    case 'sideConfirm':
-      return (
-        <Screen title="Hangi taraf?" back="/hasta">
-          <h1>Baş dönmesi yine {sideName(stage.known)} tarafa yattığınızda ya da {sideName(stage.known)} tarafa döndüğünüzde mi başlıyor?</h1>
+    case 'subtype': {
+      const refer = (title: string, text: string, note: string) => {
+        const id = ensureEpisode();
+        updateEpisode(id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: note }));
+        setStage({ k: 'end', tone: 'warn', title, text, testid: 'end-refer' });
+      };
+      return stage.q === 1 ? (
+        <Screen title="Baş dönmeniz" back="/hasta">
+          <StepDots total={2} index={0} />
+          <h1>Baş dönmesi en çok ne zaman başlıyor?</h1>
           <Choice
-            name="Taraf onayı"
+            name="Tetikleyen hareket"
             value={null}
-            onChange={(v: 'yes' | 'unsure' | 'no') => {
-              if (v === 'yes') {
-                const id = ensureEpisode();
-                updateEpisode(id, (e) => ({ ...e, side: stage.known }));
-                if (!checkDose()) return;
-                setStage({ k: 'maneuver', side: stage.known });
-              } else setStage({ k: 'sideQ' });
+            onChange={(v: 'liedown' | 'turn' | 'unsure') => {
+              if (v === 'turn') {
+                refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)');
+              } else setStage({ k: 'subtype', q: 2 });
             }}
             options={[
-              { value: 'yes', label: `Evet, ${sideName(stage.known)} taraf` },
-              { value: 'unsure', label: 'Emin değilim', sub: 'Kısa bir testle bakalım.' },
-              { value: 'no', label: 'Hayır, bu kez farklı', sub: 'Kısa bir testle bakalım.' }
+              { value: 'liedown', label: 'Yatarken, yataktan kalkarken ya da yukarı bakarken' },
+              { value: 'turn', label: 'Sırtüstü yatarken başımı sağa-sola çevirince' },
+              { value: 'unsure', label: 'Emin değilim' }
+            ]}
+          />
+        </Screen>
+      ) : (
+        <Screen title="Baş dönmeniz" onBack={() => setStage({ k: 'subtype', q: 1 })}>
+          <StepDots total={2} index={1} />
+          <h1>Her baş dönmesi ne kadar sürüyor?</h1>
+          <Choice
+            name="Süre"
+            value={null}
+            onChange={(v: 'short' | 'long' | 'unsure') => {
+              if (v === 'long') refer('Hekiminize başvurun', REFER_TEXT.ATYPICAL_LONG, 'Alt tip sorusu: baş dönmesi 1 dakikadan uzun');
+              else setStage({ k: 'calibrate' });
+            }}
+            options={[
+              { value: 'short', label: '1 dakikadan kısa (saniyeler)' },
+              { value: 'long', label: '1 dakikadan uzun' },
+              { value: 'unsure', label: 'Bilmiyorum', sub: 'Birazdan yapacağımız kısa test bunu ölçer.' }
             ]}
           />
         </Screen>
       );
+    }
 
     case 'sideQ':
       return (
@@ -669,7 +750,10 @@ export function EpisodeFlow() {
             });
           }
         }
-        if (sev === 'severe') {
+        if (longVertigoRef.current && mode !== 'practice') {
+          longVertigoRef.current = false;
+          setStage({ k: 'end', tone: 'warn', title: 'Manevra tamamlandı — hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
+        } else if (sev === 'severe') {
           setStage({
             k: 'end',
             tone: 'warn',
@@ -685,9 +769,9 @@ export function EpisodeFlow() {
             text:
               mode === 'practice'
                 ? 'Artık adımları biliyorsunuz. Baş dönmeniz başladığında aynı yönergelerle yapacaksınız.'
-                : `10 dakika oturarak dinlenin; ani baş hareketlerinden kaçının. ${formatTime(Date.now() + EARLY_RETEST_MS)} civarında ana ekrandan tekrar testini yapın.`,
+                : `10 dakika oturarak dinlenin; kalkarken dikkatli olun. ${formatTime(Date.now() + EARLY_RETEST_MS)} civarında ana ekrandan tekrar testini yapın.`,
             testid: 'end-maneuver-done',
-            ...(mode === 'practice' ? {} : { remindAt: Date.now() + EARLY_RETEST_MS, remindTitle: 'DengeYol: 30 dakika tekrar testi' })
+            ...(mode === 'practice' ? {} : { remindAt: Date.now() + EARLY_RETEST_MS, remindTitle: 'DengeYol: tekrar testi' })
           });
         }
       }} />;
@@ -824,3 +908,15 @@ function RunOnce({ run }: { run: () => void }) {
   });
   return null;
 }
+
+/** Taraf testinde ya da manevrada bu süreyi aşan baş dönmesi BPPV kanalolitiazisine uymaz (Bárány 2015: <1 dk). */
+const ATYPICAL_VERTIGO_SEC = 60;
+
+const SUBTYPE_HC_TEXT =
+  'Sırtüstü yatarken başınızı sağa-sola çevirince başlayan baş dönmesi, evde tedavi edilemeyen yatay kanal BPPV olabilir. Bu tip farklı bir manevrayla klinikte tedavi edilir. Odyoloğunuz ya da hekiminiz DengeYol klinisyen moduyla yardımcı olabilir.';
+
+const NOT_TRIGGERED_TWICE_TEXT =
+  'Pozisyon testi iki kez baş dönmesini tetiklemedi. Baş dönmeniz sürüyorsa bu, evde test edilemeyen yatay kanal BPPV ya da başka bir neden olabilir. Hekiminize ya da odyoloğunuza başvurun.';
+
+const LONG_IN_MANEUVER_TEXT =
+  'Manevra sırasında baş dönmesi 1 dakikadan uzun sürdü. Bu, tipik BPPV\'ye uymaz. Manevrayı tekrarlamayın; hekiminize ya da odyoloğunuza başvurun. Acil belirtilerde 112\'yi arayın.';

@@ -110,3 +110,34 @@ describe('kullanıcı ajanı bulguları', () => {
     expect(hc.maneuvers).toEqual([]);
   });
 });
+
+describe('tur 1 klinik denetim', () => {
+  it('gecikmesi kaydedilmemiş arka kanal yanıtı "tipik" sayılmaz', () => {
+    const r = suggestDiagnosis({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: null, durationSec: 20 }) });
+    expect(r.suggestions[0]!.confidence).toBe('olası');
+  });
+  it('≥1 dk geotropik yatay nistagmus "tipik" değil ve uyarı verir', () => {
+    const r = suggestDiagnosis({
+      rollR: f({ nystagmus: 'horizontal-geotropic', intensity: 3, durationSec: 75 }),
+      rollL: f({ nystagmus: 'horizontal-geotropic', intensity: 1, durationSec: 70 })
+    });
+    expect(r.suggestions[0]!.confidence).toBe('olası');
+    expect(r.warnings.some((w) => w.includes('hafif kupula'))).toBe(true);
+  });
+  it('<1 dk apogeotropik nistagmus "tipik" değil', () => {
+    const r = suggestDiagnosis({
+      rollR: f({ nystagmus: 'horizontal-apogeotropic', intensity: 3, durationSec: 30 }),
+      rollL: f({ nystagmus: 'horizontal-apogeotropic', intensity: 1, durationSec: 30 })
+    });
+    expect(r.suggestions[0]!.confidence).toBe('olası');
+  });
+  it('arka ve yatay kanal birlikte: çok kanallı uyarısı, hiçbiri tipik değil', () => {
+    const r = suggestDiagnosis({
+      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }),
+      rollR: f({ nystagmus: 'horizontal-geotropic', intensity: 3, durationSec: 30 }),
+      rollL: f({ nystagmus: 'horizontal-geotropic', intensity: 1, durationSec: 30 })
+    });
+    expect(r.warnings.some((w) => w.includes('çok kanallı'))).toBe(true);
+    expect(r.suggestions.every((s) => s.confidence !== 'tipik')).toBe(true);
+  });
+});

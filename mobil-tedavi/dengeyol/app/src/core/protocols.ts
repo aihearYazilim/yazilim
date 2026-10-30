@@ -143,7 +143,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     {
       id: 'dh-lie',
       title: 'Sırtüstü yat, baş {Aya} çevrili ve sarkık',
-      say: 'Başınızın yönünü bozmadan sırtüstü yatın. Başınız yastıktan geriye doğru hafifçe sarksın ve {Aya} çevrili kalsın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Başınızın yönünü bozmadan hızla sırtüstü yatın. Başınız yastıktan geriye doğru hafifçe sarksın ve {Aya} çevrili kalsın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician:
         'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar. Nistagmusu gözleyin; başlangıç ve bitişi işaretleyin.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
@@ -157,7 +157,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     {
       id: 'dh-up',
       title: 'Yavaşça otur',
-      say: 'Yavaşça doğrulup oturun ve başınızı düz tutun. Birkaç saniye böyle kalın.',
+      say: 'Yavaşça doğrulup oturun ve başınızı düz tutun. Yaklaşık 20 saniye böyle kalın.',
       clinician: 'Hasta yavaşça oturtulur; geri dönüş (ters yönlü) nistagmusu gözlenebilir.',
       target: sit(-20, 35),
       minHoldSec: 20,
@@ -167,6 +167,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     }
   ],
   sources: [
+    'Dix MR, Hallpike CS. Proc R Soc Med 1952;45:341–354.',
     'Bhattacharyya N ve ark. Clinical Practice Guideline: BPPV (Update). Otolaryngol Head Neck Surg 2017;156(3_suppl):S1–S47.',
     'von Brevern M ve ark. BPPV: Diagnostic criteria (Bárány Society ICVD). J Vestib Res 2015;25:105–117.'
   ],
@@ -297,7 +298,7 @@ const EPLEY: ProtocolDef = {
     {
       id: 'ep-2',
       title: 'Başını {Hya} çevir',
-      say: 'Başınızı yastıktan kaldırmadan, yavaşça {Hya} doğru çevirin. Şimdi başınız {H} tarafa 45 derece baksın ve hafifçe sarkık kalsın.',
+      say: 'Başınızı kaldırmadan, geriye sarkık tutarak yavaşça {Hya} doğru çevirin. Şimdi başınız {H} tarafa 45 derece baksın ve hafifçe sarkık kalsın.',
       clinician: 'Ekstansiyon korunarak baş {Hya} 90° çevrilir; baş {H} tarafa 45° bakar.',
       target: lie(-45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
       minHoldSec: 45,
@@ -329,6 +330,7 @@ const EPLEY: ProtocolDef = {
     }
   ],
   sources: [
+    'Epley JM. The canalith repositioning procedure. Otolaryngol Head Neck Surg 1992;107:399–404.',
     'Bhattacharyya N ve ark. Otolaryngol Head Neck Surg 2017 (CRP tanımı).',
     'Hilton MP, Pinder DK. Cochrane Database Syst Rev 2014;CD003162.',
     'Radtke A ve ark. Neurology 2004;63:150–152 (ev Epley).',
@@ -403,13 +405,15 @@ const SEMONT: ProtocolDef = {
   ],
   sources: [
     'Semont A ve ark. Adv Otorhinolaryngol 1988;42:290–293.',
-    'Mandalà M ve ark. J Neurol 2012;259:882–885 (sham kontrollü RKÇ).'
+    'Mandalà M ve ark. J Neurol 2012;259:882–885 (sham kontrollü RKÇ).',
+    'Radtke A ve ark. Neurology 2004;63:150–152 (evde kendi kendine Semont, Epley\'den daha az etkili).'
   ],
   cautions: [
     'Hızlı geçiş gerektirir; yaşlı ya da hareket kısıtlılığı olan hastada yardımcı gerekir.',
     'Hasta modunda yalnızca odyolog/hekim reçetesiyle açılır.'
   ],
-  evidenceNote: 'Sınıf I kanıt (Mandalà 2012).'
+  evidenceNote:
+    'Klinisyen uygulamasında Sınıf I kanıt (Mandalà 2012). Evde kendi kendine uygulamada Epley\'den daha az etkili (Radtke 2004: 1. hafta %58\'e karşı %95); ev reçetesinde varsayılan Epley\'dir.'
 };
 
 const BBQ_ROLL: ProtocolDef = {
@@ -437,7 +441,7 @@ const BBQ_ROLL: ProtocolDef = {
     {
       id: 'bbq-1',
       title: 'Yüz tavana',
-      say: 'Başınızı yavaşça ortaya getirin; yüzünüz tavana baksın.',
+      say: 'Başınızı hızla ortaya getirin; yüzünüz tavana baksın.',
       clinician: 'Baş ortaya getirilir (yüz tavana).',
       target: lie(0, 15, -42, 20),
       minHoldSec: 45,
@@ -469,7 +473,7 @@ const BBQ_ROLL: ProtocolDef = {
     },
     {
       id: 'bbq-4',
-      title: '{A} yanına (toplam 270°)',
+      title: '{A} yanına (sırtüstünden 270°)',
       say: 'Aynı yönde dönmeye devam ederek {A} yanınıza gelin; {A} kulağınız yastığa değsin.',
       clinician: 'Aynı yönde dönülerek {A} yan pozisyona gelinir ({A} kulak altta; toplam 270°).',
       target: lie(90, 15, -42, 20),
@@ -480,7 +484,7 @@ const BBQ_ROLL: ProtocolDef = {
     },
     {
       id: 'bbq-5',
-      title: 'Sırtüstü (toplam 360°)',
+      title: 'Sırtüstü (sırtüstünden 360°)',
       say: 'Aynı yönde dönerek sırtüstü gelin; yüzünüz tavana baksın.',
       clinician: 'Aynı yönde sırtüstüne dönülür (toplam 360°).',
       target: lie(0, 15, -42, 20),
