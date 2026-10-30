@@ -51,7 +51,7 @@ import { BedSetup } from '../Illustrations';
 import { speech } from '../../../platform/speech';
 import { unlockAudio } from '../../../platform/feedback';
 import { useMotion } from '../../../platform/MotionContext';
-import { keepAwake } from '../../../platform/wakeLock';
+import { keepAwake, releaseAwake } from '../../../platform/wakeLock';
 import { DoctorClearance } from './PatientHome';
 import { haptics } from '../../../platform/haptics';
 import { tones } from '../../../platform/tones';
@@ -197,12 +197,17 @@ export function EpisodeFlow() {
     if (!ep && pendingReferral(cur)) return { k: 'blocked', why: 'referral' };
     if (mode === 'practice') {
       if (!practiceAllowed(cur, Date.now())) return { k: 'blocked', why: 'practiceLimit' };
+      // Deneme de doza sayılır: sınır doluyken deneme de yapılmaz.
+      const blocked = doseBlockStage();
+      if (blocked) return blocked;
       return { k: 'redflags', i: 0, answers: {} };
     }
     if (needsRedFlags(ep, Date.now())) return { k: 'redflags', i: 0, answers: {} };
     return afterSafetyStage();
   };
   const [stage, setStage] = useState<Stage>(initialStage);
+  // Akıştan çıkınca ekranı açık tutma bırakılır (Bitir/ana ekran).
+  useEffect(() => () => void releaseAwake(), []);
   useEffect(() => {
     window.scrollTo(0, 0);
     if (stage.k === 'calibrate') calHandledRef.current = false;
@@ -984,14 +989,15 @@ export function EpisodeFlow() {
             });
           }
         }
-        if (longVertigoRef.current && mode !== 'practice') {
+        if (sev === 'neuro') {
+          // Yeni nörolojik belirti: her şeyden önce acil (uzun baş dönmesi yolunda da). Atak kilitlenir.
+          longVertigoRef.current = false;
+          const epId = episodeId ?? activeEpisode(store.get())?.id;
+          if (epId && mode !== 'practice') updateEpisode(epId, (e) => ({ ...e, status: 'emergency', endedAt: Date.now(), endNote: 'Manevra sonrası yeni nörolojik belirti' }));
+          setStage({ k: 'stop', action: 'emergency', triggered: [] });
+        } else if (longVertigoRef.current && mode !== 'practice') {
           longVertigoRef.current = false;
           setStage({ k: 'end', tone: 'warn', title: 'Manevra tamamlandı — hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
-        } else if (sev === 'neuro') {
-          // Yeni nörolojik belirti: acil. Atak kilitlenir (hekimle görüşülene kadar yeni manevra yok).
-          const ep = activeEpisode(store.get());
-          if (ep && mode !== 'practice') updateEpisode(ep.id, (e) => ({ ...e, status: 'emergency', endedAt: Date.now(), endNote: 'Manevra sonrası yeni nörolojik belirti' }));
-          setStage({ k: 'stop', action: 'emergency', triggered: [] });
         } else if (sev === 'severe') {
           setStage({
             k: 'end',
@@ -1159,6 +1165,16 @@ function TapSurface({
   const ref = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     ref.current?.focus();
+    // Telefon alındayken kenardan kaydırma/geri tuşu akışı sessizce kapatmasın (1. taraf sonucu kaybolmasın): yok sayılır;
+    // çıkmak için "Bitir" basılı tutulur.
+    const marker = { dengeyolGate: true };
+    window.history.pushState(marker, '');
+    const onPop = () => window.history.pushState(marker, '');
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      if ((window.history.state as { dengeyolGate?: boolean } | null)?.dengeyolGate) window.history.back();
+    };
   }, []);
   return (
     <div

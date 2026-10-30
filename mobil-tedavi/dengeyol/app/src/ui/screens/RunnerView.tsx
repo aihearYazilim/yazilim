@@ -98,9 +98,10 @@ export function RunnerView({
       ...DEFAULT_RUNNER_CONFIG,
       mode,
       protocol,
-      introSecFor: (t: string) => (P ? (settings.speech ? estimateSpeechSec(t, settings.speechRate) : 4) : 1.5)
+      introSecFor: (t: string) => (P ? (settings.speech ? estimateSpeechSec(t, settings.speechRate) : 4) : 1.5),
+      sensorless: manual
     }),
-    [mode, protocol, P, settings.speech, settings.speechRate]
+    [mode, protocol, P, settings.speech, settings.speechRate, manual]
   );
 
   const [started, setStarted] = useState(false);
@@ -482,7 +483,8 @@ export function RunnerView({
               {!P && <p>Pozisyon doğruysa gösterge yeşile döner ve sayaç başlar. Nistagmus başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin.</p>}
               {manual && (
                 <p>
-                  <strong>Sensörsüz mod:</strong> açı ölçülmez; her pozisyonu siz onaylarsınız.
+                  <strong>Sensörsüz mod:</strong> açı ölçülmez.{' '}
+                  {P ? 'Her yönergeden sonra pozisyona geçmeniz için 10 saniye tanınır; sonra süre kendiliğinden başlar.' : 'Her pozisyonu siz onaylarsınız.'}
                 </p>
               )}
               {P && !haptics.supported() && (
@@ -520,7 +522,7 @@ export function RunnerView({
                     }}
                     data-testid="runner-go-manual"
                   >
-                    Sensörsüz devam et (her pozisyonu siz onaylarsınız)
+                    Sensörsüz devam et (açı ölçülmez; yönergeyle ilerlenir)
                   </button>
                 )}
               </div>

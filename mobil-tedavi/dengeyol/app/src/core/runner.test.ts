@@ -376,3 +376,34 @@ describe('tur 1 denetim düzeltmeleri', () => {
     expect(x.s.vertigoActive).toBe(false);
   });
 });
+
+describe('tur 3 kod denetimi', () => {
+  it('duraklatma süresi baş dönmesi kaydına (süre) eklenmez', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    while (x.s.stepIndex < 1) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    }
+    send(x, { type: 'vertigoToggle' });
+    x.t += 5000;
+    send(x, { type: 'pause' });
+    x.t += 70000;
+    send(x, { type: 'resume' });
+    x.t += 8000;
+    send(x, { type: 'vertigoToggle' });
+    const rec = x.s.records[x.s.records.length - 1]!;
+    expect(vertigoSummary(rec)!.durationSec).toBe(13);
+  });
+  it('sensörsüz hasta modunda pozisyon yönergeden sonra kendiliğinden onaylanır', () => {
+    const x = sim('epley');
+    x.cfg = { ...x.cfg, sensorless: true };
+    send(x, { type: 'start' });
+    for (let i = 0; i < 600; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: null });
+    }
+    expect(x.s.records[0]!.manual).toBe(true);
+    expect(x.cues.some((c) => c.kind === 'speak' && c.text.startsWith('Sensörden veri'))).toBe(false);
+  });
+});

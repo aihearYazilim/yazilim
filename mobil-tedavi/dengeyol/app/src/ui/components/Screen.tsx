@@ -27,7 +27,8 @@ export function Screen({
   const goBack = () => {
     if (onBack) return onBack();
     if (back === true) nav(-1);
-    else if (typeof back === 'string') nav(back);
+    // Yerine geçerek git: bitmiş bir akışa sistem geri tuşuyla yeniden girilmesin.
+    else if (typeof back === 'string') nav(back, { replace: true });
   };
   return (
     <div className={`screen${wide ? ' wide' : ''}`}>

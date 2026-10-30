@@ -286,7 +286,7 @@ export function Calibrate({
           </div>
           {onNoSensor && (
             <button className="btn secondary block" onClick={onNoSensor}>
-              {P ? 'Sensörsüz devam et (açı ölçülmez; her pozisyonu siz onaylarsınız)' : 'Sensörsüz devam et (yalnız zamanlayıcı, elle onay)'}
+              {P ? 'Sensörsüz devam et (açı ölçülmez; yönergeyle ilerlenir)' : 'Sensörsüz devam et (yalnız zamanlayıcı, elle onay)'}
             </button>
           )}
           <button className="btn ghost" onClick={onCancel}>

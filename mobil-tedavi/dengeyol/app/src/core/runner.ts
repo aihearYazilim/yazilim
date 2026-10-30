@@ -36,7 +36,15 @@ export interface RunnerConfig {
    * böylece kullanıcı yönergeyi sonuna kadar dinler. Klinisyen modunda 0 verilebilir.
    */
   introSecFor: (text: string) => number;
+  /**
+   * Sensörsüz hasta modu: açı ölçülmez. Hasta ekranı göremediği ve ekrana dokunuş baş dönmesi işareti olduğu için pozisyon
+   * yönerge bittikten sonra sabit bir yerleşme süresiyle kendiliğinden "tamam" sayılır.
+   */
+  sensorless?: boolean;
 }
+
+/** Sensörsüz hasta modunda yönergeden sonra pozisyona geçmek için tanınan süre (s). */
+export const SENSORLESS_SETTLE_SEC = 10;
 
 /** Türkçe TTS için kaba konuşma süresi tahmini: ~13 karakter/saniye (hız 1,0). */
 export function estimateSpeechSec(text: string, rate = 1): number {
@@ -367,8 +375,10 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
       // Duraklatmada geçen süre baş dönmesi süre sınırına sayılmaz (devamda yanlış güvenlik durdurması olmasın).
       const pausedMs = Math.max(0, now - s.phaseSince);
       const vertigoSince = s.vertigoActive && s.vertigoSince !== null ? s.vertigoSince + pausedMs : s.vertigoSince;
+      // Adım saati de kaydırılır: baş dönmesi işaretlerinin süresi (kayıt ve ≥1 dk kuralı) duraklatmayı içermesin.
+      const stepStartedAt = s.stepStartedAt + pausedMs;
       return {
-        state: { ...s, phase, pausedFrom: null, phaseSince: now, settlingSince: null, outOfRangeSince: null, lastTickAt: now, vertigoSince },
+        state: { ...s, phase, pausedFrom: null, phaseSince: now, settlingSince: null, outOfRangeSince: null, lastTickAt: now, vertigoSince, stepStartedAt },
         cues
       };
     }
@@ -534,6 +544,15 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
         cues.push({ kind: 'speak', text: 'Baş dönmesi geçtiyse ekrana dokunun. Sürüyorsa böyle kalın.', priority: 'normal' });
       }
     }
+  }
+
+  // Sensörsüz hasta modu: yönerge + yerleşme süresi dolunca pozisyon kendiliğinden onaylanır.
+  if (cfg.sensorless && cfg.mode === 'patient' && (s.phase === 'intro' || s.phase === 'seeking')) {
+    if (sec(now - s.stepStartedAt) >= introSec(cfg, step) + SENSORLESS_SETTLE_SEC) {
+      const r = runnerStep(cfg, s, { type: 'manualConfirm', now });
+      return { state: r.state, cues: [...cues, ...r.cues] };
+    }
+    return { state: s, cues };
   }
 
   // Sensör verisi
