@@ -38,3 +38,10 @@ Bitince son mesajında rapor yolunu ve en önemli 5 maddeyi ver.
 doğrula, (b) özellikle yeni eklenen akışı denetle: soru → taraf sorusu → **Hazırlık** ekranı → (ilk kez) tanıtma → testler ve
 manevra **telefon alında kesintisiz** (kendiliğinden başlama, zincir, tek dokunuş geçiş ekranları), (c) yeni sorunları bul.
 Raporun 2. bölümüne "1. tur düzeltmesi doğrulandı / hatalı" satırlarını da ekle. Raporu `docs/inceleme/tur-2/<kod>.md` yaz.
+
+## 3. tur notu (son kontrol)
+1. ve 2. tur raporları `docs/inceleme/tur-1/` ve `tur-2/` altında; bulguların neredeyse tamamı uygulandı
+(`git -C /home/user/yazilim log --oneline -12`). Bu son turda amaç **yayına hazır mı?** sorusunu yanıtlamak: kalan
+Kritik/Yüksek sorunları bul, önceki düzeltmelerin birbirini bozmadığını (gerileme) doğrula, uygulama gerçekten akışkan,
+bilimsel, minimalist, kolay ve faydalı mı? Raporu `docs/inceleme/tur-3/<kod>.md` yaz; sonuna "Yayına hazır mı: Evet /
+Koşullu / Hayır" ve gerekçesini ekle. Sunucu `http://localhost:4180/` güncel HEAD derlemesini sunar.
