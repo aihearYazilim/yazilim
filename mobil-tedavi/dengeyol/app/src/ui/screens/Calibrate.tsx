@@ -22,6 +22,7 @@ import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
 import { unlockAudio } from '../../platform/feedback';
 import { keepAwake } from '../../platform/wakeLock';
+import { isIos } from '../../platform/reminders';
 import { Icon } from '../components/Icon';
 import { useSimAuto } from '../components/SimPanel';
 import { PhoneOnForehead } from './Illustrations';
@@ -100,7 +101,9 @@ export function Calibrate({
     if (st !== 'ok') {
       setSensorMsg(
         st === 'denied'
-          ? 'Hareket sensörü izni verilmedi. Telefonun ayarlarından bu site için "Hareket ve Yönelim" iznini açın ya da sayfayı yenileyip izin verin.'
+          ? isIos()
+            ? 'Hareket sensörü izni verilmedi. Telefonun Ayarlar > Safari bölümünden "Hareket ve Yönelim Erişimi"ni açın ya da sayfayı yenileyip izin verin.'
+            : 'Hareket sensörü izni verilmedi. Tarayıcının site ayarlarından "Hareket sensörleri" iznini açın ya da sayfayı yenileyip izin verin.'
           : !window.isSecureContext
             ? 'Hareket sensörü yalnızca güvenli (https://) adreste çalışır. Uygulamayı https ile başlayan adresinden açın.'
             : 'Bu cihazdan hareket sensörü verisi alınamadı. Telefonun ayarlarında bu site için "Hareket sensörleri" izni kapalı olabilir. Bilgisayarda denemek için Ayarlar > Demo modunu açabilirsiniz.'
@@ -158,7 +161,7 @@ export function Calibrate({
     haptics.play('reached');
     say(
       P
-        ? 'Tamam, telefon tanındı. Başınızı düzeltin; telefonu alnınızdan alabilirsiniz. Başlarken yeniden yerleştirmenizi isteyeceğim.'
+        ? 'Tamam, telefon tanındı. Başınızı düzeltin ve telefonu alnınızda tutun; başlıyoruz.'
         : 'Kalibrasyon tamam.'
     );
     sim.upright();

@@ -180,7 +180,11 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           <dd>{side === 'R' ? 'Sağ' : side === 'L' ? 'Sol' : 'Henüz belirlenmedi'}</dd>
           <dt>Bugün</dt>
           <dd>
-            {today === null ? 'sınıra ulaşıldı' : `${today} / ${limits.maxPerDay} manevra`}
+            {today === null
+              ? dose.allowed === false && dose.reason !== 'DAILY_LIMIT'
+                ? 'atak için manevra süresi/sayısı doldu'
+                : 'sınıra ulaşıldı'
+              : `${today} / ${limits.maxPerDay} manevra`}
           </dd>
           <dt>Gün</dt>
           <dd>
@@ -312,7 +316,7 @@ function ReminderButton({ at, title }: { at: number; title: string }) {
       }}
       data-testid="add-reminder"
     >
-      <Icon name="calendar" /> {done ? 'Takvim dosyası indirildi — açıp kaydedin' : 'Takvime hatırlatıcı ekle'}
+      <Icon name="calendar" /> {done ? `İndirildi; açılmazsa saat uygulamasında ${formatTime(at)} için alarm kurun` : 'Takvime hatırlatıcı ekle'}
     </button>
   );
 }

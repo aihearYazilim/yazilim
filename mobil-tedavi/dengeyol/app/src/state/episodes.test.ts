@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { doseLimitsFor, EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral, recentKnownSide, rxActive } from './episodes';
+import { closeStaleEpisodes, doseLimitsFor, EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral, recentKnownSide, rxActive } from './episodes';
 import { emptyData } from './types';
 import type { Episode, ManeuverLog } from './types';
 
@@ -120,5 +120,17 @@ describe('reçete geçerlilik süresi', () => {
     expect(rxActive(profile, now)).toBe(false);
     expect(doseLimitsFor(profile, now).maxDays).toBe(3);
     expect(recentKnownSide(profile, now)).toBeNull();
+  });
+});
+
+describe('eski aktif atak', () => {
+  it('3 günden uzun süre işlem görmeyen aktif atak kendiliğinden kapanır; yönlendirilmiş atak etkilenmez', () => {
+    const d = emptyData();
+    d.episodes = [ep({ id: 'a', startedAt: base, maneuvers: [man(base)] }), ep({ id: 'b', status: 'referred', endedAt: base + 1000 })];
+    const later = base + 7 * 24 * 3600e3;
+    const out = closeStaleEpisodes(d, later);
+    expect(out.episodes.find((e) => e.id === 'a')!.status).toBe('closed');
+    expect(out.episodes.find((e) => e.id === 'b')!.status).toBe('referred');
+    expect(closeStaleEpisodes(d, base + 3600e3)).toBe(d);
   });
 });

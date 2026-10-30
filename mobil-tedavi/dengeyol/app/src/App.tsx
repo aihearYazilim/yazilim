@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { applySettings } from './platform/feedback';
 import { MotionProvider } from './platform/MotionContext';
-import { useData } from './state/store';
+import { closeStaleEpisodes } from './state/episodes';
+import { store, useData } from './state/store';
 import { ErrorBoundary } from './ui/components/ErrorBoundary';
 import { SimPanel } from './ui/components/SimPanel';
 import { About } from './ui/screens/About';
@@ -25,6 +26,19 @@ function Root() {
 
 export function App() {
   const { settings } = useData();
+
+  // Uzun süre işlem görmemiş aktif atağı kapat (açılışta ve uygulamaya her dönüşte).
+  useEffect(() => {
+    const tidy = () => {
+      const cur = store.get();
+      const next = closeStaleEpisodes(cur, Date.now());
+      if (next !== cur) store.update(() => next);
+    };
+    tidy();
+    const onVis = () => document.visibilityState === 'visible' && tidy();
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
 
   useEffect(() => {
     const el = document.documentElement;

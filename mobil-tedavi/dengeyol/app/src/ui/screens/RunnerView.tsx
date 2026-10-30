@@ -49,6 +49,7 @@ export function RunnerView({
   intro,
   onRecalibrate,
   chained = false,
+  autoStart = false,
   onPlaced
 }: {
   protocolId: ProtocolId;
@@ -66,6 +67,8 @@ export function RunnerView({
    * tekrarlanmaz (verilen kalibrasyon az önce ölçüldü).
    */
   chained?: boolean;
+  /** Başlat beklenmeden kendiliğinden başla (hazırlık ekranından gelindi); yerleştirme ölçümü yapılır. */
+  autoStart?: boolean;
   /** Hasta modunda yerleştirme ölçümü yapılınca yeni kalibrasyonu bildirir (zincirdeki sonraki adım için). */
   onPlaced?: (c: Calibration) => void;
 }) {
@@ -368,23 +371,24 @@ export function RunnerView({
     dispatch({ type: 'start', now: now() });
   }
 
-  // Zincirde kendiliğinden başla (StrictMode çift effect'inde zamanlayıcı iptal edilir, tek başlatma olur).
+  // Zincirde ya da hazırlıktan sonra kendiliğinden başla (StrictMode çift effect'inde zamanlayıcı iptal edilir, tek başlatma olur).
+  const auto = chained || autoStart;
   useEffect(() => {
-    if (!chained) return;
+    if (!auto) return;
     const t = setTimeout(() => void begin(), 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // --- Başlamadan önce ---------------------------------------------------------------------
-  if (!started && chained) {
+  if (!started && auto && !prepError) {
     return (
       <div className="runner" data-testid="runner-ready">
         <div className="runner-body" style={{ justifyContent: 'center' }}>
           <h1>{protocol.shortName}{protocol.side ? ` — ${sideName(protocol.side)}` : ''}</h1>
           {intro}
-          <div className="btn primary block xl" aria-live="assertive">
-            {preCount > 0 ? preCount : 'Başlıyoruz…'}
+          <div className="btn primary block xl" aria-live="assertive" data-testid={prep ? 'runner-prep' : undefined}>
+            {prep ? (prep === 'place' ? 'Telefonu alnınıza yaslayın, karşıya bakın…' : 'Tavana bakın…') : preCount > 0 ? preCount : 'Başlıyoruz…'}
           </div>
         </div>
       </div>
@@ -860,7 +864,7 @@ function HoldButton({ ms, onHold, children, testid }: { ms: number; onHold: () =
 }
 
 /** Yardımcıyla yapma: kısa hazırlık kartı. */
-function HelperCard() {
+export function HelperCard() {
   return (
     <ol className="small stack" style={{ margin: 0, paddingLeft: 20, gap: 6 }} data-testid="helper-card">
       <li>Yastığı, hasta yattığında omuzlarının altına gelecek şekilde koyun; baş yastıktan geriye sarkabilsin.</li>

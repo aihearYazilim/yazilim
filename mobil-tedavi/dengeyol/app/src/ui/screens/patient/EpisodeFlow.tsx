@@ -42,11 +42,12 @@ import {
 } from '../../../state/episodes';
 import { activeEpisode, store, uid, useData } from '../../../state/store';
 import type { Episode, ManeuverLog } from '../../../state/types';
-import { Choice, StepDots, YesNo as YesNoButtons } from '../../components/Controls';
+import { Choice, Segmented, StepDots, YesNo as YesNoButtons } from '../../components/Controls';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
-import { RunnerView, type RunnerOutcome } from '../RunnerView';
+import { HelperCard, RunnerView, type RunnerOutcome } from '../RunnerView';
+import { BedSetup } from '../Illustrations';
 import { speech } from '../../../platform/speech';
 import { haptics } from '../../../platform/haptics';
 import { tones } from '../../../platform/tones';
@@ -60,19 +61,21 @@ type Stage =
   /** Durduran yanıttan sonra onay: yanlış dokunuş bir atağı hekime yönlendirmesin. */
   | { k: 'redflagConfirm'; i: number; answers: Record<string, YesNo> }
   | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[] }
+  /** Tek hazırlık ekranı (yatak, yastık, kim yapıyor); ardından telefon alna ve kesintisiz akış. */
+  | { k: 'prep' }
   | { k: 'calibrate' }
   /** Alt tip soruları (Kim HJ ve ark. JAMA Neurol 2023): yatay kanal ve uzun atak şüphesi hekime yönlendirir. */
-  | { k: 'subtype'; q: 1 | 2 }
+  | { k: 'subtype'; q: 1 | 2 | 'hcConfirm' }
   | { k: 'sideQ' }
-  | { k: 'sideRun'; order: Side[]; results: SideTestResult[]; chained?: boolean }
+  | { k: 'sideRun'; order: Side[]; results: SideTestResult[]; chained?: boolean; auto?: boolean }
   /** Taraf testinden sonra, telefon alından inmeden manevraya geçiş (tek dokunuş, ekranın her yeri). */
   | { k: 'chainGate'; side: Side }
   | { k: 'sideRest'; order: Side[]; results: SideTestResult[] }
   | { k: 'stronger'; results: SideTestResult[] }
   | { k: 'practiceSide' }
-  | { k: 'maneuver'; side: Side; chained?: boolean }
+  | { k: 'maneuver'; side: Side; chained?: boolean; auto?: boolean }
   | { k: 'after'; side: Side }
-  | { k: 'retestRun'; side: Side }
+  | { k: 'retestRun'; side: Side; chained?: boolean; auto?: boolean }
   | { k: 'end'; tone: 'ok' | 'warn' | 'danger' | 'info'; title: string; text: string; testid: string; extra?: 'treat'; remindAt?: number; remindTitle?: string };
 
 function updateEpisode(id: string, fn: (e: Episode) => Episode) {
@@ -94,10 +97,27 @@ export function EpisodeFlow() {
     setPlaced({ cal: c, at: Date.now() });
   };
   const CHAIN_MAX_MS = 10 * 60 * 1000;
-  const chainCal = (chained: boolean | undefined): { chained: boolean; calibration: Calibration | null } =>
-    chained && (!cal || (placed && Date.now() - placed.at < CHAIN_MAX_MS))
-      ? { chained: true, calibration: placed?.cal ?? cal }
-      : { chained: false, calibration: cal };
+  /** Yürütücü bayrakları: zincir (telefon alında, ölçüm az önce yapıldı) ya da hazırlıktan sonra kendiliğinden başlama. */
+  const runFlags = (st: { chained?: boolean; auto?: boolean }): { chained: boolean; autoStart: boolean; calibration: Calibration | null } =>
+    st.chained && (!cal || (placed && Date.now() - placed.at < CHAIN_MAX_MS))
+      ? { chained: true, autoStart: false, calibration: placed?.cal ?? cal }
+      : { chained: false, autoStart: !!st.auto || !!st.chained, calibration: cal };
+  /** Bu akışta tanıtma/yerleştirme yapıldıysa (sonraki sorular ekrana bakarak yanıtlanır, telefon iner). */
+  const calibratedRef = useRef(false);
+  /** Hazırlık ekranından geçildi: sonraki ilk yürütücü kendiliğinden başlar. */
+  const fromPrepRef = useRef(false);
+  /** Az önce ayrı tanıtma ekranında ölçüldü (telefon alında): yerleştirme ölçümü tekrarlanmaz. */
+  const freshCalRef = useRef(false);
+  const sideOrderRef = useRef<Side[] | null>(null);
+  const practiceSideRef = useRef<Side | null>(null);
+  /** afterCalibration'dan çıkan ilk yürütücü sahnesinin bayrakları. */
+  const firstRunFlags = (): { chained?: boolean; auto?: boolean } => {
+    if (!fromPrepRef.current) return {};
+    fromPrepRef.current = false;
+    const fresh = freshCalRef.current;
+    freshCalRef.current = false;
+    return fresh ? { chained: true } : { auto: true };
+  };
   /** Kayıtlı kalibrasyon varken tanıtma ekranı atlanır (telefon her manevra başında yine yerleştirilip ölçülür). */
   const [forceCal, setForceCal] = useState(false);
   /** Yeniden tanıtmadan sonra dönülecek sahne (ör. 2. taraf testi: 1. tarafın sonucu kaybolmasın). */
@@ -121,11 +141,23 @@ export function EpisodeFlow() {
 
   /** Güvenlik sorularından sonra: yeni bir atakta önce alt tip soruları, sonra telefon. */
   const afterSafetyStage = (): Stage => {
-    if (mode !== 'start') return { k: 'calibrate' };
     const cur = store.get();
     const ep = activeEpisode(cur);
-    if (ep && (ep.side || ep.sideTests.length > 0)) return { k: 'calibrate' };
-    if (rxActive(cur.patient)) return { k: 'calibrate' };
+    const p = cur.patient;
+    if (mode === 'practice') {
+      const known = p?.prescription?.side ?? (p && p.side !== 'unknown' ? p.side : null);
+      if (known) practiceSideRef.current = known;
+      return known ? { k: 'prep' } : { k: 'practiceSide' };
+    }
+    if (mode === 'retest') {
+      const na = ep ? nextAction(ep, Date.now()) : null;
+      // Taraf henüz belirlenmediyse ya da hiç manevra yapılmadıysa iki yönlü taraf testi (soru telefondan önce).
+      if (ep && ((na?.kind === 'morning-retest' && na.needsSideTest) || ep.maneuvers.length === 0)) return { k: 'sideQ' };
+      return { k: 'prep' };
+    }
+    if (mode === 'treat') return { k: 'prep' };
+    if (ep && (ep.side || ep.sideTests.length > 0)) return { k: 'prep' };
+    if (rxActive(p)) return { k: 'prep' };
     return { k: 'subtype', q: 1 };
   };
 
@@ -141,6 +173,9 @@ export function EpisodeFlow() {
     return afterSafetyStage();
   };
   const [stage, setStage] = useState<Stage>(initialStage);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [stage.k]);
 
   const gate = profile
     ? diagnosisGate({
@@ -192,47 +227,55 @@ export function EpisodeFlow() {
 
 
   // ---- Akış geçişleri --------------------------------------------------------------------------
-  /** c = null: sensör yok, hasta sensörsüz (elle onaylı) devam etmeyi seçti. */
-  const afterCalibration = (c: Calibration | null) => {
+  /**
+   * Tanıtmadan (ya da kayıtlı tanıtmayla) sonra ilk yürütücü sahnesi. c = null: sensör yok, hasta sensörsüz (elle onaylı)
+   * devam etmeyi seçti. fresh: ayrı tanıtma ekranında az önce ölçüldü (telefon hâlâ alında).
+   */
+  const afterCalibration = (c: Calibration | null, fresh = false) => {
     setCal(c);
+    calibratedRef.current = true;
+    freshCalRef.current = fresh;
     if (c) store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, calibration: c } : x.patient }));
+    if (c && fresh) setPlaced({ cal: c, at: Date.now() });
     if (resumeRef.current) {
+      // Yeniden tanıtmadan dön: telefon alında, ölçüm taze → kaldığı test/manevra kendiliğinden ve ölçümsüz başlar.
       const back = resumeRef.current;
       resumeRef.current = null;
-      setStage(back);
+      fromPrepRef.current = false;
+      setStage(back.k === 'sideRun' || back.k === 'maneuver' || back.k === 'retestRun' ? { ...back, chained: fresh, auto: true } : back);
       return;
     }
+    const flags = firstRunFlags();
     if (mode === 'practice') {
-      const s = profile.prescription?.side ?? (profile.side !== 'unknown' ? profile.side : null);
-      if (s) setStage({ k: 'maneuver', side: s });
+      const s = practiceSideRef.current;
+      if (s) setStage({ k: 'maneuver', side: s, ...flags });
       else setStage({ k: 'practiceSide' });
       return;
     }
     const ep = activeEpisode(store.get());
+    if (sideOrderRef.current && (mode === 'start' || mode === 'retest')) {
+      const order = sideOrderRef.current;
+      sideOrderRef.current = null;
+      setStage({ k: 'sideRun', order, results: [], ...flags });
+      return;
+    }
     if (mode === 'retest') {
-      const na = ep ? nextAction(ep, Date.now()) : null;
-      // Taraf henüz belirlenmediyse (önceki taraf testi tetiklenmedi) ya da hiç manevra yapılmadıysa
-      // tek taraflı tekrar testi değil, iki yönlü taraf testi yapılır.
-      if (ep && ((na?.kind === 'morning-retest' && na.needsSideTest) || ep.maneuvers.length === 0)) {
-        setStage({ k: 'sideQ' });
-        return;
-      }
       const s = ep ? episodeSide(ep, profile) : null;
       if (!s) return toStart();
-      setStage({ k: 'retestRun', side: s });
+      setStage({ k: 'retestRun', side: s, ...flags });
       return;
     }
     if (mode === 'treat') {
       const s = ep ? episodeSide(ep, profile) : null;
       if (!s) return toStart();
       if (!checkDose()) return;
-      setStage({ k: 'maneuver', side: s });
+      setStage({ k: 'maneuver', side: s, ...flags });
       return;
     }
     // start
     if (ep && ep.side) {
       if (!checkDose()) return;
-      setStage({ k: 'maneuver', side: ep.side });
+      setStage({ k: 'maneuver', side: ep.side, ...flags });
       return;
     }
     // Geçerli (son 14 gün) klinisyen reçetesi aynı atağı tanımlar: taraf testi yapılmadan reçetedeki tarafa manevra.
@@ -243,7 +286,7 @@ export function EpisodeFlow() {
       const id = ensureEpisode();
       updateEpisode(id, (e) => ({ ...e, side: s }));
       if (!checkDose()) return;
-      setStage({ k: 'maneuver', side: s });
+      setStage({ k: 'maneuver', side: s, ...flags });
       return;
     }
     setStage({ k: 'sideQ' });
@@ -597,11 +640,28 @@ export function EpisodeFlow() {
         </Screen>
       );
 
+    case 'prep':
+      return (
+        <PrepScreen
+          mode={mode}
+          sideTest={!!sideOrderRef.current}
+          onReady={() => {
+            fromPrepRef.current = true;
+            setStage({ k: 'calibrate' });
+          }}
+        />
+      );
+
     case 'calibrate':
-      if (profile.calibration && !forceCal) return <RunOnce key="saved-cal" run={() => afterCalibration(profile.calibration!)} />;
+      if (profile.calibration && !forceCal) return <RunOnce key="saved-cal" run={() => afterCalibration(profile.calibration!, false)} />;
       return (
         <Screen title="Telefonu tanıtma" back="/hasta">
-          <Calibrate audience="patient" onDone={afterCalibration} onCancel={() => nav('/hasta')} onNoSensor={() => afterCalibration(null)} />
+          <Calibrate
+            audience="patient"
+            onDone={(c) => afterCalibration(c, true)}
+            onCancel={() => nav('/hasta')}
+            onNoSensor={() => afterCalibration(null)}
+          />
         </Screen>
       );
 
@@ -611,6 +671,31 @@ export function EpisodeFlow() {
         updateEpisode(id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: note }));
         setStage({ k: 'end', tone: 'warn', title, text, testid: 'end-refer' });
       };
+      if (stage.q === 'hcConfirm') {
+        return (
+          <Screen title="Baş dönmeniz" onBack={() => setStage({ k: 'subtype', q: 1 })}>
+            <div className="card tint-warn stack" data-testid="subtype-hc-confirm">
+              <h2>Yalnız sırtüstü yatarken başınızı çevirince mi?</h2>
+              <p>
+                Bu, evde tedavi edilemeyen yatay kanal BPPV'yi düşündürür. Bu yanıtla manevra yapılmaz ve hekiminize ya da odyoloğunuza
+                yönlendirilirsiniz.
+              </p>
+            </div>
+            <button
+              className="btn warn block xl"
+              onClick={() =>
+                refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)')
+              }
+              data-testid="subtype-hc-yes"
+            >
+              Evet, yalnız böyle
+            </button>
+            <button className="btn secondary block xl" onClick={() => setStage({ k: 'subtype', q: 2 })} data-testid="subtype-hc-unsure">
+              Emin değilim, kısa testle bakalım
+            </button>
+          </Screen>
+        );
+      }
       return stage.q === 1 ? (
         <Screen title="Baş dönmeniz" back="/hasta">
           <StepDots total={2} index={0} />
@@ -619,13 +704,17 @@ export function EpisodeFlow() {
             name="Tetikleyen hareket"
             value={null}
             onChange={(v: 'liedown' | 'turn' | 'unsure') => {
-              if (v === 'turn') {
-                refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)');
-              } else setStage({ k: 'subtype', q: 2 });
+              // Yönlendirme kalıcı kilit koyar: tek dokunuşla olmasın, onay istenir.
+              if (v === 'turn') setStage({ k: 'subtype', q: 'hcConfirm' });
+              else setStage({ k: 'subtype', q: 2 });
             }}
             options={[
-              { value: 'liedown', label: 'Yatarken, yataktan kalkarken ya da yukarı bakarken' },
-              { value: 'turn', label: 'Sırtüstü yatarken başımı sağa-sola çevirince' },
+              { value: 'liedown', label: 'Yatarken, yataktan kalkarken, yatakta yan dönerken ya da yukarı bakarken' },
+              {
+                value: 'turn',
+                label: 'Yalnız sırtüstü yatarken başımı sağa-sola çevirince',
+                sub: 'Yatıp kalkmak ya da yukarı bakmak baş dönmesi yapmıyor.'
+              },
               { value: 'unsure', label: 'Emin değilim' }
             ]}
           />
@@ -639,7 +728,7 @@ export function EpisodeFlow() {
             value={null}
             onChange={(v: 'short' | 'long' | 'unsure') => {
               if (v === 'long') refer('Hekiminize başvurun', REFER_TEXT.ATYPICAL_LONG, 'Alt tip sorusu: baş dönmesi 1 dakikadan uzun');
-              else setStage({ k: 'calibrate' });
+              else setStage({ k: 'sideQ' });
             }}
             options={[
               { value: 'short', label: '1 dakikadan kısa (saniyeler)' },
@@ -662,7 +751,12 @@ export function EpisodeFlow() {
             onChange={(v: 'R' | 'L' | 'both') => {
               // Önce şüpheli olmayan taraf test edilir.
               const order: Side[] = v === 'R' ? ['L', 'R'] : v === 'L' ? ['R', 'L'] : ['R', 'L'];
-              setStage({ k: 'sideRun', order, results: [] });
+              // Telefon henüz alna konmadıysa önce hazırlık; tanıtmadan sonra soruluyorsa doğrudan test.
+              if (calibratedRef.current) setStage({ k: 'sideRun', order, results: [] });
+              else {
+                sideOrderRef.current = order;
+                setStage({ k: 'prep' });
+              }
             }}
             options={[
               { value: 'R', label: 'Sağa dönünce' },
@@ -676,7 +770,7 @@ export function EpisodeFlow() {
     case 'sideRun': {
       const side = stage.order[stage.results.length]!;
       const other = stage.order[1]!;
-      const ch = chainCal(stage.chained);
+      const ch = runFlags(stage);
       return (
         <RunnerView
           key={`side-${side}`}
@@ -685,6 +779,7 @@ export function EpisodeFlow() {
           mode="patient"
           calibration={ch.calibration}
           chained={ch.chained}
+          autoStart={ch.autoStart}
           onPlaced={onPlaced}
           onRecalibrate={recalibrate}
           onExit={(o) => onSideRunExit(o, stage.order, stage.results)}
@@ -743,7 +838,10 @@ export function EpisodeFlow() {
           <Choice
             name="Deneme tarafı"
             value={null}
-            onChange={(v: Side) => setStage({ k: 'maneuver', side: v })}
+            onChange={(v: Side) => {
+              practiceSideRef.current = v;
+              setStage(calibratedRef.current ? { k: 'maneuver', side: v } : { k: 'prep' });
+            }}
             options={[
               { value: 'R', label: 'Sağ' },
               { value: 'L', label: 'Sol' }
@@ -759,7 +857,7 @@ export function EpisodeFlow() {
           protocolId={maneuverId}
           side={stage.side}
           mode="patient"
-          {...chainCal(stage.chained)}
+          {...runFlags(stage)}
           onPlaced={onPlaced}
           onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage.side)}
@@ -820,7 +918,8 @@ export function EpisodeFlow() {
           protocolId="dix-hallpike"
           side={stage.side}
           mode="patient"
-          calibration={cal}
+          {...runFlags(stage)}
+          onPlaced={onPlaced}
           onRecalibrate={recalibrate}
           onExit={(o) => onRetestExit(o, stage.side)}
           intro={
@@ -866,6 +965,9 @@ export function EpisodeFlow() {
             >
               <Icon name="calendar" /> Takvime hatırlatıcı ekle ({formatTime(stage.remindAt)})
             </button>
+          )}
+          {stage.remindAt && (
+            <p className="small muted center">Takvim açılmazsa telefonunuzun saat uygulamasında {formatTime(stage.remindAt)} için alarm kurun.</p>
           )}
           <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })} data-testid="go-home">
             Ana ekran
@@ -981,3 +1083,43 @@ const NOT_TRIGGERED_TWICE_TEXT =
 
 const LONG_IN_MANEUVER_TEXT =
   'Manevra sırasında baş dönmesi 1 dakikadan uzun sürdü. Bu, tipik BPPV\'ye uymaz. Manevrayı tekrarlamayın; hekiminize ya da odyoloğunuza başvurun. Acil belirtilerde 112\'yi arayın.';
+
+/** Tek hazırlık ekranı: yatak ve yastık, ses, kim yapıyor. Sonrasında telefon alnadır ve akış dokunmadan ilerler. */
+function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean; onReady: () => void }) {
+  const d = useData();
+  const helper = d.settings.assist === 'helper';
+  const setAssist = (v: 'self' | 'helper') => store.update((x) => ({ ...x, settings: { ...x.settings, assist: v } }));
+  const duration =
+    mode === 'retest' && !sideTest
+      ? 'yaklaşık 3 dakika'
+      : sideTest
+        ? 'yaklaşık 12–15 dakika (iki kısa test ve manevra)'
+        : 'yaklaşık 6–8 dakika';
+  return (
+    <Screen title="Hazırlık" back="/hasta">
+      <BedSetup />
+      <ol className="stack" style={{ margin: 0, paddingLeft: 22 }} data-testid="prep">
+        <li>Yatağın üzerine oturun; yastık, sırtüstü yattığınızda omuzlarınızın altına gelsin.</li>
+        <li>Sesi açın, sessiz modu kapatın.</li>
+        <li>Telefonu alnınıza koyduktan sonra her şeyi sesle söyleyeceğim. Baş dönmesi olursa ekranın herhangi bir yerine dokunun.</li>
+      </ol>
+      <div className="card stack">
+        <strong>Kim yapıyor?</strong>
+        <Segmented
+          label="Kim yapıyor"
+          value={helper ? 'helper' : 'self'}
+          onChange={setAssist}
+          options={[
+            { value: 'self', label: 'Kendim' },
+            { value: 'helper', label: 'Bir yakınımla' }
+          ]}
+        />
+        {helper && <HelperCard />}
+      </div>
+      <p className="small muted">Süre: {duration}.</p>
+      <button className="btn primary block xl" onClick={onReady} data-testid="prep-ready">
+        Hazırım
+      </button>
+    </Screen>
+  );
+}

@@ -1,7 +1,7 @@
 /**
  * Hasta modu ilk kurulum: bilgilendirme ve onay → tanı bilgisi → kontrendikasyonlar → kapı kararı.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CONTRAINDICATIONS, diagnosisGate, GATE_TEXT, type CanalAnswer, type SideAnswer } from '../../../core/safety';
 import { store, useData } from '../../../state/store';
@@ -28,6 +28,10 @@ export function Onboarding() {
   // Reçete varsa tanı adımı reçeteden dolar ve atlanır.
   const flow: Stage[] = rx ? ['info', 'contra'] : ['info', 'dx', 'contra'];
   const idx = Math.max(0, flow.indexOf(stage));
+  // Yeni adım sayfanın başından açılsın (başlık görünmeden liste ortasından açılmasın).
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [stage]);
   const finish = () => {
     save();
     nav('/hasta', { replace: true });
@@ -63,7 +67,20 @@ export function Onboarding() {
       footer={
         stage === 'info' ? (
           <>
-            <button className="btn primary block xl" disabled={!consent} onClick={() => setStage(flow[1]!)} data-testid="ob-next">
+            <button
+              className="btn primary block xl"
+              aria-disabled={!consent}
+              onClick={() => {
+                if (consent) setStage(flow[1]!);
+                else {
+                  // Pasif düğmeye dokunulursa onay kutusunu göster.
+                  const el = document.querySelector('[data-testid="ob-consent"]') as HTMLElement | null;
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  el?.focus();
+                }
+              }}
+              data-testid="ob-next"
+            >
               Devam
             </button>
             {!consent && <p className="small muted center">Devam etmek için yukarıdaki onay kutusunu işaretleyin.</p>}

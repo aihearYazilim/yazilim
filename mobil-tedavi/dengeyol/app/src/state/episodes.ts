@@ -71,6 +71,36 @@ export function episodeDose(e: Episode, profile: PatientProfile | undefined, now
 
 export const PRACTICE_PER_DAY = 2;
 
+/**
+ * Bu kadar süre hiçbir işlem yapılmamış aktif atak eski sayılır ve kendiliğinden kapanır: haftalar sonra gelen yeni bir
+ * baş dönmesi eski atağın tekrar testine/gün sınırına takılmasın. Doz sınırları ataktan bağımsız sayıldığı için güvenlik
+ * gevşemez; hekime yönlendirme kilidi de etkilenmez (yalnız "active" ataklar kapanır).
+ */
+export const STALE_EPISODE_MS = 72 * 60 * 60 * 1000;
+
+export function lastActivity(e: Episode): number {
+  return Math.max(
+    e.startedAt,
+    ...e.maneuvers.map((m) => m.at),
+    ...e.retests.map((r) => r.at),
+    ...e.sideTests.map((t) => t.at),
+    ...e.redFlags.map((r) => r.at)
+  );
+}
+
+export function closeStaleEpisodes(d: AppData, now: number): AppData {
+  const stale = d.episodes.some((e) => e.status === 'active' && now - lastActivity(e) > STALE_EPISODE_MS);
+  if (!stale) return d;
+  return {
+    ...d,
+    episodes: d.episodes.map((e) =>
+      e.status === 'active' && now - lastActivity(e) > STALE_EPISODE_MS
+        ? { ...e, status: 'closed', endedAt: lastActivity(e), endNote: '3 günden uzun süre işlem yapılmadı; kendiliğinden kapandı' }
+        : e
+    )
+  };
+}
+
 export function practiceAllowed(d: AppData, now: number): boolean {
   const k = localDayKey(now);
   return (d.practiceLog ?? []).filter((t) => localDayKey(t) === k).length < PRACTICE_PER_DAY;

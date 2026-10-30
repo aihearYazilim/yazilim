@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
 import { recordStats } from '../../../core/runner';
@@ -65,6 +66,7 @@ export function EpisodeReport() {
       title="Atak raporu"
       back={true}
     >
+      <ShareReport />
       <ReportBody e={e} />
       <button className="btn secondary block no-print" onClick={() => window.print()}>
         <Icon name="print" /> Yazdır / PDF olarak kaydet
@@ -167,7 +169,7 @@ function ReportBody({ e }: { e: Episode }) {
                     <th>Adım</th>
                     <th>Süre</th>
                     <th>Hedefte</th>
-                    <th>Ort. |θ| hata</th>
+                    <th>Hedeften sapma (ort. / en çok)</th>
                     <th>Belirti</th>
                   </tr>
                 </thead>
@@ -229,4 +231,31 @@ function stopText(r: string | null): string {
 function humanNote(n: string): string {
   if (n in REFER_TEXT) return REFER_TEXT[n as keyof typeof REFER_TEXT];
   return n;
+}
+
+/** Raporu metin olarak paylaş (WhatsApp, e-posta vb.); paylaşma yoksa panoya kopyalar. */
+function ShareReport() {
+  const [msg, setMsg] = useState<string | null>(null);
+  const share = async () => {
+    const el = document.querySelector('[data-testid="episode-report"]') as HTMLElement | null;
+    const text = el?.innerText ?? '';
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'DengeYol atak raporu', text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setMsg('Rapor panoya kopyalandı; mesaj ya da e-postaya yapıştırabilirsiniz.');
+    } catch {
+      /* kullanıcı paylaşmaktan vazgeçti */
+    }
+  };
+  return (
+    <div className="stack no-print">
+      <button className="btn primary block xl" onClick={() => void share()} data-testid="report-share">
+        <Icon name="share" /> Hekime gönder
+      </button>
+      {msg && <p className="small muted">{msg}</p>}
+    </div>
+  );
 }

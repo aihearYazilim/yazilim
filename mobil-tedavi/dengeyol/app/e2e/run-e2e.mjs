@@ -122,10 +122,10 @@ async function answerSubtype(page) {
   await page.getByRole('radio', { name: /1 dakikadan kısa/ }).click();
 }
 
-/** İki yönlü taraf testi: sol negatif, sağ pozitif → sağ tarafa manevra hazır ekranı. */
+/** İki yönlü taraf testi (soru telefondan önce): sol negatif, sağ pozitif → tek dokunuşla sağ tarafa manevra. */
 async function sideTestRightPositive(page) {
   await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
-  await page.getByTestId('runner-ready').waitFor();
+  await calibrate(page);
   await driveRunner(page);
   await page.locator('[data-testid="rest-continue"]:not([disabled])').click({ timeout: 15000 });
   await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
@@ -135,7 +135,11 @@ async function sideTestRightPositive(page) {
 
 async function calibrate(page) {
   // Kayıtlı kalibrasyon varsa tanıtma ekranı atlanır (telefon her başlatmada yeniden yerleştirilir).
-  await page.locator('[data-testid="cal-start"], [data-testid="runner-ready"], [role="radio"]').first().waitFor({ timeout: 15000 });
+  await page.locator('[data-testid="prep-ready"], [data-testid="cal-start"], [data-testid="runner-ready"], [role="radio"]').first().waitFor({ timeout: 15000 });
+  if (await page.getByTestId('prep-ready').isVisible().catch(() => false)) {
+    await page.getByTestId('prep-ready').click();
+    await page.locator('[data-testid="cal-start"], [data-testid="runner-ready"], [data-testid="runner"]').first().waitFor({ timeout: 15000 });
+  }
   if (!(await page.getByTestId('cal-start').isVisible().catch(() => false))) return;
   await page.getByTestId('cal-start').click();
   await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
@@ -202,8 +206,7 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   await answerRedFlags(page);
   await snap(page, 'alt-tip-sorusu');
   await answerSubtype(page);
-  await snap(page, 'kalibrasyon');
-  await calibrate(page);
+  await snap(page, 'taraf-sorusu');
   await sideTestRightPositive(page);
   await snap(page, 'manevra-hazir');
   let shotDone = false;
@@ -267,10 +270,10 @@ await step('Hasta: taraf bilinmiyor → iki yönlü semptom testi → sağ taraf
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
   await answerSubtype(page);
-  await calibrate(page);
   await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
-  // Önce sol (şüpheli olmayan) test: baş dönmesi yok
-  await page.getByTestId('runner-ready').waitFor();
+  await snap(page, 'hazirlik');
+  await calibrate(page);
+  // Önce sol (şüpheli olmayan) test: baş dönmesi yok (tanıtmadan sonra kendiliğinden başlar)
   await driveRunner(page);
   await page.getByTestId('rest-continue').waitFor();
   await snap(page, 'taraf-ara');
@@ -366,14 +369,12 @@ await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekr
   if ((await q.getAttribute('data-qid')) !== firstId) throw new Error('yanlış dokunuştan sonra aynı soruya dönülmedi');
   await answerRedFlags(page);
   await answerSubtype(page);
-  await calibrate(page);
   await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
-  await page.getByTestId('runner-ready').waitFor();
-  await page.getByTestId('runner-assist').getByRole('button', { name: 'Bir yakınımla' }).click();
+  await page.getByTestId('prep').waitFor();
+  await page.getByRole('button', { name: 'Bir yakınımla' }).click();
   await page.getByTestId('helper-card').waitFor();
-  await page.getByTestId('runner-steps-preview').locator('summary').click();
   await snap(page, 'yardimci-hazirlik');
-  await page.getByTestId('runner-start').click();
+  await calibrate(page);
   await page.getByTestId('runner').waitFor({ timeout: 30000 });
   // Pozisyon aranırken düzeltme yönü ekranda yazılı (demo başı oturur durumda: "Şimdi yatın" vb.)
   await page.getByTestId('runner-hint').waitFor({ timeout: 20000 });
@@ -413,7 +414,9 @@ await step('Hasta: "sırtüstü baş çevirince" yanıtı yatay kanal şüphesiy
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
-  await page.getByRole('radio', { name: /Sırtüstü yatarken başımı/ }).click();
+  await page.getByRole('radio', { name: /Yalnız sırtüstü yatarken/ }).click();
+  await page.getByTestId('subtype-hc-confirm').waitFor();
+  await page.getByTestId('subtype-hc-yes').click();
   await page.getByTestId('end-refer').waitFor();
   await snap(page, 'alt-tip-yatay-kanal');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
