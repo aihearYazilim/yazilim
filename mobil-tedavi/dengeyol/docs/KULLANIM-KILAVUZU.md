@@ -20,7 +20,7 @@
 3. **İki kısa soru:** Baş dönmesini en çok ne başlatıyor ve dönme hissi ne kadar sürüyor. Yanıtlar evde tedavi edilemeyen bir
    tipi düşündürürse hekime yönlendirilirsiniz.
 4. **Taraf sorusu:** "Hangi tarafa dönünce daha çok?" Bu yalnız test sırasını belirler; iki taraf da kısa bir testle denenir.
-   (Hekiminizin son 14 gün içinde verdiği reçete varsa ve bu, reçetenin atağıysa test yapılmaz.)
+   (Hekiminizin son 14 gün içinde verdiği reçete varsa "muayeneden beri hiç geçmedi mi?" diye sorulur; geçmediyse test yapılmaz.)
 5. **Hazırlık:** Yatağın üzerine oturun; yastık sırtüstü yattığınızda omuzlarınızın altına gelsin. Sesi açın. Telefonu yan
    kenarlarından parmak uçlarınızla tutun (avuç ekrana değmesin). **Kendim** ya da **Bir yakınımla**yı seçin; yakınınız
    başucunda duracaksa "ekranı bana göre çevir"i işaretleyin. **Hazırım**'a dokunun.
@@ -78,8 +78,8 @@ Söylenen her cümle ekranda da yazılır (yardımcı okuyabilir). iPhone'da yan
    varsayılan seçili gelmez. Açıklama, kanıt ve uyarılar her manevranın altında katlanır.
    Manevra sonrası tekrar testi kaydedin.
 6. **Reçete (yalnız onaylı, taraflı arka kanal kanalolitiazisi tanısında):** Taraf tanıdan gelir; Epley/Semont, günlük ve gün
-   sınırı, not → **QR kod** ve bağlantı. Reçete 14 gün ve yalnız o atak için geçerlidir; sonraki nüks hastanın uygulamasında
-   yeniden test edilir. Çok kanallı ya da kupulolitiazis şüphesinde reçete verilmez. Tanı uyarılarla ya da "belirsiz" öneriden
+   sınırı, not → **QR kod** ve bağlantı. Reçetenin dozu ve tarafı 14 gün geçerlidir; testsiz kısa yol yalnız muayene edilen
+   atak için (hasta "muayeneden beri geçmedi" derse); sonraki nüks hastanın uygulamasında yeniden test edilir. Çok kanallı ya da kupulolitiazis şüphesinde reçete verilmez. Tanı uyarılarla ya da "belirsiz" öneriden
    onaylandıysa ayrıca onay kutusu istenir. Tanı değişirse eski QR gizlenir.
 7. **Rapor:** **"Muayene notunu kopyala"** HBYS / e-Nabız muayene notuna yapıştırılacak düz metni (ICD-10 önerisiyle) panoya
    alır (ICD önerisi yalnız uyarısız tanıda). Yazdır / PDF çıktısında düğmeler ve sekmeler basılmaz; reçete ayrıntısı, QR ve

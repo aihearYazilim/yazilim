@@ -87,6 +87,11 @@ export function episodeDose(
   const times = [...countedTimes(eps), ...extraTimes].filter((t) => now - t < windowMs && t <= now);
   const st = doseStatus(times, e.startedAt, now, limits);
   if (!st.allowed) return st;
+  // Bugün manevradan sonra kusma/şiddetli bulantı bildirildiyse bugün başka manevra yok.
+  const today = localDayKey(now);
+  if (eps.some((x) => x.maneuvers.some((m) => m.afterSymptoms === 'severe' && localDayKey(m.at) === today))) {
+    return { allowed: false, reason: 'DAILY_LIMIT', day: st.day };
+  }
   // Tedavi döneminde manevra yapılan farklı gün sayısı (bugün yeni bir gün olacaksa o da sayılır).
   const days = new Set(times.map(localDayKey));
   const daysUsed = days.size + (days.has(localDayKey(now)) ? 0 : 1);
@@ -186,6 +191,11 @@ export function nextAction(e: Episode, now: number): NextAction {
     return { kind: 'retry-side-test' };
   }
   const retestsAfter = e.retests.filter((r) => r.at > lastMan.at);
+  // Kusma/şiddetli bulantı bildirildiyse o gün test ve manevra yok: ertesi sabah.
+  if (retestsAfter.length === 0 && lastMan.afterSymptoms === 'severe') {
+    const at = nextMorning(lastMan.at);
+    return { kind: 'morning-retest', at, ready: now >= at, needsSideTest: false };
+  }
   if (retestsAfter.length === 0) {
     const at = lastMan.at + EARLY_RETEST_MS;
     return { kind: 'early-retest', at, ready: now >= at };

@@ -73,15 +73,20 @@ yana yatmalı bakışın reddedildiğini doğrular (`calibration.test.ts`). **Ge
    belirtisi; boyun travması/manipülasyonu; ateş/sıvı alamama; önceki BPPV'den farklı mı. Acil olanlarda 112 ekranı.
 2. **Alt tip soruları** (Kim HJ ve ark. JAMA Neurol 2023;80:244–250): (a) "En çok hangisi başlatıyor: yatarken/kalkarken mi,
    yatakta sağa-sola dönerken mi?" — "dönerken" yatay kanalı düşündürür; onaydan sonra hekime yönlendirilir. (b) "Dönme hissi
-   ne kadar sürüyor?" (sersemlik/bulantı hariç) — "1 dakikadan uzun" hekime yönlendirir. Nükste BPPV tipi ve tarafı sıklıkla
+   ne kadar sürüyor?" (sersemlik/bulantı hariç) — "3 dakikadan uzun" hekime yönlendirir (Kim 2023 tarama ölçütü <3 dk);
+   "1–3 dakika" teste gider ve test süreyi ölçer (≥1 dk ölçülürse yönlendirilir). Nükste BPPV tipi ve tarafı sıklıkla
    değişir (Kim 2023: kontrol kolu hastalarının %56'sında farklı); bu yüzden her atakta yeniden belirlenir.
 3. **Taraf sorusu** ("hangi tarafa dönünce daha çok?"): yalnız test sırasını belirler (önce şüpheli olmayan taraf).
 4. **Hazırlık** (yatak, yastık, telefonun tutuluşu, kim yapıyor, süre). "Hazırım" dokunuşu ses kilidini, iOS hareket iznini ve
    ekranı açık tutmayı başlatır. Sonra telefon alna konur ve akış dokunmadan ilerler: (ilk kez) tanıtma → 1. taraf testi →
    30 s dinlenme → 2. taraf testi → karar → tek dokunuşla manevra. Zincirdeki her adımdan önce 1 s'lik sessiz yer kontrolü
    yapılır; telefon 12°'den fazla kaymışsa tam yerleştirme ölçümü istenir.
-5. **Reçeteli kısa yol:** Klinisyen reçetesi 14 gün geçerlidir ve yalnız reçetenin verildiği atak için taraf testi yapılmadan
-   reçetedeki tarafa manevra yapılır. Reçeteden sonra kapanmış başka bir atak varsa (nüks) tam akış uygulanır.
+5. **Reçeteli kısa yol:** Klinisyen reçetesi 14 gün geçerlidir (doz ve taraf çelişkisi denetimi bu süre boyunca). Testsiz kısa
+   yol yalnız reçetenin verildiği atak içindir: hasta "muayeneden beri hiç geçmedi" derse reçetedeki tarafa manevra yapılır;
+   "geçip yeniden başladı" ya da "emin değilim" derse ve reçeteden sonra kapanmış bir atak varsa tam akış uygulanır.
+6. **Doz denetimi atak başında:** Sınır dolduysa provokatif testler yapılmadan söylenir. Manevra sonrası kusma bildirilirse o gün
+   başka manevra ve erken tekrar testi yapılmaz (ertesi sabah test).
+7. **İki taraf pozitif ve geçerli reçete yoksa** "hangisi daha şiddetli" sorulmadan hekime yönlendirilir.
 
 **Taraf testinin yorumu:** Tek taraf pozitif ve <1 dk → o tarafa manevra; geçerli reçetenin tarafıyla çelişki → hekime;
 iki taraf da pozitif → hangisinin daha şiddetli olduğu sorulur, eşitse hekime; ≥1 dk ya da bitişi işaretlenmemiş → hekime;

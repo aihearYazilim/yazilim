@@ -117,8 +117,13 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       f.latencySec !== null ? `Gecikme ${f.latencySec} s.` : 'Gecikme kaydedilmedi.',
       f.durationSec !== null ? `Süre ${f.durationSec} s${cupulo ? ' (≥1 dk)' : ' (<1 dk)'}.` : 'Süre kaydedilmedi.'
     ];
-    // "Tipik": gecikme ve süre kaydedilmiş ve ölçütlere uyuyor (gecikme 1–20 s, süre <1 dk).
-    const typical = !cupulo && f.durationSec !== null && f.latencySec !== null && f.latencySec >= 1 && f.latencySec <= 20;
+    // "Tipik": gecikme ve süre kaydedilmiş ve ölçütlere uyuyor (gecikme 1–20 s, süre <1 dk) ve karşı taraf da test edilmiş
+    // (iki taraflı tutulum dışlanmış olsun).
+    const otherTested = !!findings[side === 'R' ? 'dhL' : 'dhR'];
+    const typical =
+      !cupulo && otherTested && f.durationSec !== null && f.latencySec !== null && f.latencySec >= 1 && f.latencySec <= 20;
+    if (f.latencySec !== null && f.latencySec > 20) rationale.push('Gecikme >20 s (tipik değil).');
+    if (!otherTested) rationale.push('Karşı taraf Dix-Hallpike test edilmedi; iki taraflı tutulum dışlanmadı.');
     suggestions.push({
       canal: 'PC',
       side,
@@ -139,6 +144,11 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       );
     }
   } else if (pcSides.length === 2) {
+    for (const k of ['dhR', 'dhL'] as const) {
+      const f = findings[k]!;
+      if (isLong(f)) warnings.push(`${keyLabel(k)}: yanıt ≥1 dk sürdü; santral pozisyonel nistagmusu dışlayın.`);
+      else if (f.latencySec === 0) warnings.push(`${keyLabel(k)}: yanıt gecikmesiz başladı; santral nedenleri gözden kaçırmayın.`);
+    }
     suggestions.push({
       canal: 'PC',
       side: null,
@@ -269,6 +279,14 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       ],
       maneuvers: side ? maneuversFor('PC', 'unknown') : []
     });
+  }
+
+  // Nistagmus var ama hiçbir öneri ya da uyarı çıkmadı (ör. roll testinde dikey-torsiyonel, Dix-Hallpike'ta yatay ve roll negatif):
+  // klinisyen boş ekran görmesin.
+  if (suggestions.length === 0 && warnings.length === 0 && all.some(([, f]) => f.nystagmus !== 'none')) {
+    warnings.push(
+      'Kaydedilen nistagmus test düzlemiyle uyumsuz ya da BPPV tiplerine uymuyor: diğer kanal ya da santral nedenler açısından değerlendirin; testleri tekrarlayın.'
+    );
   }
 
   // Birden çok kanal önerisi: çok kanallı tutulum (kendi kendine tedavi çalışmalarının dışlama ölçütü; Kim 2023).

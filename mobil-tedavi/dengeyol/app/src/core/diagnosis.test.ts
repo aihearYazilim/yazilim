@@ -154,3 +154,21 @@ describe('tur 2 klinisyen: yatay kanal tarafı', () => {
     expect(r.suggestions.find((s) => s.canal === 'HC')!.side).toBeNull();
   });
 });
+
+describe('tur 3 klinik onay', () => {
+  it('karşı taraf test edilmeden arka kanal "tipik" sayılmaz', () => {
+    const r = suggestDiagnosis({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }) });
+    expect(r.suggestions[0]!.confidence).toBe('olası');
+  });
+  it('iki taraflı arka kanal dalında ≥1 dk yanıt uyarı verir', () => {
+    const r = suggestDiagnosis({
+      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 80 }),
+      dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 })
+    });
+    expect(r.warnings.some((w) => w.includes('≥1 dk'))).toBe(true);
+  });
+  it('uyumsuz desen boş ekran bırakmaz', () => {
+    const r = suggestDiagnosis({ rollR: f({ nystagmus: 'upbeat-torsional', durationSec: 20 }), rollL: f({}) });
+    expect(r.warnings.length).toBeGreaterThan(0);
+  });
+});

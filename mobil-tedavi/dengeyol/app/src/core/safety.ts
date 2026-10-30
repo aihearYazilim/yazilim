@@ -26,7 +26,7 @@ export interface RedFlagQuestion {
 export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'continuous',
-    text: 'Baş dönmesi, hiç kıpırdamasanız bile dakikalarca ya da saatlerce sürekli devam ediyor mu?',
+    text: 'Hiç kıpırdamadan dururken de etrafın dönmesi ya da şiddetli dengesizlik saatlerdir sürüyor mu?',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'BPPV baş dönmesi yalnızca baş hareketiyle başlar ve saniyeler sürer. Sürekli baş dönmesi başka, acil bir nedene bağlı olabilir.'
@@ -47,14 +47,14 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   },
   {
     id: 'cardiac',
-    text: 'Göğüs ağrısı, çarpıntı ya da bayılma oldu mu?',
+    text: 'Bu baş dönmesiyle birlikte göğüs ağrısı, çarpıntı ya da bayılma oldu mu?',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'Bu belirtiler kalple ilgili olabilir ve acil değerlendirme gerektirir.'
   },
   {
     id: 'anticoag',
-    text: 'Kan sulandırıcı ilaç kullanıyorsunuz ve yeni bir baş ağrınız ya da yakın zamanda başınızı çarptığınız bir olay var mı?',
+    text: 'Kan sulandırıcı ilaç kullanıyorsanız: yeni bir baş ağrınız var mı ya da yakın zamanda başınızı çarptınız mı?',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'Kan sulandırıcı kullananlarda yeni baş ağrısı ya da baş çarpması kanama açısından acil değerlendirilmelidir.'
@@ -91,6 +91,8 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     id: 'fever',
     text: 'Bugün ateşiniz var mı ya da kusma nedeniyle hiç sıvı alamıyor musunuz?',
     stopsOn: 'yes',
+    yesLabel: 'Evet',
+    noLabel: 'Hayır',
     action: 'doctor',
     why: 'Ateş ya da sıvı alamayacak kadar kusma, BPPV dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir.'
   },
@@ -261,7 +263,7 @@ export const DOSE_TEXT: Record<'DAILY_LIMIT' | 'TOTAL_LIMIT' | 'DAY_LIMIT', stri
   TOTAL_LIMIT:
     'Son iki haftada önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.',
   DAY_LIMIT:
-    'Baş dönmeniz, evde manevra için önerilen süreden (gün sayısı) uzun sürdü. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.'
+    'Son iki haftada evde manevra için önerilen gün sayısı doldu. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.'
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -316,9 +318,9 @@ export function interpretSideTests(
 
 export const REFER_TEXT: Record<'ATYPICAL_LONG' | 'BOTH_SIDES' | 'SIDE_CONFLICT' | 'INCOMPLETE', string> = {
   ATYPICAL_LONG:
-    'Baş dönmeniz bir dakikadan uzun sürdü ya da bitişi işaretlenmedi. Bu, tipik arka kanal BPPV\'ye uymuyor. Lütfen hekiminize ya da odyoloğunuza başvurun.',
+    'Baş dönmeniz bir dakikadan uzun sürdü ya da bitişi işaretlenmedi. Bu, tipik arka kanal BPPV\'ye uymuyor. Lütfen hekiminize ya da odyoloğunuza başvurun. Konuşma bozukluğu, güçsüzlük ya da çift görme olursa hemen 112\'yi arayın.',
   BOTH_SIDES:
-    'Her iki tarafa yattığınızda da benzer baş dönmesi oldu. Bu, yatay kanal BPPV ya da başka bir neden olabilir ve evde güvenle ayırt edilemez. Lütfen odyoloğunuza ya da hekiminize başvurun.',
+    'İki tarafa yattığınızda da baş dönmesi oldu. Bu, yatay kanal ya da iki taraflı BPPV olabilir ve evde güvenle ayırt edilemez. Lütfen hekiminize ya da odyoloğunuza başvurun.',
   SIDE_CONFLICT:
     'Baş dönmesi bu kez hekiminizin belirlediği taraftan farklı tarafta tetiklendi. Tarafın yeniden muayeneyle belirlenmesi gerekir. Lütfen hekiminize ya da odyoloğunuza başvurun.',
   INCOMPLETE: 'Test tamamlanmadı. Her iki taraf test edilmeden manevra yapılmaz.'

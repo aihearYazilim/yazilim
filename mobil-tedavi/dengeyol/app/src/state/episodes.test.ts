@@ -187,3 +187,12 @@ describe('reçeteli kısa yol yalnız reçetenin atağı için', () => {
     expect(rxActive(d.patient, now)).toBe(false);
   });
 });
+
+describe('manevra sonrası kusma', () => {
+  it('aynı gün yeni manevra yok ve erken tekrar testi yerine sabah testi', () => {
+    const m = { ...man(base), afterSymptoms: 'severe' as const };
+    const e = ep({ maneuvers: [m] });
+    expect(episodeDose(e, undefined, base + 3600e3, [e])).toMatchObject({ allowed: false, reason: 'DAILY_LIMIT' });
+    expect(nextAction(e, base + 2 * 3600e3)).toMatchObject({ kind: 'morning-retest' });
+  });
+});
