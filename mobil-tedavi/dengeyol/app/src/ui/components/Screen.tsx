@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
 
@@ -20,6 +20,10 @@ export function Screen({
   wide?: boolean;
 }) {
   const nav = useNavigate();
+  // Sekme/erişilebilirlik başlığı her ekranda güncel olsun.
+  useEffect(() => {
+    document.title = title && title !== 'DengeYol' ? `${title} · DengeYol` : 'DengeYol';
+  }, [title]);
   const goBack = () => {
     if (onBack) return onBack();
     if (back === true) nav(-1);

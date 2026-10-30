@@ -143,7 +143,8 @@ export function Exam() {
             latencySec: v?.latencySec ?? null,
             durationSec: v?.durationSec ?? null,
             vertigo: false,
-            nystagmusUnset: !!v
+            // Nistagmus tipi her zaman bilinçli seçilir ("Yok" önceden seçili gelmez: tek dokunuşla yanlış negatif olmasın).
+            nystagmusUnset: true
           }
         };
       });
@@ -167,6 +168,17 @@ export function Exam() {
   if (needCal) {
     return (
       <Screen title="Sensör kalibrasyonu" onBack={() => setNeedCal(false)}>
+        <button
+          className="btn secondary block"
+          onClick={() => {
+            setSensorless(true);
+            setNeedCal(false);
+            if (pendingRun) setRun(pendingRun);
+            setPendingRun(null);
+          }}
+        >
+          Sensörsüz devam et (yalnız zamanlayıcı)
+        </button>
         <Calibrate
           audience="clinician"
           onDone={(c) => {
@@ -186,17 +198,7 @@ export function Exam() {
             setPendingRun(null);
           }}
         />
-        <button
-          className="btn ghost"
-          onClick={() => {
-            setSensorless(true);
-            setNeedCal(false);
-            if (pendingRun) setRun(pendingRun);
-            setPendingRun(null);
-          }}
-        >
-          Sensörsüz devam et (yalnız zamanlayıcı)
-        </button>
+
       </Screen>
     );
   }
@@ -296,11 +298,19 @@ export function Exam() {
 }
 
 function TestsTab({ exam, onRun, onManual }: { exam: ClinicExam; onRun: (t: (typeof TESTS)[number]) => void; onManual: (k: FindingKey) => void }) {
+  // Sıradaki yapılmamış test: tek dokunuşla devam.
+  const next = TESTS.find((t) => t.keys.some((k) => !exam.findings[k]));
+  const anyDone = TESTS.some((t) => t.keys.some((k) => exam.findings[k]));
   return (
     <div className="stack">
+      {anyDone && next && (
+        <button className="btn primary block" onClick={() => onRun(next)} data-testid="test-next">
+          <Icon name="play" /> Sıradaki: {next.label}
+        </button>
+      )}
       <p className="small muted">
-        Telefonu hastanın alnına ekran dışa bakacak şekilde yaslayın. Göstergeler size bakar. Nistagmusu gözleyip başlangıç ve bitişi alttaki alana dokunarak
-        işaretleyin; test sonunda bulgu formu açılır.
+        Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın. Nistagmusun başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin; test
+        sonunda bulgu formu açılır.
       </p>
       {TESTS.map((t) => (
         <div key={t.id} className="card stack">
@@ -382,7 +392,9 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
           {s.maneuvers.length > 0 && <p className="small muted">Önerilen: {s.maneuvers.map((m) => PROTOCOLS[m].shortName).join(', ')}</p>}
           <button
             className={`btn ${hasWarnings ? 'warn' : 'secondary'}`}
-            onClick={() => confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true })}
+            onClick={() =>
+              confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true, confidence: s.confidence })
+            }
             data-testid="dx-confirm"
           >
             <Icon name="check" /> {hasWarnings ? 'Uyarıları okudum, yine de onayla' : 'Bu tanıyı onayla'}
@@ -524,7 +536,7 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
               ))}
             </details>
             <button
-              className="btn primary"
+              className={`btn ${suggested[0] === id || suggested.length === 0 ? 'primary' : 'secondary'}`}
               disabled={p.sided && !side}
               onClick={() => onRun({ protocolId: id, side: p.sided ? side : null, purpose: 'maneuver' })}
               data-testid={`treat-run-${id}`}
@@ -634,7 +646,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     );
   }
   // Onaydaki ya da şu anki bulgulardan çıkan uyarı varsa reçete için ek onay istenir.
-  const needAck = !!dx?.warnings?.length || suggestDiagnosis(exam.findings).warnings.length > 0;
+  // Uyarı (onay anında ya da şimdi) ya da "belirsiz" güvenli öneri (ör. nistagmussuz pozisyonel vertigo) varsa ek onay istenir.
+  const needAck = !!dx?.warnings?.length || suggestDiagnosis(exam.findings).warnings.length > 0 || dx?.confidence === 'belirsiz';
 
   const make = () => {
     if (!side) return;
@@ -699,7 +712,11 @@ function RxTab({ exam }: { exam: ClinicExam }) {
         {needAck && (
           <label className="row notice danger" style={{ alignItems: 'flex-start' }}>
             <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="check-lg" data-testid="rx-ack" />
-            <span>Tanı uyarılarla onaylandı. Uyarıları değerlendirdim; bu hastanın evde manevra yapması uygundur.</span>
+            <span>
+              {dx?.confidence === 'belirsiz' && !dx?.warnings?.length
+                ? 'Tanı belirsiz bir öneriden onaylandı (ör. nistagmus gözlenmedi). Değerlendirdim; bu hastanın evde manevra yapması uygundur.'
+                : 'Tanı uyarılarla onaylandı. Uyarıları değerlendirdim; bu hastanın evde manevra yapması uygundur.'}
+            </span>
           </label>
         )}
         <button className="btn primary" onClick={make} disabled={!side || (needAck && !ack)} data-testid="rx-make">
@@ -796,6 +813,17 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
   const [copied, setCopied] = useState(false);
   const rx = exam.prescriptionToken ? decodePrescription(exam.prescriptionToken) : null;
   const valid = dxValid(exam);
+  // Yazdırılan raporda hastanın okutabileceği QR (yalnız güncel reçete).
+  const [qr, setQr] = useState<string | null>(null);
+  const rxOk = rxCurrent(exam);
+  useEffect(() => {
+    if (!exam.prescriptionToken || !rxOk) {
+      setQr(null);
+      return;
+    }
+    const url = `${window.location.href.split('#')[0]}#/recete/${exam.prescriptionToken}`;
+    void QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setQr);
+  }, [exam.prescriptionToken, rxOk]);
   const fx = (title: string, f: Findings) => {
     const keys = Object.keys(f) as FindingKey[];
     if (keys.length === 0) return null;
@@ -867,7 +895,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
                     <th>Adım</th>
                     <th>Süre</th>
                     <th>Hedefte</th>
-                    <th>Ort./maks |θ| hata</th>
+                    <th>Hedeften sapma (ort. / en çok)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -897,6 +925,12 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             {rx.value.perDay}, {rx.value.days} gün{rx.value.note ? ` · Not: ${rx.value.note}` : ''}
           </p>
           <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz sınırları uygulamada uygulanır.</p>
+          {qr && (
+            <div className="row" style={{ alignItems: 'center' }}>
+              <div className="qr" style={{ width: 120 }} dangerouslySetInnerHTML={{ __html: qr }} aria-label="Reçete QR kodu" />
+              <span className="small">Hasta bu kodu DengeYol yüklü telefonun kamerasıyla okutur.</span>
+            </div>
+          )}
         </div>
       )}
       <div className="card stack signature">

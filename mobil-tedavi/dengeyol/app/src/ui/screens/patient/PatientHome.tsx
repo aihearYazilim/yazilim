@@ -34,6 +34,10 @@ export function PatientHome() {
   const now = useNow();
   const p = d.patient;
   const ep = activeEpisode(d);
+  // Ana ekran her açılışta en üstten (kurulumdan gelince "Baş dönmem başladı" görünür olsun).
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const right = (
     <>

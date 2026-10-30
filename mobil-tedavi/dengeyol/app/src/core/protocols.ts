@@ -53,6 +53,11 @@ export interface StepDef {
   target: Target;
   /** Pozisyona ulaşıldıktan sonra en az bekleme (s). */
   minHoldSec: number;
+  /**
+   * Klinisyen modunda en az bekleme (yoksa minHoldSec). Klinikte nistagmus gözlenir; kılavuz 20–30 s ya da nistagmus
+   * sönene kadar der (AAO-HNSF 2017). Hasta modu (belirti gözlenemez) değişmez.
+   */
+  clinicianMinHoldSec?: number;
   /** Baş dönmesi işaretlendiyse, bittikten sonra en az bu kadar daha beklenir (s). */
   afterVertigoSec: number;
   /** Hasta modunda bu süreyi aşan baş dönmesi güvenlik durdurmasına yol açar (s). null = sınır yok. */
@@ -291,6 +296,7 @@ const EPLEY: ProtocolDef = {
       clinician: 'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
       observe: true
@@ -302,6 +308,7 @@ const EPLEY: ProtocolDef = {
       clinician: 'Ekstansiyon korunarak baş {Hya} 90° çevrilir; baş {H} tarafa 45° bakar.',
       target: lie(-45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
       observe: true
@@ -313,6 +320,7 @@ const EPLEY: ProtocolDef = {
       clinician: 'Hasta {H} yanına döner; baş gövdeyle birlikte dönerek yüz yere 45° bakar (başlangıca göre toplam 180°).',
       target: lie(-135, LIMITS.thetaTolFaceDown, -25, 30),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
       observe: true
@@ -324,6 +332,7 @@ const EPLEY: ProtocolDef = {
       clinician: 'Hasta {H} taraftan yavaşça oturtulur; çene hafif fleksiyonda.',
       target: sit(5, 45),
       minHoldSec: 60,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: false

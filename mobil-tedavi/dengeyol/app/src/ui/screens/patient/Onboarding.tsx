@@ -63,7 +63,12 @@ export function Onboarding() {
   return (
     <Screen
       title="Kurulum"
-      onBack={() => (stage === 'info' ? nav('/') : setStage(stage === 'gate' ? 'contra' : flow[idx - 1]!))}
+      onBack={() => {
+        if (stage !== 'info') return setStage(stage === 'gate' ? 'contra' : flow[idx - 1]!);
+        // İlk adımdan geri: rol seçimine dön (rol "hasta" kalırsa ana sayfa yine kuruluma yönlendirirdi).
+        store.update((x) => ({ ...x, settings: { ...x.settings, role: null } }));
+        nav('/', { replace: true });
+      }}
       footer={
         stage === 'info' ? (
           <>

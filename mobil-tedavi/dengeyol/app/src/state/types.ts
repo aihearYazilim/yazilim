@@ -107,6 +107,8 @@ export interface ConfirmedDiagnosis {
   mechanism: 'canalithiasis' | 'cupulolithiasis' | 'unknown';
   label: string;
   fromSuggestion: boolean;
+  /** Öneriden onaylandıysa güven düzeyi. */
+  confidence?: 'tipik' | 'olası' | 'belirsiz';
   /** Onay anında ekranda olan uyarılar (rapora yazılır). */
   warnings?: string[];
   /** Onay anındaki bulguların imzası; bulgular sonradan değişirse tanı geçersiz sayılır. */

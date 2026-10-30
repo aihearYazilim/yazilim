@@ -227,14 +227,14 @@ export function Calibrate({
         <div className="card stack center" aria-live="assertive">
           <PhoneOnForehead lookUp={stage === 'lookup'} />
           <h2>
-            {stage === 'place' && 'Telefonu alnınıza yaslayın'}
-            {stage === 'upright' && 'Karşıya bakın, kıpırdamayın'}
-            {stage === 'lookup' && 'Tavana bakın'}
+            {stage === 'place' && (P ? 'Telefonu alnınıza yaslayın' : 'Telefonu hastanın alnına yaslayın')}
+            {stage === 'upright' && (P ? 'Karşıya bakın, kıpırdamayın' : 'Hasta karşıya baksın, kıpırdamasın')}
+            {stage === 'lookup' && (P ? 'Tavana bakın' : 'Hasta tavana baksın')}
           </h2>
           <p className="lead">
-            {stage === 'place' && 'Ekran dışa, üst kenar yukarı. Dik oturun.'}
+            {stage === 'place' && (P ? 'Telefonun arkası alnınızda, ekran karşıya baksın. Dik oturun.' : 'Ekran size baksın, üst kenar saç çizgisine doğru.')}
             {stage === 'upright' && 'Ölçülüyor…'}
-            {stage === 'lookup' && 'Başınızı yavaşça geriye yatırın.'}
+            {stage === 'lookup' && (P ? 'Başınızı yavaşça geriye yatırın.' : 'Başını yavaşça geriye yatırsın.')}
           </p>
           {count > 0 && <div style={{ fontSize: '3rem', fontWeight: 800 }}>{count}</div>}
         </div>

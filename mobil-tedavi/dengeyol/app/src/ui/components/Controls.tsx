@@ -141,7 +141,7 @@ export function Segmented<T extends string | number>({
 
 export function StepDots({ total, index }: { total: number; index: number }) {
   return (
-    <div className="steps-dots" aria-label={`Adım ${index + 1} / ${total}`}>
+    <div className="steps-dots" role="img" aria-label={`Adım ${index + 1} / ${total}`}>
       {Array.from({ length: total }, (_, i) => (
         <span key={i} className={i < index ? 'done' : i === index ? 'now' : ''} />
       ))}

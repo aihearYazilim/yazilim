@@ -84,7 +84,7 @@ export function FindingForm({
         <input type="checkbox" checked={vertigo} onChange={(e) => setVertigo(e.target.checked)} />
         <span>Hasta baş dönmesi bildirdi</span>
       </label>
-      <div className="row">
+      <div className="row sticky-actions">
         <button
           className="btn primary grow"
           disabled={!valid}

@@ -68,12 +68,12 @@ export function HeadGauge({
       <path d={arcPath(tgtFrom, tgtTo, R_TARGET + 14)} fill="var(--gauge-target)" />
       <line x1={C} y1={C} x2={tgtMark.x} y2={tgtMark.y} stroke="var(--gauge-target-line)" strokeWidth={2} strokeDasharray="4 5" />
       {/* Yön etiketleri */}
-      <text x={C} y={18} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--muted)">YÜZ TAVANA</text>
-      <text x={C} y={234} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--muted)">YÜZ YERE</text>
-      <text x={rightX} y={C - 4} textAnchor={flipped ? 'end' : 'start'} fontSize="10" fontWeight="700" fill="var(--muted)">HASTANIN</text>
-      <text x={rightX} y={C + 9} textAnchor={flipped ? 'end' : 'start'} fontSize="12" fontWeight="800" fill="var(--text)">SAĞI</text>
-      <text x={leftX} y={C - 4} textAnchor={flipped ? 'start' : 'end'} fontSize="10" fontWeight="700" fill="var(--muted)">HASTANIN</text>
-      <text x={leftX} y={C + 9} textAnchor={flipped ? 'start' : 'end'} fontSize="12" fontWeight="800" fill="var(--text)">SOLU</text>
+      <text x={C} y={18} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--muted)">YÜZ TAVANA</text>
+      <text x={C} y={234} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--muted)">YÜZ YERE</text>
+      <text x={rightX} y={C - 4} textAnchor={flipped ? 'end' : 'start'} fontSize="11" fontWeight="700" fill="var(--muted)">HASTANIN</text>
+      <text x={rightX} y={C + 9} textAnchor={flipped ? 'end' : 'start'} fontSize="14" fontWeight="800" fill="var(--text)">SAĞI</text>
+      <text x={leftX} y={C - 4} textAnchor={flipped ? 'start' : 'end'} fontSize="11" fontWeight="700" fill="var(--muted)">HASTANIN</text>
+      <text x={leftX} y={C + 9} textAnchor={flipped ? 'start' : 'end'} fontSize="14" fontWeight="800" fill="var(--text)">SOLU</text>
       {theta !== null && nose && noseL && noseR && earL && earR ? (
         <g>
           <circle cx={earL.x} cy={earL.y} r={9} fill="var(--gauge-head)" stroke="var(--gauge-head-line)" strokeWidth={2} />
@@ -139,7 +139,7 @@ export function HangBar({ target, pose }: { target: Target; pose: HeadPose | nul
   const phi = pose && pose.tiltFromUpright >= 45 ? pose.phi : null;
   const inBand = phi !== null && phi >= target.phiMin && phi <= target.phiMax;
   return (
-    <div aria-label="Baş sarkıklığı" style={{ width: '100%' }}>
+    <div role="img" aria-label="Baş sarkıklığı göstergesi" style={{ width: '100%' }}>
       <div className="row small muted" style={{ justifyContent: 'space-between' }}>
         <span>Çene göğse</span>
         <span>Baş sarkıklığı</span>

@@ -46,9 +46,12 @@ import { Choice, Segmented, StepDots, YesNo as YesNoButtons } from '../../compon
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
-import { HelperCard, RunnerView, type RunnerOutcome } from '../RunnerView';
+import { HelperCard, HoldButton, RunnerView, type RunnerOutcome } from '../RunnerView';
 import { BedSetup } from '../Illustrations';
 import { speech } from '../../../platform/speech';
+import { unlockAudio } from '../../../platform/feedback';
+import { useMotion } from '../../../platform/MotionContext';
+import { keepAwake } from '../../../platform/wakeLock';
 import { DoctorClearance } from './PatientHome';
 import { haptics } from '../../../platform/haptics';
 import { tones } from '../../../platform/tones';
@@ -64,7 +67,8 @@ type Stage =
   | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[] }
   /** Tek hazırlık ekranı (yatak, yastık, kim yapıyor); ardından telefon alna ve kesintisiz akış. */
   | { k: 'prep' }
-  | { k: 'calibrate' }
+  /** saved: kayıtlı tanıtma kullanılacak (sahneye girerken belirlenir; tanıtma sırasında kaydedilen yeni değer yarış yaratmasın). */
+  | { k: 'calibrate'; saved: boolean }
   /** Alt tip soruları (Kim HJ ve ark. JAMA Neurol 2023): yatay kanal ve uzun atak şüphesi hekime yönlendirir. */
   | { k: 'subtype'; q: 1 | 2 | 'hcConfirm' }
   | { k: 'sideQ' }
@@ -123,12 +127,14 @@ export function EpisodeFlow() {
   const [forceCal, setForceCal] = useState(false);
   /** Yeniden tanıtmadan sonra dönülecek sahne (ör. 2. taraf testi: 1. tarafın sonucu kaybolmasın). */
   const resumeRef = useRef<Stage | null>(null);
+  /** afterCalibration bu tanıtma sahnesinde çalıştı mı (tek sefer). */
+  const calHandledRef = useRef(false);
   /** Manevrada ≥1 dk baş dönmesi oldu: "nasılsınız" sorusundan sonra hekime yönlendirme ekranı. */
   const longVertigoRef = useRef(false);
   const recalibrate = () => {
     resumeRef.current = stage;
     setForceCal(true);
-    setStage({ k: 'calibrate' });
+    setStage({ k: 'calibrate', saved: false });
   };
   /** Yürütücü hiç başlatılmadan kapatıldı: kayıt yazma, ana ekrana dön. */
   const notStarted = (o: RunnerOutcome) => {
@@ -157,7 +163,9 @@ export function EpisodeFlow() {
       return { k: 'prep' };
     }
     if (mode === 'treat') return { k: 'prep' };
-    if (ep && (ep.side || ep.sideTests.length > 0)) return { k: 'prep' };
+    if (ep && ep.side) return { k: 'prep' };
+    // Önceki taraf testi tetiklemedi (sabah yeniden test): taraf sorusu telefondan önce, sonra hazırlık.
+    if (ep && ep.sideTests.length > 0) return { k: 'sideQ' };
     if (rxFirstEpisode(cur)) return { k: 'prep' };
     return { k: 'subtype', q: 1 };
   };
@@ -176,6 +184,8 @@ export function EpisodeFlow() {
   const [stage, setStage] = useState<Stage>(initialStage);
   useEffect(() => {
     window.scrollTo(0, 0);
+    if (stage.k === 'calibrate') calHandledRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage.k]);
 
   const gate = profile
@@ -233,6 +243,9 @@ export function EpisodeFlow() {
    * devam etmeyi seçti. fresh: ayrı tanıtma ekranında az önce ölçüldü (telefon hâlâ alında).
    */
   const afterCalibration = (c: Calibration | null, fresh = false) => {
+    // Aynı tanıtma sahnesi için yalnız bir kez (yeniden çizimde ikinci kez çalışıp akışı geri sarmasın).
+    if (calHandledRef.current) return;
+    calHandledRef.current = true;
     setCal(c);
     calibratedRef.current = true;
     freshCalRef.current = fresh;
@@ -376,6 +389,8 @@ export function EpisodeFlow() {
         k: 'end',
         tone: 'info',
         title: 'Bugün baş dönmesi tetiklenmedi',
+        remindAt: nextMorning(Date.now()),
+        remindTitle: 'DengeYol: sabah testi',
         text: 'Pozisyon testleri baş dönmesini başlatmadı; bu durumda manevra yapılmaz. Kristaller kendiliğinden yerine oturmuş olabilir. Yarın sabah bir kez daha test edelim. Yatarken ya da yatakta dönerken baş dönmeniz sürüyorsa bu, evde test edilemeyen yatay kanal BPPV olabilir; hekiminize başvurun.',
         testid: 'end-not-triggered'
       });
@@ -657,13 +672,13 @@ export function EpisodeFlow() {
           sideTest={!!sideOrderRef.current}
           onReady={() => {
             fromPrepRef.current = true;
-            setStage({ k: 'calibrate' });
+            setStage({ k: 'calibrate', saved: !!store.get().patient?.calibration && !forceCal });
           }}
         />
       );
 
     case 'calibrate':
-      if (profile.calibration && !forceCal) return <RunOnce key="saved-cal" run={() => afterCalibration(profile.calibration!, false)} />;
+      if (stage.saved && profile.calibration) return <RunOnce key="saved-cal" run={() => afterCalibration(profile.calibration!, false)} />;
       return (
         <Screen title="Telefonu tanıtma" back="/hasta">
           <Calibrate
@@ -789,6 +804,10 @@ export function EpisodeFlow() {
           chained={ch.chained}
           autoStart={ch.autoStart}
           onPlaced={onPlaced}
+          onSensorless={() => {
+            setCal(null);
+            setPlaced(null);
+          }}
           onRecalibrate={recalibrate}
           onExit={(o) => onSideRunExit(o, stage.order, stage.results)}
           intro={
@@ -808,6 +827,9 @@ export function EpisodeFlow() {
       return (
         <RestBetween
           onContinue={() => setStage({ k: 'sideRun', order: stage.order, results: stage.results, chained: true })}
+          onExit={() =>
+            setStage({ k: 'end', tone: 'info', title: 'Test yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden başlayabilirsiniz.', testid: 'end-aborted' })
+          }
           next={stage.order[stage.results.length]!}
         />
       );
@@ -819,12 +841,16 @@ export function EpisodeFlow() {
           title={`${sideName(stage.side).charAt(0).toLocaleUpperCase('tr-TR') + sideName(stage.side).slice(1)} tarafta baş dönmesi oldu`}
           text={`Şimdi ${sideName(stage.side)} taraf için manevrayı yapacağız. Telefon alnınızda kalsın. Baş dönmeniz geçtiyse ve hazırsanız ekranın herhangi bir yerine dokunun.`}
           onTap={() => setStage({ k: 'maneuver', side: stage.side, chained: true })}
+          onExit={() =>
+            setStage({ k: 'end', tone: 'info', title: 'Manevra başlatılmadı', text: 'Hazır olduğunuzda ana ekrandan devam edebilirsiniz; taraf kaydedildi.', testid: 'end-aborted' })
+          }
         />
       );
 
     case 'stronger':
       return (
         <Screen title="İki tarafta da baş dönmesi" back="/hasta">
+          <SpeakOnce text="İki tarafta da baş dönmesi oldu. Telefonu alnınızdan alıp ekrandaki soruyu yanıtlayın: hangisinde daha şiddetliydi?" />
           <h1>Hangisinde baş dönmesi daha şiddetliydi?</h1>
           <Choice
             name="Şiddetli taraf"
@@ -867,6 +893,10 @@ export function EpisodeFlow() {
           mode="patient"
           {...runFlags(stage)}
           onPlaced={onPlaced}
+          onSensorless={() => {
+            setCal(null);
+            setPlaced(null);
+          }}
           onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage.side)}
           intro={
@@ -883,9 +913,10 @@ export function EpisodeFlow() {
     case 'after':
       return <AfterManeuver practice={mode === 'practice'} onDone={(sev) => {
         if (mode !== 'practice') {
-          const ep = activeEpisode(store.get());
-          if (ep) {
-            updateEpisode(ep.id, (e) => {
+          // Uzun baş dönmesi yolunda atak "referred" olmuştur; kayıt yine bu atağa yazılsın (aktif atak aranmaz).
+          const epId = episodeId ?? activeEpisode(store.get())?.id;
+          if (epId) {
+            updateEpisode(epId, (e) => {
               const ms = e.maneuvers.slice();
               const last = ms[ms.length - 1];
               if (last) ms[ms.length - 1] = { ...last, afterSymptoms: sev };
@@ -933,6 +964,10 @@ export function EpisodeFlow() {
           mode="patient"
           {...runFlags(stage)}
           onPlaced={onPlaced}
+          onSensorless={() => {
+            setCal(null);
+            setPlaced(null);
+          }}
           onRecalibrate={recalibrate}
           onExit={(o) => onRetestExit(o, stage.side)}
           intro={
@@ -955,6 +990,7 @@ export function EpisodeFlow() {
       const side = ep ? episodeSide(ep, profile) : null;
       return (
         <Screen title="DengeYol" back="/hasta">
+          <SpeakOnce text={`${stage.title}. ${stage.text}`} />
           <div className={`card tint-${stage.tone === 'info' ? 'accent' : stage.tone === 'danger' ? 'danger' : stage.tone} stack`} data-testid={stage.testid}>
             <h1>{stage.title}</h1>
             <p className="lead">{stage.text}</p>
@@ -999,13 +1035,14 @@ export function EpisodeFlow() {
 
 /**
  * İki taraf testi arası: telefon alında kalır. 30 s sesli geri sayım, sonra "baş dönmeniz geçtiyse ekrana dokunun".
- * Ekranın her yeri dokunma alanıdır (hasta ekranı görmez).
+ * Ekranın her yeri dokunma alanıdır (hasta ekranı görmez); köşedeki "Bitir" basılı tutularak akıştan çıkar.
  */
-function RestBetween({ onContinue, next }: { onContinue: () => void; next: Side }) {
+function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onExit: () => void; next: Side }) {
   const [left, setLeft] = useState(30);
   const st = store.get().settings;
   const step = st.simulation ? st.timeScale : 1;
   useEffect(() => {
+    void keepAwake();
     speech.speak(`Oturun ve dinlenin. Telefon alnınızda kalsın. Otuz saniye sonra ${sideName(next)} tarafı test edeceğiz.`, 'high');
     const id = setInterval(() => setLeft((l) => Math.max(0, l - step)), 1000);
     return () => clearInterval(id);
@@ -1018,29 +1055,78 @@ function RestBetween({ onContinue, next }: { onContinue: () => void; next: Side 
     speech.speak(`Baş dönmeniz geçtiyse ekranın herhangi bir yerine dokunun; ${sideName(next)} tarafı test edeceğiz.`, 'high');
   }, [ready, next]);
   return (
-    <button className="tap-gate" disabled={!ready} onClick={onContinue} data-testid="rest-continue">
+    <TapSurface testid="rest-continue" enabled={ready} onTap={onContinue} onExit={onExit}>
       <span className="tap-gate-title">Oturun ve dinlenin</span>
       <span className="tap-gate-count" aria-live="polite">
         {ready ? 'Hazırsanız dokunun' : left}
       </span>
       <span className="tap-gate-text">Telefon alnınızda kalsın. Ardından {sideName(next)} tarafı test edeceğiz.</span>
-    </button>
+    </TapSurface>
   );
 }
 
 /** Tek dokunuşla geçiş ekranı (ekranın her yeri düğme); metni sesli okur. */
-function TapGate({ title, text, onTap, testid }: { title: string; text: string; onTap: () => void; testid: string }) {
+function TapGate({ title, text, onTap, onExit, testid }: { title: string; text: string; onTap: () => void; onExit: () => void; testid: string }) {
   useEffect(() => {
+    void keepAwake();
     haptics.play('move');
     tones.play('move');
     speech.speak(`${title}. ${text}`, 'high');
   }, [title, text]);
   return (
-    <button className="tap-gate" onClick={onTap} data-testid={testid}>
+    <TapSurface testid={testid} enabled onTap={onTap} onExit={onExit}>
       <span className="tap-gate-title">{title}</span>
       <span className="tap-gate-text">{text}</span>
       <span className="tap-gate-count">Dokunun</span>
-    </button>
+    </TapSurface>
+  );
+}
+
+/** Tam ekran dokunma yüzeyi + köşede basılı tutmalı çıkış (kazara çıkılmasın; kötü hisseden hasta/yardımcı durabilsin). */
+function TapSurface({
+  testid,
+  enabled,
+  onTap,
+  onExit,
+  children
+}: {
+  testid: string;
+  enabled: boolean;
+  onTap: () => void;
+  onExit: () => void;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className="tap-gate"
+      role="button"
+      tabIndex={0}
+      aria-disabled={!enabled}
+      data-testid={testid}
+      data-enabled={enabled || undefined}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest('.tap-exit')) return;
+        if (enabled) onTap();
+      }}
+      onKeyDown={(e) => {
+        if (enabled && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onTap();
+        }
+      }}
+    >
+      <span className="tap-exit">
+        <HoldButton ms={700} onHold={onExit} label="Bitir (basılı tutun)" className="btn ghost" testid={`${testid}-exit`}>
+          <Icon name="close" /> Bitir
+        </HoldButton>
+      </span>
+      {children}
+    </div>
   );
 }
 
@@ -1104,6 +1190,7 @@ const LONG_IN_MANEUVER_TEXT =
 /** Tek hazırlık ekranı: yatak ve yastık, ses, kim yapıyor. Sonrasında telefon alnadır ve akış dokunmadan ilerler. */
 function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean; onReady: () => void }) {
   const d = useData();
+  const { source } = useMotion();
   const helper = d.settings.assist === 'helper';
   const setAssist = (v: 'self' | 'helper') => store.update((x) => ({ ...x, settings: { ...x.settings, assist: v } }));
   const duration =
@@ -1134,9 +1221,27 @@ function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean
         {helper && <HelperCard />}
       </div>
       <p className="small muted">Süre: {duration}.</p>
-      <button className="btn primary block xl" onClick={onReady} data-testid="prep-ready">
+      <button
+        className="btn primary block xl"
+        onClick={() => {
+          // Bu dokunuş içinde: ses kilidi (iOS), hareket izni (iOS) ve ekranı açık tutma; sonraki akış dokunuşsuz ilerler.
+          unlockAudio();
+          void source.start();
+          void keepAwake();
+          onReady();
+        }}
+        data-testid="prep-ready"
+      >
         Hazırım
       </button>
     </Screen>
   );
+}
+
+/** Ekran açıldığında metni bir kez sesli okur (zincirden sonra telefon alındayken hasta sessiz kalmasın). */
+function SpeakOnce({ text }: { text: string }) {
+  useEffect(() => {
+    speech.speak(text, 'high');
+  }, [text]);
+  return null;
 }

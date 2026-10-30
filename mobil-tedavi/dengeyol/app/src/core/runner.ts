@@ -363,8 +363,11 @@ export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): 
       const wasHolding = back === 'holding' || back === 'drifting' || back === 'settling';
       const phase: Phase = wasHolding ? (s.manualStep ? 'holding' : 'seeking') : back;
       cues.push({ kind: 'speak', text: 'Devam ediyoruz.', priority: 'high' });
+      // Duraklatmada geçen süre baş dönmesi süre sınırına sayılmaz (devamda yanlış güvenlik durdurması olmasın).
+      const pausedMs = Math.max(0, now - s.phaseSince);
+      const vertigoSince = s.vertigoActive && s.vertigoSince !== null ? s.vertigoSince + pausedMs : s.vertigoSince;
       return {
-        state: { ...s, phase, pausedFrom: null, phaseSince: now, settlingSince: null, outOfRangeSince: null, lastTickAt: now },
+        state: { ...s, phase, pausedFrom: null, phaseSince: now, settlingSince: null, outOfRangeSince: null, lastTickAt: now, vertigoSince },
         cues
       };
     }

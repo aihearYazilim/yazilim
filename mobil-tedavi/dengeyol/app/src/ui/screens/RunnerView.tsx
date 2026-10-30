@@ -53,7 +53,8 @@ export function RunnerView({
   onRecalibrate,
   chained = false,
   autoStart = false,
-  onPlaced
+  onPlaced,
+  onSensorless
 }: {
   protocolId: ProtocolId;
   side: Side | null;
@@ -74,10 +75,16 @@ export function RunnerView({
   autoStart?: boolean;
   /** Hasta modunda yerleştirme ölçümü yapılınca yeni kalibrasyonu bildirir (zincirdeki sonraki adım için). */
   onPlaced?: (c: Calibration) => void;
+  /** Kullanıcı bu ekranda "Sensörsüz devam et"i seçti: akışın geri kalanı da sensörsüz sürsün. */
+  onSensorless?: () => void;
 }) {
   const { settings } = useData();
   const { source } = useMotion();
-  const protocol = useMemo(() => resolveProtocol(protocolId, side), [protocolId, side]);
+  const protocol = useMemo(() => {
+    const p = resolveProtocol(protocolId, side);
+    if (mode !== 'clinician') return p;
+    return { ...p, steps: p.steps.map((st) => (st.clinicianMinHoldSec !== undefined ? { ...st, minHoldSec: st.clinicianMinHoldSec } : st)) };
+  }, [protocolId, side, mode]);
   const sim = useSimAuto();
   const [calibration, setCalibration] = useState<Calibration | null>(initialCalibration);
   const manual = calibration === null;
@@ -98,6 +105,8 @@ export function RunnerView({
   /** Başlangıç kontrolü: telefonun alındaki yeri (hasta modu). */
   const [prep, setPrep] = useState<null | 'place' | 'lookup'>(null);
   const [prepError, setPrepError] = useState<null | { text: string; sensor: boolean }>(null);
+  /** Kendiliğinden başlama bir kez başarısız olduysa olağan (Başlat düğmeli) ekrana dönülür; ekran "Başlıyoruz…"da donmaz. */
+  const [autoFailed, setAutoFailed] = useState(false);
   /** Son söylenen cümle (altyazı): sesi duyamayan hasta ya da yardımcı ekrandan okuyabilsin. */
   const [caption, setCaption] = useState<string | null>(null);
   /** Ekran açık tutulamadı (API yok ya da istek reddedildi): kullanıcı ekran zaman aşımını artırmalı. */
@@ -251,7 +260,7 @@ export function RunnerView({
       // Başlamadan ya da yarıda kapanırsa kuyruktaki yönerge ("başınızı geriye yatırın") ana ekranda söylenmesin;
       // olağan bitişteki son cümle ("10 dakika dinlenin") kesilmez.
       const ph = sRef.current.phase;
-      if (ph !== 'done' && ph !== 'safetyStop') speech.cancel();
+      if (ph !== 'done' && ph !== 'safetyStop' && ph !== 'aborted') speech.cancel();
       tones.stopGuidance();
       publishSimTarget(null);
       void releaseAwake();
@@ -304,6 +313,7 @@ export function RunnerView({
   async function placePhone(c: Calibration): Promise<Calibration | null> {
     const fail = (text: string, sensor = false) => {
       setPrep(null);
+      setAutoFailed(true);
       setPrepError({ text, sensor });
       haptics.play('alarm');
       tones.play('alarm');
@@ -399,7 +409,7 @@ export function RunnerView({
   }, []);
 
   // --- Başlamadan önce ---------------------------------------------------------------------
-  if (!started && auto && !prepError) {
+  if (!started && auto && !autoFailed) {
     return (
       <div className="runner" data-testid="runner-ready">
         <div className="runner-body" style={{ justifyContent: 'center' }}>
@@ -503,6 +513,7 @@ export function RunnerView({
                     onClick={() => {
                       setCalibration(null);
                       setPrepError(null);
+                      onSensorless?.();
                     }}
                     data-testid="runner-go-manual"
                   >
@@ -644,6 +655,24 @@ export function RunnerView({
         </button>
       </div>
 
+      {/* Klinisyen eylemleri üstte: alttaki işaret alanına körlemesine dokunuş gözlemi kazara bitirmesin. */}
+      {!P && state.phase !== 'between' && !terminal && (
+        <div className="runner-actions" data-testid="runner-actions">
+          {(state.phase === 'seeking' || state.phase === 'settling' || state.phase === 'drifting' || state.phase === 'intro') && (
+            <button className="btn secondary grow" onClick={() => dispatch({ type: 'manualConfirm', now: now() })} data-testid="runner-manual">
+              <Icon name="check" /> Pozisyon doğru (elle onay)
+            </button>
+          )}
+          <button
+            className={`btn ${observeDone ? 'primary' : 'ghost'} grow`}
+            onClick={() => dispatch({ type: 'skipStep', now: now() })}
+            data-testid="runner-skip"
+          >
+            {observeDone ? 'Gözlemi bitir → sonraki adım' : 'Adımı bitir'}
+          </button>
+        </div>
+      )}
+
       <div className="runner-body">
         <div className="runner-title" data-testid="runner-step-title">
           {state.phase === 'between' && nextStep ? `Sırada: ${nextStep.title}` : step?.title}
@@ -656,6 +685,38 @@ export function RunnerView({
             <span className={`status-pill ${statusClass}`} aria-live="polite" data-testid="runner-status">
               {statusText[state.phase]}
             </span>
+          </div>
+        )}
+
+        {/* Klinisyen: açı sayıları göstergeden önce (küçük ekranda ve büyük yazıda da görünür kalsın). */}
+        {!P && !manual && step && state.phase !== 'between' && (
+          <div className="card soft small" data-testid="runner-numbers">
+            <div className="row wrap" style={{ gap: 14 }}>
+              {pose && step.target.kind === 'lying' && (
+                <>
+                  <span>
+                    Dönüş <strong>{turnText(pose.theta)}</strong> (hedef {turnText(step.target.theta)} ±{step.target.thetaTol}°)
+                  </span>
+                  <span>
+                    Sarkma <strong>{Math.round(pose.phi)}°</strong> (hedef {step.target.phiMin}…{step.target.phiMax}°)
+                  </span>
+                </>
+              )}
+              {pose && step.target.kind === 'sitting' && (
+                <span>
+                  Çene eğimi <strong>{Math.round(pose.psi)}°</strong> (hedef {step.target.psiMin}…{step.target.psiMax}°)
+                </span>
+              )}
+              {!pose && <span>Sensör verisi yok</span>}
+            </div>
+            {ev?.hint && <div style={{ marginTop: 6 }}>{HINT_TEXT_CLINICIAN[ev.hint]}</div>}
+          </div>
+        )}
+
+        {wakeFailed && P && (
+          <div className="notice" role="status">
+            <Icon name="alert" />
+            <span>Ekran açık tutulamıyor. Ekran kararırsa manevra duraklar; telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.</span>
           </div>
         )}
 
@@ -689,37 +750,6 @@ export function RunnerView({
         <p className={`runner-instr${state.phase === 'intro' || state.phase === 'between' ? '' : ' compact'}`}>{instrText}</p>
         {step?.unverifiable && state.phase !== 'between' && <p className="small muted">{step.unverifiable}</p>}
 
-        {!P && !manual && step && state.phase !== 'between' && (
-          <div className="card soft small" data-testid="runner-numbers">
-            <div className="row wrap" style={{ gap: 14 }}>
-              {pose && step.target.kind === 'lying' && (
-                <>
-                  <span>
-                    Dönüş <strong>{turnText(pose.theta)}</strong> (hedef {turnText(step.target.theta)} ±{step.target.thetaTol}°)
-                  </span>
-                  <span>
-                    Sarkma <strong>{Math.round(pose.phi)}°</strong> (hedef {step.target.phiMin}…{step.target.phiMax}°)
-                  </span>
-                </>
-              )}
-              {pose && step.target.kind === 'sitting' && (
-                <span>
-                  Çene eğimi <strong>{Math.round(pose.psi)}°</strong> (hedef {step.target.psiMin}…{step.target.psiMax}°)
-                </span>
-              )}
-              {!pose && <span>Sensör verisi yok</span>}
-            </div>
-            {ev?.hint && <div style={{ marginTop: 6 }}>{HINT_TEXT_CLINICIAN[ev.hint]}</div>}
-          </div>
-        )}
-
-        {wakeFailed && P && (
-          <div className="notice" role="status">
-            <Icon name="alert" />
-            <span>Ekran açık tutulamıyor. Ekran kararırsa manevra duraklar; telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.</span>
-          </div>
-        )}
-
         {state.notice && (
           <div className="notice" role="status">
             <Icon name="alert" />
@@ -733,23 +763,6 @@ export function RunnerView({
           </button>
         )}
       </div>
-
-      {!P && state.phase !== 'between' && !terminal && (
-        <div className="runner-actions">
-          {(state.phase === 'seeking' || state.phase === 'settling' || state.phase === 'drifting' || state.phase === 'intro') && (
-            <button className="btn secondary grow" onClick={() => dispatch({ type: 'manualConfirm', now: now() })} data-testid="runner-manual">
-              <Icon name="check" /> Pozisyon doğru (elle onay)
-            </button>
-          )}
-          <button
-            className={`btn ${observeDone ? 'primary' : 'ghost'} grow`}
-            onClick={() => dispatch({ type: 'skipStep', now: now() })}
-            data-testid="runner-skip"
-          >
-            {observeDone ? 'Gözlemi bitir → sonraki adım' : 'Adımı bitir'}
-          </button>
-        </div>
-      )}
 
       {canMark && (
         <button
@@ -779,7 +792,8 @@ export function RunnerView({
             </p>
             {state.vertigoActive && (
               <button
-                className="btn secondary block"
+                autoFocus
+                className="btn warn block"
                 onClick={() => dispatch({ type: 'vertigoToggle', now: now() })}
                 data-testid="runner-paused-vertigo-end"
               >
@@ -788,7 +802,7 @@ export function RunnerView({
             )}
             <button
               className="btn primary block"
-              autoFocus
+              autoFocus={!state.vertigoActive}
               onClick={() => {
                 // Arama/arka plandan sonra ses motorları yeniden açılır (bu dokunuş iOS için gereklidir).
                 unlockAudio();
@@ -839,7 +853,21 @@ function HintBanner({ hint, flipped, patient }: { hint: HintKey; flipped: boolea
 }
 
 /** Basılı tutunca çalışan düğme (hasta modunda kazara duraklatmayı önler). Klavyeyle Enter/Boşluk hemen çalıştırır. */
-function HoldButton({ ms, onHold, children, testid }: { ms: number; onHold: () => void; children: React.ReactNode; testid?: string }) {
+export function HoldButton({
+  ms,
+  onHold,
+  children,
+  testid,
+  label = 'Duraklat (basılı tutun)',
+  className = 'btn secondary'
+}: {
+  ms: number;
+  onHold: () => void;
+  children: React.ReactNode;
+  testid?: string;
+  label?: string;
+  className?: string;
+}) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pressing, setPressing] = useState(false);
   const cancel = () => {
@@ -851,9 +879,9 @@ function HoldButton({ ms, onHold, children, testid }: { ms: number; onHold: () =
   return (
     <button
       type="button"
-      className={`btn secondary hold-btn${pressing ? ' pressing' : ''}`}
+      className={`${className} hold-btn${pressing ? ' pressing' : ''}`}
       style={{ ['--hold-ms' as string]: `${ms}ms` }}
-      aria-label="Duraklat (basılı tutun)"
+      aria-label={label}
       onPointerDown={() => {
         cancel();
         setPressing(true);

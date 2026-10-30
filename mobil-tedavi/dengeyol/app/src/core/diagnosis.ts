@@ -144,7 +144,7 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       side: null,
       mechanism: 'unknown',
       confidence: 'belirsiz',
-      label: 'İki taraflı Dix-Hallpike pozitif (çift taraflı arka kanal ya da yanıltıcı yanıt)',
+      label: 'İki taraflı Dix-Hallpike pozitif (çift taraflı arka kanal ya da yatay kanal tutulumu olası)',
       rationale: [
         'Her iki Dix-Hallpike testinde de yukarı vuran + torsiyonel nistagmus.',
         'Torsiyonun yönüne ve yanıtın şiddetine göre taraf belirleyin; çift taraflı tutulumda önce daha şiddetli taraf tedavi edilir.'
@@ -198,8 +198,10 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       // İki tarafta nistagmus var ama birinin şiddeti girilmemişse (0) taraf seçilmez: apogeotropikte
       // "zayıf taraf" kuralı unutulmuş bir şiddeti yanlışlıkla hasta taraf sayardı.
       const gradeMissing = !!horizR && !!horizL && (iR === 0 || iL === 0);
+      // Taraf yalnız iki tarafta da yatay nistagmus görülüp ikisinin de şiddeti girilmişken belirlenir; tek taraflı kayıtta
+      // (diğer taraf girilmemiş ya da negatif) "zayıf/güçlü taraf" kuralı yanlış tarafı seçebilir.
       let side: Side | null = null;
-      if (iR !== iL && !gradeMissing) {
+      if (horizR && horizL && iR !== iL && !gradeMissing) {
         // Geotropik: güçlü taraf hasta. Apogeotropik: zayıf taraf hasta.
         if (geo) side = iR > iL ? 'R' : 'L';
         else side = iR < iL ? 'R' : 'L';
@@ -214,7 +216,9 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
             ? `${geo ? 'güçlü' : 'zayıf'} taraf ${sideLabel(side)}`
             : gradeMissing
               ? 'taraf belirlenemedi (bir tarafın şiddeti girilmedi; iki tarafın şiddetini de girin)'
-              : 'taraf belirlenemedi (eşit şiddet)'
+              : !(horizR && horizL)
+                ? 'taraf belirlenemedi (yatay nistagmus yalnız bir tarafta kaydedildi; iki tarafı da test edip şiddetini girin)'
+                : 'taraf belirlenemedi (eşit şiddet)'
         }.`
       ];
       // Süre, desenle uyumlu değilse öneri "tipik" sayılmaz (Bárány 2015: geotropik kanalolitiazis <1 dk, kupulolitiazis ≥1 dk).
@@ -294,9 +298,9 @@ export function keyLabel(k: FindingKey): string {
     case 'dhL':
       return 'Sol Dix-Hallpike';
     case 'rollR':
-      return 'Supine roll sağ';
+      return 'Sırtüstü baş sağa (roll)';
     case 'rollL':
-      return 'Supine roll sol';
+      return 'Sırtüstü baş sola (roll)';
     case 'rollCenter':
       return 'Sırtüstü nötr';
   }

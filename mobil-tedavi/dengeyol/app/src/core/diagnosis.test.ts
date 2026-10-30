@@ -141,3 +141,16 @@ describe('tur 1 klinik denetim', () => {
     expect(r.suggestions.every((s) => s.confidence !== 'tipik')).toBe(true);
   });
 });
+
+describe('tur 2 klinisyen: yatay kanal tarafı', () => {
+  it('yalnız bir tarafta apogeotropik nistagmus kaydedildiyse taraf seçilmez (yanlış Gufoni önlenir)', () => {
+    const r = suggestDiagnosis({ rollR: f({ nystagmus: 'horizontal-apogeotropic', intensity: 2, durationSec: 70 }) });
+    const hc = r.suggestions.find((s) => s.canal === 'HC')!;
+    expect(hc.side).toBeNull();
+    expect(hc.maneuvers).toEqual([]);
+  });
+  it('yalnız bir tarafta geotropik kayıt: taraf seçilmez', () => {
+    const r = suggestDiagnosis({ rollR: f({ nystagmus: 'horizontal-geotropic', intensity: 3, durationSec: 30 }), rollL: f({}) });
+    expect(r.suggestions.find((s) => s.canal === 'HC')!.side).toBeNull();
+  });
+});

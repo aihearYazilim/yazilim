@@ -143,8 +143,9 @@ async function calibrate(page) {
   if (!(await page.getByTestId('cal-start').isVisible().catch(() => false))) return;
   await page.getByTestId('cal-start').click();
   await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
-  // Hasta modunda kendiliğinden devam eder; klinisyende "Devam" gerekir.
-  await page.getByTestId('cal-continue').click({ timeout: 1000 }).catch(() => undefined);
+  // Hasta modunda kendiliğinden devam eder (dokunulmaz: gerçek kullanımda telefon alındadır); klinisyende "Devam" gerekir.
+  const clinician = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')).settings.role === 'clinician');
+  if (clinician) await page.getByTestId('cal-continue').click();
 }
 
 /** Yürütücüyü sanal başla hedeften hedefe götürerek tamamlar. */
