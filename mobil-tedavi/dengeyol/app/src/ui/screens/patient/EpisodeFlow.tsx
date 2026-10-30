@@ -730,7 +730,7 @@ export function EpisodeFlow() {
     case 'rxSame':
       return (
         <Screen title="Baş dönmeniz" back="/hasta">
-          <h1>Bu, hekiminizin muayene ettiği baş dönmesinin devamı mı?</h1>
+          <h1>Muayeneden bu yana baş dönmeniz hiç tamamen geçti mi?</h1>
           <Choice
             name="Reçete atağı"
             value={null}
@@ -743,8 +743,8 @@ export function EpisodeFlow() {
               }
             }}
             options={[
-              { value: 'same', label: 'Evet, muayeneden beri hiç geçmedi', sub: 'Reçetedeki tarafa doğrudan manevra.' },
-              { value: 'new', label: 'Hayır, geçmişti, yeniden başladı', sub: 'Kısa sorular ve iki taraflı test.' },
+              { value: 'same', label: 'Hayır, muayeneden beri hiç geçmedi', sub: 'Reçetedeki tarafa doğrudan manevra.' },
+              { value: 'new', label: 'Evet, geçmişti; yeniden başladı', sub: 'Kısa sorular ve iki taraflı test.' },
               { value: 'unsure', label: 'Emin değilim', sub: 'Kısa sorular ve iki taraflı test.' }
             ]}
           />
@@ -1056,7 +1056,8 @@ export function EpisodeFlow() {
       const side = ep ? episodeSide(ep, profile) : null;
       return (
         <Screen title="DengeYol" back="/hasta">
-          <SpeakOnce text={`${stage.title}. ${stage.text}`} />
+          {/* "Manevra tamamlandı" yürütücüde söylendi; burada yalnız öneri okunur. */}
+          <SpeakOnce text={stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`} />
           <div className={`card tint-${stage.tone === 'info' ? 'accent' : stage.tone === 'danger' ? 'danger' : stage.tone} stack`} data-testid={stage.testid}>
             <h1>{stage.title}</h1>
             <p className="lead">{stage.text}</p>
@@ -1109,10 +1110,19 @@ function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onE
   const step = st.simulation ? st.timeScale : 1;
   useEffect(() => {
     void keepAwake();
-    speech.speak(`Oturun ve dinlenin. Telefon alnınızda kalsın. Otuz saniye sonra ${sideName(next)} tarafı test edeceğiz.`, 'high');
+    // Normal öncelik: yürütücünün "Test tamamlandı" cümlesini kesmez, ardından okunur.
+    speech.speak(`Oturun ve dinlenin. Telefon alnınızda kalsın. Otuz saniye sonra ${sideName(next)} tarafı test edeceğiz.`, 'normal');
     const id = setInterval(() => setLeft((l) => Math.max(0, l - step)), 1000);
     return () => clearInterval(id);
   }, [step, next]);
+  // Hasta ekranı görmez: uzun sessizlik olmasın (20 ve 10 s kala).
+  const spokenMarks = useRef(new Set<number>());
+  useEffect(() => {
+    const m = [10, 20].find((x) => left > 0 && left <= x && !spokenMarks.current.has(x));
+    if (m === undefined) return;
+    [10, 20].filter((x) => x >= m).forEach((x) => spokenMarks.current.add(x));
+    speech.speak(`${m} saniye.`, 'normal');
+  }, [left]);
   const ready = left <= 0;
   useEffect(() => {
     if (!ready) return;
@@ -1137,7 +1147,7 @@ function TapGate({ title, text, onTap, onExit, testid }: { title: string; text: 
     void keepAwake();
     haptics.play('move');
     tones.play('move');
-    speech.speak(`${title}. ${text}`, 'high');
+    speech.speak(`${title}. ${text}`, 'normal');
   }, [title, text]);
   return (
     <TapSurface testid={testid} enabled onTap={onTap} onExit={onExit}>
@@ -1163,6 +1173,8 @@ function TapSurface({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
+  // Başucundaki yardımcı için yürütücüyle aynı yönde dursun.
+  const flipped = !!useData().settings.screenFlip;
   useEffect(() => {
     ref.current?.focus();
     // Telefon alındayken kenardan kaydırma/geri tuşu akışı sessizce kapatmasın (1. taraf sonucu kaybolmasın): yok sayılır;
@@ -1179,7 +1191,7 @@ function TapSurface({
   return (
     <div
       ref={ref}
-      className="tap-gate"
+      className={`tap-gate${flipped ? ' flipped' : ''}`}
       role="button"
       tabIndex={0}
       aria-disabled={!enabled}

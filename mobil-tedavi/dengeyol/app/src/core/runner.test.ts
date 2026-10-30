@@ -407,3 +407,48 @@ describe('tur 3 kod denetimi', () => {
     expect(x.cues.some((c) => c.kind === 'speak' && c.text.startsWith('Sensörden veri'))).toBe(false);
   });
 });
+
+describe('son kullanıcı turu düzeltmeleri', () => {
+  it('sesli sayım tek kaynaktan: baş dönmesi sürerken sayılmaz, bittikten sonra kalan bekleme sayılır', () => {
+    const x = sim('epley');
+    x.cfg = { ...x.cfg, countEverySec: 10 };
+    send(x, { type: 'start' });
+    const counts: { phase: 'before' | 'during' | 'after'; left: number }[] = [];
+    let state: 'before' | 'during' | 'after' = 'before';
+    while (x.t < 400000) {
+      x.t += 100;
+      const st = x.cfg.protocol.steps[x.s.stepIndex]!;
+      const n = x.cues.length;
+      send(x, { type: 'tick', pose: ideal(st.target) });
+      const inStep = (x.t - x.s.stepStartedAt) / 1000;
+      if (x.s.stepIndex === 1) {
+        for (const c of x.cues.slice(n)) {
+          const m = c.kind === 'speak' ? /^(\d+) saniye kaldı\.$/.exec(c.text) : null;
+          if (m) counts.push({ phase: state, left: Number(m[1]) });
+        }
+        if (state === 'before' && inStep > 10) {
+          send(x, { type: 'vertigoToggle' });
+          state = 'during';
+        } else if (state === 'during' && inStep > 40) {
+          send(x, { type: 'vertigoToggle' });
+          state = 'after';
+        }
+      }
+      if (x.s.phase === 'done') break;
+    }
+    expect(counts.filter((c) => c.phase === 'during')).toHaveLength(0);
+    const after = counts.filter((c) => c.phase === 'after').map((c) => c.left);
+    expect(after.length).toBeGreaterThan(0);
+    // "Geçti" sonrası 30 s bekleme: sayım 30'u aşmaz, azalır ve 0 söylenmez.
+    expect(Math.max(...after)).toBeLessThanOrEqual(30);
+    expect(after).toEqual([...after].sort((a, b) => b - a));
+    expect(after.every((v) => v >= 5)).toBe(true);
+  });
+
+  it('"Manevra tamamlandı" yürütücüde kısa; dinlenme önerisi bitiş ekranına kalır', () => {
+    const x = sim('epley');
+    run(x);
+    expect(x.s.phase).toBe('done');
+    expect(x.cues.some((c) => c.kind === 'speak' && c.text === 'Manevra tamamlandı.')).toBe(true);
+  });
+});

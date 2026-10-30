@@ -155,16 +155,15 @@ export function Calibrate({
     }
     setResult(res.calibration);
     setStage('done');
-    // Hasta modunda ayrı onay ekranı yok: kısa bir "tanındı" gösteriminden sonra kendiliğinden devam.
-    if (P) setTimeout(() => alive.current && finish(res.calibration), 1500);
     tones.play('reached');
     haptics.play('reached');
-    say(
-      P
-        ? 'Tamam, telefon tanındı. Başınızı düzeltin ve telefonu alnınızda tutun; başlıyoruz.'
-        : 'Kalibrasyon tamam.'
-    );
     sim.upright();
+    if (P) {
+      // Hasta modunda ayrı onay ekranı yok: cümle bitince kendiliğinden devam (sonraki yönerge onu kesmesin).
+      // Ses kapalıysa da "tanındı" en az 1,5 s görünür.
+      await Promise.all([sayAndWait('Tamam, telefon tanındı. Başınızı düzeltin ve telefonu alnınızda tutun; başlıyoruz.', 300), wait(1500)]);
+      if (alive.current) finish(res.calibration);
+    } else say('Kalibrasyon tamam.');
   }
 
   function fail(code: CalibrationError | null, text?: string) {

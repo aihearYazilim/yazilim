@@ -136,7 +136,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     {
       id: 'dh-sit',
       title: 'Oturuş, baş {Aya} 45°',
-      say: 'Yatağın üzerinde oturun. Yastığı, yattığınızda omuzlarınızın altına gelecek yere koyun. Başınızı {Aya} doğru yaklaşık 45 derece çevirin.',
+      say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} 45° çevrilir.',
       target: SIT_NEUTRAL,
       minHoldSec: 4,
@@ -280,7 +280,7 @@ const EPLEY: ProtocolDef = {
     {
       id: 'ep-sit',
       title: 'Oturuş, baş {Aya} 45°',
-      say: 'Yatağın üzerinde oturun. Yastığı, sırtüstü yattığınızda omuzlarınızın altına gelecek yere koyun. Başınızı {Aya} doğru yaklaşık 45 derece çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
+      say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} (etkilenen taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
       minHoldSec: 5,

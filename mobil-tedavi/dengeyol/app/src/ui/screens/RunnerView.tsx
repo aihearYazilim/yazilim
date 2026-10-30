@@ -98,6 +98,8 @@ export function RunnerView({
       ...DEFAULT_RUNNER_CONFIG,
       mode,
       protocol,
+      // Hasta ekranı görmez: sessizlik 10 s'yi geçmesin.
+      countEverySec: P ? 10 : DEFAULT_RUNNER_CONFIG.countEverySec,
       introSecFor: (t: string) => (P ? (settings.speech ? estimateSpeechSec(t, settings.speechRate) : 4) : 1.5),
       sensorless: manual
     }),
@@ -390,7 +392,12 @@ export function RunnerView({
         onPlaced?.(c);
       }
     }
-    speech.speak(P ? `${startNote ? `${startNote} ` : ''}${manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.'}` : 'Başlıyoruz.', 'high');
+    const startText = P ? `${startNote ? `${startNote} ` : ''}${manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.'}` : 'Başlıyoruz.';
+    if (P && startNote && !settings.simulation) {
+      // Uzun giriş notu 3 s'lik sayımda ilk yönergeyle kesilmesin: önce sonuna kadar okunur.
+      await speech.speakAsync(startText, estimateSpeechSec(startText, settings.speechRate) * 2000 + 2000);
+      if (!alive.current) return;
+    } else speech.speak(startText, 'high');
     for (let i = 3; i > 0; i--) {
       setPreCount(i);
       tones.play('countdown');
@@ -415,7 +422,7 @@ export function RunnerView({
   // --- Başlamadan önce ---------------------------------------------------------------------
   if (!started && auto && !autoFailed) {
     return (
-      <div className="runner" data-testid="runner-ready">
+      <div className={`runner${flipped ? ' flipped' : ''}`} data-testid="runner-ready">
         <div className="runner-body" style={{ justifyContent: 'center' }}>
           <h1>{protocol.shortName}{protocol.side ? ` — ${sideName(protocol.side)}` : ''}</h1>
           {intro}
@@ -927,7 +934,7 @@ export function HelperCard() {
   return (
     <ol className="small stack" style={{ margin: 0, paddingLeft: 20, gap: 6 }} data-testid="helper-card">
       <li>Yastığı, hasta yattığında omuzlarının altına gelecek şekilde koyun; baş yastıktan geriye sarkabilsin.</li>
-      <li>Hastanın başucunda ya da yanında durun. Başucundaysanız ekrandaki <strong>⟲ Ekranı çevir</strong> düğmesine basın; yazılar size düz görünür.</li>
+      <li>Hastanın başucunda ya da yanında durun. Başucundaysanız ekranı size göre çevirin (<strong>⟲ Ekranı çevir</strong>); sonraki tüm ekranlar da size göre döner.</li>
       <li>Telefonu iki yan kenarından parmak uçlarıyla alna bastırın (avuç ekrana değmesin; ekran dokunuşu baş dönmesi işaretidir). Başı iki elle tutup çevirin.</li>
       <li>Hasta "dönüyor" deyince ekranın herhangi bir yerine siz dokunun; geçince yeniden dokunun.</li>
       <li>Ekrandaki ok ve yazı, başı hangi yöne çevireceğinizi söyler ("hastanın sağı/solu"). Durdurmak için "Duraklat"ı basılı tutun.</li>

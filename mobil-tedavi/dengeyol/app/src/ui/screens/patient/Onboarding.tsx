@@ -23,7 +23,8 @@ export function Onboarding() {
   const [side, setSide] = useState<SideAnswer | null>(rx ? rx.side : (d.patient?.side ?? null));
   const [dxDate, setDxDate] = useState(d.patient?.dxDate ?? rx?.date ?? '');
   const [contra, setContra] = useState<string[]>(d.patient?.contraindications ?? []);
-  const [none, setNone] = useState(false);
+  // Düzenlemede önceki "hiçbiri" yanıtı korunur; ilk kurulumda açıkça işaretlenmeli.
+  const [none, setNone] = useState(!!d.patient?.consentAt && (d.patient?.contraindications ?? []).length === 0);
 
   // Reçete varsa tanı adımı reçeteden dolar ve atlanır.
   const flow: Stage[] = rx ? ['info', 'contra'] : ['info', 'dx', 'contra'];
@@ -95,8 +96,11 @@ export function Onboarding() {
             Devam
           </button>
         ) : stage === 'contra' ? (
+          <>
           <button
             className="btn primary block xl"
+            // Güvenlik: seçim yapılmadan geçilmez; "Hiçbiri" açıkça işaretlenmeli.
+            disabled={contra.length === 0 && !none}
             onClick={() => {
               // Kapı açıksa doğrudan ana ekran; kapalıysa nedenini gösteren ekran.
               if (gate.ok) finish();
@@ -107,8 +111,10 @@ export function Onboarding() {
             }}
             data-testid="ob-next"
           >
-            {contra.length === 0 ? 'Hiçbiri bana uymuyor, devam' : 'Devam'}
+            Devam
           </button>
+          {contra.length === 0 && !none && <p className="small muted center">Size uyanları ya da "Hiçbiri bana uymuyor"u işaretleyin.</p>}
+          </>
         ) : (
           <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })}>
             Ana ekrana dön

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
 import { recordStats } from '../../../core/runner';
 import { RED_FLAGS, REFER_TEXT } from '../../../core/safety';
-import { formatDate, formatDateTime } from '../../../state/episodes';
+import { formatDate, formatDateTime, formatDateTimeYear } from '../../../state/episodes';
 import { useData } from '../../../state/store';
 import type { Episode, EpisodeStatus } from '../../../state/types';
 import { Icon } from '../../components/Icon';
@@ -82,10 +82,10 @@ function ReportBody({ e }: { e: Episode }) {
     <div className="stack" data-testid="episode-report">
       <div className="card stack">
         <h2>DengeYol — BPPV atak raporu</h2>
-        <p className="small muted">Bu rapor hastanın kendi kullanımıyla oluşturulmuştur; tanı belgesi değildir. Oluşturma: {formatDateTime(Date.now())}</p>
+        <p className="small muted">Bu rapor hastanın kendi kullanımıyla oluşturulmuştur; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(Date.now())}</p>
         <dl className="kv">
           <dt>Atak başlangıcı</dt>
-          <dd>{formatDateTime(e.startedAt)}</dd>
+          <dd>{formatDateTimeYear(e.startedAt)}</dd>
           <dt>Durum</dt>
           <dd>{STATUS[e.status].label}{e.endNote ? ` (${humanNote(e.endNote)})` : ''}</dd>
           <dt>Tedavi edilen taraf</dt>
@@ -95,7 +95,7 @@ function ReportBody({ e }: { e: Episode }) {
           <dt>Önceki tanı</dt>
           <dd>
             {p?.prescription
-              ? `Reçete: ${sideName(p.prescription.side)} arka kanal, ${formatDate(new Date(p.prescription.date).getTime())}${p.prescription.by ? ', ' + p.prescription.by : ''}`
+              ? `Reçete: ${sideName(p.prescription.side)} arka kanal, ${formatDate(new Date(p.prescription.date).getTime())}${p.prescription.by ? ', ' + p.prescription.by : ''}${p.prescription.clinic ? ', ' + p.prescription.clinic : ''}`
               : p?.diagnosedByDoctor
                 ? `Hekim tanısı (${p.canal === 'PC' ? 'arka kanal' : p.canal === 'HC' ? 'yatay kanal' : 'kanal bilinmiyor'}, ${p.side === 'R' ? 'sağ' : p.side === 'L' ? 'sol' : 'taraf bilinmiyor'})${p.dxDate ? ', ' + p.dxDate : ''}`
                 : '—'}
@@ -110,7 +110,7 @@ function ReportBody({ e }: { e: Episode }) {
             const pos = RED_FLAGS.filter((q) => r.answers[q.id] === q.stopsOn);
             return (
               <div key={i} className="small">
-                <strong>{formatDateTime(r.at)}</strong>: {pos.length === 0 ? 'tümü güvenli yanıtlandı' : 'DURDURULDU — ' + pos.map((q) => q.text).join(' | ')}
+                <strong>{formatDateTimeYear(r.at)}</strong>: {pos.length === 0 ? 'tümü güvenli yanıtlandı' : 'DURDURULDU — ' + pos.map((q) => q.text).join(' | ')}
               </div>
             );
           })}
@@ -139,7 +139,7 @@ function ReportBody({ e }: { e: Episode }) {
                 };
                 return (
                   <tr key={i}>
-                    <td>{formatDateTime(t.at)}</td>
+                    <td>{formatDateTimeYear(t.at)}</td>
                     <td>{cell('R')}</td>
                     <td>{cell('L')}</td>
                     <td>{decisionText(t.decision)}</td>
@@ -157,7 +157,7 @@ function ReportBody({ e }: { e: Episode }) {
           {e.maneuvers.map((m) => (
             <div key={m.id} className="stack" style={{ gap: 6 }}>
               <div className="row wrap">
-                <strong>{formatDateTime(m.at)}</strong>
+                <strong>{formatDateTimeYear(m.at)}</strong>
                 <span className="chip">{PROTOCOLS[m.protocolId].shortName} {m.side ? sideName(m.side) : ''}</span>
                 <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : stopText(m.stopReason)}</span>
                 {m.manual && <span className="chip">sensörsüz</span>}
@@ -181,7 +181,7 @@ function ReportBody({ e }: { e: Episode }) {
                         <td>{r.title}</td>
                         <td>{Math.round(r.holdSec)} s</td>
                         <td>{st.inRangePct !== null ? `%${st.inRangePct}` : '—'}</td>
-                        <td>{st.meanAbsThetaErr !== null ? `${st.meanAbsThetaErr}°` : '—'}</td>
+                        <td>{st.meanAbsThetaErr !== null ? `${st.meanAbsThetaErr}° / ${st.maxAbsThetaErr}°` : '—'}</td>
                         <td>{r.vertigoMarks.length ? r.vertigoMarks.map((v) => `${Math.round(v.start)}–${v.end !== null ? Math.round(v.end) : '?'} s`).join(', ') : '—'}</td>
                       </tr>
                     );
@@ -198,7 +198,7 @@ function ReportBody({ e }: { e: Episode }) {
           <h3>Tekrar testleri</h3>
           {e.retests.map((r, i) => (
             <div key={i} className="small">
-              <strong>{formatDateTime(r.at)}</strong> ({r.kind === 'early' ? 'erken' : r.kind === 'morning' ? 'sabah' : 'diğer'}, {sideName(r.side)}):{' '}
+              <strong>{formatDateTimeYear(r.at)}</strong> ({r.kind === 'early' ? 'erken' : r.kind === 'morning' ? 'sabah' : 'diğer'}, {sideName(r.side)}):{' '}
               {r.vertigo ? `baş dönmesi var (gecikme ${r.latencySec ?? '?'} s, süre ${r.durationSec ?? '?'} s)` : 'tetiklenmedi'}
             </div>
           ))}

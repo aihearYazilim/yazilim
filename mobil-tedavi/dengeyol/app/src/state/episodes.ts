@@ -225,6 +225,11 @@ export function formatDateTime(t: number): string {
   return new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
 }
 
+/** Yıllı tarih-saat (paylaşılan rapor: hekim ay sonra okuyabilir). */
+export function formatDateTimeYear(t: number): string {
+  return new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 export function formatDate(t: number): string {
   return new Date(t).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
 }

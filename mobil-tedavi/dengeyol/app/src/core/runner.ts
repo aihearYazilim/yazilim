@@ -242,6 +242,13 @@ function holdComplete(s: RunnerState, step: StepDef, now: number): boolean {
   return true;
 }
 
+/** Adımın bitmesine kalan süre (s); baş dönmesi sürerken bilinmez (null). */
+export function remainingHoldSec(s: RunnerState, step: StepDef, now: number): number | null {
+  if (s.vertigoActive) return null;
+  const afterEnd = s.vertigoEndedAt !== null ? step.afterVertigoSec - sec(now - s.vertigoEndedAt) : 0;
+  return Math.max(0, step.minHoldSec - s.holdSec, afterEnd);
+}
+
 /** Adımın baş dönmesi üst sınırı (s); hasta modunda gözlem adımlarında hiçbir zaman sınırsız değildir. */
 export function vertigoLimitFor(cfg: RunnerConfig, step: StepDef): number | null {
   if (step.maxVertigoSec !== null) return step.maxVertigoSec;
@@ -293,12 +300,9 @@ function finishStep(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[])
       kind: 'speak',
       text:
         cfg.protocol.kind === 'maneuver'
-          ? cfg.mode === 'patient'
-            ? 'Manevra tamamlandı. 10 dakika oturarak dinlenin; kalkarken dikkatli olun.'
-            : 'Manevra tamamlandı.'
-          : cfg.mode === 'patient'
-            ? 'Test tamamlandı.'
-            : 'Test tamamlandı.',
+          ? // Dinlenme önerisi bitiş ekranında okunur; burada tekrarlanmaz.
+            'Manevra tamamlandı.'
+          : 'Test tamamlandı.',
       priority: 'high'
     });
     return { ...next, phase: 'done', phaseSince: now, evaluation: null };
@@ -597,8 +601,8 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
         cues.push({
           kind: 'speak',
           text: cfg.mode === 'patient' ? 'Tamam, böyle kalın.' : 'Pozisyon doğru.',
-          // Hasta modunda adım yönergesini kesmesin (kuyruğa girer); "doğru" bilgisi titreşim ve tonla hemen verilir.
-          priority: cfg.mode === 'patient' ? 'normal' : 'high'
+          // Adım yönergesini kesmesin (kuyruğa girer); "doğru" bilgisi titreşim ve tonla hemen verilir.
+          priority: 'normal'
         });
         const transition =
           step.fastTransitionSec !== undefined && s.leftPreviousAt !== null ? sec(settlingSince - s.leftPreviousAt) : null;
@@ -710,16 +714,14 @@ function holdingTick(
     });
   }
 
-  // Sesli sayım
+  // Sesli sayım: kalan süre tek kaynaktan (en az bekleme ve "geçti" sonrası bekleme hangisi uzunsa). Baş dönmesi sürerken sayılmaz.
   const mark = Math.floor(s.holdSec / cfg.countEverySec) * cfg.countEverySec;
-  if (mark > 0 && mark > s.lastCountMark && s.holdSec < step.minHoldSec) {
+  if (mark > 0 && mark > s.lastCountMark) {
     s.lastCountMark = mark;
-    const left = Math.max(0, Math.round(step.minHoldSec - s.holdSec));
-    cues.push({
-      kind: 'speak',
-      text: left > 0 ? `${left} saniye kaldı.` : `${mark} saniye.`,
-      priority: 'normal'
-    });
+    const left = remainingHoldSec(s, step, now);
+    if (!s.vertigoActive && left !== null && left >= 5) {
+      cues.push({ kind: 'speak', text: `${Math.round(left / 5) * 5} saniye kaldı.`, priority: 'normal' });
+    }
   }
 
   // En az süre doldu ama baş dönmesi sürüyor

@@ -961,7 +961,8 @@ input[type='radio'] {
 
 /* --- Kullanıcı ajanı iyileştirmeleri: yürütücü ------------------------------------------ */
 /* Başucundaki yardımcı/klinisyen için ekranı 180° çevir (elle; otomatik dönmez). */
-.runner.flipped {
+.runner.flipped,
+.tap-gate.flipped {
   transform: rotate(180deg);
 }
 .runner .runner-head .btn.secondary {

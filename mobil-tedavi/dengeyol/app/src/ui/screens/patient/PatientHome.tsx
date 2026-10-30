@@ -61,6 +61,10 @@ export function PatientHome() {
     contraindications: p.contraindications
   });
   const referral = !ep && !!pendingReferral(d);
+  // Son 24 saatte kapatılan atak: raporu hekime göndermek bir dokunuş uzakta olsun.
+  const recentlyClosed = ep
+    ? null
+    : ([...d.episodes].reverse().find((e) => (e.status === 'resolved' || e.status === 'closed') && e.endedAt && now - e.endedAt < 24 * 3600_000) ?? null);
   const recurrent = frequentRecurrence(
     d.episodes.map((e) => e.startedAt),
     now
@@ -94,12 +98,25 @@ export function PatientHome() {
         </div>
       )}
 
+      {gate.ok && !ep && !referral && recentlyClosed && (
+        <div className="card tint-ok stack" data-testid="home-closed">
+          <div className="card-title">
+            <Icon name="check" />
+            <h3>Atak kapatıldı</h3>
+          </div>
+          <p className="small">Raporu hekiminize ya da odyoloğunuza gönderebilirsiniz.</p>
+          <button className="btn secondary block" onClick={() => nav(`/hasta/rapor/${recentlyClosed.id}`)} data-testid="home-closed-report">
+            <Icon name="print" /> Raporu hekime gönder
+          </button>
+        </div>
+      )}
+
       {gate.ok && !ep && !referral && (
         <>
           <button className="big-action" onClick={() => nav('/hasta/atak/start')} data-testid="start-episode">
             <Icon name="sparkle" size={34} />
             Baş dönmem başladı
-            <span className="sub">Birkaç soru, kısa test ve manevra; sesle yönlendirilirsiniz</span>
+            <span className="sub">11 güvenlik sorusu, iki kısa test ve manevra · ~15 dk</span>
           </button>
           <button className="btn secondary block" onClick={() => nav('/hasta/atak/practice')} data-testid="practice">
             <Icon name="play" /> Deneme manevrası (baş dönmesi yokken)
@@ -278,7 +295,8 @@ function ActiveEpisodeCard({ now }: { now: number }) {
         <button className="btn secondary grow" onClick={() => nav(`/hasta/rapor/${ep.id}`)}>
           <Icon name="print" /> Rapor
         </button>
-        {!confirmClose && (
+        {/* Düzelmiş görünüyorsa tek kapatma düğmesi yukarıdaki kartta. */}
+        {!confirmClose && na.kind !== 'resolved-suggest' && (
           <button className="btn ghost grow" onClick={() => setConfirmClose(true)} data-testid="close-episode">
             Atak geçti, kapat
           </button>

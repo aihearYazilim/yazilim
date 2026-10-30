@@ -84,6 +84,8 @@ async function snap(page, name) {
 }
 
 async function step(name, fn) {
+  // E2E_ONLY="metin": yalnız adı bu metni içeren senaryolar (hata ayıklama).
+  if (process.env.E2E_ONLY && !name.includes(process.env.E2E_ONLY)) return;
   const t0 = Date.now();
   try {
     await fn();
@@ -142,7 +144,10 @@ async function calibrate(page) {
   }
   if (!(await page.getByTestId('cal-start').isVisible().catch(() => false))) return;
   await page.getByTestId('cal-start').click();
-  await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
+  await page.getByTestId('cal-ok').waitFor({ timeout: 40000 }).catch(async (e) => {
+    await snap(page, 'hata-kalibrasyon');
+    throw e;
+  });
   // Hasta modunda kendiliğinden devam eder (dokunulmaz: gerçek kullanımda telefon alındadır); klinisyende "Devam" gerekir.
   const clinician = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')).settings.role === 'clinician');
   if (clinician) await page.getByTestId('cal-continue').click();
