@@ -3,7 +3,7 @@
  */
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
 import { type Finding, type Findings, keyLabel, NYSTAGMUS_LABEL, suggestDiagnosis } from '../../../core/diagnosis';
 import { decodePrescription, encodePrescription, type Prescription } from '../../../core/prescription';
@@ -42,7 +42,7 @@ let runCounter = 0;
 const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | null; keys: FindingKey[] }[] = [
   { id: 'dhR', label: 'Sağ Dix-Hallpike', protocolId: 'dix-hallpike', side: 'R', keys: ['dhR'] },
   { id: 'dhL', label: 'Sol Dix-Hallpike', protocolId: 'dix-hallpike', side: 'L', keys: ['dhL'] },
-  { id: 'roll', label: 'Supine roll testi', protocolId: 'supine-roll', side: null, keys: ['rollCenter', 'rollR', 'rollL'] }
+  { id: 'roll', label: 'Sırtüstü baş çevirme (supine roll)', protocolId: 'supine-roll', side: null, keys: ['rollCenter', 'rollR', 'rollL'] }
 ];
 
 /** Bulguların sıralı imzası: onaylı tanının hangi bulgulara dayandığını izlemek için. */
@@ -68,7 +68,7 @@ function updateExam(id: string, fn: (e: ClinicExam) => ClinicExam) {
 }
 
 function findingSummary(f: Finding | undefined): string {
-  if (!f) return 'Yapılmadı';
+  if (!f) return '—';
   if (f.nystagmus === 'none') return f.vertigo ? 'Nistagmus yok, baş dönmesi var' : 'Negatif';
   const parts = [NYSTAGMUS_LABEL[f.nystagmus]];
   if (f.latencySec !== null) parts.push(`gecikme ${f.latencySec} s`);
@@ -80,7 +80,6 @@ function findingSummary(f: Finding | undefined): string {
 export function Exam() {
   const { id } = useParams();
   const d = useData();
-  const nav = useNavigate();
   const exam = d.clinicExams.find((e) => e.id === id);
   const patient = exam ? d.clinicPatients.find((p) => p.id === exam.patientId) : undefined;
   const [tab, setTab] = useState<Tab>('tests');
@@ -244,9 +243,18 @@ export function Exam() {
       back="/odyolog"
       wide
       right={
-        <span className={`chip ${cal ? 'ok' : sensorless ? 'warn' : ''}`} title="Sensör durumu">
-          {cal ? 'sensör hazır' : sensorless ? 'sensörsüz' : 'kalibre değil'}
-        </span>
+        <button
+          className={`chip ${cal ? 'ok' : sensorless ? 'warn' : ''}`}
+          title={cal || sensorless ? 'Dokunun: kalibrasyonu sıfırla (yeni hasta yerleşimi / sensörlü moda geç)' : 'Sensör durumu'}
+          onClick={() => {
+            if (!cal && !sensorless) return;
+            setCal(null);
+            setSensorless(false);
+          }}
+          data-testid="exam-sensor-chip"
+        >
+          {cal ? 'sensör hazır ⟲' : sensorless ? 'sensörsüz ⟲' : 'kalibre değil'}
+        </button>
       }
     >
       <div className="row small muted">
@@ -281,20 +289,7 @@ export function Exam() {
       {tab === 'rx' && <RxTab exam={exam} />}
       {tab === 'report' && <ExamReport exam={exam} />}
 
-      {(cal || sensorless) && (
-        <button
-          className="btn ghost small"
-          onClick={() => {
-            setCal(null);
-            setSensorless(false);
-          }}
-        >
-          {sensorless ? 'Sensörlü moda geç' : 'Kalibrasyonu sıfırla (yeni hasta yerleşimi)'}
-        </button>
-      )}
-      <button className="btn ghost small" onClick={() => nav('/odyolog')}>
-        Muayene listesine dön
-      </button>
+
     </Screen>
   );
 }
@@ -348,6 +343,18 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
 
   return (
     <div className="stack">
+      {exam.diagnosis && valid && (
+        <div className={`card ${exam.diagnosis.warnings?.length ? 'tint-warn' : 'tint-ok'} stack`}>
+          <div className="row">
+            <Icon name="check" />
+            <strong className="grow">Onaylı tanı: {exam.diagnosis.label}</strong>
+          </div>
+          {exam.diagnosis.warnings?.length ? <p className="small">Uyarılarla birlikte onaylandı; uyarılar rapora yazılır.</p> : null}
+          <button className="btn primary" onClick={onGoTreat} data-testid="dx-go-treat">
+            Tedaviye geç
+          </button>
+        </div>
+      )}
       {Object.keys(exam.findings).length === 0 && <div className="notice info">Önce test bulgularını girin.</div>}
       {result.warnings.map((w, i) => (
         <div key={i} className="notice danger" role="alert">
@@ -450,18 +457,7 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
           </button>
         </div>
       )}
-      {exam.diagnosis && valid && (
-        <div className={`card ${exam.diagnosis.warnings?.length ? 'tint-warn' : 'tint-ok'} stack`}>
-          <div className="row">
-            <Icon name="check" />
-            <strong className="grow">Onaylı tanı: {exam.diagnosis.label}</strong>
-          </div>
-          {exam.diagnosis.warnings?.length ? <p className="small">Uyarılarla birlikte onaylandı; uyarılar rapora yazılır.</p> : null}
-          <button className="btn primary" onClick={onGoTreat} data-testid="dx-go-treat">
-            Tedaviye geç
-          </button>
-        </div>
-      )}
+
     </div>
   );
 }
@@ -490,18 +486,24 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
           Onaylı tanı: <strong>{dx.label}</strong>
         </div>
       )}
-      <div className="field">
-        <label>Etkilenen taraf</label>
-        <Segmented
-          label="Taraf"
-          value={side}
-          onChange={setSide}
-          options={[
-            { value: 'R', label: 'Sağ' },
-            { value: 'L', label: 'Sol' }
-          ]}
-        />
-      </div>
+      {valid && dx?.side ? (
+        <p className="small">
+          Taraf: <strong>{sideName(dx.side)}</strong> <span className="muted">(onaylı tanıdan)</span>
+        </p>
+      ) : (
+        <div className="field">
+          <label>Etkilenen taraf</label>
+          <Segmented
+            label="Taraf"
+            value={side}
+            onChange={setSide}
+            options={[
+              { value: 'R', label: 'Sağ' },
+              { value: 'L', label: 'Sol' }
+            ]}
+          />
+        </div>
+      )}
       {list.map((id) => {
         const p = PROTOCOLS[id];
         return (
@@ -510,13 +512,16 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
               <h3 className="grow">{p.name}</h3>
               {suggested[0] === id && <span className="chip ok">önerilen</span>}
             </div>
-            <p className="small">{p.summary}</p>
-            <p className="small muted">{p.evidenceNote}</p>
-            {p.cautions.map((c, i) => (
-              <p key={i} className="small" style={{ color: 'var(--warn)' }}>
-                {c}
-              </p>
-            ))}
+            <details className="small">
+              <summary>Açıklama, kanıt ve uyarılar</summary>
+              <p>{p.summary}</p>
+              <p className="muted">{p.evidenceNote}</p>
+              {p.cautions.map((c, i) => (
+                <p key={i} style={{ color: 'var(--warn)' }}>
+                  {c}
+                </p>
+              ))}
+            </details>
             <button
               className="btn primary"
               disabled={p.sided && !side}
@@ -584,11 +589,11 @@ function RxTab({ exam }: { exam: ClinicExam }) {
   const [note, setNote] = useState(issued?.note ?? '');
   const [svg, setSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [side, setSide] = useState<Side | null>(issued?.side ?? dx?.side ?? null);
+  // Taraf yalnız onaylı tanıdan gelir (reçetede ayrıca seçilmez: ters taraf riski).
+  const side: Side | null = dx?.side ?? null;
   const stale =
     !!issued &&
     (issued.side !== side || issued.maneuver !== maneuver || issued.perDay !== perDay || issued.days !== days || (issued.note ?? '') !== note.trim());
-  const sideConflict = !!dx?.side && !!side && dx.side !== side;
   const [ack, setAck] = useState(false);
 
   const url = useMemo(() => {
@@ -654,15 +659,10 @@ function RxTab({ exam }: { exam: ClinicExam }) {
         </p>
         <div className="field">
           <label>Taraf</label>
-          <Segmented
-            label="Taraf"
-            value={side}
-            onChange={(v) => setSide(v)}
-            options={[
-              { value: 'R', label: 'Sağ' },
-              { value: 'L', label: 'Sol' }
-            ]}
-          />
+          <p data-testid="rx-side">
+            <strong>{side ? sideName(side).charAt(0).toLocaleUpperCase('tr-TR') + sideName(side).slice(1) : '—'}</strong>{' '}
+            <span className="small muted">(onaylı tanıdan; değişecekse tanıyı yeniden onaylayın)</span>
+          </p>
         </div>
         <div className="field">
           <label>Manevra</label>
@@ -690,12 +690,6 @@ function RxTab({ exam }: { exam: ClinicExam }) {
           <label htmlFor="rxnote">Not (isteğe bağlı, en fazla 80 karakter)</label>
           <input id="rxnote" className="input" value={note} maxLength={80} onChange={(e) => setNote(e.target.value)} />
         </div>
-        {sideConflict && (
-          <div className="notice danger" role="alert">
-            <Icon name="alert" />
-            <span>Seçilen taraf, onaylanan tanıdaki taraftan ({sideName(dx!.side!)}) farklı. Lütfen kontrol edin.</span>
-          </div>
-        )}
         {needAck && (
           <label className="row notice danger" style={{ alignItems: 'flex-start' }}>
             <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="check-lg" data-testid="rx-ack" />

@@ -48,6 +48,8 @@ import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
 import { RunnerView, type RunnerOutcome } from '../RunnerView';
 import { speech } from '../../../platform/speech';
+import { haptics } from '../../../platform/haptics';
+import { tones } from '../../../platform/tones';
 import { downloadReminder } from '../../../platform/reminders';
 
 type Mode = 'start' | 'retest' | 'treat' | 'practice';
@@ -62,11 +64,13 @@ type Stage =
   /** Alt tip soruları (Kim HJ ve ark. JAMA Neurol 2023): yatay kanal ve uzun atak şüphesi hekime yönlendirir. */
   | { k: 'subtype'; q: 1 | 2 }
   | { k: 'sideQ' }
-  | { k: 'sideRun'; order: Side[]; results: SideTestResult[] }
+  | { k: 'sideRun'; order: Side[]; results: SideTestResult[]; chained?: boolean }
+  /** Taraf testinden sonra, telefon alından inmeden manevraya geçiş (tek dokunuş, ekranın her yeri). */
+  | { k: 'chainGate'; side: Side }
   | { k: 'sideRest'; order: Side[]; results: SideTestResult[] }
   | { k: 'stronger'; results: SideTestResult[] }
   | { k: 'practiceSide' }
-  | { k: 'maneuver'; side: Side }
+  | { k: 'maneuver'; side: Side; chained?: boolean }
   | { k: 'after'; side: Side }
   | { k: 'retestRun'; side: Side }
   | { k: 'end'; tone: 'ok' | 'warn' | 'danger' | 'info'; title: string; text: string; testid: string; extra?: 'treat'; remindAt?: number; remindTitle?: string };
@@ -83,6 +87,17 @@ export function EpisodeFlow() {
   const profile = d.patient;
   const [episodeId, setEpisodeId] = useState<string | null>(() => activeEpisode(d)?.id ?? null);
   const [cal, setCal] = useState<Calibration | null>(null);
+  /** Son yerleştirme ölçümü: zincirdeki (telefon alından inmeden) sonraki test/manevra bunu kullanır. */
+  const [placed, setPlaced] = useState<{ cal: Calibration; at: number } | null>(null);
+  const onPlaced = (c: Calibration) => {
+    setCal(c);
+    setPlaced({ cal: c, at: Date.now() });
+  };
+  const CHAIN_MAX_MS = 10 * 60 * 1000;
+  const chainCal = (chained: boolean | undefined): { chained: boolean; calibration: Calibration | null } =>
+    chained && (!cal || (placed && Date.now() - placed.at < CHAIN_MAX_MS))
+      ? { chained: true, calibration: placed?.cal ?? cal }
+      : { chained: false, calibration: cal };
   /** Kayıtlı kalibrasyon varken tanıtma ekranı atlanır (telefon her manevra başında yine yerleştirilip ölçülür). */
   const [forceCal, setForceCal] = useState(false);
   /** Yeniden tanıtmadan sonra dönülecek sahne (ör. 2. taraf testi: 1. tarafın sonucu kaybolmasın). */
@@ -309,7 +324,8 @@ export function EpisodeFlow() {
     }
     if (dec.kind === 'TREAT') {
       if (!checkDose()) return;
-      setStage({ k: 'maneuver', side: dec.side });
+      // Ekrana bakılmadan karar verildiyse (şiddet sorusu sorulmadı) telefon alında: zincirle manevraya geç.
+      setStage(stronger === null ? { k: 'chainGate', side: dec.side } : { k: 'maneuver', side: dec.side });
     } else if (dec.kind === 'NOT_TRIGGERED') {
       setStage({
         k: 'end',
@@ -319,7 +335,7 @@ export function EpisodeFlow() {
         testid: 'end-not-triggered'
       });
     } else if (dec.kind === 'REFER') {
-      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize ya da odyologunuza başvurun', text: REFER_TEXT[dec.reason], testid: 'end-refer' });
+      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize ya da odyoloğunuza başvurun', text: REFER_TEXT[dec.reason], testid: 'end-refer' });
     }
   };
 
@@ -517,7 +533,7 @@ export function EpisodeFlow() {
           </p>
           <SpokenQuestion text={q.text} qid={q.id} />
           <div className="spacer" />
-          <YesNoButtons onAnswer={answer} value={stage.answers[q.id]} yesLabel="Evet, var" noLabel="Hayır, yok" lockKey={q.id} />
+          <YesNoButtons onAnswer={answer} value={stage.answers[q.id]} yesLabel={q.yesLabel ?? 'Evet, var'} noLabel={q.noLabel ?? 'Hayır, yok'} lockKey={q.id} />
         </Screen>
       );
     }
@@ -535,7 +551,7 @@ export function EpisodeFlow() {
             <p className="small muted">Yanıtınız:</p>
             <h2>{q.text}</h2>
             <p className="lead">
-              <strong>Evet</strong>
+              <strong>{q.yesLabel ?? 'Evet, var'}</strong>
             </p>
             <p>Bu yanıt nedeniyle manevra yapılmayacak. Doğru mu?</p>
           </div>
@@ -567,7 +583,7 @@ export function EpisodeFlow() {
             </a>
           ) : (
             <div className="card soft small">
-              <p>Hekiminize ya da odyologunuza başvurun. Aşağıdaki rapor, verdiğiniz yanıtları içerir.</p>
+              <p>Hekiminize ya da odyoloğunuza başvurun. Aşağıdaki rapor, verdiğiniz yanıtları içerir.</p>
             </div>
           )}
           {episodeId && (
@@ -659,20 +675,25 @@ export function EpisodeFlow() {
 
     case 'sideRun': {
       const side = stage.order[stage.results.length]!;
+      const other = stage.order[1]!;
+      const ch = chainCal(stage.chained);
       return (
         <RunnerView
           key={`side-${side}`}
           protocolId="dix-hallpike"
           side={side}
           mode="patient"
-          calibration={cal}
+          calibration={ch.calibration}
+          chained={ch.chained}
+          onPlaced={onPlaced}
           onRecalibrate={recalibrate}
           onExit={(o) => onSideRunExit(o, stage.order, stage.results)}
           intro={
             <div className="notice info">
               <Icon name="info" />
               <span>
-                Test {stage.results.length + 1} / 2: <strong>{sideName(side)}</strong> taraf. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.
+                Test {stage.results.length + 1} / 2: <strong>{sideName(side)}</strong> taraf.
+                {stage.results.length === 0 ? ` Önce ${sideName(side)}, sonra ${sideName(other)} tarafı deniyoruz; telefon iki test boyunca alnınızda kalacak.` : ''}
               </span>
             </div>
           }
@@ -681,7 +702,22 @@ export function EpisodeFlow() {
     }
 
     case 'sideRest':
-      return <RestBetween onContinue={() => setStage({ k: 'sideRun', order: stage.order, results: stage.results })} next={stage.order[stage.results.length]!} />;
+      return (
+        <RestBetween
+          onContinue={() => setStage({ k: 'sideRun', order: stage.order, results: stage.results, chained: true })}
+          next={stage.order[stage.results.length]!}
+        />
+      );
+
+    case 'chainGate':
+      return (
+        <TapGate
+          testid="chain-continue"
+          title={`${sideName(stage.side).charAt(0).toLocaleUpperCase('tr-TR') + sideName(stage.side).slice(1)} tarafta baş dönmesi oldu`}
+          text={`Şimdi ${sideName(stage.side)} taraf için manevrayı yapacağız. Telefon alnınızda kalsın. Baş dönmeniz geçtiyse ve hazırsanız ekranın herhangi bir yerine dokunun.`}
+          onTap={() => setStage({ k: 'maneuver', side: stage.side, chained: true })}
+        />
+      );
 
     case 'stronger':
       return (
@@ -723,7 +759,8 @@ export function EpisodeFlow() {
           protocolId={maneuverId}
           side={stage.side}
           mode="patient"
-          calibration={cal}
+          {...chainCal(stage.chained)}
+          onPlaced={onPlaced}
           onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage.side)}
           intro={
@@ -823,7 +860,7 @@ export function EpisodeFlow() {
           )}
           {stage.remindAt && (
             <button
-              className="btn secondary block"
+              className="btn primary block"
               onClick={() => downloadReminder(stage.remindAt!, stage.remindTitle ?? 'DengeYol', 'DengeYol uygulamasını açıp ana ekrandaki testi yapın.')}
               data-testid="add-reminder"
             >
@@ -833,9 +870,10 @@ export function EpisodeFlow() {
           <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })} data-testid="go-home">
             Ana ekran
           </button>
-          {episodeId && mode !== 'practice' && (
+          {/* Rapor yalnız hekime yönlendirmede öne çıkar (götürülecek); diğer durumlarda ana ekran/geçmişten açılır. */}
+          {episodeId && mode !== 'practice' && stage.tone === 'warn' && (
             <button className="btn ghost" onClick={() => nav(`/hasta/rapor/${episodeId}`)}>
-              <Icon name="print" /> Rapor
+              <Icon name="print" /> Hekime götürülecek rapor
             </button>
           )}
         </Screen>
@@ -844,27 +882,50 @@ export function EpisodeFlow() {
   }
 }
 
+/**
+ * İki taraf testi arası: telefon alında kalır. 30 s sesli geri sayım, sonra "baş dönmeniz geçtiyse ekrana dokunun".
+ * Ekranın her yeri dokunma alanıdır (hasta ekranı görmez).
+ */
 function RestBetween({ onContinue, next }: { onContinue: () => void; next: Side }) {
   const [left, setLeft] = useState(30);
-  const sim = store.get().settings;
-  const step = sim.simulation ? sim.timeScale : 1;
+  const st = store.get().settings;
+  const step = st.simulation ? st.timeScale : 1;
   useEffect(() => {
+    speech.speak(`Oturun ve dinlenin. Telefon alnınızda kalsın. Otuz saniye sonra ${sideName(next)} tarafı test edeceğiz.`, 'high');
     const id = setInterval(() => setLeft((l) => Math.max(0, l - step)), 1000);
     return () => clearInterval(id);
-  }, [step]);
+  }, [step, next]);
+  const ready = left <= 0;
+  useEffect(() => {
+    if (!ready) return;
+    haptics.play('move');
+    tones.play('move');
+    speech.speak(`Baş dönmeniz geçtiyse ekranın herhangi bir yerine dokunun; ${sideName(next)} tarafı test edeceğiz.`, 'high');
+  }, [ready, next]);
   return (
-    <Screen title="Kısa ara">
-      <div className="card stack center">
-        <h1>Oturun ve dinlenin</h1>
-        <p className="lead">Baş dönmesi tamamen geçene kadar oturun. Ardından {sideName(next)} tarafı test edeceğiz.</p>
-        <div style={{ fontSize: '3rem', fontWeight: 800 }} aria-live="polite">
-          {left > 0 ? left : '✓'}
-        </div>
-      </div>
-      <button className="btn primary block xl" disabled={left > 0} onClick={onContinue} data-testid="rest-continue">
-        {sideName(next).charAt(0).toLocaleUpperCase('tr-TR') + sideName(next).slice(1)} tarafı test et
-      </button>
-    </Screen>
+    <button className="tap-gate" disabled={!ready} onClick={onContinue} data-testid="rest-continue">
+      <span className="tap-gate-title">Oturun ve dinlenin</span>
+      <span className="tap-gate-count" aria-live="polite">
+        {ready ? 'Hazırsanız dokunun' : left}
+      </span>
+      <span className="tap-gate-text">Telefon alnınızda kalsın. Ardından {sideName(next)} tarafı test edeceğiz.</span>
+    </button>
+  );
+}
+
+/** Tek dokunuşla geçiş ekranı (ekranın her yeri düğme); metni sesli okur. */
+function TapGate({ title, text, onTap, testid }: { title: string; text: string; onTap: () => void; testid: string }) {
+  useEffect(() => {
+    haptics.play('move');
+    tones.play('move');
+    speech.speak(`${title}. ${text}`, 'high');
+  }, [title, text]);
+  return (
+    <button className="tap-gate" onClick={onTap} data-testid={testid}>
+      <span className="tap-gate-title">{title}</span>
+      <span className="tap-gate-text">{text}</span>
+      <span className="tap-gate-count">Dokunun</span>
+    </button>
   );
 }
 

@@ -13,7 +13,7 @@ const out = join(here, 'out');
 mkdirSync(out, { recursive: true });
 const BASE = 'http://localhost:4173/';
 
-const server = spawn(process.execPath, [join(here, '..', 'node_modules', 'vite', 'bin', 'vite.js'), 'preview', '--port', '4173', '--strictPort'], {
+const server = spawn(process.execPath, [join(here, '..', 'node_modules', 'vite', 'bin', 'vite.js'), 'preview', '--port', '4173', '--strictPort', ...(process.env.E2E_OUTDIR ? ['--outDir', process.env.E2E_OUTDIR] : [])], {
   cwd: join(here, '..'),
   stdio: 'pipe'
 });
@@ -127,10 +127,10 @@ async function sideTestRightPositive(page) {
   await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
   await page.getByTestId('runner-ready').waitFor();
   await driveRunner(page);
-  await page.getByTestId('rest-continue').click({ timeout: 10000 });
-  await page.getByTestId('runner-ready').waitFor();
+  await page.locator('[data-testid="rest-continue"]:not([disabled])').click({ timeout: 15000 });
   await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
-  await page.getByTestId('runner-ready').waitFor();
+  // Karar: sağ → telefon alında, tek dokunuşla manevraya geçiş
+  await page.getByTestId('chain-continue').click({ timeout: 15000 });
 }
 
 async function calibrate(page) {
@@ -139,13 +139,16 @@ async function calibrate(page) {
   if (!(await page.getByTestId('cal-start').isVisible().catch(() => false))) return;
   await page.getByTestId('cal-start').click();
   await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
-  await page.getByTestId('cal-continue').click();
+  // Hasta modunda kendiliğinden devam eder; klinisyende "Devam" gerekir.
+  await page.getByTestId('cal-continue').click({ timeout: 1000 }).catch(() => undefined);
 }
 
 /** Yürütücüyü sanal başla hedeften hedefe götürerek tamamlar. */
 async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, timeout = 120000, onStep } = {}) {
-  await page.getByTestId('runner-start').click();
-  await page.getByTestId('runner').waitFor();
+  // Zincirdeki (telefon alından inmeden) test/manevra kendiliğinden başlar; Başlat düğmesi yoktur.
+  await page.locator('[data-testid="runner-start"], [data-testid="runner"]').first().waitFor({ timeout: 30000 });
+  if (await page.getByTestId('runner-start').isVisible().catch(() => false)) await page.getByTestId('runner-start').click();
+  await page.getByTestId('runner').waitFor({ timeout: 30000 });
   if (!(await page.getByTestId('sim-panel').isVisible().catch(() => false))) await page.getByTestId('sim-open').click();
   const t0 = Date.now();
   let lastStep = -1;
@@ -182,7 +185,6 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   await page.goto(BASE);
   await snap(page, 'karsilama');
   await page.getByTestId('role-patient').click();
-  await page.getByTestId('start-onboarding').click();
   await snap(page, 'kurulum-1');
   await page.getByTestId('ob-consent').click();
   await page.getByTestId('ob-next').click();
@@ -193,7 +195,6 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   await page.getByTestId('ob-next').click();
   await page.getByTestId('ob-none').click();
   await page.getByTestId('ob-next').click();
-  await page.getByTestId('ob-finish').click();
   await page.getByTestId('start-episode').waitFor();
   await snap(page, 'hasta-ana');
   await page.getByTestId('start-episode').click();
@@ -273,17 +274,19 @@ await step('Hasta: taraf bilinmiyor → iki yönlü semptom testi → sağ taraf
   await driveRunner(page);
   await page.getByTestId('rest-continue').waitFor();
   await snap(page, 'taraf-ara');
-  await page.getByTestId('rest-continue').click({ timeout: 10000 });
-  // Sonra sağ: baş dönmesi işaretle
-  await page.getByTestId('runner-ready').waitFor();
+  await page.locator('[data-testid="rest-continue"]:not([disabled])').click({ timeout: 15000 });
+  // Sonra sağ (telefon alında, kendiliğinden başlar): baş dönmesi işaretle
   await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
-  // Karar: sağ tarafa manevra → yürütücü hazır ekranı
-  await page.getByTestId('runner-ready').waitFor();
-  const title = await page.locator('h1').first().innerText();
-  if (!title.includes('Epley')) throw new Error('Epley ekranı beklenirken: ' + title);
-  const txt = await page.getByTestId('runner-ready').innerText();
-  if (!txt.includes('sağ')) throw new Error('sağ taraf beklenirdi');
-  await snap(page, 'taraf-karari-epley');
+  // Karar: sağ tarafa manevra → tek dokunuşla geçiş ekranı
+  const gate = page.getByTestId('chain-continue');
+  await gate.waitFor({ timeout: 15000 });
+  const txt = await gate.innerText();
+  if (!/sağ/i.test(txt)) throw new Error('sağ taraf beklenirdi: ' + txt);
+  await snap(page, 'taraf-karari-gecis');
+  await gate.click();
+  await page.getByTestId('runner').waitFor({ timeout: 20000 });
+  const step = await page.getByTestId('runner').getAttribute('data-step');
+  if (step !== '0') throw new Error('Epley ilk adımı bekleniyordu');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });
@@ -488,11 +491,9 @@ await step('Hasta: odyolog reçetesini QR bağlantısıyla içe aktarır', async
   await page.getByTestId('rx-accept').click();
   await page.getByTestId('ob-consent').click();
   await page.getByTestId('ob-next').click();
-  // Tanı reçeteden dolu gelmeli
-  await page.getByTestId('ob-next').click();
+  // Reçete varken tanı adımı atlanır
   await page.getByTestId('ob-none').click();
   await page.getByTestId('ob-next').click();
-  await page.getByTestId('ob-finish').click();
   await page.getByTestId('start-episode').waitFor();
   const home = await page.locator('main').innerText();
   if (!home.includes('Reçete')) throw new Error('ana ekranda reçete yok');

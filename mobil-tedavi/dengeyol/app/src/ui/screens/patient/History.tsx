@@ -24,7 +24,7 @@ export function History() {
     <Screen title="Geçmiş ataklar" back="/hasta">
       {eps.length === 0 ? (
         <div className="card soft center">
-          <p className="muted">Henüz kayıtlı atak yok.</p>
+          <p className="muted">Henüz kayıtlı atak yok. Bir atak başlattığınızda raporu burada görünür.</p>
         </div>
       ) : (
         <div className="list">
@@ -63,12 +63,7 @@ export function EpisodeReport() {
   return (
     <Screen
       title="Atak raporu"
-      back="/hasta/gecmis"
-      right={
-        <button className="btn icon" aria-label="Yazdır / PDF" onClick={() => window.print()}>
-          <Icon name="print" />
-        </button>
-      }
+      back={true}
     >
       <ReportBody e={e} />
       <button className="btn secondary block no-print" onClick={() => window.print()}>

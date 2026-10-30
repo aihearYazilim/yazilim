@@ -126,7 +126,7 @@ export function prescriptionUrl(baseUrl: string, p: Prescription): string {
 
 export const DECODE_ERROR_TEXT: Record<DecodeError, string> = {
   FORMAT: 'Reçete bağlantısı okunamadı. Bağlantının tamamını kopyaladığınızdan emin olun.',
-  CHECKSUM: 'Reçete bağlantısı bozulmuş ya da eksik. Odyologunuzdan yeni bağlantı isteyin.',
+  CHECKSUM: 'Reçete bağlantısı bozulmuş ya da eksik. Hekiminizden ya da odyoloğunuzdan yeni bağlantı isteyin.',
   VERSION: 'Bu reçete, uygulamanın farklı bir sürümüyle oluşturulmuş. Uygulamayı güncelleyin.',
-  FIELDS: 'Reçetede eksik ya da geçersiz bilgi var. Odyologunuzdan yeni bağlantı isteyin.'
+  FIELDS: 'Reçetede eksik ya da geçersiz bilgi var. Hekiminizden ya da odyoloğunuzdan yeni bağlantı isteyin.'
 };

@@ -2,7 +2,21 @@ import { PROTOCOLS } from '../../core/protocols';
 import { Screen } from '../components/Screen';
 
 export function About() {
-  const sources = Array.from(new Set(Object.values(PROTOCOLS).flatMap((p) => p.sources)));
+  // Aynı yayın farklı protokollerde farklı ayrıntıyla yazılmış olabilir: yazar + yıl (+ cilt) ile tekilleştir,
+  // en ayrıntılı (cilt/sayfa içeren) yazımı tut.
+  const byKey = new Map<string, string>();
+  for (const src of Object.values(PROTOCOLS).flatMap((p) => p.sources)) {
+    const year = src.match(/(19|20)\d{2}/)?.[0];
+    if (!year) continue;
+    const vol = src.match(/(19|20)\d{2};(\d+)/)?.[2] ?? '';
+    const key = `${src.split(' ').slice(0, 2).join(' ')}-${year}-${vol}`;
+    const generic = `${src.split(' ').slice(0, 2).join(' ')}-${year}-`;
+    if (vol && byKey.has(generic)) byKey.delete(generic);
+    if (!vol && [...byKey.keys()].some((k) => k.startsWith(generic))) continue;
+    const prev = byKey.get(key);
+    if (!prev || src.length > prev.length) byKey.set(key, src);
+  }
+  const sources = [...byKey.values()];
   return (
     <Screen title="Hakkında" back={true}>
       <section className="card stack">

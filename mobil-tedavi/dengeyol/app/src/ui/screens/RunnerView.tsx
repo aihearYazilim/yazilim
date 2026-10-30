@@ -47,7 +47,9 @@ export function RunnerView({
   calibration: initialCalibration,
   onExit,
   intro,
-  onRecalibrate
+  onRecalibrate,
+  chained = false,
+  onPlaced
 }: {
   protocolId: ProtocolId;
   side: Side | null;
@@ -59,6 +61,13 @@ export function RunnerView({
   intro?: React.ReactNode;
   /** Hasta modu: kayıtlı kalibrasyon bu telefonda tutmuyorsa baştan tanıtma ekranına dön. */
   onRecalibrate?: () => void;
+  /**
+   * Zincir: önceki test/manevradan hemen sonra, telefon alından inmeden devam. Başlat beklenmez ve yerleştirme ölçümü
+   * tekrarlanmaz (verilen kalibrasyon az önce ölçüldü).
+   */
+  chained?: boolean;
+  /** Hasta modunda yerleştirme ölçümü yapılınca yeni kalibrasyonu bildirir (zincirdeki sonraki adım için). */
+  onPlaced?: (c: Calibration) => void;
 }) {
   const { settings } = useData();
   const { source } = useMotion();
@@ -340,10 +349,11 @@ export function RunnerView({
     } catch {
       /* desteklenmiyor */
     }
-    if (P && calibration) {
+    if (P && calibration && !chained) {
       const c = await placePhone(calibration);
       if (!c || !alive.current) return;
       setCalibration(c);
+      onPlaced?.(c);
     }
     speech.speak(P ? (manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.') : 'Başlıyoruz.', 'high');
     for (let i = 3; i > 0; i--) {
@@ -358,7 +368,29 @@ export function RunnerView({
     dispatch({ type: 'start', now: now() });
   }
 
+  // Zincirde kendiliğinden başla (StrictMode çift effect'inde zamanlayıcı iptal edilir, tek başlatma olur).
+  useEffect(() => {
+    if (!chained) return;
+    const t = setTimeout(() => void begin(), 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // --- Başlamadan önce ---------------------------------------------------------------------
+  if (!started && chained) {
+    return (
+      <div className="runner" data-testid="runner-ready">
+        <div className="runner-body" style={{ justifyContent: 'center' }}>
+          <h1>{protocol.shortName}{protocol.side ? ` — ${sideName(protocol.side)}` : ''}</h1>
+          {intro}
+          <div className="btn primary block xl" aria-live="assertive">
+            {preCount > 0 ? preCount : 'Başlıyoruz…'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!started) {
     return (
       <div className="runner" data-testid="runner-ready">
@@ -376,7 +408,7 @@ export function RunnerView({
           </strong>
         </div>
         <div className="runner-body">
-          <h1>{protocol.name}</h1>
+          <h1>{P ? `${protocol.shortName}${protocol.side ? ` — ${sideName(protocol.side)}` : ''}` : protocol.name}</h1>
           <p className="lead">{P ? protocol.patientSummary ?? protocol.summary : protocol.summary}</p>
           {protocol.canal === 'PC' && <BedSetup />}
           {intro}
@@ -409,43 +441,28 @@ export function RunnerView({
               {helper && <HelperCard />}
             </div>
           )}
-          <div className="card soft stack">
-            <div className="row">
-              <Icon name="volume" />
-              <strong>{P ? (helper ? 'Ses hastaya, ekran yardımcıya konuşur' : 'Ekranı görmeniz gerekmez') : 'Ekran hastanın alnında, size bakar'}</strong>
+          {/* Yalnız duruma özgü notlar (hasta modunda genel anlatım sesle yapılır; tekrar yazılmaz). */}
+          {(!P || manual || !haptics.supported() || !speech.usable() || !wakeLockSupported()) && (
+            <div className="card soft stack small">
+              {!P && <p>Pozisyon doğruysa gösterge yeşile döner ve sayaç başlar. Nistagmus başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin.</p>}
+              {manual && (
+                <p>
+                  <strong>Sensörsüz mod:</strong> açı ölçülmez; her pozisyonu siz onaylarsınız.
+                </p>
+              )}
+              {P && !haptics.supported() && (
+                <p className="muted">Bu telefonda titreşim yok; uyarılar ses ve bip ile verilir. iPhone'da sessiz anahtarı kapalı ve sesi yüksek tutun.</p>
+              )}
+              {P && !speech.usable() && (
+                <p style={{ color: 'var(--warn)' }} data-testid="runner-no-voice">
+                  <strong>Bu telefonda Türkçe sesli okuma bulunamadı.</strong> Manevrayı bir yakınınızla yapın; yönergeleri ekrandan okusun.
+                </p>
+              )}
+              {!wakeLockSupported() && (
+                <p className="muted">Bu tarayıcı ekranı açık tutamıyor. Telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.</p>
+              )}
             </div>
-            <p className="small">
-              {P
-                ? `Her adımı sesli anlatacağım. Doğru pozisyona gelince "Tamam, böyle kalın" diyeceğim${haptics.supported() ? ' ve telefon titreyecek' : ' ve bir bip sesi duyacaksınız'}. Baş dönmesi başlarsa ekranın herhangi bir yerine dokunun, geçince yeniden dokunun.`
-                : 'Pozisyon doğruysa gösterge yeşile döner ve sayaç başlar. Nistagmus başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin.'}
-            </p>
-            {manual && (
-              <p className="small">
-                <strong>Sensörsüz mod:</strong> açı ölçülmez; her pozisyonu siz onaylarsınız.
-              </p>
-            )}
-            {P && !haptics.supported() && (
-              <p className="small muted">
-                Bu telefonda titreşim yok; uyarılar ses ve bip ile verilir. iPhone'da yan taraftaki sessiz anahtarı kapalı ve ses düzeyini yüksek tutun.
-              </p>
-            )}
-            {P && !speech.usable() && (
-              <p className="small" style={{ color: 'var(--warn)' }} data-testid="runner-no-voice">
-                <strong>Bu telefonda Türkçe sesli okuma bulunamadı.</strong> Manevrayı bir yakınınızla yapın; yönergeleri ekrandan okusun.
-                Ayarlar'dan "Sesi dene" ile kontrol edebilirsiniz.
-              </p>
-            )}
-            {!wakeLockSupported() && (
-              <p className="small muted">
-                Bu tarayıcı ekranı açık tutmayı desteklemiyor. Manevra sırasında ekran kararmasın diye telefonun ekran zaman aşımını en az 5 dakikaya çıkarın.
-              </p>
-            )}
-            {P && !manual && (
-              <p className="small muted">
-                Başlat'a basınca telefonu alnınıza yerleştirmenizi isteyeceğim; dik dururken ve tavana bakarken birer kısa ölçüm alacağım (yaklaşık 30 saniye).
-              </p>
-            )}
-          </div>
+          )}
           {prepError && (
             <div className="notice danger stack" role="alert" data-testid="runner-prep-error">
               <div className="row">
@@ -473,7 +490,7 @@ export function RunnerView({
               </div>
             </div>
           )}
-          {protocol.cautions.length > 0 && (
+          {!P && protocol.cautions.length > 0 && (
             <div className="notice">
               <Icon name="alert" />
               <span className="small">{protocol.cautions[0]}</span>
@@ -552,6 +569,9 @@ export function RunnerView({
     idle: ''
   };
   const nextStep = protocol.steps[state.stepIndex + 1];
+  const instrText = screenText(
+    state.phase === 'between' && nextStep ? (P ? nextStep.say : nextStep.clinician) : step ? (P ? step.say : step.clinician) : ''
+  );
 
   const terminal = state.phase === 'done' || state.phase === 'aborted' || state.phase === 'safetyStop';
   const canMark = step?.observe !== false && state.phase !== 'between' && state.phase !== 'paused' && !terminal;
@@ -606,17 +626,18 @@ export function RunnerView({
         <div className="runner-title" data-testid="runner-step-title">
           {state.phase === 'between' && nextStep ? `Sırada: ${nextStep.title}` : step?.title}
         </div>
-        <p className="runner-instr">{state.phase === 'between' && nextStep ? (P ? nextStep.say : nextStep.clinician) : step ? (P ? step.say : step.clinician) : ''}</p>
-        {step?.unverifiable && state.phase !== 'between' && <p className="small muted">{step.unverifiable}</p>}
 
-        <div className="row">
-          <span className={`status-pill ${statusClass}`} aria-live="polite" data-testid="runner-status">
-            {statusText[state.phase]}
-          </span>
-        </div>
+        {guiding && ev?.hint ? (
+          <HintBanner hint={ev.hint} flipped={flipped} patient={P} />
+        ) : (
+          <div className="row">
+            <span className={`status-pill ${statusClass}`} aria-live="polite" data-testid="runner-status">
+              {statusText[state.phase]}
+            </span>
+          </div>
+        )}
 
-        {guiding && ev?.hint && <HintBanner hint={ev.hint} flipped={flipped} patient={P} />}
-
+        {/* Gösterge ve sayaç önce: yardımcı/klinisyen kaydırmadan görsün (alttaki dokunma alanının üstünde kalır). */}
         {step && state.phase !== 'between' && (
           <div className="runner-visual">
             {manual ? (
@@ -636,11 +657,15 @@ export function RunnerView({
         )}
         {!manual && step && state.phase !== 'between' && <HangBar target={step.target} pose={pose} />}
 
-        {caption && (
+        {caption && caption !== instrText && !(guiding && ev?.hint && caption.includes(HINT_TEXT_PATIENT[ev.hint])) && (
           <p className="caption" aria-live="polite" data-testid="runner-caption">
             <Icon name="volume" size={18} /> {caption}
           </p>
         )}
+
+        {/* Yönerge: yeni adımın başında tam, sonra kısaltılmış (ses zaten söyledi; ekran göstergeye yer açar). */}
+        <p className={`runner-instr${state.phase === 'intro' || state.phase === 'between' ? '' : ' compact'}`}>{instrText}</p>
+        {step?.unverifiable && state.phase !== 'between' && <p className="small muted">{step.unverifiable}</p>}
 
         {!P && !manual && step && state.phase !== 'between' && (
           <div className="card soft small" data-testid="runner-numbers">
@@ -754,11 +779,11 @@ export function RunnerView({
             </button>
             {P && (
               <button className="btn warn block" onClick={() => dispatch({ type: 'abort', now: now(), reason: 'USER_FEELS_UNWELL' })}>
-                Kendimi iyi hissetmiyorum — durdur
+                Kendimi kötü hissediyorum
               </button>
             )}
             <button className="btn secondary block" onClick={() => dispatch({ type: 'abort', now: now(), reason: 'USER_ABORT' })} data-testid="runner-abort">
-              <Icon name="stop" /> Sonlandır
+              <Icon name="stop" /> {P ? 'Şimdilik bırak (iyiyim)' : 'Sonlandır'}
             </button>
           </div>
         </div>
@@ -846,4 +871,12 @@ function HelperCard() {
       <li>Telefonun otomatik ekran döndürmesini kapatın; yan yatışlarda yazılar yer değiştirmesin.</li>
     </ol>
   );
+}
+
+/** Ekranda gösterilecek yönerge: "ekrana dokunun" cümleleri alttaki alanda zaten yazıyor; sesli yönergede kalır. */
+function screenText(t: string): string {
+  return t
+    .split(/(?<=[.!?])\s+/)
+    .filter((x) => !/ekrana (tekrar |yeniden )?dokunun/i.test(x) && !/^Baş dönmesi olabilir, bu beklenen bir durumdur\.?$/i.test(x))
+    .join(' ');
 }

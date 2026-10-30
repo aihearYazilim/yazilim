@@ -112,7 +112,7 @@ export function Settings() {
 
       <section className="card stack">
         <h3>Kullanım modu</h3>
-        <p className="small muted">Şu an: {s.role === 'clinician' ? 'Odyolog / hekim' : s.role === 'patient' ? 'Hasta' : 'seçilmedi'}</p>
+        <p className="small muted">Şu an: {s.role === 'clinician' ? 'Klinisyen' : s.role === 'patient' ? 'Hasta' : 'seçilmedi'}</p>
         <button
           className="btn secondary"
           onClick={() => {
@@ -131,7 +131,7 @@ export function Settings() {
         </p>
         <label className="row">
           <input type="checkbox" checked={s.simulation} onChange={(e) => set({ simulation: e.target.checked, timeScale: 1 })} data-testid="sim-toggle" />
-          <span className="grow">Demo modunu aç</span>
+          <span className="grow">Demo modu</span>
         </label>
       </section>
 

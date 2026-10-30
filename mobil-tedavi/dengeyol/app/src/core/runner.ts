@@ -693,7 +693,7 @@ function holdingTick(
     const left = Math.max(0, Math.round(step.minHoldSec - s.holdSec));
     cues.push({
       kind: 'speak',
-      text: left > 0 ? `${mark} saniye. ${left} saniye kaldı.` : `${mark} saniye.`,
+      text: left > 0 ? `${left} saniye kaldı.` : `${mark} saniye.`,
       priority: 'normal'
     });
   }

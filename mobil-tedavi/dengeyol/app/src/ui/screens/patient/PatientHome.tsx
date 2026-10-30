@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { diagnosisGate, DOSE_TEXT, frequentRecurrence, GATE_TEXT } from '../../../core/safety';
-import { episodeDose, episodeSide, formatDateTime, formatTime, nextAction, doseLimitsFor } from '../../../state/episodes';
+import {
+  episodeDose,
+  episodeSide,
+  formatDate,
+  formatDateTime,
+  formatTime,
+  nextAction,
+  doseLimitsFor,
+  pendingReferral,
+  RX_VALID_DAYS,
+  rxActive
+} from '../../../state/episodes';
+import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
 import { activeEpisode, store, useData } from '../../../state/store';
-import { Icon, Logo } from '../../components/Icon';
+import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 
 function useNow(ms = 15000) {
@@ -34,29 +46,8 @@ export function PatientHome() {
     </>
   );
 
-  if (!p?.consentAt) {
-    return (
-      <Screen title="DengeYol" right={right}>
-        <div className="hero">
-          <div className="brand">
-            <Logo size={48} />
-            <div className="name">DengeYol</div>
-          </div>
-          <h1>Hoş geldiniz</h1>
-          <p className="lead">Başlamadan önce 2 dakikalık kısa bir kurulum yapalım: tanınız ve size uygunluk.</p>
-        </div>
-        <button className="btn primary block xl" onClick={() => nav('/hasta/kurulum')} data-testid="start-onboarding">
-          Kuruluma başla
-        </button>
-        <div className="card soft small stack">
-          <strong>Odyoloğunuz ya da hekiminiz size bir reçete bağlantısı ya da QR kodu verdiyse</strong>
-          <p>Bağlantıyı bu telefonda açın ya da QR kodu telefon kamerasıyla okutun; bilgiler otomatik yüklenir.</p>
-          <RxPaste />
-        </div>
-        <InstallCard />
-      </Screen>
-    );
-  }
+  // Kurulum yapılmamışsa doğrudan kuruluma (reçete bağlantısı da orada yapıştırılabilir).
+  if (!p?.consentAt) return <Navigate to="/hasta/kurulum" replace />;
 
   const gate = diagnosisGate({
     diagnosedByDoctor: p.diagnosedByDoctor,
@@ -65,6 +56,7 @@ export function PatientHome() {
     hasPrescription: !!p.prescription,
     contraindications: p.contraindications
   });
+  const referral = !ep && !!pendingReferral(d);
   const recurrent = frequentRecurrence(
     d.episodes.map((e) => e.startedAt),
     now
@@ -87,12 +79,29 @@ export function PatientHome() {
 
       {gate.ok && ep && <ActiveEpisodeCard now={now} />}
 
-      {gate.ok && !ep && (
+      {gate.ok && !ep && referral && (
+        <div className="card tint-warn stack" data-testid="home-referral">
+          <div className="card-title">
+            <Icon name="alert" />
+            <h3>Önce hekiminizle görüşün</h3>
+          </div>
+          <p>Son atağınız hekime yönlendirmeyle sonlandı. Yeni bir manevradan önce hekiminiz ya da odyoloğunuzla görüşmeniz gerekir.</p>
+          <button
+            className="btn secondary"
+            onClick={() => store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, doctorClearedAt: Date.now() } : x.patient }))}
+            data-testid="home-doctor-cleared"
+          >
+            Hekimimle görüştüm, manevra yapmamda sakınca yok dedi
+          </button>
+        </div>
+      )}
+
+      {gate.ok && !ep && !referral && (
         <>
           <button className="big-action" onClick={() => nav('/hasta/atak/start')} data-testid="start-episode">
             <Icon name="sparkle" size={34} />
             Baş dönmem başladı
-            <span className="sub">Güvenlik soruları → telefonu tanıtma → manevra</span>
+            <span className="sub">Birkaç soru, kısa test ve manevra; sesle yönlendirilirsiniz</span>
           </button>
           <button className="btn secondary block" onClick={() => nav('/hasta/atak/practice')} data-testid="practice">
             <Icon name="play" /> Deneme manevrası (baş dönmesi yokken)
@@ -107,29 +116,28 @@ export function PatientHome() {
         </div>
       )}
 
-      <div className="card stack">
-        <h3>Tanı bilgileriniz</h3>
-        <dl className="kv">
-          <dt>Kanal</dt>
-          <dd>{p.prescription ? 'Arka kanal' : p.canal === 'PC' ? 'Arka kanal' : p.canal === 'HC' ? 'Yatay kanal' : 'Bilinmiyor'}</dd>
-          <dt>Taraf</dt>
-          <dd>{(p.prescription?.side ?? p.side) === 'R' ? 'Sağ' : (p.prescription?.side ?? p.side) === 'L' ? 'Sol' : 'Her atakta testle belirlenir'}</dd>
-          {p.prescription && (
-            <>
-              <dt>Reçete</dt>
-              <dd>
-                {p.prescription.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla {p.prescription.perDay}, {p.prescription.days} gün
-                {p.prescription.by ? ` · ${p.prescription.by}` : ''}
-              </dd>
-            </>
+      {/* Atak sürerken yalnız atak kartı; kapı kapalıyken kilit kartı yeterli. */}
+      {gate.ok && !ep && (
+        <div className="card stack">
+          {p.prescription && rxActive(p, now) ? (
+            <p className="small" data-testid="home-rx">
+              <strong>Reçete:</strong> {sideName(p.prescription.side)} taraf, {p.prescription.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla{' '}
+              {p.prescription.perDay}
+              {p.prescription.by ? ` · ${p.prescription.by}` : ''}. {formatDate(rxUntil(p.prescription.date))} tarihine kadar geçerli.
+            </p>
+          ) : (
+            <p className="small muted">
+              {p.prescription ? 'Reçetenin süresi doldu. ' : ''}Her atakta önce iki tarafı kısa bir testle deneyip baş dönmesinin hangi tarafta olduğunu
+              buluruz.
+            </p>
           )}
-        </dl>
-        <Link to="/hasta/kurulum" className="btn ghost">
-          Bilgilerimi düzenle
-        </Link>
-      </div>
+          <Link to="/hasta/kurulum" className="btn ghost">
+            Bilgilerimi düzenle
+          </Link>
+        </div>
+      )}
 
-      <InstallCard />
+      {!ep && <InstallCard />}
 
       <div className="card soft row">
         <Icon name="phone" />
@@ -184,7 +192,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
       {na.kind === 'early-retest' && (
         <div className="card stack">
           <h2>Tekrar testi</h2>
-          <p>Manevranın işe yarayıp yaramadığını görmek için 1 saat sonra kısa bir test yapacağız.</p>
+          <p>{na.ready ? 'Tekrar testinin zamanı geldi (yaklaşık 2 dakika).' : 'Manevranın işe yarayıp yaramadığını görmek için 1 saat sonra kısa bir test yapacağız.'}</p>
           {na.ready ? (
             <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest')} data-testid="do-retest">
               Tekrar testini yap
@@ -380,4 +388,8 @@ export function RxPaste() {
       {err && <span className="small" style={{ color: 'var(--danger)' }}>Bu bir reçete bağlantısına benzemiyor.</span>}
     </div>
   );
+}
+
+function rxUntil(date: string): number {
+  return new Date(`${date}T00:00:00`).getTime() + RX_VALID_DAYS * 24 * 60 * 60 * 1000;
 }

@@ -2,6 +2,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { decodePrescription, DECODE_ERROR_TEXT } from '../../../core/prescription';
 import { sideName } from '../../../core/protocols';
 import { store } from '../../../state/store';
+import { formatDate } from '../../../state/episodes';
+import { RxPaste } from './PatientHome';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 
@@ -18,6 +20,10 @@ export function PrescriptionImport() {
           <Icon name="alert" />
           <span>{DECODE_ERROR_TEXT[res.error]}</span>
         </div>
+        <RxPaste />
+        <button className="btn ghost" onClick={() => nav('/', { replace: true })}>
+          Ana ekran
+        </button>
       </Screen>
     );
   }
@@ -58,7 +64,7 @@ export function PrescriptionImport() {
             Günde en fazla {p.perDay} kez, en fazla {p.days} gün
           </dd>
           <dt>Muayene tarihi</dt>
-          <dd>{p.date}</dd>
+          <dd>{formatDate(new Date(`${p.date}T00:00:00`).getTime())}</dd>
           {p.by && (
             <>
               <dt>Yazan</dt>

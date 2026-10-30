@@ -8,6 +8,7 @@ import { store, useData } from '../../../state/store';
 import { CheckList, Choice, Segmented, StepDots } from '../../components/Controls';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
+import { RxPaste } from './PatientHome';
 
 type Stage = 'info' | 'dx' | 'contra' | 'gate';
 
@@ -24,7 +25,13 @@ export function Onboarding() {
   const [contra, setContra] = useState<string[]>(d.patient?.contraindications ?? []);
   const [none, setNone] = useState(false);
 
-  const idx = ['info', 'dx', 'contra', 'gate'].indexOf(stage);
+  // Reçete varsa tanı adımı reçeteden dolar ve atlanır.
+  const flow: Stage[] = rx ? ['info', 'contra'] : ['info', 'dx', 'contra'];
+  const idx = Math.max(0, flow.indexOf(stage));
+  const finish = () => {
+    save();
+    nav('/hasta', { replace: true });
+  };
 
   const save = () => {
     store.update((x) => ({
@@ -52,12 +59,15 @@ export function Onboarding() {
   return (
     <Screen
       title="Kurulum"
-      onBack={() => (stage === 'info' ? nav('/hasta') : setStage((['info', 'dx', 'contra', 'gate'] as Stage[])[idx - 1]!))}
+      onBack={() => (stage === 'info' ? nav('/') : setStage(stage === 'gate' ? 'contra' : flow[idx - 1]!))}
       footer={
         stage === 'info' ? (
-          <button className="btn primary block xl" disabled={!consent} onClick={() => setStage('dx')} data-testid="ob-next">
-            Devam
-          </button>
+          <>
+            <button className="btn primary block xl" disabled={!consent} onClick={() => setStage(flow[1]!)} data-testid="ob-next">
+              Devam
+            </button>
+            {!consent && <p className="small muted center">Devam etmek için yukarıdaki onay kutusunu işaretleyin.</p>}
+          </>
         ) : stage === 'dx' ? (
           <button className="btn primary block xl" disabled={!dx || (dx === 'yes' && (!canal || !side))} onClick={() => setStage('contra')} data-testid="ob-next">
             Devam
@@ -65,25 +75,17 @@ export function Onboarding() {
         ) : stage === 'contra' ? (
           <button
             className="btn primary block xl"
-            disabled={!none && contra.length === 0}
             onClick={() => {
-              save();
-              setStage('gate');
+              // Kapı açıksa doğrudan ana ekran; kapalıysa nedenini gösteren ekran.
+              if (gate.ok) finish();
+              else {
+                save();
+                setStage('gate');
+              }
             }}
             data-testid="ob-next"
           >
-            Devam
-          </button>
-        ) : gate.ok ? (
-          <button
-            className="btn primary block xl"
-            onClick={() => {
-              save();
-              nav('/hasta', { replace: true });
-            }}
-            data-testid="ob-finish"
-          >
-            Kurulumu bitir
+            {contra.length === 0 ? 'Hiçbiri bana uymuyor, devam' : 'Devam'}
           </button>
         ) : (
           <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })}>
@@ -92,10 +94,23 @@ export function Onboarding() {
         )
       }
     >
-      <StepDots total={4} index={idx} />
+      {stage !== 'gate' && <StepDots total={flow.length} index={idx} />}
 
       {stage === 'info' && (
         <>
+          <div className="card stack" data-testid="ob-fontsize">
+            <strong>Yazılar rahat okunuyor mu?</strong>
+            <Segmented
+              label="Yazı boyutu"
+              value={d.settings.fontScale}
+              onChange={(v) => store.update((x) => ({ ...x, settings: { ...x.settings, fontScale: v } }))}
+              options={[
+                { value: 'normal', label: 'Normal' },
+                { value: 'large', label: 'Büyük' },
+                { value: 'xlarge', label: 'Çok büyük' }
+              ]}
+            />
+          </div>
           <h1>DengeYol'u kimler kullanabilir?</h1>
           <div className="card stack">
             <div className="row">
@@ -121,25 +136,14 @@ export function Onboarding() {
               <a href="tel:112">112'yi arayın</a>.
             </p>
           </div>
-          <div className="card stack" data-testid="ob-fontsize">
-            <strong>Yazılar rahat okunuyor mu?</strong>
-            <Segmented
-              label="Yazı boyutu"
-              value={d.settings.fontScale}
-              onChange={(v) => store.update((x) => ({ ...x, settings: { ...x.settings, fontScale: v } }))}
-              options={[
-                { value: 'normal', label: 'Normal' },
-                { value: 'large', label: 'Büyük' },
-                { value: 'xlarge', label: 'Çok büyük' }
-              ]}
-            />
-          </div>
-          <div className="card soft stack small">
-            <p>
-              DengeYol tanı koymaz ve hekim muayenesinin yerine geçmez. Bir araştırma prototipidir; tıbbi cihaz onayı yoktur. Verileriniz yalnızca bu cihazda
-              saklanır.
-            </p>
-          </div>
+          {!rx && (
+            <details className="card soft small">
+              <summary>Hekimim ya da odyoloğum bir reçete bağlantısı verdi</summary>
+              <div style={{ marginTop: 10 }}>
+                <RxPaste />
+              </div>
+            </details>
+          )}
           <button
             type="button"
             role="checkbox"
@@ -149,7 +153,10 @@ export function Onboarding() {
             data-testid="ob-consent"
           >
             <span className="dot" />
-            <span>Okudum ve anladım. Uygulamayı hekimimin tanısı doğrultusunda, kendi sorumluluğumda kullanacağım.</span>
+            <span>
+              Okudum. DengeYol tanı koymaz, hekim muayenesinin yerine geçmez ve tıbbi cihaz onayı olmayan bir araştırma prototipidir; hekimimin tanısıyla, kendi
+              sorumluluğumda kullanacağım. (Verilerim yalnızca bu telefonda saklanır.)
+            </span>
           </button>
         </>
       )}
@@ -161,7 +168,7 @@ export function Onboarding() {
             <div className="notice ok">
               <Icon name="check" />
               <span>
-                Odyolog/hekim reçeteniz yüklü: <strong>{rx.side === 'R' ? 'sağ' : 'sol'} arka kanal</strong>, {rx.maneuver === 'epley' ? 'Epley' : 'Semont'} manevrası.
+                Reçeteniz yüklü: <strong>{rx.side === 'R' ? 'sağ' : 'sol'} arka kanal</strong>, {rx.maneuver === 'epley' ? 'Epley' : 'Semont'} manevrası.
               </span>
             </div>
           )}
@@ -251,30 +258,17 @@ export function Onboarding() {
       )}
 
       {stage === 'gate' &&
-        (gate.ok ? (
-          <>
-            <h1>Hazırsınız</h1>
-            <div className="card tint-ok stack">
-              <p>
-                Baş dönmeniz tekrarladığında ana ekrandaki <strong>"Baş dönmem başladı"</strong> düğmesine dokunun. Uygulama önce birkaç güvenlik sorusu
-                soracak, telefonu başınıza tanıtacak{gate.requireSideTest ? ', hangi taraf olduğunu kısa bir testle bulacak' : ''} ve manevrayı adım adım
-                yaptıracak.
-              </p>
-            </div>
-            <div className="card soft stack small">
-              <strong>İpucu</strong>
-              <p>Baş dönmeniz yokken bir kez "Deneme manevrası" yapmanızı öneririz; böylece adımları atak sırasında tanıyor olursunuz.</p>
-            </div>
-          </>
-        ) : (
+        !gate.ok && (
           <>
             <h1>Önce hekiminize danışın</h1>
             <div className="card tint-warn stack" data-testid="ob-gate-blocked">
               <p>{GATE_TEXT[gate.reason]}</p>
             </div>
-            <p className="small muted">Yanıtlarınızı değiştirmek için geri dönebilirsiniz. Odyologunuz size bir reçete bağlantısı verirse uygulama açılır.</p>
+            <p className="small muted">
+              Yanıtlarınızı değiştirmek için geri dönebilirsiniz. Hekiminiz ya da odyoloğunuz size bir reçete bağlantısı verirse manevralar açılır.
+            </p>
           </>
-        ))}
+        )}
     </Screen>
   );
 }

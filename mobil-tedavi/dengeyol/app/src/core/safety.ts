@@ -18,6 +18,9 @@ export interface RedFlagQuestion {
   action: StopAction;
   /** Durunca kullanıcıya gösterilecek açıklama. */
   why: string;
+  /** Soruya uyan yanıt etiketleri (varsayılan "Evet, var" / "Hayır, yok"). */
+  yesLabel?: string;
+  noLabel?: string;
 }
 
 export const RED_FLAGS: RedFlagQuestion[] = [
@@ -97,6 +100,8 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     text: 'Bu baş dönmesi, daha önce hekiminizin BPPV tanısı koyduğu baş dönmesinden FARKLI mı? (BPPV: yatarken, yatakta dönerken ya da yukarı bakarken başlayan, kısa süren dönme hissi)',
     stopsOn: 'yes',
     action: 'doctor',
+    yesLabel: 'Evet, farklı',
+    noLabel: 'Hayır, aynı',
     why: 'Baş dönmeniz önceki BPPV atağından farklıysa yeni bir değerlendirme gerekir.'
   }
 ];
@@ -186,7 +191,7 @@ export const GATE_TEXT: Record<'NO_DIAGNOSIS' | 'HORIZONTAL_CANAL' | 'CONTRAINDI
   NO_DIAGNOSIS:
     'DengeYol, daha önce hekim ya da odyolog muayenesiyle BPPV tanısı almış kişilerde atak tekrarladığında kullanılır. İlk kez yaşadığınız bir baş dönmesinde önce hekim muayenesi gerekir; çünkü baş dönmesinin başka, ciddi nedenleri olabilir.',
   HORIZONTAL_CANAL:
-    'Yatay kanal BPPV\'nin evde kendi kendine tedavisi bu sürümde desteklenmiyor. Manevrayı odyolog ya da hekiminizin yapması gerekir. Odyologunuz DengeYol\'un odyolog modunu kullanabilir.',
+    'Yatay kanal BPPV\'nin evde kendi kendine tedavisi bu sürümde desteklenmiyor. Manevrayı odyolog ya da hekiminizin yapması gerekir. Odyoloğunuz ya da hekiminiz DengeYol\'un klinisyen modunu kullanabilir.',
   CONTRAINDICATION:
     'İşaretlediğiniz durum nedeniyle manevraları kendi başınıza yapmanız güvenli olmayabilir. Lütfen önce hekiminize danışın.'
 };
@@ -254,9 +259,9 @@ export function doseStatus(maneuverTimes: number[], episodeStart: number, now: n
 export const DOSE_TEXT: Record<'DAILY_LIMIT' | 'TOTAL_LIMIT' | 'DAY_LIMIT', string> = {
   DAILY_LIMIT: 'Bugün için önerilen en fazla manevra sayısına ulaştınız. Yarın sabah yeniden test edin.',
   TOTAL_LIMIT:
-    'Bu atak için önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Lütfen hekiminize ya da odyologunuza başvurun; raporunuzu yanınızda götürün.',
+    'Bu atak için önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.',
   DAY_LIMIT:
-    'Bu atak, önerilen süreden uzun sürdü. Lütfen hekiminize ya da odyologunuza başvurun; raporunuzu yanınızda götürün.'
+    'Bu atak, önerilen süreden uzun sürdü. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.'
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -311,11 +316,11 @@ export function interpretSideTests(
 
 export const REFER_TEXT: Record<'ATYPICAL_LONG' | 'BOTH_SIDES' | 'SIDE_CONFLICT' | 'INCOMPLETE', string> = {
   ATYPICAL_LONG:
-    'Baş dönmeniz bir dakikadan uzun sürdü ya da bitişi işaretlenmedi. Bu, tipik arka kanal BPPV\'ye uymuyor. Lütfen hekiminize ya da odyologunuza başvurun.',
+    'Baş dönmeniz bir dakikadan uzun sürdü ya da bitişi işaretlenmedi. Bu, tipik arka kanal BPPV\'ye uymuyor. Lütfen hekiminize ya da odyoloğunuza başvurun.',
   BOTH_SIDES:
-    'Her iki tarafa yattığınızda da benzer baş dönmesi oldu. Bu, yatay kanal BPPV ya da başka bir neden olabilir ve evde güvenle ayırt edilemez. Lütfen odyologunuza ya da hekiminize başvurun.',
+    'Her iki tarafa yattığınızda da benzer baş dönmesi oldu. Bu, yatay kanal BPPV ya da başka bir neden olabilir ve evde güvenle ayırt edilemez. Lütfen odyoloğunuza ya da hekiminize başvurun.',
   SIDE_CONFLICT:
-    'Baş dönmesi bu kez hekiminizin belirlediği taraftan farklı tarafta tetiklendi. Tarafın yeniden muayeneyle belirlenmesi gerekir. Lütfen hekiminize ya da odyologunuza başvurun.',
+    'Baş dönmesi bu kez hekiminizin belirlediği taraftan farklı tarafta tetiklendi. Tarafın yeniden muayeneyle belirlenmesi gerekir. Lütfen hekiminize ya da odyoloğunuza başvurun.',
   INCOMPLETE: 'Test tamamlanmadı. Her iki taraf test edilmeden manevra yapılmaz.'
 };
 

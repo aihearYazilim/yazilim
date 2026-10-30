@@ -60,6 +60,12 @@ export function Calibrate({
   }, []);
 
   const P = audience === 'patient';
+  const finished = useRef(false);
+  const finish = (c: Calibration) => {
+    if (finished.current) return;
+    finished.current = true;
+    onDone(c);
+  };
   const say = (t: string) => speech.speak(t, 'high');
   /** Söyler ve konuşma bitene kadar (tahmini) + ek süre bekler: ölçüm yönerge bitmeden başlamasın. */
   const sayAndWait = async (t: string, extraMs: number) => {
@@ -146,6 +152,8 @@ export function Calibrate({
     }
     setResult(res.calibration);
     setStage('done');
+    // Hasta modunda ayrı onay ekranı yok: kısa bir "tanındı" gösteriminden sonra kendiliğinden devam.
+    if (P) setTimeout(() => alive.current && finish(res.calibration), 1500);
     tones.play('reached');
     haptics.play('reached');
     say(
@@ -177,11 +185,7 @@ export function Calibrate({
                 : 'Telefon hastanın alnına yaslanır; ekran dışa baktığı için açıları siz görürsünüz.'}
             </p>
             {P ? (
-              <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
-                <li>Şimdi telefonu normal tutun ve "Başla"ya dokunun.</li>
-                <li>Sesli yönergeyle telefonun arkasını alnınıza yaslayın (ekran karşıya baksın); dik oturun, karşıya bakın.</li>
-                <li>Ardından başınızı geriye yatırıp tavana bakın.</li>
-              </ol>
+              <p>Telefonu elinizde normal tutup "Başla"ya dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.</p>
             ) : (
               <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
                 <li>Telefonu elinizde normal tutup "Başla"ya dokunun (cihazın yön kuralı ölçülür).</li>
@@ -189,9 +193,12 @@ export function Calibrate({
                 <li>Ardından hastanın başını geriye yatırıp tavana baktırın.</li>
               </ol>
             )}
+            <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">
+              <Icon name="play" /> Başla
+            </button>
             {P && (
               <button
-                className="btn secondary"
+                className="btn ghost"
                 onClick={() => {
                   unlockAudio();
                   tones.play('test');
@@ -208,14 +215,8 @@ export function Calibrate({
                 <span>Bu telefonda Türkçe sesli okuma bulunamadı. Bir yakınınızın yanınızda olmasını ve yönergeleri ekrandan okumasını öneririz.</span>
               </div>
             )}
-            <p className="small muted">Sesi açık tutun. Telefonun sessiz modu kapalı olmalı.</p>
+            <p className="small muted">Sesi açık tutun; telefonun sessiz modu kapalı olmalı.</p>
           </div>
-          <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">
-            <Icon name="play" /> Başla
-          </button>
-          <button className="btn ghost" onClick={onCancel}>
-            Vazgeç
-          </button>
         </>
       )}
 
@@ -241,17 +242,19 @@ export function Calibrate({
           <div className="card tint-ok stack" data-testid="cal-ok">
             <div className="card-title">
               <Icon name="check" />
-              <h2>Kalibrasyon tamam</h2>
+              <h2>{P ? 'Telefon tanındı' : 'Kalibrasyon tamam'}</h2>
             </div>
-            <p>
-              Ekran yönü: <strong>{result.facing === 'outward' ? 'dışa (önerilen)' : 'içe'}</strong>. Telefonun alındaki eğikliği: {result.mountTiltDeg}° (otomatik
-              düzeltildi).
-            </p>
+            {!P && (
+              <p>
+                Ekran yönü: <strong>{result.facing === 'outward' ? 'dışa (önerilen)' : 'içe'}</strong>. Telefonun alındaki eğikliği: {result.mountTiltDeg}°
+                (otomatik düzeltildi).
+              </p>
+            )}
             {result.facing === 'inward' && (
               <p className="small">Ekran içe dönük olduğu için yanınızdaki kişi ekranı göremez; sesli yönergeler yeterlidir.</p>
             )}
           </div>
-          <button className="btn primary block xl" onClick={() => onDone(result)} data-testid="cal-continue">
+          <button className="btn primary block xl" onClick={() => finish(result)} data-testid="cal-continue">
             Devam
           </button>
         </>

@@ -130,7 +130,7 @@ const DIX_HALLPIKE: ProtocolDef = {
   steps: [
     {
       id: 'dh-sit',
-      title: 'Otur, başını {Aya} çevir',
+      title: 'Oturuş, baş {Aya} 45°',
       say: 'Yatağın üzerinde oturun. Yastığı, yattığınızda omuzlarınızın altına gelecek yere koyun. Başınızı {Aya} doğru yaklaşık 45 derece çevirin.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} 45° çevrilir.',
       target: SIT_NEUTRAL,
@@ -142,7 +142,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     },
     {
       id: 'dh-lie',
-      title: 'Sırtüstü yat, baş {Aya} çevrili ve sarkık',
+      title: 'Sırtüstü, baş {Aya} 45° ve sarkık',
       say: 'Başınızın yönünü bozmadan hızla sırtüstü yatın. Başınız yastıktan geriye doğru hafifçe sarksın ve {Aya} çevrili kalsın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician:
         'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar. Nistagmusu gözleyin; başlangıç ve bitişi işaretleyin.',
@@ -156,7 +156,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     },
     {
       id: 'dh-up',
-      title: 'Yavaşça otur',
+      title: 'Oturuş',
       say: 'Yavaşça doğrulup oturun ve başınızı düz tutun. Yaklaşık 20 saniye böyle kalın.',
       clinician: 'Hasta yavaşça oturtulur; geri dönüş (ters yönlü) nistagmusu gözlenebilir.',
       target: sit(-20, 35),
@@ -202,7 +202,7 @@ const SUPINE_ROLL: ProtocolDef = {
     },
     {
       id: 'roll-right',
-      title: 'Başı hızla sağa 90° çevir',
+      title: 'Baş sağa 90°',
       say: 'Başınızı hızla sağa doğru çevirin; sağ kulağınız yastığa değsin.',
       clinician: 'Başı hızla sağa 90° çevirin. Yatay nistagmusun yönünü (yere doğru = geotropik, tavana = apogeotropik), şiddetini ve süresini kaydedin.',
       target: lie(90, 15, -42, 15),
@@ -214,7 +214,7 @@ const SUPINE_ROLL: ProtocolDef = {
     },
     {
       id: 'roll-back1',
-      title: 'Başı ortaya getir',
+      title: 'Baş ortada',
       say: 'Başınızı yavaşça ortaya getirin ve baş dönmesi geçene kadar bekleyin.',
       clinician: 'Başı ortaya getirin; nistagmus ve baş dönmesi tamamen sönene kadar bekleyin.',
       target: lie(0, 15, -42, 10),
@@ -225,7 +225,7 @@ const SUPINE_ROLL: ProtocolDef = {
     },
     {
       id: 'roll-left',
-      title: 'Başı hızla sola 90° çevir',
+      title: 'Baş sola 90°',
       say: 'Başınızı hızla sola doğru çevirin; sol kulağınız yastığa değsin.',
       clinician: 'Başı hızla sola 90° çevirin. Nistagmusun yönünü, şiddetini ve süresini kaydedin.',
       target: lie(-90, 15, -42, 15),
@@ -237,7 +237,7 @@ const SUPINE_ROLL: ProtocolDef = {
     },
     {
       id: 'roll-back2',
-      title: 'Başı ortaya getir',
+      title: 'Baş ortada',
       say: 'Başınızı yavaşça ortaya getirin.',
       clinician: 'Başı ortaya getirin.',
       target: lie(0, 15, -42, 10),
@@ -274,7 +274,7 @@ const EPLEY: ProtocolDef = {
   steps: [
     {
       id: 'ep-sit',
-      title: 'Otur, başını {Aya} çevir',
+      title: 'Oturuş, baş {Aya} 45°',
       say: 'Yatağın üzerinde oturun. Yastığı, sırtüstü yattığınızda omuzlarınızın altına gelecek yere koyun. Başınızı {Aya} doğru yaklaşık 45 derece çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} (etkilenen taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
@@ -286,7 +286,7 @@ const EPLEY: ProtocolDef = {
     },
     {
       id: 'ep-1',
-      title: 'Sırtüstü yat, baş {Aya} çevrili ve sarkık',
+      title: 'Sırtüstü, baş {Aya} 45° ve sarkık',
       say: 'Başınızın yönünü bozmadan hızla sırtüstü yatın. Başınız yastıktan geriye doğru hafifçe sarksın ve hâlâ {Aya} çevrili kalsın. Baş dönmesi olabilir, bu beklenen bir durumdur. Başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician: 'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
@@ -297,7 +297,7 @@ const EPLEY: ProtocolDef = {
     },
     {
       id: 'ep-2',
-      title: 'Başını {Hya} çevir',
+      title: 'Sırtüstü, baş {Hya} 45°',
       say: 'Başınızı kaldırmadan, geriye sarkık tutarak yavaşça {Hya} doğru çevirin. Şimdi başınız {H} tarafa 45 derece baksın ve hafifçe sarkık kalsın.',
       clinician: 'Ekstansiyon korunarak baş {Hya} 90° çevrilir; baş {H} tarafa 45° bakar.',
       target: lie(-45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
@@ -308,7 +308,7 @@ const EPLEY: ProtocolDef = {
     },
     {
       id: 'ep-3',
-      title: '{H} yanına dön, burnun yere baksın',
+      title: '{H} yan, burun yere',
       say: 'Bütün vücudunuzla {H} yanınıza dönün. Başınızı da aynı yönde biraz daha çevirin; burnunuz yere doğru, yaklaşık 45 derece aşağı baksın.',
       clinician: 'Hasta {H} yanına döner; baş gövdeyle birlikte dönerek yüz yere 45° bakar (başlangıca göre toplam 180°).',
       target: lie(-135, LIMITS.thetaTolFaceDown, -25, 30),
@@ -319,7 +319,7 @@ const EPLEY: ProtocolDef = {
     },
     {
       id: 'ep-4',
-      title: 'Yavaşça otur, çene hafif aşağı',
+      title: 'Oturuş, çene hafif aşağı',
       say: 'Yavaşça {H} tarafınızdan doğrulup yatağın kenarına oturun. Çenenizi hafifçe göğsünüze doğru eğin. Acele etmeyin.',
       clinician: 'Hasta {H} taraftan yavaşça oturtulur; çene hafif fleksiyonda.',
       target: sit(5, 45),
@@ -357,7 +357,7 @@ const SEMONT: ProtocolDef = {
   steps: [
     {
       id: 'se-sit',
-      title: 'Yatak ortasında otur, başını {Hya} çevir',
+      title: 'Oturuş, baş {Hya} 45°',
       say: 'Yatağın uzun kenarının ortasına, bacaklarınız yataktan aşağı sarkacak şekilde oturun. İki yanınızda da yatacak kadar yer olsun. Başınızı {Hya} doğru 45 derece çevirin.',
       clinician: 'Hasta yatak kenarında, iki yana yatabilecek şekilde oturur. Baş {Hya} (sağlam taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
@@ -369,7 +369,7 @@ const SEMONT: ProtocolDef = {
     },
     {
       id: 'se-1',
-      title: '{A} yanına hızla yat, burun yukarı',
+      title: '{A} yan, burun yukarı',
       say: 'Başınızın yönünü değiştirmeden hızla {A} yanınıza yatın. Burnunuz tavana doğru, yaklaşık 45 derece yukarı baksın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician: 'Hasta hızla {A} yanına (etkilenen taraf) yatırılır; baş sağlam tarafa 45° çevrili kalır, burun yukarı 45°.',
       target: lie(45, 12, -30, 30),
@@ -380,7 +380,7 @@ const SEMONT: ProtocolDef = {
     },
     {
       id: 'se-2',
-      title: 'Tek hızlı hareketle {H} yanına geç',
+      title: '{H} yan, burun yere (tek hızlı hareket)',
       say: 'Şimdi tek, hızlı ve kesintisiz bir hareketle oturma pozisyonundan geçerek {H} yanınıza yatın. Başınızın yönünü değiştirmeyin; burnunuz bu kez yere doğru 45 derece bakacak.',
       clinician:
         'Baş-gövde ilişkisi bozulmadan hasta tek hızlı hareketle karşı ({H}) yana geçirilir; burun yere 45° bakar.',
@@ -393,7 +393,7 @@ const SEMONT: ProtocolDef = {
     },
     {
       id: 'se-3',
-      title: 'Yavaşça otur',
+      title: 'Oturuş',
       say: 'Yavaşça doğrulup oturun. Başınızı dik tutun ve birkaç dakika oturarak dinlenin.',
       clinician: 'Hasta yavaşça oturtulur; baş dik.',
       target: sit(-15, 35),
@@ -495,7 +495,7 @@ const BBQ_ROLL: ProtocolDef = {
     },
     {
       id: 'bbq-6',
-      title: 'Yavaşça otur',
+      title: 'Oturuş',
       say: 'Yavaşça oturun ve başınızı dik tutun.',
       clinician: 'Hasta yavaşça oturtulur.',
       target: sit(-15, 35),
@@ -526,7 +526,7 @@ const GUFONI_GEO: ProtocolDef = {
   steps: [
     {
       id: 'gg-sit',
-      title: 'Yatak kenarında otur',
+      title: 'Yatak kenarında oturuş',
       say: 'Yatağın kenarında, başınız dik ve düz olacak şekilde oturun.',
       clinician: 'Hasta yatak kenarında oturur; baş düz.',
       target: sit(-20, 30),
@@ -537,7 +537,7 @@ const GUFONI_GEO: ProtocolDef = {
     },
     {
       id: 'gg-1',
-      title: 'Hızla {H} yanına yat',
+      title: '{H} yan',
       say: 'Hızla {H} yanınıza yatın; başınız gövdenizle aynı hizada, yüzünüz karşıya baksın.',
       clinician: 'Hasta hızla {H} yanına (sağlam taraf) yatırılır; baş gövdeyle aynı hizada.',
       target: lie(-90, 12, -30, 30),
@@ -548,7 +548,7 @@ const GUFONI_GEO: ProtocolDef = {
     },
     {
       id: 'gg-2',
-      title: 'Başı 45° yere çevir',
+      title: '{H} yan, baş 45° yere',
       say: 'Başınızı hızla yere doğru, yarı yola kadar, yaklaşık 45 derece çevirin; burnunuz yere doğru eğik baksın.',
       clinician: 'Baş hızla 45–60° yere doğru çevrilir (burun yere eğik).',
       target: lie(-140, 12, -30, 30),
@@ -559,7 +559,7 @@ const GUFONI_GEO: ProtocolDef = {
     },
     {
       id: 'gg-3',
-      title: 'Yavaşça otur',
+      title: 'Oturuş',
       say: 'Başınız aynı yöne çevrili kalarak yavaşça oturun. Oturduktan sonra başınızı yavaşça düzeltin.',
       clinician: 'Baş sağlam omza çevrili kalarak hasta yavaşça oturtulur; oturduktan sonra baş düzeltilir.',
       target: sit(-15, 35),
@@ -591,7 +591,7 @@ const GUFONI_APO: ProtocolDef = {
   steps: [
     {
       id: 'ga-sit',
-      title: 'Yatak kenarında otur',
+      title: 'Yatak kenarında oturuş',
       say: 'Yatağın kenarında, başınız dik ve düz olacak şekilde oturun.',
       clinician: 'Hasta yatak kenarında oturur; baş düz.',
       target: sit(-20, 30),
@@ -602,7 +602,7 @@ const GUFONI_APO: ProtocolDef = {
     },
     {
       id: 'ga-1',
-      title: 'Hızla {A} yanına yat',
+      title: '{A} yan',
       say: 'Hızla {A} yanınıza yatın; başınız gövdenizle aynı hizada olsun.',
       clinician: 'Hasta hızla {A} yanına (etkilenen taraf) yatırılır; baş gövdeyle aynı hizada. Sabit süre: 1 dk.',
       target: lie(90, 12, -30, 30),
@@ -613,7 +613,7 @@ const GUFONI_APO: ProtocolDef = {
     },
     {
       id: 'ga-2',
-      title: 'Başı 45° tavana çevir',
+      title: '{A} yan, baş 45° tavana',
       say: 'Başınızı hızla tavana doğru, yarı yola kadar, yaklaşık 45 derece çevirin; burnunuz yukarı doğru eğik baksın.',
       clinician: 'Baş hızla 45° tavana doğru çevrilir (burun yukarı). Sabit süre: ~2 dk.',
       target: lie(45, 12, -30, 30),
@@ -624,7 +624,7 @@ const GUFONI_APO: ProtocolDef = {
     },
     {
       id: 'ga-3',
-      title: 'Yavaşça otur',
+      title: 'Oturuş',
       say: 'Yavaşça oturun ve başınızı dik tutun.',
       clinician: 'Hasta yavaşça oturtulur.',
       target: sit(-15, 35),
@@ -658,7 +658,7 @@ const YACOVINO: ProtocolDef = {
   steps: [
     {
       id: 'ya-sit',
-      title: 'Otur',
+      title: 'Oturuş',
       say: 'Yatağın üzerinde oturun; başınız düz olsun.',
       clinician: 'Hasta oturur; yatınca başı yatak kenarından sarkabilecek şekilde konumlanır.',
       target: sit(-20, 30),
@@ -691,7 +691,7 @@ const YACOVINO: ProtocolDef = {
     },
     {
       id: 'ya-3',
-      title: 'Çene göğüste otur',
+      title: 'Oturuş, çene göğüste',
       say: 'Çeneniz göğsünüzde kalarak yavaşça oturun.',
       clinician: 'Çene göğüste kalarak hasta oturtulur.',
       target: sit(15, 60),
