@@ -18,6 +18,7 @@ import {
 } from '../../../core/protocols';
 import { recordStats, vertigoSummary } from '../../../core/runner';
 import { formatDateTime } from '../../../state/episodes';
+import { localDayKey } from '../../../core/safety';
 import { store, uid, useData } from '../../../state/store';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
 import { Choice, Segmented } from '../../components/Controls';
@@ -619,7 +620,11 @@ function RxTab({ exam }: { exam: ClinicExam }) {
         ? 'Ev reçetesi yalnızca arka kanal BPPV için verilebilir. Yatay ve ön kanal manevraları klinikte yapılmalıdır.'
         : !dx.side
           ? 'Onaylı tanıda taraf yok. Ev reçetesi için tarafı belli bir arka kanal tanısı onaylayın.'
-          : null;
+          : suggestDiagnosis(exam.findings).multiCanal
+            ? 'Bulgular çok kanallı tutulumu düşündürüyor. Kendi kendine tedavi çalışmaları bu hastaları dışlamıştır; ev reçetesi verilmez, tedaviyi klinikte yapın.'
+            : dx.mechanism === 'cupulolithiasis'
+              ? 'Kupulolitiazis şüphesinde baş dönmesi 1 dakikadan uzun sürer; evde güvenlik kuralı her manevrada hastayı hekime yönlendirir. Ev reçetesi verilmez, tedaviyi klinikte yapın.'
+              : null;
   if (rxBlock) {
     return (
       <div className="notice info" data-testid="rx-blocked">
@@ -638,7 +643,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       side,
       canal: 'PC',
       maneuver,
-      date: new Date(exam.at).toISOString().slice(0, 10),
+      // Yerel tarih (UTC değil): gece yarısından sonraki muayene önceki güne yazılmasın.
+      date: localDayKey(exam.at),
       by: d.clinician.name,
       clinic: d.clinician.clinic,
       perDay,
@@ -758,7 +764,8 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
   if (keys.length) lines.push(`Testler: ${keys.map((k) => `${keyLabel(k)}: ${findingSummary(exam.findings[k])}`).join('; ')}.`);
   const dx = exam.diagnosis;
   if (dx && dxValid(exam)) {
-    const icd = dx.canal ? ' (ICD-10 öneri: H81.1 Benign paroksismal vertigo)' : '';
+    // ICD-10 önerisi yalnız uyarısız (santral/atipik şüphe olmayan) BPPV tanısında.
+    const icd = dx.canal && !dx.warnings?.length ? ' (ICD-10 öneri: H81.1 Benign paroksismal vertigo)' : '';
     lines.push(`Tanı: ${dx.label}${dx.fromSuggestion ? ' — karar desteği önerisi klinisyence onaylandı' : ' — klinisyen'}${icd}.`);
     if (dx.warnings?.length) lines.push(`Uyarılar: ${dx.warnings.join(' ')}`);
   }

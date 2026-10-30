@@ -259,9 +259,9 @@ export function doseStatus(maneuverTimes: number[], episodeStart: number, now: n
 export const DOSE_TEXT: Record<'DAILY_LIMIT' | 'TOTAL_LIMIT' | 'DAY_LIMIT', string> = {
   DAILY_LIMIT: 'Bugün için önerilen en fazla manevra sayısına ulaştınız. Yarın sabah yeniden test edin.',
   TOTAL_LIMIT:
-    'Bu atak için önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.',
+    'Son iki haftada önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.',
   DAY_LIMIT:
-    'Bu atak, önerilen süreden uzun sürdü. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.'
+    'Baş dönmeniz, evde manevra için önerilen süreden (gün sayısı) uzun sürdü. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.'
 };
 
 // ---------------------------------------------------------------------------------------------

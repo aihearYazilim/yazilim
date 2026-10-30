@@ -3,7 +3,7 @@
  * Telefon alındayken ekran dışa baktığı için yardımcı kişi ya da klinisyen ekranı görebilir; hasta sesle yönlendirilir.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CALIBRATION_ERROR_TEXT, computeCalibration, type Calibration } from '../../core/calibration';
+import { CALIBRATION_ERROR_TEXT, computeCalibration, residualUprightDeg, type Calibration } from '../../core/calibration';
 import { HINT_TEXT_CLINICIAN, HINT_TEXT_PATIENT, type HintKey } from '../../core/evaluator';
 import { resolveProtocol, type ProtocolId, type ResolvedProtocol, type Side, sideName } from '../../core/protocols';
 import {
@@ -30,6 +30,9 @@ import { Icon } from '../components/Icon';
 import { publishSimTarget, useSimAuto } from '../components/SimPanel';
 import { BedSetup } from './Illustrations';
 
+
+/** Zincirde telefonun yerinde sayılması için dik duruşta kayıtlı yerleşime göre en fazla sapma (°). */
+export const CHAIN_MOUNT_TOLERANCE_DEG = 12;
 
 export interface RunnerOutcome {
   /** Yürütücü hiç başlatılmadan kapatıldıysa false: kayıt yazılmamalı. */
@@ -275,6 +278,14 @@ export function RunnerView({
   const scaled = (ms: number) => ms / Math.max(1, timeScale);
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, scaled(ms)));
 
+  /** Zincir için sessiz yer kontrolü: ~1 s dik duruş örneği kayıtlı yerleşime göre 12°'den az sapıyorsa telefon yerinde. */
+  async function quickMountCheck(c: Calibration): Promise<boolean> {
+    if ((await source.start()) !== 'ok') return false;
+    sim.upright();
+    const up = await collectSamples(source, Math.max(400, scaled(1000)));
+    return !!up && up.maxDevDeg <= 8 && residualUprightDeg(up.mean, c) <= CHAIN_MOUNT_TOLERANCE_DEG;
+  }
+
   /** Söyler ve konuşmanın bitmesini (tahmini süre) artı ek süreyi bekler: ölçüm, yönerge bitmeden başlamasın. */
   const sayAndWait = async (text: string, extraMs: number) => {
     setCaption(text);
@@ -352,11 +363,18 @@ export function RunnerView({
     } catch {
       /* desteklenmiyor */
     }
-    if (P && calibration && !chained) {
-      const c = await placePhone(calibration);
-      if (!c || !alive.current) return;
-      setCalibration(c);
-      onPlaced?.(c);
+    if (P && calibration) {
+      // Zincirde (telefon alında kaldı) önce sessiz, kısa bir kontrol: telefon kaymış, düşmüş ya da yeniden takılmışsa
+      // tam yerleştirme ölçümü yapılır. Dik duruş kontrolü ters/içe takılmayı ayırt edemez; o durumda hedefe ulaşılamaz.
+      const stillPlaced = chained && (await quickMountCheck(calibration));
+      if (!alive.current) return;
+      if (!stillPlaced) {
+        if (chained) speech.speak('Telefonun yeri değişmiş olabilir. Yeniden yerleştirelim.', 'high');
+        const c = await placePhone(calibration);
+        if (!c || !alive.current) return;
+        setCalibration(c);
+        onPlaced?.(c);
+      }
     }
     speech.speak(P ? (manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.') : 'Başlıyoruz.', 'high');
     for (let i = 3; i > 0; i--) {

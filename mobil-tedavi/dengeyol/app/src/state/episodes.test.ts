@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closeStaleEpisodes, doseLimitsFor, EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral, recentKnownSide, rxActive } from './episodes';
+import { closeStaleEpisodes, rxFirstEpisode, doseLimitsFor, EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral, recentKnownSide, rxActive } from './episodes';
 import { emptyData } from './types';
 import type { Episode, ManeuverLog } from './types';
 
@@ -132,5 +132,58 @@ describe('eski aktif atak', () => {
     expect(out.episodes.find((e) => e.id === 'a')!.status).toBe('closed');
     expect(out.episodes.find((e) => e.id === 'b')!.status).toBe('referred');
     expect(closeStaleEpisodes(d, base + 3600e3)).toBe(d);
+  });
+});
+
+describe('tedavi dönemi (tur 2 klinik güvenlik)', () => {
+  it('her gün atak kapatıp açarak günde 3 manevra: 4. gün sınır (gün ya da toplam) devreye girer', () => {
+    const day = 24 * 3600e3;
+    const eps: Episode[] = [0, 1, 2].map((dd) =>
+      ep({
+        id: `e${dd}`,
+        status: 'closed',
+        startedAt: base + dd * day,
+        maneuvers: [man(base + dd * day), man(base + dd * day + 3600e3), man(base + dd * day + 7200e3)]
+      })
+    );
+    const fresh = ep({ id: 'new', startedAt: base + 3 * day });
+    const st = episodeDose(fresh, undefined, base + 3 * day + 1000, [...eps, fresh]);
+    expect(st.allowed).toBe(false);
+  });
+  it('3 gün manevra yapılmış ama toplam dolmamışsa 4. farklı gün yine engellenir (gün sınırı)', () => {
+    const day = 24 * 3600e3;
+    const eps: Episode[] = [0, 2, 4].map((dd) => ep({ id: `e${dd}`, status: 'closed', startedAt: base + dd * day, maneuvers: [man(base + dd * day)] }));
+    const fresh = ep({ id: 'new', startedAt: base + 6 * day });
+    expect(episodeDose(fresh, undefined, base + 6 * day + 1000, [...eps, fresh])).toMatchObject({ allowed: false, reason: 'DAY_LIMIT' });
+  });
+  it('deneme manevraları da doza sayılır', () => {
+    const fresh = ep({ id: 'new', startedAt: base });
+    expect(episodeDose(fresh, undefined, base + 9000e3, [fresh], [base + 1000, base + 2000, base + 3000]).allowed).toBe(false);
+  });
+  it('14 günden eski manevralar yeni atağı kısıtlamaz', () => {
+    const day = 24 * 3600e3;
+    const old = ep({ id: 'o', status: 'closed', maneuvers: [0, 1, 2].flatMap((dd) => [man(base + dd * day), man(base + dd * day + 3600e3), man(base + dd * day + 7200e3)]) });
+    const fresh = ep({ id: 'new', startedAt: base + 20 * day });
+    expect(episodeDose(fresh, undefined, base + 20 * day + 1000, [old, fresh]).allowed).toBe(true);
+  });
+});
+
+describe('reçeteli kısa yol yalnız reçetenin atağı için', () => {
+  it('reçeteden sonra kapanmış bir atak varsa (nüks) kısa yol kapanır; gelecek tarihli reçete geçersiz', () => {
+    const d = emptyData();
+    const rxDate = '2026-10-01';
+    d.patient = {
+      contraindications: [],
+      diagnosedByDoctor: true,
+      canal: 'PC',
+      side: 'L',
+      prescription: { v: 1, side: 'L', canal: 'PC', maneuver: 'epley', date: rxDate, perDay: 3, days: 7 }
+    };
+    const now = new Date('2026-10-05T10:00:00').getTime();
+    expect(rxFirstEpisode(d, now)).toBe(true);
+    d.episodes = [ep({ id: 'x', status: 'resolved', startedAt: new Date('2026-10-02T10:00:00').getTime(), endedAt: now - 1000 })];
+    expect(rxFirstEpisode(d, now)).toBe(false);
+    d.patient.prescription!.date = '2026-12-01';
+    expect(rxActive(d.patient, now)).toBe(false);
   });
 });

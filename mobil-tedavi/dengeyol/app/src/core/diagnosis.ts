@@ -56,6 +56,8 @@ export interface DiagnosisResult {
   warnings: string[];
   /** Hiçbir testte nistagmus/baş dönmesi yok. */
   negative: boolean;
+  /** Birden çok kanalda öneri (çok kanallı tutulum olası). */
+  multiCanal: boolean;
 }
 
 export const NYSTAGMUS_LABEL: Record<NystagmusType, string> = {
@@ -282,7 +284,7 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
   }
 
   const negative = !anyNys && vertigoKeys.length === 0 && all.length > 0;
-  return { suggestions, warnings, negative };
+  return { suggestions, warnings, negative, multiCanal: canals.size >= 2 };
 }
 
 export function keyLabel(k: FindingKey): string {

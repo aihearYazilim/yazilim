@@ -26,7 +26,7 @@ import {
   type YesNo
 } from '../../../core/safety';
 import {
-  episodeDose,
+  doseFor,
   episodeSide,
   formatTime,
   EARLY_RETEST_MS,
@@ -36,7 +36,7 @@ import {
   pendingReferral,
   doseLimitsFor,
   recentKnownSide,
-  rxActive,
+  rxFirstEpisode,
   practiceAllowed,
   PRACTICE_PER_DAY
 } from '../../../state/episodes';
@@ -49,6 +49,7 @@ import { Calibrate } from '../Calibrate';
 import { HelperCard, RunnerView, type RunnerOutcome } from '../RunnerView';
 import { BedSetup } from '../Illustrations';
 import { speech } from '../../../platform/speech';
+import { DoctorClearance } from './PatientHome';
 import { haptics } from '../../../platform/haptics';
 import { tones } from '../../../platform/tones';
 import { downloadReminder } from '../../../platform/reminders';
@@ -157,7 +158,7 @@ export function EpisodeFlow() {
     }
     if (mode === 'treat') return { k: 'prep' };
     if (ep && (ep.side || ep.sideTests.length > 0)) return { k: 'prep' };
-    if (rxActive(p)) return { k: 'prep' };
+    if (rxFirstEpisode(cur)) return { k: 'prep' };
     return { k: 'subtype', q: 1 };
   };
 
@@ -281,7 +282,7 @@ export function EpisodeFlow() {
     // Geçerli (son 14 gün) klinisyen reçetesi aynı atağı tanımlar: taraf testi yapılmadan reçetedeki tarafa manevra.
     // Diğer her atakta iki taraflı test yapılır (nükste taraf/tip sıklıkla değişir).
     const testedBefore = !!ep && ep.sideTests.length > 0;
-    if (rxActive(profile) && !testedBefore) {
+    if (rxFirstEpisode(store.get()) && !testedBefore) {
       const s = profile.prescription!.side;
       const id = ensureEpisode();
       updateEpisode(id, (e) => ({ ...e, side: s }));
@@ -305,7 +306,7 @@ export function EpisodeFlow() {
   const checkDose = (): boolean => {
     const ep = activeEpisode(store.get());
     if (!ep) return true;
-    const ds = episodeDose(ep, store.get().patient, Date.now(), store.get().episodes);
+    const ds = doseFor(store.get(), ep, Date.now());
     if (!ds.allowed) {
       if (ds.reason !== 'DAILY_LIMIT') {
         updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: DOSE_TEXT[ds.reason] }));
@@ -361,8 +362,9 @@ export function EpisodeFlow() {
     if (dec.kind === 'NOT_TRIGGERED' && triggeredNotBefore) {
       // İkinci kez tetiklenmedi: arka kanal testi negatif pozisyonel baş dönmesi evde değerlendirilemez (yatay kanal?).
       const ep = activeEpisode(store.get());
-      if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'Taraf testi iki kez baş dönmesini tetiklemedi' }));
-      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize ya da odyoloğunuza başvurun', text: NOT_TRIGGERED_TWICE_TEXT, testid: 'end-refer' });
+      // Kilit konmaz (manevra yapılmadı; kendiliğinden düzelmiş olabilir): atak kapanır, sürüyorsa hekime başvurması söylenir.
+      if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'closed', endedAt: Date.now(), endNote: 'Taraf testi iki kez baş dönmesini tetiklemedi' }));
+      setStage({ k: 'end', tone: 'info', title: 'Baş dönmesi yine tetiklenmedi', text: NOT_TRIGGERED_TWICE_TEXT, testid: 'end-not-triggered-twice' });
       return;
     }
     if (dec.kind === 'TREAT') {
@@ -436,14 +438,25 @@ export function EpisodeFlow() {
     if (notStarted(o)) return;
     logManeuver(o, side);
     // Manevranın herhangi bir pozisyonunda baş dönmesi ≥1 dk sürdüyse (taraf testiyle aynı eşik): atipik → hekime.
+    // Tamamlanan manevrada bitişi işaretlenmemiş uzun işaret olamaz; yarıda bırakılanda yalnız kapanmış işaretler sayılır.
     const long = mode !== 'practice' && o.state.records.some((r) => {
       const v = vertigoSummary(r);
-      return !!v && (v.durationSec === null || v.durationSec >= ATYPICAL_VERTIGO_SEC);
+      if (!v) return false;
+      return v.durationSec === null ? o.phase === 'done' : v.durationSec >= ATYPICAL_VERTIGO_SEC;
     });
-    if (long && o.phase === 'done') {
-      longVertigoRef.current = true;
+    if (long && (o.phase === 'done' || o.phase === 'aborted')) {
       const ep = activeEpisode(store.get());
       if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'ATYPICAL_LONG' }));
+      if (o.phase === 'aborted') {
+        setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
+        return;
+      }
+      longVertigoRef.current = true;
+    }
+    // Deneme manevrasında baş dönmesi işaretlendiyse: deneme tedavi yolu değildir, gerçek akışa yönlendir.
+    if (mode === 'practice' && o.state.records.some((r) => r.vertigoMarks.length > 0)) {
+      setStage({ k: 'end', tone: 'warn', title: 'Deneme sırasında baş dönmesi oldu', text: PRACTICE_VERTIGO_TEXT, testid: 'end-practice-vertigo' });
+      return;
     }
     if (o.phase === 'done') {
       setStage({ k: 'after', side });
@@ -534,16 +547,7 @@ export function EpisodeFlow() {
                   Son atağınız hekime ya da acile yönlendirmeyle sonlandı. Yeni bir manevra yapmadan önce bu durumu hekiminizle konuşmanız gerekir.
                 </p>
               </div>
-              <button
-                className="btn secondary block"
-                data-testid="doctor-cleared"
-                onClick={() => {
-                  store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, doctorClearedAt: Date.now() } : x.patient }));
-                  setStage(initialStage());
-                }}
-              >
-                Hekimimle görüştüm, manevra yapmamda sakınca yok dedi
-              </button>
+              <DoctorClearance testid="doctor-cleared" onCleared={() => setStage(initialStage())} />
             </>
           ) : (
             <div className="card tint-accent stack" data-testid="blocked-practice">
@@ -616,6 +620,12 @@ export function EpisodeFlow() {
               <Icon name="alert" />
               <h2>{stage.action === 'emergency' ? 'Manevra yapmayın, hemen yardım isteyin' : 'Manevra yapmayın'}</h2>
             </div>
+            {stage.triggered.length === 0 && (
+              <p>Yeni bir nörolojik belirti bildirdiniz. Bu, BPPV'ye bağlı değildir ve acil değerlendirme gerektirir.</p>
+            )}
+            {stage.triggered.length === 0 && (
+              <p>Yeni bir nörolojik belirti bildirdiniz. Bu, BPPV'ye bağlı değildir ve acil değerlendirme gerektirir.</p>
+            )}
             {stage.triggered.map((q) => (
               <p key={q.id}>{q.why}</p>
             ))}
@@ -675,10 +685,10 @@ export function EpisodeFlow() {
         return (
           <Screen title="Baş dönmeniz" onBack={() => setStage({ k: 'subtype', q: 1 })}>
             <div className="card tint-warn stack" data-testid="subtype-hc-confirm">
-              <h2>Yalnız sırtüstü yatarken başınızı çevirince mi?</h2>
+              <h2>En çok yatakta sağa-sola dönerken mi?</h2>
               <p>
                 Bu, evde tedavi edilemeyen yatay kanal BPPV'yi düşündürür. Bu yanıtla manevra yapılmaz ve hekiminize ya da odyoloğunuza
-                yönlendirilirsiniz.
+                yönlendirilirsiniz. Yatıp kalkmak da en az o kadar baş dönmesi yapıyorsa "Emin değilim"i seçin; kısa bir testle bakalım.
               </p>
             </div>
             <button
@@ -688,7 +698,7 @@ export function EpisodeFlow() {
               }
               data-testid="subtype-hc-yes"
             >
-              Evet, yalnız böyle
+              Evet, en çok dönerken
             </button>
             <button className="btn secondary block xl" onClick={() => setStage({ k: 'subtype', q: 2 })} data-testid="subtype-hc-unsure">
               Emin değilim, kısa testle bakalım
@@ -699,7 +709,7 @@ export function EpisodeFlow() {
       return stage.q === 1 ? (
         <Screen title="Baş dönmeniz" back="/hasta">
           <StepDots total={2} index={0} />
-          <h1>Baş dönmesi en çok ne zaman başlıyor?</h1>
+          <h1>Baş dönmesini en çok hangisi başlatıyor?</h1>
           <Choice
             name="Tetikleyen hareket"
             value={null}
@@ -709,20 +719,18 @@ export function EpisodeFlow() {
               else setStage({ k: 'subtype', q: 2 });
             }}
             options={[
-              { value: 'liedown', label: 'Yatarken, yataktan kalkarken, yatakta yan dönerken ya da yukarı bakarken' },
-              {
-                value: 'turn',
-                label: 'Yalnız sırtüstü yatarken başımı sağa-sola çevirince',
-                sub: 'Yatıp kalkmak ya da yukarı bakmak baş dönmesi yapmıyor.'
-              },
-              { value: 'unsure', label: 'Emin değilim' }
+              // Kim HJ ve ark. JAMA Neurol 2023, 4. soru: karşılaştırmalı. "Yatakta dönmek" yatay kanalı düşündürür.
+              { value: 'liedown', label: 'Yatarken ya da yataktan kalkarken (ya da yukarı bakınca)' },
+              { value: 'turn', label: 'Yatakta sağa-sola dönerken', sub: 'Yatıp kalkmaktan daha çok.' },
+              { value: 'unsure', label: 'İkisi de / emin değilim' }
             ]}
           />
         </Screen>
       ) : (
         <Screen title="Baş dönmeniz" onBack={() => setStage({ k: 'subtype', q: 1 })}>
           <StepDots total={2} index={1} />
-          <h1>Her baş dönmesi ne kadar sürüyor?</h1>
+          <h1>Dönme hissi her seferinde ne kadar sürüyor?</h1>
+          <p className="lead">Yalnız etrafın dönmesini sayın; sonrasında kalan sersemlik ve bulantı hariç.</p>
           <Choice
             name="Süre"
             value={null}
@@ -865,7 +873,7 @@ export function EpisodeFlow() {
             mode === 'practice' ? (
               <div className="notice info">
                 <Icon name="info" />
-                <span>Deneme manevrası: atağa kaydedilmez, tedavi sayılmaz.</span>
+                <span>Deneme manevrası: atağa kaydedilmez ama günlük/toplam manevra sınırına sayılır.</span>
               </div>
             ) : undefined
           }
@@ -888,12 +896,17 @@ export function EpisodeFlow() {
         if (longVertigoRef.current && mode !== 'practice') {
           longVertigoRef.current = false;
           setStage({ k: 'end', tone: 'warn', title: 'Manevra tamamlandı — hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
+        } else if (sev === 'neuro') {
+          // Yeni nörolojik belirti: acil. Atak kilitlenir (hekimle görüşülene kadar yeni manevra yok).
+          const ep = activeEpisode(store.get());
+          if (ep && mode !== 'practice') updateEpisode(ep.id, (e) => ({ ...e, status: 'emergency', endedAt: Date.now(), endNote: 'Manevra sonrası yeni nörolojik belirti' }));
+          setStage({ k: 'stop', action: 'emergency', triggered: [] });
         } else if (sev === 'severe') {
           setStage({
             k: 'end',
             tone: 'warn',
-            title: 'Hekiminize danışın',
-            text: 'Şiddetli bulantı, kusma ya da yeni bir belirti varsa manevrayı tekrarlamayın ve hekiminize danışın. Acil belirtilerde 112\'yi arayın.',
+            title: 'Bugün manevrayı tekrarlamayın',
+            text: 'Oturarak dinlenin ve küçük yudumlarla su için. Sıvı alamayacak kadar kusma sürerse hekiminize başvurun. Konuşma bozukluğu, güçsüzlük, çift görme ya da şiddetli baş ağrısı olursa hemen 112\'yi arayın.',
             testid: 'end-severe'
           });
         } else {
@@ -936,7 +949,7 @@ export function EpisodeFlow() {
     case 'end': {
       const canTreat = stage.extra === 'treat' && (() => {
         const ep = activeEpisode(d);
-        return ep ? episodeDose(ep, profile, Date.now(), d.episodes).allowed : false;
+        return ep ? doseFor(d, ep, Date.now()).allowed : false;
       })();
       const ep = activeEpisode(d);
       const side = ep ? episodeSide(ep, profile) : null;
@@ -954,7 +967,7 @@ export function EpisodeFlow() {
           {stage.extra === 'treat' && !canTreat && ep && (
             <div className="notice danger">
               <Icon name="alert" />
-              <span>{(() => { const ds = episodeDose(ep, profile, Date.now(), d.episodes); return ds.allowed ? '' : DOSE_TEXT[ds.reason]; })()}</span>
+              <span>{(() => { const ds = doseFor(d, ep, Date.now()); return ds.allowed ? '' : DOSE_TEXT[ds.reason]; })()}</span>
             </div>
           )}
           {stage.remindAt && (
@@ -1031,7 +1044,7 @@ function TapGate({ title, text, onTap, testid }: { title: string; text: string; 
   );
 }
 
-function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | 'severe') => void; practice: boolean }) {
+function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | 'severe' | 'neuro') => void; practice: boolean }) {
   return (
     <Screen title={practice ? 'Deneme bitti' : 'Manevra bitti'}>
       <h1>Şu an nasılsınız?</h1>
@@ -1042,7 +1055,8 @@ function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | '
         options={[
           { value: 'none', label: 'İyiyim' },
           { value: 'mild', label: 'Hafif baş dönmesi ya da bulantı var', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
-          { value: 'severe', label: 'Şiddetli bulantı, kusma ya da yeni bir belirti var' }
+          { value: 'severe', label: 'Kusma ya da şiddetli bulantı var' },
+          { value: 'neuro', label: 'Yeni belirti var', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.' }
         ]}
       />
     </Screen>
@@ -1080,6 +1094,9 @@ const SUBTYPE_HC_TEXT =
 
 const NOT_TRIGGERED_TWICE_TEXT =
   'Pozisyon testi iki kez baş dönmesini tetiklemedi. Baş dönmeniz sürüyorsa bu, evde test edilemeyen yatay kanal BPPV ya da başka bir neden olabilir. Hekiminize ya da odyoloğunuza başvurun.';
+
+const PRACTICE_VERTIGO_TEXT =
+  'Deneme manevrası, baş dönmesi yokken adımları öğrenmek içindir ve tedavi yerine geçmez. Baş dönmeniz varsa ana ekrandaki "Baş dönmem başladı" ile ilerleyin: güvenlik soruları ve kısa bir test yapılır.';
 
 const LONG_IN_MANEUVER_TEXT =
   'Manevra sırasında baş dönmesi 1 dakikadan uzun sürdü. Bu, tipik BPPV\'ye uymaz. Manevrayı tekrarlamayın; hekiminize ya da odyoloğunuza başvurun. Acil belirtilerde 112\'yi arayın.';

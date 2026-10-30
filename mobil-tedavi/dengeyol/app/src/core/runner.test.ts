@@ -235,13 +235,14 @@ describe('Epley yürütücüsü (hasta modu)', () => {
 });
 
 describe('inceleme sonrası düzeltmeler', () => {
-  it('baş dönmesi süresi tüm işaretleri kapsar (ikinci uzun dalga gizlenmez)', () => {
+  it('baş dönmesi süresi en uzun dalgadır (ikinci uzun dalga gizlenmez, kısa dalgalar toplanmaz)', () => {
     const r = {
       stepId: 'x', title: 'x', startedAt: 0, firstInRangeAt: 1000, reachedAt: 2000, endedAt: null, holdSec: 0, samples: 0,
       inRangeSamples: 0, sumAbsThetaErr: 0, maxAbsThetaErr: 0, thetaSamples: 0, transitionSec: null, manual: false, driftCount: 0,
       vertigoMarks: [{ start: 3, end: 5 }, { start: 8, end: 98 }]
     };
-    expect(vertigoSummary(r)).toEqual({ latencySec: 2, durationSec: 95 });
+    // En uzun tek dalga (90 s) — uzun ikinci dalga gizlenmez
+    expect(vertigoSummary(r)).toEqual({ latencySec: 2, durationSec: 90 });
     expect(vertigoSummary({ ...r, vertigoMarks: [{ start: 3, end: 5 }, { start: 8, end: null }] })!.durationSec).toBeNull();
   });
 

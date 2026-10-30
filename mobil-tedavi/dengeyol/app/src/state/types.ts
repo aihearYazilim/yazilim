@@ -51,7 +51,7 @@ export interface ManeuverLog {
   records: StepRecord[];
   /** Sensörsüz/elle onaylı mı? */
   manual: boolean;
-  afterSymptoms?: 'none' | 'mild' | 'severe';
+  afterSymptoms?: 'none' | 'mild' | 'severe' | 'neuro';
 }
 
 export interface SideTestLog {

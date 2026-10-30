@@ -729,8 +729,8 @@ export function recordStats(r: StepRecord) {
 
 /**
  * Bir adımdaki baş dönmesi işaretlerinin özeti (s).
- * Gecikme: pozisyona girişten ilk işarete. Süre: ilk başlangıçtan SON bitişe kadar olan toplam yayılım
- * (iki dalga ya da yeniden işaretleme olursa uzun süre gizlenmez). Bitişi işaretlenmemiş bir işaret varsa süre bilinmez (null).
+ * Gecikme: pozisyona girişten ilk işarete. Süre: en uzun TEK dalga (Bárány: nistagmus süresi); aralıklı iki kısa dalga
+ * toplanmaz (aşırı yönlendirmeyi önler), tek uzun dalga gizlenmez. Bitişi işaretlenmemiş bir işaret varsa süre bilinmez (null).
  */
 export function vertigoSummary(r: StepRecord): { latencySec: number; durationSec: number | null } | null {
   const marks = r.vertigoMarks;
@@ -740,7 +740,7 @@ export function vertigoSummary(r: StepRecord): { latencySec: number; durationSec
   const reachedRel = ref !== null ? sec(ref - r.startedAt) : 0;
   const latencySec = Math.max(0, Math.round(first.start - reachedRel));
   const open = marks.some((m) => m.end === null);
-  const lastEnd = Math.max(...marks.map((m) => m.end ?? -Infinity));
-  const durationSec = open ? null : Math.max(0, Math.round(lastEnd - first.start));
+  const longest = Math.max(...marks.map((m) => (m.end ?? m.start) - m.start));
+  const durationSec = open ? null : Math.max(0, Math.round(longest));
   return { latencySec, durationSec };
 }

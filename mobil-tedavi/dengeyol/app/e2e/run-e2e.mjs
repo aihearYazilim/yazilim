@@ -118,7 +118,7 @@ async function answerRedFlags(page, stopOn = null) {
 
 /** Yeni atakta alt tip soruları (arka kanala uyan yanıtlar). */
 async function answerSubtype(page) {
-  await page.getByRole('radio', { name: /Yatarken, yataktan kalkarken/ }).click();
+  await page.getByRole('radio', { name: /Yatarken ya da yataktan kalkarken/ }).click();
   await page.getByRole('radio', { name: /1 dakikadan kısa/ }).click();
 }
 
@@ -346,6 +346,7 @@ await step('Hasta: hekime yönlendirilen ataktan sonra yeni atak onay ister; den
   await page.getByTestId('blocked-referral').waitFor();
   await snap(page, 'yonlendirme-kilidi');
   await page.getByTestId('doctor-cleared').click();
+  await page.getByTestId('doctor-cleared-yes').click();
   await page.getByTestId('redflag-question').waitFor();
   await page.goto(BASE + '#/hasta');
   await page.goto(BASE + '#/hasta/atak/practice');
@@ -414,7 +415,7 @@ await step('Hasta: "sırtüstü baş çevirince" yanıtı yatay kanal şüphesiy
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
-  await page.getByRole('radio', { name: /Yalnız sırtüstü yatarken/ }).click();
+  await page.getByRole('radio', { name: /Yatakta sağa-sola dönerken/ }).click();
   await page.getByTestId('subtype-hc-confirm').waitFor();
   await page.getByTestId('subtype-hc-yes').click();
   await page.getByTestId('end-refer').waitFor();

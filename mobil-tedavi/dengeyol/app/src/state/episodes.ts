@@ -28,21 +28,28 @@ export function rxActive(profile: PatientProfile | undefined, now: number = Date
   if (!rx) return false;
   const issued = new Date(`${rx.date}T00:00:00`).getTime();
   if (!Number.isFinite(issued)) return false;
+  // Gelecek tarihli reçete geçerli sayılmaz (en çok 1 gün saat farkı payı).
+  if (issued - now > 24 * 60 * 60 * 1000) return false;
   return now - issued <= RX_VALID_DAYS * 24 * 60 * 60 * 1000;
 }
 
 /**
- * Yakın zamanda (reçete ya da son 14 gün içindeki hekim tanısı) bilinen taraf: taraf testiyle çelişirse hekime yönlendirmek
- * için. Eski tanıdaki taraf kullanılmaz (nükste taraf değişebilir).
+ * Yakın zamanda bilinen taraf (yalnız geçerli klinisyen reçetesi): taraf testiyle çelişirse hekime yönlendirmek için.
+ * Hastanın kendi girdiği tanı tarihi/tarafı kullanılmaz (doğrulanamaz); eski tanıdaki taraf nükste değişebilir.
  */
 export function recentKnownSide(profile: PatientProfile | undefined, now: number = Date.now()): Side | null {
-  if (!profile) return null;
-  if (rxActive(profile, now)) return profile.prescription!.side;
-  if (profile.side === 'R' || profile.side === 'L') {
-    const t = profile.dxDate ? new Date(`${profile.dxDate}T00:00:00`).getTime() : NaN;
-    if (Number.isFinite(t) && now - t <= RX_VALID_DAYS * 24 * 60 * 60 * 1000) return profile.side;
-  }
-  return null;
+  return profile && rxActive(profile, now) ? profile.prescription!.side : null;
+}
+
+/**
+ * Reçeteli kısa yol (taraf testi yapmadan reçetedeki tarafa manevra) yalnız reçetenin verildiği atak içindir: reçete
+ * geçerliyken ve reçete tarihinden sonra başlayıp kapanmış başka bir atak yokken. Sonraki atak (nüks) test edilir.
+ */
+export function rxFirstEpisode(d: AppData, now: number = Date.now()): boolean {
+  const p = d.patient;
+  if (!p?.prescription || !rxActive(p, now)) return false;
+  const issued = new Date(`${p.prescription.date}T00:00:00`).getTime();
+  return !d.episodes.some((e) => e.status !== 'active' && e.startedAt >= issued);
 }
 
 export function doseLimitsFor(profile: PatientProfile | undefined, now: number = Date.now()): DoseLimits {
@@ -58,15 +65,38 @@ function countedTimes(episodes: Episode[]): number[] {
 }
 
 /**
- * Doz durumu. Günlük ve toplam sınırlar TÜM ataklar boyunca sayılır (atak kapatılıp yeniden açılarak sınır sıfırlanamaz):
- * günlük sınır takvim gününe, toplam sınır son `maxDays` günlük kayan pencereye göre; gün sınırı bu atağın başlangıcına göre.
+ * Tedavi dönemi (gün): doz sınırları bu kayan pencerede, TÜM ataklar ve deneme manevraları birlikte sayılır. Böylece atak
+ * kapatılıp yeniden açılarak sınır aşılamaz (ör. günde 3 × her gün). Pencereden önceki manevralar yeni bir atağı kısıtlamaz.
  */
-export function episodeDose(e: Episode, profile: PatientProfile | undefined, now: number, allEpisodes: Episode[] = [e]): DoseStatus {
+export const TREATMENT_WINDOW_DAYS = 14;
+
+/**
+ * Doz durumu: günlük sınır takvim gününe; toplam sınır ve "manevra yapılan gün" sınırı son 14 günlük tedavi dönemine göre;
+ * ayrıca bu atağın başlangıcından itibaren gün sınırı.
+ */
+export function episodeDose(
+  e: Episode,
+  profile: PatientProfile | undefined,
+  now: number,
+  allEpisodes: Episode[] = [e],
+  extraTimes: number[] = []
+): DoseStatus {
   const limits = doseLimitsFor(profile, now);
-  const windowMs = limits.maxDays * 24 * 60 * 60 * 1000;
+  const windowMs = TREATMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
   const eps = allEpisodes.some((x) => x.id === e.id) ? allEpisodes : [...allEpisodes, e];
-  const times = countedTimes(eps).filter((t) => now - t < windowMs);
-  return doseStatus(times, e.startedAt, now, limits);
+  const times = [...countedTimes(eps), ...extraTimes].filter((t) => now - t < windowMs && t <= now);
+  const st = doseStatus(times, e.startedAt, now, limits);
+  if (!st.allowed) return st;
+  // Tedavi döneminde manevra yapılan farklı gün sayısı (bugün yeni bir gün olacaksa o da sayılır).
+  const days = new Set(times.map(localDayKey));
+  const daysUsed = days.size + (days.has(localDayKey(now)) ? 0 : 1);
+  if (daysUsed > limits.maxDays) return { allowed: false, reason: 'DAY_LIMIT', day: st.day };
+  return st;
+}
+
+/** Uygulama verisiyle doz: tüm ataklar ve deneme manevraları. */
+export function doseFor(d: AppData, e: Episode, now: number): DoseStatus {
+  return episodeDose(e, d.patient, now, d.episodes, d.practiceLog ?? []);
 }
 
 export const PRACTICE_PER_DAY = 2;

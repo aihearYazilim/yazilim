@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { diagnosisGate, DOSE_TEXT, frequentRecurrence, GATE_TEXT } from '../../../core/safety';
 import {
-  episodeDose,
+  doseFor,
   episodeSide,
   formatDate,
   formatDateTime,
@@ -86,13 +86,7 @@ export function PatientHome() {
             <h3>Önce hekiminizle görüşün</h3>
           </div>
           <p>Son atağınız hekime yönlendirmeyle sonlandı. Yeni bir manevradan önce hekiminiz ya da odyoloğunuzla görüşmeniz gerekir.</p>
-          <button
-            className="btn secondary"
-            onClick={() => store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, doctorClearedAt: Date.now() } : x.patient }))}
-            data-testid="home-doctor-cleared"
-          >
-            Hekimimle görüştüm, manevra yapmamda sakınca yok dedi
-          </button>
+          <DoctorClearance testid="home-doctor-cleared" />
         </div>
       )}
 
@@ -155,7 +149,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
   const nav = useNavigate();
   const ep = activeEpisode(d)!;
   const na = nextAction(ep, now);
-  const dose = episodeDose(ep, d.patient, now, d.episodes);
+  const dose = doseFor(d, ep, now);
   const side = episodeSide(ep, d.patient);
   const limits = doseLimitsFor(d.patient);
   // Doz sınırıyla aynı sayım (yarıda kalan manevralar ve diğer ataklar dahil).
@@ -396,4 +390,37 @@ export function RxPaste() {
 
 function rxUntil(date: string): number {
   return new Date(`${date}T00:00:00`).getTime() + RX_VALID_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Hekime yönlendirme kilidini açma: iki adımlı (düşünmeden dokunulmasın). Kilit beyana dayanır; bu yüzden soru açık ve
+ * tek anlamlı sorulur. onCleared: kilit açıldıktan sonra yapılacak iş.
+ */
+export function DoctorClearance({ testid, onCleared }: { testid: string; onCleared?: () => void }) {
+  const [ask, setAsk] = useState(false);
+  if (!ask) {
+    return (
+      <button className="btn secondary block" onClick={() => setAsk(true)} data-testid={testid}>
+        Hekimimle görüştüm
+      </button>
+    );
+  }
+  return (
+    <div className="card stack" data-testid={`${testid}-confirm`}>
+      <strong>Hekiminiz, bu baş dönmesi için evde manevra yapmanızda sakınca olmadığını söyledi mi?</strong>
+      <button
+        className="btn primary block"
+        onClick={() => {
+          store.update((x) => ({ ...x, patient: x.patient ? { ...x.patient, doctorClearedAt: Date.now() } : x.patient }));
+          onCleared?.();
+        }}
+        data-testid={`${testid}-yes`}
+      >
+        Evet, söyledi
+      </button>
+      <button className="btn ghost block" onClick={() => setAsk(false)}>
+        Hayır / henüz görüşmedim
+      </button>
+    </div>
+  );
 }
