@@ -1121,7 +1121,7 @@ function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onE
     const m = [10, 20].find((x) => left > 0 && left <= x && !spokenMarks.current.has(x));
     if (m === undefined) return;
     [10, 20].filter((x) => x >= m).forEach((x) => spokenMarks.current.add(x));
-    speech.speak(`${m} saniye.`, 'normal');
+    speech.speak(`${Math.ceil(left)} saniye.`, 'normal');
   }, [left]);
   const ready = left <= 0;
   useEffect(() => {
@@ -1221,7 +1221,7 @@ function TapSurface({
 function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | 'severe' | 'neuro') => void; practice: boolean }) {
   return (
     <Screen title={practice ? 'Deneme bitti' : 'Manevra bitti'}>
-      <SpeakOnce text="Yavaşça telefonu alnınızdan alın ve ekrandaki soruyu yanıtlayın: şu an nasılsınız?" />
+      <SpeakOnce text="Oturmaya devam edin; kalkarken dikkatli olun. Yavaşça telefonu alnınızdan alın ve ekrandaki soruyu yanıtlayın: şu an nasılsınız?" />
       <h1>Şu an nasılsınız?</h1>
       <Choice
         name="Manevra sonrası"

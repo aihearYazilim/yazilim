@@ -601,8 +601,9 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
         cues.push({
           kind: 'speak',
           text: cfg.mode === 'patient' ? 'Tamam, böyle kalın.' : 'Pozisyon doğru.',
-          // Adım yönergesini kesmesin (kuyruğa girer); "doğru" bilgisi titreşim ve tonla hemen verilir.
-          priority: 'normal'
+          // Hastada adım yönergesini kesmesin (kuyruğa girer; "doğru" bilgisi titreşim ve tonla hemen verilir). Klinisyende
+          // uzun yönerge kuyruğu doldurup nistagmus işaret onayını düşürmesin diye kesilir.
+          priority: cfg.mode === 'patient' ? 'normal' : 'high'
         });
         const transition =
           step.fastTransitionSec !== undefined && s.leftPreviousAt !== null ? sec(settlingSince - s.leftPreviousAt) : null;
@@ -719,8 +720,9 @@ function holdingTick(
   if (mark > 0 && mark > s.lastCountMark) {
     s.lastCountMark = mark;
     const left = remainingHoldSec(s, step, now);
-    if (!s.vertigoActive && left !== null && left >= 5) {
-      cues.push({ kind: 'speak', text: `${Math.round(left / 5) * 5} saniye kaldı.`, priority: 'normal' });
+    const rounded = left !== null ? Math.round(left / 5) * 5 : 0;
+    if (!s.vertigoActive && rounded >= 5) {
+      cues.push({ kind: 'speak', text: `${rounded} saniye kaldı.`, priority: 'normal' });
     }
   }
 

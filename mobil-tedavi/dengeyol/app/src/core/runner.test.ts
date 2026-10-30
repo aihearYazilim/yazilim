@@ -445,6 +445,14 @@ describe('son kullanıcı turu düzeltmeleri', () => {
     expect(after.every((v) => v >= 5)).toBe(true);
   });
 
+  it('45 s adımda son "5 saniye kaldı" da söylenir (sessizlik 10 s\'yi geçmez)', () => {
+    const x = sim('epley');
+    x.cfg = { ...x.cfg, countEverySec: 10 };
+    run(x);
+    const texts = x.cues.filter((c) => c.kind === 'speak').map((c) => (c as { text: string }).text);
+    expect(texts).toContain('5 saniye kaldı.');
+  });
+
   it('"Manevra tamamlandı" yürütücüde kısa; dinlenme önerisi bitiş ekranına kalır', () => {
     const x = sim('epley');
     run(x);
