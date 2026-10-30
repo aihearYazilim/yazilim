@@ -113,6 +113,8 @@ export interface ConfirmedDiagnosis {
   warnings?: string[];
   /** Onay anındaki bulguların imzası; bulgular sonradan değişirse tanı geçersiz sayılır. */
   findingsKey?: string;
+  /** Elle girilen tanıda, o anda karar desteğinin önerdiği tanılar (HBYS notunda "öneri X idi" satırı). */
+  suggestedLabels?: string[];
 }
 
 export interface ClinicExam {

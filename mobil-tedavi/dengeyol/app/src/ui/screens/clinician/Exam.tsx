@@ -2,10 +2,10 @@
  * Klinik muayene akışı: testler → tanı önerisi/onayı → tedavi + tekrar test → ev reçetesi → rapor.
  */
 import QRCode from 'qrcode';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
-import { type Finding, type Findings, keyLabel, NYSTAGMUS_LABEL, suggestDiagnosis } from '../../../core/diagnosis';
+import { type Finding, type Findings, keyLabel, type ObservationMethod, rxFindingLock, suggestDiagnosis } from '../../../core/diagnosis';
 import { decodePrescription, encodePrescription, type Prescription } from '../../../core/prescription';
 import {
   type Canal,
@@ -16,7 +16,7 @@ import {
   type Side,
   sideName
 } from '../../../core/protocols';
-import { recordStats, vertigoSummary } from '../../../core/runner';
+import { vertigoSummary } from '../../../core/runner';
 import { formatDateTime } from '../../../state/episodes';
 import { localDayKey } from '../../../core/safety';
 import { store, uid, useData } from '../../../state/store';
@@ -26,6 +26,21 @@ import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
 import { RunnerView, type RunnerOutcome } from '../RunnerView';
+import {
+  dxText,
+  dxValid,
+  examNoteText,
+  findingsKeyOf,
+  findingSummary,
+  manualDxLabel,
+  maneuverStatus,
+  methodsOf,
+  rxBlockReason,
+  rxCode,
+  rxCurrent,
+  rxValidityText,
+  stepLines
+} from './examReport';
 import { emptyFinding, FindingForm } from './FindingForm';
 
 type Tab = 'tests' | 'dx' | 'treat' | 'rx' | 'report';
@@ -46,36 +61,38 @@ const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | n
   { id: 'roll', label: 'Sırtüstü baş çevirme (supine roll)', protocolId: 'supine-roll', side: null, keys: ['rollCenter', 'rollR', 'rollL'] }
 ];
 
-/** Bulguların sıralı imzası: onaylı tanının hangi bulgulara dayandığını izlemek için. */
-export function findingsKeyOf(f: Findings): string {
-  return JSON.stringify(Object.keys(f).sort().map((k) => [k, f[k as FindingKey]]));
-}
-
-/** Onaylı tanı hâlâ geçerli mi (onaydan sonra bulgu değiştiyse hayır). */
-export function dxValid(exam: ClinicExam): boolean {
-  const dx = exam.diagnosis;
-  if (!dx) return false;
-  // Eski sürümde onaylanmış (imzasız) tanı: hangi bulgulara dayandığı bilinmez → yeniden onay istenir.
-  return dx.findingsKey !== undefined && dx.findingsKey === findingsKeyOf(exam.findings);
-}
-
-/** Verilmiş reçete hâlâ geçerli tanıya mı dayanıyor? */
-export function rxCurrent(exam: ClinicExam): boolean {
-  return !!exam.prescriptionToken && dxValid(exam) && exam.prescriptionFindingsKey === exam.diagnosis?.findingsKey;
-}
-
 function updateExam(id: string, fn: (e: ClinicExam) => ClinicExam) {
   store.update((d) => ({ ...d, clinicExams: d.clinicExams.map((e) => (e.id === id ? fn(e) : e)) }));
 }
 
-function findingSummary(f: Finding | undefined): string {
-  if (!f) return '—';
-  if (f.nystagmus === 'none') return f.vertigo ? 'Nistagmus yok, baş dönmesi var' : 'Negatif';
-  const parts = [NYSTAGMUS_LABEL[f.nystagmus]];
-  if (f.latencySec !== null) parts.push(`gecikme ${f.latencySec} s`);
-  if (f.durationSec !== null) parts.push(`süre ${f.durationSec} s`);
-  if (f.intensity) parts.push(`şiddet ${f.intensity}/3`);
-  return parts.join(' · ');
+/** Muayenede en son kullanılan gözlem yöntemi (bulgu formunda varsayılan). */
+function lastMethod(exam: ClinicExam): ObservationMethod | undefined {
+  const all = methodsOf(exam.findings, exam.retestFindings);
+  return all[all.length - 1] as ObservationMethod | undefined;
+}
+
+/**
+ * Tam ekran alt durumlar (kalibrasyon, bulgu formu) açıkken sistem geri tuşu / kenardan kaydırma muayeneden çıkarmasın:
+ * geçmişe bir girdi eklenir; geri gelince `onBack` çağrılır (yoksa yerinde kalınır). RunnerView ile aynı desen.
+ */
+function useBackGuard(active: boolean, onBack?: () => void) {
+  const ref = useRef(onBack);
+  ref.current = onBack;
+  useEffect(() => {
+    if (!active) return;
+    const marker = { dengeyolExam: true };
+    window.history.pushState(marker, '');
+    const onPop = () => {
+      if (ref.current) ref.current();
+      else window.history.pushState(marker, '');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // Kendi girdimiz hâlâ en üstteyse temizle (adres değişmez).
+      if ((window.history.state as { dengeyolExam?: boolean } | null)?.dengeyolExam) window.history.back();
+    };
+  }, [active]);
 }
 
 export function Exam() {
@@ -91,6 +108,16 @@ export function Exam() {
   const [needCal, setNeedCal] = useState(false);
   const [editQueue, setEditQueue] = useState<{ key: FindingKey; initial: Finding & { nystagmusUnset?: boolean }; target: 'findings' | 'retestFindings' }[]>([]);
   const [manualEdit, setManualEdit] = useState<FindingKey | null>(null);
+  const cancelCal = () => {
+    setNeedCal(false);
+    setPendingRun(null);
+    setTab('tests');
+  };
+  // Kalibrasyonda geri tuşu muayeneden çıkarmaz, Testler sekmesine döner.
+  useBackGuard(needCal && !run, cancelCal);
+  // Test sonrası bulgu formu: geri tuşu kaydedilmemiş bulguyu kaybettirmesin (yerinde kalınır).
+  useBackGuard(editQueue.length > 0 && !run && !needCal);
+  useBackGuard(manualEdit !== null && editQueue.length === 0 && !run && !needCal, () => setManualEdit(null));
 
   if (!exam) {
     return (
@@ -167,7 +194,7 @@ export function Exam() {
 
   if (needCal) {
     return (
-      <Screen title="Sensör kalibrasyonu" onBack={() => setNeedCal(false)}>
+      <Screen title="Sensör kalibrasyonu" onBack={cancelCal}>
         <button
           className="btn secondary block"
           onClick={() => {
@@ -187,10 +214,7 @@ export function Exam() {
             if (pendingRun) setRun(pendingRun);
             setPendingRun(null);
           }}
-          onCancel={() => {
-            setNeedCal(false);
-            setPendingRun(null);
-          }}
+          onCancel={cancelCal}
           onNoSensor={() => {
             setSensorless(true);
             setNeedCal(false);
@@ -213,6 +237,8 @@ export function Exam() {
           title={keyLabel(cur.key)}
           initial={cur.initial}
           showIntensity={showIntensity}
+          dixHallpike={cur.key === 'dhR' || cur.key === 'dhL'}
+          defaultMethod={lastMethod(exam)}
           onSave={(f) => {
             updateExam(exam.id, (e) => ({ ...e, [cur.target]: { ...e[cur.target], [cur.key]: f } }));
             setEditQueue((q) => q.slice(1));
@@ -228,8 +254,12 @@ export function Exam() {
       <Screen title="Bulgu gir" onBack={() => setManualEdit(null)}>
         <FindingForm
           title={keyLabel(k)}
-          initial={exam.findings[k] ?? emptyFinding()}
+          // Yeni elle girişte hiçbir yanıt önceden seçili gelmez (tek dokunuşla yanlış negatif kaydedilmesin); var olan bulgu
+          // düzenlenirken kayıtlı değer gösterilir.
+          initial={exam.findings[k] ?? { ...emptyFinding(), nystagmusUnset: true }}
           showIntensity={k === 'rollR' || k === 'rollL'}
+          dixHallpike={k === 'dhR' || k === 'dhL'}
+          defaultMethod={lastMethod(exam)}
           onSave={(f) => {
             updateExam(exam.id, (e) => ({ ...e, findings: { ...e.findings, [k]: f } }));
             setManualEdit(null);
@@ -242,7 +272,7 @@ export function Exam() {
 
   return (
     <Screen
-      title={`Muayene · ${patient?.code ?? ''}`}
+      title="Muayene"
       back="/odyolog"
       wide
       right={
@@ -260,7 +290,11 @@ export function Exam() {
         </button>
       }
     >
-      <div className="row small muted">
+      {/* Hasta kodu kesilmeden, gerekirse satır kırılarak gösterilir (aynı önekli protokol numaraları ayırt edilsin). */}
+      <div className="exam-code no-print" data-testid="exam-patient-code">
+        <span className="small muted">Hasta kodu</span> <strong>{patient?.code ?? '—'}</strong>
+      </div>
+      <div className="row small muted no-print">
         <span>{formatDateTime(exam.at)}</span>
         {patient?.birthYear && <span>· d. {patient.birthYear}</span>}
         {patient?.sex && patient.sex !== '-' && <span>· {patient.sex}</span>}
@@ -285,7 +319,12 @@ export function Exam() {
       />
 
       {tab === 'tests' && (
-        <TestsTab exam={exam} onRun={(t) => startRun({ protocolId: t.protocolId, side: t.side, purpose: 'test' })} onManual={setManualEdit} />
+        <TestsTab
+          exam={exam}
+          sensorless={sensorless && !cal}
+          onRun={(t) => startRun({ protocolId: t.protocolId, side: t.side, purpose: 'test' })}
+          onManual={setManualEdit}
+        />
       )}
       {tab === 'dx' && <DxTab exam={exam} onGoTreat={() => setTab('treat')} />}
       {tab === 'treat' && <TreatTab exam={exam} onRun={startRun} />}
@@ -297,7 +336,17 @@ export function Exam() {
   );
 }
 
-function TestsTab({ exam, onRun, onManual }: { exam: ClinicExam; onRun: (t: (typeof TESTS)[number]) => void; onManual: (k: FindingKey) => void }) {
+function TestsTab({
+  exam,
+  sensorless,
+  onRun,
+  onManual
+}: {
+  exam: ClinicExam;
+  sensorless: boolean;
+  onRun: (t: (typeof TESTS)[number]) => void;
+  onManual: (k: FindingKey) => void;
+}) {
   // Sıradaki yapılmamış test: tek dokunuşla devam.
   const next = TESTS.find((t) => t.keys.some((k) => !exam.findings[k]));
   const anyDone = TESTS.some((t) => t.keys.some((k) => exam.findings[k]));
@@ -309,15 +358,16 @@ function TestsTab({ exam, onRun, onManual }: { exam: ClinicExam; onRun: (t: (typ
         </button>
       )}
       <p className="small muted">
-        Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın. Nistagmusun başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin; test
-        sonunda bulgu formu açılır.
+        {sensorless
+          ? 'Sensörsüz (VNG/Frenzel) mod: telefon zamanlayıcı olarak kullanılır, alna yaslanmaz. Pozisyonu elle onaylayın; nistagmusu ekrana dokunarak işaretleyin ya da test sonunda VNG değerlerini bulgu formuna yazın.'
+          : 'Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın. Nistagmusun başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin; test sonunda bulgu formu açılır.'}
       </p>
       {TESTS.map((t) => (
         <div key={t.id} className="card stack">
           <div className="row">
             <h3 className="grow">{t.label}</h3>
             <button className="btn primary" onClick={() => onRun(t)} data-testid={`test-run-${t.id}`}>
-              <Icon name="play" /> Telefonla yap
+              <Icon name="play" /> {sensorless ? 'Zamanlayıcıyla yap' : 'Telefonla yap'}
             </button>
           </div>
           {t.keys.map((k) => (
@@ -349,6 +399,8 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
       diagnosis: { ...dx, warnings: result.warnings.length ? result.warnings : undefined, findingsKey: findingsKeyOf(e.findings) }
     }));
   };
+  // Bulguya dayanan reçete kilidi (≥1 dk yanıt / çok kanallı): elle tanı bunu açmaz; formda önceden söylenir.
+  const findingLock = rxFindingLock(exam.findings, exam.retestFindings);
   const hasWarnings = result.warnings.length > 0;
   const valid = dxValid(exam);
 
@@ -358,7 +410,7 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
         <div className={`card ${exam.diagnosis.warnings?.length ? 'tint-warn' : 'tint-ok'} stack`}>
           <div className="row">
             <Icon name="check" />
-            <strong className="grow">Onaylı tanı: {exam.diagnosis.label}</strong>
+            <strong className="grow">Onaylı tanı: {dxText(exam.diagnosis)}</strong>
           </div>
           {exam.diagnosis.warnings?.length ? <p className="small">Uyarılarla birlikte onaylandı; uyarılar rapora yazılır.</p> : null}
           <button className="btn primary" onClick={onGoTreat} data-testid="dx-go-treat">
@@ -430,9 +482,10 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
               { value: 'AC', label: 'Ön kanal' }
             ]}
           />
+          <p className="small muted">Kanal, taraf ve mekanizmanın üçünü de seçin; hiçbiri önceden seçili gelmez.</p>
           <Segmented
             label="Taraf"
-            value={side ?? 'none'}
+            value={side}
             onChange={setSide}
             options={[
               { value: 'R', label: 'Sağ' },
@@ -442,7 +495,7 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
           />
           <Segmented
             label="Mekanizma"
-            value={mech ?? 'unknown'}
+            value={mech}
             onChange={setMech}
             options={[
               { value: 'canalithiasis', label: 'Kanalolitiazis' },
@@ -450,21 +503,34 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
               { value: 'unknown', label: 'Bilinmiyor' }
             ]}
           />
+          {canal === 'PC' && findingLock && (
+            <div className="notice danger" role="alert" data-testid="dx-manual-lock">
+              <Icon name="alert" />
+              <span>
+                {findingLock.message}
+                {mech === 'canalithiasis' && findingLock.code === 'long-response'
+                  ? ' Seçtiğiniz "kanalolitiazis" bulguyla çelişiyor; tanıyı kaydedebilirsiniz, ev reçetesi kilitli kalır.'
+                  : ''}
+              </span>
+            </div>
+          )}
           <button
             className="btn primary"
-            disabled={!canal}
+            disabled={!canal || side === null || mech === null}
             onClick={() => {
+              if (!canal || side === null || mech === null) return;
               const sd = side === 'R' || side === 'L' ? side : null;
-              const canalTxt = canal === 'PC' ? 'arka kanal' : canal === 'HC' ? 'yatay kanal' : 'ön kanal';
               confirm({
                 canal,
                 side: sd,
-                mechanism: mech ?? 'unknown',
-                label: `${sd ? sideName(sd).charAt(0).toLocaleUpperCase('tr-TR') + sideName(sd).slice(1) + ' ' : ''}${canalTxt} BPPV (elle)`,
-                fromSuggestion: false
+                mechanism: mech,
+                label: manualDxLabel(canal, sd, mech),
+                fromSuggestion: false,
+                suggestedLabels: result.suggestions.length ? result.suggestions.map((x) => x.label) : undefined
               });
               setManual(false);
             }}
+            data-testid="dx-manual-save"
           >
             Kaydet
           </button>
@@ -496,7 +562,7 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
       {dx && !valid && <div className="notice">Bulgular değişti; tanıyı yeniden onaylayın.</div>}
       {dx && valid && (
         <div className="card soft small">
-          Onaylı tanı: <strong>{dx.label}</strong>
+          Onaylı tanı: <strong>{dxText(dx)}</strong>
         </div>
       )}
       {valid && dx?.side ? (
@@ -561,7 +627,7 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
               <span className="grow">
                 {formatDateTime(m.at)} — {PROTOCOLS[m.protocolId].shortName} {m.side ? sideName(m.side) : ''}
               </span>
-              <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : 'yarıda'}</span>
+              <span className={`chip ${m.completed && maneuverStatus(m) === 'tamamlandı' ? 'ok' : 'warn'}`}>{maneuverStatus(m)}</span>
             </div>
           ))}
         </div>
@@ -608,6 +674,9 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     !!issued &&
     (issued.side !== side || issued.maneuver !== maneuver || issued.perDay !== perDay || issued.days !== days || (issued.note ?? '') !== note.trim());
   const [ack, setAck] = useState(false);
+  // Reçete oluşturulunca QR görünür alana kaydırılır (hastaya göstermek için aşağı kaydırmak gerekmesin).
+  const [justMade, setJustMade] = useState(false);
+  const outRef = useRef<HTMLDivElement | null>(null);
 
   const url = useMemo(() => {
     if (!exam.prescriptionToken) return null;
@@ -623,20 +692,15 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     void QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setSvg);
   }, [url]);
 
+  useEffect(() => {
+    if (!justMade || !svg || !outRef.current) return;
+    outRef.current.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+    setJustMade(false);
+  }, [justMade, svg]);
+
   // Ev reçetesi yalnız geçerli, onaylı, taraflı arka kanal tanısıyla verilir (hasta tarafında "hekim tanısı" yerine geçer).
-  const rxBlock = !dx
-    ? 'Ev reçetesi için önce Tanı sekmesinde arka kanal tanısını onaylayın.'
-    : !dxValid(exam)
-      ? 'Bulgular tanı onaylandıktan sonra değişti. Tanıyı yeniden onaylayın.'
-      : dx.canal !== 'PC'
-        ? 'Ev reçetesi yalnızca arka kanal BPPV için verilebilir. Yatay ve ön kanal manevraları klinikte yapılmalıdır.'
-        : !dx.side
-          ? 'Onaylı tanıda taraf yok. Ev reçetesi için tarafı belli bir arka kanal tanısı onaylayın.'
-          : suggestDiagnosis(exam.findings).multiCanal
-            ? 'Bulgular çok kanallı tutulumu düşündürüyor. Kendi kendine tedavi çalışmaları bu hastaları dışlamıştır; ev reçetesi verilmez, tedaviyi klinikte yapın.'
-            : dx.mechanism === 'cupulolithiasis'
-              ? 'Kupulolitiazis şüphesinde baş dönmesi 1 dakikadan uzun sürer; evde güvenlik kuralı her manevrada hastayı hekime yönlendirir. Ev reçetesi verilmez, tedaviyi klinikte yapın.'
-              : null;
+  // Kilit onaylı tanının mekanizmasına EK OLARAK bulgulara da bakar: elle girilen "kanalolitiazis" ≥1 dk yanıtı aşamaz.
+  const rxBlock = rxBlockReason(exam);
   if (rxBlock) {
     return (
       <div className="notice info" data-testid="rx-blocked">
@@ -651,6 +715,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
 
   const make = () => {
     if (!side) return;
+    // TODO(D3 birleşimi): Prescription'a isteğe bağlı hasta kodu alanı eklenince (muhtemelen `pid`) burada doldurun:
+    //   pid: patientCode  (d.clinicPatients.find((x) => x.id === exam.patientId)?.code). prescription.ts bu düzenleyicide değiştirilmedi.
     const p: Prescription = {
       v: 1,
       side,
@@ -666,6 +732,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     };
     const token = encodePrescription(p);
     updateExam(exam.id, (e) => ({ ...e, prescriptionToken: token, prescriptionFindingsKey: e.diagnosis?.findingsKey }));
+    setJustMade(true);
   };
 
   return (
@@ -709,6 +776,9 @@ function RxTab({ exam }: { exam: ClinicExam }) {
           <label htmlFor="rxnote">Not (isteğe bağlı, en fazla 80 karakter)</label>
           <input id="rxnote" className="input" value={note} maxLength={80} onChange={(e) => setNote(e.target.value)} />
         </div>
+        <p className="small" data-testid="rx-validity">
+          {rxValidityText(localDayKey(exam.at))}
+        </p>
         {needAck && (
           <label className="row notice danger" style={{ alignItems: 'flex-start' }}>
             <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="check-lg" data-testid="rx-ack" />
@@ -738,13 +808,16 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       )}
 
       {url && issued && !stale && rxCurrent(exam) && (
-        <div className="card stack center" data-testid="rx-output">
+        <div className="card stack center" data-testid="rx-output" ref={outRef}>
           <h3>Hastaya gösterin</h3>
           <p className="small" data-testid="rx-summary">
             <strong>
               {sideName(issued.side).toLocaleUpperCase('tr-TR')} arka kanal · {issued.maneuver === 'epley' ? 'Epley' : 'Semont'}
             </strong>{' '}
             · günde en fazla {issued.perDay}, {issued.days} gün
+          </p>
+          <p className="small muted" data-testid="rx-output-validity">
+            {rxValidityText(issued.date)} Reçete kodu: {rxCode(exam.prescriptionToken!)}
           </p>
           {svg && <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} aria-label="Reçete QR kodu" />}
           <p className="small muted">Hasta telefon kamerasıyla bu kodu okutur.</p>
@@ -770,42 +843,9 @@ function RxTab({ exam }: { exam: ClinicExam }) {
   );
 }
 
+
 const fullDate = (t: number) =>
   new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-/** HBYS / e-Nabız muayene notuna yapıştırılacak düz metin. */
-export function examNoteText(exam: ClinicExam, code: string | undefined, clinician: { name?: string; clinic?: string }): string {
-  const lines: string[] = [];
-  lines.push(`Pozisyonel vertigo değerlendirmesi (DengeYol) — ${fullDate(exam.at)}${code ? ` — hasta kodu ${code}` : ''}`);
-  const keys = Object.keys(exam.findings) as FindingKey[];
-  if (keys.length) lines.push(`Testler: ${keys.map((k) => `${keyLabel(k)}: ${findingSummary(exam.findings[k])}`).join('; ')}.`);
-  const dx = exam.diagnosis;
-  if (dx && dxValid(exam)) {
-    // ICD-10 önerisi yalnız uyarısız (santral/atipik şüphe olmayan) BPPV tanısında.
-    const icd = dx.canal && !dx.warnings?.length ? ' (ICD-10 öneri: H81.1 Benign paroksismal vertigo)' : '';
-    lines.push(`Tanı: ${dx.label}${dx.fromSuggestion ? ' — karar desteği önerisi klinisyence onaylandı' : ' — klinisyen'}${icd}.`);
-    if (dx.warnings?.length) lines.push(`Uyarılar: ${dx.warnings.join(' ')}`);
-  }
-  if (exam.maneuvers.length) {
-    lines.push(
-      `Manevra: ${exam.maneuvers
-        .map((m) => `${PROTOCOLS[m.protocolId].shortName}${m.side ? ` ${sideName(m.side)}` : ''} (${m.completed ? 'tamamlandı' : 'yarıda'})`)
-        .join(', ')}.`
-    );
-  }
-  const rk = Object.keys(exam.retestFindings) as FindingKey[];
-  if (rk.length) lines.push(`Tekrar test: ${rk.map((k) => `${keyLabel(k)}: ${findingSummary(exam.retestFindings[k])}`).join('; ')}.`);
-  if (exam.prescriptionToken && rxCurrent(exam)) {
-    const r = decodePrescription(exam.prescriptionToken);
-    if (r.ok) {
-      lines.push(
-        `Ev reçetesi: ${sideName(r.value.side)} ${r.value.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla ${r.value.perDay}, ${r.value.days} gün (DengeYol uygulaması, QR ile verildi).`
-      );
-    }
-  }
-  if (clinician.name) lines.push(`${clinician.name}${clinician.clinic ? `, ${clinician.clinic}` : ''}`);
-  return lines.join('\n');
-}
 
 function ExamReport({ exam }: { exam: ClinicExam }) {
   const d = useData();
@@ -816,6 +856,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
   // Yazdırılan raporda hastanın okutabileceği QR (yalnız güncel reçete).
   const [qr, setQr] = useState<string | null>(null);
   const rxOk = rxCurrent(exam);
+  const [notes, setNotes] = useState(exam.notes ?? '');
   useEffect(() => {
     if (!exam.prescriptionToken || !rxOk) {
       setQr(null);
@@ -824,6 +865,8 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
     const url = `${window.location.href.split('#')[0]}#/recete/${exam.prescriptionToken}`;
     void QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setQr);
   }, [exam.prescriptionToken, rxOk]);
+  const methods = methodsOf(exam.findings, exam.retestFindings);
+  const lock = rxFindingLock(exam.findings, exam.retestFindings);
   const fx = (title: string, f: Findings) => {
     const keys = Object.keys(f) as FindingKey[];
     if (keys.length === 0) return null;
@@ -835,7 +878,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             {keys.map((k) => (
               <tr key={k}>
                 <th>{keyLabel(k)}</th>
-                <td>{findingSummary(f[k])}</td>
+                <td>{findingSummary(f[k], true)}</td>
               </tr>
             ))}
           </tbody>
@@ -844,12 +887,12 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
     );
   };
   return (
-    <div className="stack" data-testid="exam-report">
+    <div className="stack clin-report" data-testid="exam-report">
       <div className="card stack">
         <h2>BPPV muayene raporu</h2>
         <dl className="kv">
           <dt>Hasta kodu</dt>
-          <dd>{patient?.code}</dd>
+          <dd className="exam-code-value">{patient?.code}</dd>
           <dt>Doğum yılı / cinsiyet</dt>
           <dd>
             {patient?.birthYear ?? '—'} / {patient?.sex ?? '—'}
@@ -861,14 +904,26 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             {d.clinician.name ?? '—'}
             {d.clinician.clinic ? `, ${d.clinician.clinic}` : ''}
           </dd>
+          {methods.length > 0 && (
+            <>
+              <dt>Gözlem yöntemi</dt>
+              <dd>{methods.join(', ')}</dd>
+            </>
+          )}
           <dt>Tanı</dt>
           <dd>
             {exam.diagnosis && valid
-              ? `${exam.diagnosis.label} (${exam.diagnosis.fromSuggestion ? 'karar desteği önerisi, klinisyen onayı' : 'klinisyen girişi'})`
+              ? `${dxText(exam.diagnosis)} (${exam.diagnosis.fromSuggestion ? 'karar desteği önerisi, klinisyen onayı' : 'klinisyen girişi'})`
               : exam.diagnosis
                 ? 'Bulgular değişti; tanı yeniden onaylanmadı'
                 : '—'}
           </dd>
+          {exam.diagnosis && valid && !exam.diagnosis.fromSuggestion && exam.diagnosis.suggestedLabels?.length ? (
+            <>
+              <dt>Karar desteği önerisi</dt>
+              <dd>{exam.diagnosis.suggestedLabels.join('; ')}</dd>
+            </>
+          ) : null}
         </dl>
         {exam.diagnosis && valid && exam.diagnosis.warnings?.length ? (
           <div className="notice danger">
@@ -878,72 +933,128 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             </span>
           </div>
         ) : null}
+        {lock && (
+          <div className="notice danger" data-testid="report-rx-lock">
+            <Icon name="alert" />
+            <span>
+              <strong>Ev reçetesi kilidi:</strong> {lock.message}
+            </span>
+          </div>
+        )}
       </div>
       {fx('Pozisyon testleri', exam.findings)}
       {exam.maneuvers.length > 0 && (
         <div className="card stack">
           <h3>Manevralar</h3>
-          {exam.maneuvers.map((m) => (
-            <div key={m.id} className="stack" style={{ gap: 4 }}>
-              <strong>
-                {formatDateTime(m.at)} — {PROTOCOLS[m.protocolId].name} {m.side ? `(${sideName(m.side)})` : ''} · {m.completed ? 'tamamlandı' : 'yarıda kaldı'}
-                {m.manual ? ' · elle onaylı' : ''}
-              </strong>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Adım</th>
-                    <th>Süre</th>
-                    <th>Hedefte</th>
-                    <th>Hedeften sapma (ort. / en çok)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {m.records.map((r, i) => {
-                    const st = recordStats(r);
-                    return (
-                      <tr key={i}>
-                        <td>{r.title}</td>
-                        <td>{Math.round(r.holdSec)} s</td>
-                        <td>{st.inRangePct !== null ? `%${st.inRangePct}` : r.manual ? 'elle' : '—'}</td>
-                        <td>{st.meanAbsThetaErr !== null ? `${st.meanAbsThetaErr}° / ${st.maxAbsThetaErr}°` : '—'}</td>
+          {exam.maneuvers.map((m) => {
+            const lines = stepLines(m);
+            const anyPhi = lines.some((l) => l.phi);
+            const anyTransition = lines.some((l) => l.transitionSec !== null);
+            return (
+              <div key={m.id} className="stack" style={{ gap: 4 }}>
+                <strong>
+                  {formatDateTime(m.at)} — {PROTOCOLS[m.protocolId].name} {m.side ? `(${sideName(m.side)})` : ''} · {maneuverStatus(m, lines)}
+                  {m.manual ? ' · elle onaylı' : ''}
+                </strong>
+                <table className="table" data-testid="report-steps">
+                  <thead>
+                    <tr>
+                      <th>Adım</th>
+                      <th>Süre / hedef</th>
+                      <th>Hedefte</th>
+                      <th>θ sapma (ort. / en çok)</th>
+                      {anyPhi && <th>φ sarkma sapması (ort. / en çok)</th>}
+                      {anyTransition && <th>Geçiş</th>}
+                      <th>Nistagmus</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lines.map((l, i) => (
+                      <tr key={i} className={l.early ? 'early' : undefined}>
+                        <td>{l.title}</td>
+                        <td>
+                          {l.holdSec}
+                          {l.targetSec !== null ? ` / ${l.targetSec}` : ''} s{l.early ? <strong> · erken bitirildi</strong> : null}
+                        </td>
+                        <td>{l.inRangePct !== null ? `%${l.inRangePct}` : l.manual ? 'elle' : '—'}</td>
+                        <td>{l.theta ? `${l.theta.mean}° / ${l.theta.max}°` : '—'}</td>
+                        {anyPhi && <td>{l.phi ? `${l.phi.mean}° / ${l.phi.max}°` : '—'}</td>}
+                        {anyTransition && (
+                          <td>
+                            {l.transitionSec !== null
+                              ? `${l.transitionSec} s${l.fastTargetSec !== null && l.transitionSec > l.fastTargetSec ? ` (yavaş; hedef <${l.fastTargetSec} s)` : ''}`
+                              : '—'}
+                          </td>
+                        )}
+                        <td>{l.nystagmus ? l.nystagmus.replace(/^nistagmus /, '') : '—'}</td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ))}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       )}
       {fx('Tekrar test', exam.retestFindings)}
-      {rx?.ok && (
-        <div className="card stack">
-          <h3>Ev manevrası reçetesi{rxCurrent(exam) ? '' : ' (güncel tanıya dayanmıyor)'}</h3>
-          <p>
-            {sideName(rx.value.side).toLocaleUpperCase('tr-TR')} arka kanal · {rx.value.maneuver === 'epley' ? 'Epley' : 'Semont'} · günde en fazla{' '}
-            {rx.value.perDay}, {rx.value.days} gün{rx.value.note ? ` · Not: ${rx.value.note}` : ''}
-          </p>
-          <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz sınırları uygulamada uygulanır.</p>
-          {qr && (
-            <div className="row" style={{ alignItems: 'center' }}>
-              <div className="qr" style={{ width: 120 }} dangerouslySetInnerHTML={{ __html: qr }} aria-label="Reçete QR kodu" />
-              <span className="small">Hasta bu kodu DengeYol yüklü telefonun kamerasıyla okutur.</span>
-            </div>
-          )}
+      <div className="card stack no-print">
+        <label htmlFor="examnote">Muayene notu (isteğe bağlı; rapora ve HBYS notuna yazılır)</label>
+        <textarea
+          id="examnote"
+          className="input"
+          rows={3}
+          maxLength={500}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          onBlur={() => {
+            const v = notes.trim();
+            if (v !== (exam.notes ?? '')) updateExam(exam.id, (e) => ({ ...e, notes: v || undefined }));
+          }}
+          data-testid="exam-notes"
+        />
+      </div>
+      {exam.notes ? (
+        <div className="card stack print-only">
+          <h3>Not</h3>
+          <p>{exam.notes}</p>
         </div>
-      )}
-      <div className="card stack signature">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
-          <span>Klinisyen: {d.clinician.name ?? '................................'}</span>
-          <span>İmza: ................................</span>
+      ) : null}
+      {/* Yazdırmada reçete, QR ve imza aynı sayfada kalır (bölünmez blok). */}
+      <div className="stack clin-rx-block">
+        {rx?.ok && (
+          <div className="card stack clin-rx">
+            <h3>Ev manevrası reçetesi{rxOk ? '' : ' (güncel tanıya dayanmıyor)'}</h3>
+            <p>
+              {sideName(rx.value.side).toLocaleUpperCase('tr-TR')} arka kanal · {rx.value.maneuver === 'epley' ? 'Epley' : 'Semont'} · günde en fazla{' '}
+              {rx.value.perDay}, {rx.value.days} gün{rx.value.note ? ` · Not: ${rx.value.note}` : ''}
+            </p>
+            <p className="small" data-testid="report-rx-validity">
+              {rxValidityText(rx.value.date)} Reçete kodu: {rxCode(exam.prescriptionToken!)}
+            </p>
+            <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz sınırları uygulamada uygulanır.</p>
+            {qr && (
+              <div className="row" style={{ alignItems: 'center' }}>
+                <div className="qr" style={{ width: 120 }} dangerouslySetInnerHTML={{ __html: qr }} aria-label="Reçete QR kodu" />
+                <span className="small">Hasta bu kodu DengeYol yüklü telefonun kamerasıyla okutur.</span>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="card stack signature clin-signature">
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <span>Klinisyen: {d.clinician.name ?? '................................'}</span>
+            <span>İmza: ................................</span>
+          </div>
         </div>
       </div>
       <div className="row wrap no-print">
         <button
           className="btn primary grow"
           onClick={() => {
-            const text = examNoteText(exam, patient?.code, d.clinician);
+            // Yazılmakta olan not da nota girsin (odak kaybı beklenmeden).
+            const v = notes.trim();
+            if (v !== (exam.notes ?? '')) updateExam(exam.id, (e) => ({ ...e, notes: v || undefined }));
+            const text = examNoteText({ ...exam, notes: v || undefined }, patient?.code, d.clinician);
             void navigator.clipboard?.writeText(text).then(() => setCopied(true));
           }}
           data-testid="exam-copy-note"

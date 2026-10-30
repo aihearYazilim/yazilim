@@ -1154,3 +1154,78 @@ summary {
   padding: 10px 0;
   cursor: pointer;
 }
+
+/* --- Klinisyen muayenesi (D4) ----------------------------------------------------------------- */
+/* Hasta kodu kesilmez: uzun protokol numarası satır kırılarak tam görünür. */
+.exam-code {
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.exam-code-value {
+  overflow-wrap: anywhere;
+}
+.print-only {
+  display: none;
+}
+.clin-report tr.early td {
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+
+/* --- Klinisyen raporu: yazdırma (D4) ---------------------------------------------------------- */
+/* A4'te reçete + QR + imza tek sayfada: tablolar daraltılır, reçete-imza bloğu bölünmez. */
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .clin-report {
+    gap: 6px !important;
+    font-size: 10pt;
+  }
+  .clin-report .card {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+    border-radius: 4px;
+  }
+  .clin-report h2 {
+    font-size: 13pt;
+    margin: 0;
+  }
+  .clin-report h3 {
+    font-size: 11pt;
+    margin: 0;
+  }
+  .clin-report .kv {
+    gap: 2px 10px;
+    font-size: 9.5pt;
+  }
+  .clin-report .notice {
+    padding: 4px 6px;
+    font-size: 9pt;
+  }
+  .clin-report .table {
+    display: table !important;
+    overflow: visible !important;
+    font-size: 8.5pt;
+  }
+  .clin-report .table th,
+  .clin-report .table td {
+    padding: 2px 4px;
+  }
+  .clin-report .clin-rx-block {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    gap: 4px !important;
+  }
+  .clin-report .clin-rx .qr {
+    width: 32mm !important;
+    padding: 0;
+  }
+  .clin-report .clin-signature {
+    min-height: 14mm;
+  }
+}

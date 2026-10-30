@@ -416,6 +416,40 @@ await step('Klinisyen: tanı onaylanmadan reçete kilitli; aynı kod ikinci hast
   await ctx.close();
 });
 
+await step('Klinisyen: ≥1 dk bulguda elle "kanalolitiazis" tanısı reçete kilidini açmaz; elle girişte ön seçim yok', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await page.goto(BASE + '#/odyolog');
+  await page.getByTestId('clin-new').click();
+  await page.getByTestId('clin-code').fill('2026-10-30-000123');
+  await page.getByTestId('clin-create').click();
+  const code = await page.getByTestId('exam-patient-code').innerText();
+  if (!code.includes('2026-10-30-000123')) throw new Error('hasta kodu tam görünmüyor: ' + code);
+  // Sağ DH elle: hiçbir yanıt önceden seçili değil, Kaydet kapalı
+  await page.getByRole('button', { name: 'Elle gir' }).nth(0).click();
+  await page.getByTestId('finding-form').waitFor();
+  if (await page.getByTestId('finding-save').isEnabled()) throw new Error('elle girişte seçim yapılmadan Kaydet etkin');
+  await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).click();
+  await page.locator('#lat').fill('1');
+  await page.locator('#dur').fill('75');
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
+  await page.getByRole('radio', { name: 'Yok' }).click();
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Tanı', exact: true }).click();
+  await page.getByRole('button', { name: 'Tanıyı elle gir' }).click();
+  await page.getByRole('radio', { name: 'Arka kanal' }).click();
+  await page.getByRole('button', { name: 'Sağ', exact: true }).click();
+  await page.getByRole('button', { name: 'Kanalolitiazis', exact: true }).click();
+  await page.getByTestId('dx-manual-lock').waitFor();
+  await page.getByTestId('dx-manual-save').click();
+  await page.getByRole('button', { name: 'Reçete', exact: true }).click();
+  await page.getByTestId('rx-blocked').waitFor();
+  if (await page.getByTestId('rx-make').count()) throw new Error('≥1 dk bulguda reçete formu açıldı');
+  await snap(page, 'odyolog-kupulo-kilidi');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
 await step('Hasta: "sırtüstü baş çevirince" yanıtı yatay kanal şüphesiyle hekime yönlendirir', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK } }));
   await page.goto(BASE + '#/hasta');

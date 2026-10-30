@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Finding, suggestDiagnosis } from './diagnosis';
+import { type Finding, rxFindingLock, suggestDiagnosis, torsionSide } from './diagnosis';
 
 const f = (p: Partial<Finding>): Finding => ({
   nystagmus: 'none',
@@ -172,3 +172,96 @@ describe('tur 3 klinik onay', () => {
     expect(r.warnings.length).toBeGreaterThan(0);
   });
 });
+
+describe('iki taraflı Dix-Hallpike: torsiyonla taraf (Bárány 2015)', () => {
+  const up = (p: Partial<Finding> = {}) => f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20, ...p });
+
+  it('torsiyon girilmemişse taraf önerilmez (eski davranış)', () => {
+    const r = suggestDiagnosis({ dhR: up(), dhL: up() });
+    expect(r.suggestions[0]).toMatchObject({ canal: 'PC', side: null, confidence: 'belirsiz' });
+    expect(r.suggestions[0]!.rationale.join(' ')).toMatch(/torsiyon yönünü/);
+  });
+
+  it('yalnız bir testte torsiyon girildiyse taraf önerilmez', () => {
+    const r = suggestDiagnosis({ dhR: up({ torsionToward: 'R' }), dhL: up() });
+    expect(r.suggestions[0]!.side).toBeNull();
+  });
+
+  it('iki testte de torsiyon aynı kulağa → o taraf, "olası" (tipik değil)', () => {
+    const r = suggestDiagnosis({ dhR: up({ torsionToward: 'R' }), dhL: up({ torsionToward: 'R', durationSec: 10 }) });
+    expect(r.suggestions[0]).toMatchObject({ canal: 'PC', side: 'R', mechanism: 'canalithiasis', confidence: 'olası' });
+    expect(r.suggestions[0]!.maneuvers[0]).toBe('epley');
+    const l = suggestDiagnosis({ dhR: up({ torsionToward: 'L' }), dhL: up({ torsionToward: 'L' }) });
+    expect(l.suggestions[0]).toMatchObject({ side: 'L' });
+  });
+
+  it('torsiyon her testte alttaki kulağa (farklı yönler) → çift taraflı olası, taraf yok', () => {
+    const r = suggestDiagnosis({ dhR: up({ torsionToward: 'R' }), dhL: up({ torsionToward: 'L' }) });
+    expect(r.suggestions[0]).toMatchObject({ side: null, confidence: 'belirsiz' });
+    expect(r.suggestions[0]!.rationale.join(' ')).toMatch(/çift taraflı/);
+  });
+
+  it('torsiyonla taraf bulunsa da ≥1 dk yanıt kupulolitiazis ve uyarı', () => {
+    const r = suggestDiagnosis({ dhR: up({ torsionToward: 'L', durationSec: 80 }), dhL: up({ torsionToward: 'L' }) });
+    expect(r.suggestions[0]).toMatchObject({ side: 'L', mechanism: 'cupulolithiasis', confidence: 'olası' });
+    expect(r.warnings.join(' ')).toMatch(/≥1 dk/);
+  });
+
+  it('torsionSide saf fonksiyonu', () => {
+    expect(torsionSide(up({ torsionToward: 'R' }), up({ torsionToward: 'R' })).side).toBe('R');
+    expect(torsionSide(up({ torsionToward: 'R' }), up({ torsionToward: 'L' })).side).toBeNull();
+    expect(torsionSide(up(), up({ torsionToward: 'L' })).side).toBeNull();
+  });
+
+  it('tek taraflı pozitifte ters (üstteki kulağa) torsiyon uyarı verir, tipik sayılmaz', () => {
+    const r = suggestDiagnosis({ dhR: up({ torsionToward: 'L' }), dhL: f({}) });
+    expect(r.suggestions[0]).toMatchObject({ side: 'R', confidence: 'olası' });
+    expect(r.warnings.join(' ')).toMatch(/torsiyon üstteki/);
+    const ok = suggestDiagnosis({ dhR: up({ torsionToward: 'R' }), dhL: f({}) });
+    expect(ok.suggestions[0]!.confidence).toBe('tipik');
+    expect(ok.warnings).toEqual([]);
+  });
+});
+
+describe('ev reçetesi bulgu kilidi (elle tanıdan bağımsız)', () => {
+  it('tipik kanalolitiazis bulgusunda kilit yok', () => {
+    expect(
+      rxFindingLock({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) })
+    ).toBeNull();
+  });
+
+  it('Dix-Hallpike yanıtı ≥60 s → kilit (elle "kanalolitiazis" girilse de)', () => {
+    const lock = rxFindingLock({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 75 }), dhL: f({}) });
+    expect(lock?.code).toBe('long-response');
+    expect(lock?.message).toMatch(/Sağ Dix-Hallpike.*75 s/);
+  });
+
+  it('tam 60 s sınırı da kilitler; 59 s kilitlemez', () => {
+    expect(rxFindingLock({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 60 }) })?.code).toBe('long-response');
+    expect(rxFindingLock({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 59 }) })).toBeNull();
+  });
+
+  it('tekrar testte ≥1 dk yanıt da kilitler', () => {
+    const lock = rxFindingLock(
+      { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) },
+      { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 90 }) }
+    );
+    expect(lock?.code).toBe('long-response');
+    expect(lock?.message).toMatch(/^Tekrar test/);
+  });
+
+  it('çok kanallı tutulum kilitler', () => {
+    const lock = rxFindingLock({
+      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }),
+      dhL: f({}),
+      rollR: f({ nystagmus: 'horizontal-geotropic', intensity: 3, durationSec: 30 }),
+      rollL: f({ nystagmus: 'horizontal-geotropic', intensity: 1, durationSec: 20 })
+    });
+    expect(lock?.code).toBe('multi-canal');
+  });
+
+  it('baş dönmesi var, nistagmus yok: süre olmadığı için kilit yok', () => {
+    expect(rxFindingLock({ dhR: f({ vertigo: true }) })).toBeNull();
+  });
+});
+

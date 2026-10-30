@@ -34,7 +34,24 @@ export interface Finding {
   intensity: 0 | 1 | 2 | 3;
   /** Hasta baş dönmesi bildirdi mi? */
   vertigo: boolean;
+  // --- İsteğe bağlı ek alanlar (eski kayıtlarda yok) ---
+  /**
+   * Torsiyonel bileşende göz üst kutbunun vurduğu kulak (hastanın sağı/solu). Bárány 2015: arka kanal BPPV'de üst kutup
+   * alttaki (etkilenen) kulağa doğru vurur. Belirlenmediyse alan yok.
+   */
+  torsionToward?: Side;
+  /** Tekrarlanan pozisyonlamada yanıt azaldı mı (yorulma)? Değerlendirilmediyse alan yok. */
+  fatigue?: boolean;
+  /** Dix-Hallpike'tan oturunca ters yönlü nistagmus gözlendi mi? Değerlendirilmediyse alan yok. */
+  reversalOnSitting?: boolean;
+  /** Gözlem yöntemi. */
+  method?: ObservationMethod;
+  /** Serbest not (klinisyen). */
+  note?: string;
 }
+
+export type ObservationMethod = 'VNG' | 'Frenzel' | 'çıplak göz';
+export const OBSERVATION_METHODS: ObservationMethod[] = ['VNG', 'Frenzel', 'çıplak göz'];
 
 export type Findings = Partial<Record<FindingKey, Finding>>;
 
@@ -123,6 +140,9 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
     const typical =
       !cupulo && otherTested && f.durationSec !== null && f.latencySec !== null && f.latencySec >= 1 && f.latencySec <= 20;
     if (f.latencySec !== null && f.latencySec > 20) rationale.push('Gecikme >20 s (tipik değil).');
+    if (f.torsionToward === side) rationale.push(`Torsiyon ${sideLabel(side)} (alttaki) kulağa doğru: arka kanal desenine uyuyor.`);
+    if (f.fatigue === false) rationale.push('Tekrarda yorulma gözlenmedi.');
+    if (f.reversalOnSitting) rationale.push('Oturunca ters yönlü nistagmus gözlendi.');
     if (!otherTested) rationale.push('Karşı taraf Dix-Hallpike test edilmedi; iki taraflı tutulum dışlanmadı.');
     suggestions.push({
       canal: 'PC',
@@ -138,29 +158,61 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
     if (f.latencySec === 0 && !cupulo) {
       warnings.push('Arka kanal deseni gecikmesiz başladı; tipik BPPV gecikmeli (1–20 s) başlar. Santral nedenleri gözden kaçırmayın.');
     }
+    if (f.torsionToward && f.torsionToward !== side) {
+      // Bárány 2015: arka kanal BPPV'de üst kutup alttaki (test edilen) kulağa vurur. Ters torsiyon bu tarafı desteklemez.
+      warnings.push(
+        `${keyLabel(side === 'R' ? 'dhR' : 'dhL')}: torsiyon üstteki (${sideLabel(f.torsionToward)}) kulağa doğru kaydedildi. Arka kanal BPPV'de üst kutup alttaki kulağa vurur; taraf ve deseni yeniden değerlendirin.`
+      );
+    }
     if (cupulo) {
       warnings.push(
         `Arka kanal deseni ≥1 dk sürdü${f.latencySec === 0 ? ' ve gecikmesiz başladı' : ''}. Arka kanal kupulolitiazisi nadir ve "gelişmekte olan" bir tanıdır; santral pozisyonel nistagmusu dışlayın, manevraya yanıt yoksa nörolojik değerlendirme.`
       );
     }
   } else if (pcSides.length === 2) {
+    const fR = findings.dhR!;
+    const fL = findings.dhL!;
+    const anyLong = isLong(fR) || isLong(fL);
     for (const k of ['dhR', 'dhL'] as const) {
       const f = findings[k]!;
       if (isLong(f)) warnings.push(`${keyLabel(k)}: yanıt ≥1 dk sürdü; santral pozisyonel nistagmusu dışlayın.`);
       else if (f.latencySec === 0) warnings.push(`${keyLabel(k)}: yanıt gecikmesiz başladı; santral nedenleri gözden kaçırmayın.`);
     }
-    suggestions.push({
-      canal: 'PC',
-      side: null,
-      mechanism: 'unknown',
-      confidence: 'belirsiz',
-      label: 'İki taraflı Dix-Hallpike pozitif (çift taraflı arka kanal ya da yatay kanal tutulumu olası)',
-      rationale: [
-        'Her iki Dix-Hallpike testinde de yukarı vuran + torsiyonel nistagmus.',
-        'Torsiyonun yönüne ve yanıtın şiddetine göre taraf belirleyin; çift taraflı tutulumda önce daha şiddetli taraf tedavi edilir.'
-      ],
-      maneuvers: maneuversFor('PC', 'canalithiasis')
-    });
+    const bilateralSide = torsionSide(fR, fL);
+    if (bilateralSide.side) {
+      // İki testte de torsiyon aynı kulağa: etkilenen kulak o taraf (Bárány 2015: üst kutup etkilenen kulağa vurur).
+      // Karşı taraf testindeki yanıt çoğunlukla aynı kanalın daha zayıf uyarılmasıdır. Yine de "tipik" sayılmaz.
+      const side = bilateralSide.side;
+      suggestions.push({
+        canal: 'PC',
+        side,
+        mechanism: anyLong ? 'cupulolithiasis' : fR.durationSec === null || fL.durationSec === null ? 'unknown' : 'canalithiasis',
+        confidence: 'olası',
+        label: anyLong
+          ? `${cap(sideLabel(side))} arka kanal BPPV — kupulolitiazis (olası; iki taraflı yanıt, torsiyona göre)`
+          : `${cap(sideLabel(side))} arka kanal BPPV (iki taraflı yanıt; taraf torsiyona göre)`,
+        rationale: [
+          'Her iki Dix-Hallpike testinde de yukarı vuran + torsiyonel nistagmus.',
+          `İki testte de torsiyon ${sideLabel(side)} kulağa doğru kaydedildi → etkilenen kulak ${sideLabel(side)} (Bárány 2015: üst kutup etkilenen kulağa vurur).`,
+          'Karşı taraf testindeki yanıt çift taraflı tutulumu tam dışlamaz; manevradan sonra iki tarafı yeniden test edin.'
+        ],
+        maneuvers: maneuversFor('PC', anyLong ? 'cupulolithiasis' : 'canalithiasis')
+      });
+    } else {
+      suggestions.push({
+        canal: 'PC',
+        side: null,
+        mechanism: 'unknown',
+        confidence: 'belirsiz',
+        label: 'İki taraflı Dix-Hallpike pozitif (çift taraflı arka kanal ya da yatay kanal tutulumu olası)',
+        rationale: [
+          'Her iki Dix-Hallpike testinde de yukarı vuran + torsiyonel nistagmus.',
+          bilateralSide.reason,
+          'Çift taraflı tutulumda önce daha şiddetli taraf tedavi edilir.'
+        ],
+        maneuvers: maneuversFor('PC', 'canalithiasis')
+      });
+    }
   }
 
   // --- Ön kanal (aşağı vuran + torsiyonel) --------------------------------------------------
@@ -307,6 +359,70 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
 
   const negative = !anyNys && vertigoKeys.length === 0 && all.length > 0;
   return { suggestions, warnings, negative, multiCanal: canals.size >= 2 };
+}
+
+/**
+ * İki taraflı pozitif Dix-Hallpike'ta torsiyon yönünden taraf. Yalnız iki testte de torsiyon kaydedilmiş ve AYNI kulağı
+ * gösteriyorsa taraf döner; eksik ya da farklı yönler tahmin edilmez (çift taraflı tutulum olabilir).
+ */
+export function torsionSide(fR: Finding, fL: Finding): { side: Side | null; reason: string } {
+  const tR = fR.torsionToward;
+  const tL = fL.torsionToward;
+  if (!tR || !tL) {
+    return {
+      side: null,
+      reason: 'Taraf için iki testte de torsiyon yönünü (göz üst kutbunun vurduğu kulak) bulgu formuna girin; aynı kulağı gösteriyorsa o taraf önerilir.'
+    };
+  }
+  if (tR !== tL) {
+    return {
+      side: null,
+      reason: 'Torsiyon her testte alttaki kulağa doğru: gerçek çift taraflı arka kanal tutulumu olası. Taraf önerilmez.'
+    };
+  }
+  return { side: tR, reason: '' };
+}
+
+export const MECHANISM_LABEL: Record<Mechanism, string> = {
+  canalithiasis: 'kanalolitiazis',
+  cupulolithiasis: 'kupulolitiazis',
+  unknown: 'mekanizma belirsiz'
+};
+
+/** Ev reçetesini kilitleyen bulgu (tanı elle girilse de geçerli). */
+export interface RxFindingLock {
+  code: 'long-response' | 'multi-canal';
+  message: string;
+}
+
+/**
+ * Bulgulara dayanan ev reçetesi kilidi — onaylı tanının mekanizmasından BAĞIMSIZ. Elle girilen "kanalolitiazis" tanısı,
+ * bulgularda ≥1 dk süren pozisyonel nistagmus varken kilidi açmaz: kupulolitiazis/santral nedenler düşünülür ve evde güvenlik
+ * kuralı (2 dk) hastayı her manevrada hekime yönlendirir (Bárány 2015; AAO-HNSF 2017). Çok kanallı tutulumda da reçete yok.
+ * Tekrar test bulguları da denetlenir (manevradan sonra ortaya çıkan uzun yanıt).
+ */
+export function rxFindingLock(findings: Findings, retestFindings: Findings = {}): RxFindingLock | null {
+  for (const [src, fx] of [
+    ['', findings],
+    ['Tekrar test · ', retestFindings]
+  ] as const) {
+    for (const [k, f] of Object.entries(fx) as [FindingKey, Finding | undefined][]) {
+      if (f && f.nystagmus !== 'none' && isLong(f)) {
+        return {
+          code: 'long-response',
+          message: `${src}${keyLabel(k)}: nistagmus ${f.durationSec} s sürdü (≥1 dk). Kupulolitiazis ya da santral pozisyonel nistagmus düşünülür; evde güvenlik kuralı hastayı her manevrada hekime yönlendirir. Tanı elle değiştirilse de ev reçetesi verilmez; tedaviyi klinikte yapın.`
+        };
+      }
+    }
+  }
+  if (suggestDiagnosis(findings).multiCanal || (Object.keys(retestFindings).length > 0 && suggestDiagnosis(retestFindings).multiCanal)) {
+    return {
+      code: 'multi-canal',
+      message:
+        'Bulgular çok kanallı tutulumu düşündürüyor. Kendi kendine tedavi çalışmaları bu hastaları dışlamıştır; ev reçetesi verilmez, tedaviyi klinikte yapın.'
+    };
+  }
+  return null;
 }
 
 export function keyLabel(k: FindingKey): string {
