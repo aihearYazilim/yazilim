@@ -694,7 +694,11 @@ await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı has
         u: 'r',
         d: 'R',
         t: [[5, [1, 3, 20], [0, null, null], 'TR']],
-        m: [[10, 's', 'R', 'chn', 1, 4, [[5, 0], [60, 6, 41, 2, 15], [60, 8], [30, 32]]]],
+        m: [
+          [10, 's', 'R', 'chn', 1, 4, [[5, 0], [60, 6, 41, 2, 15], [60, 8], [30, 32]]],
+          // Sol Epley (kendi başına): 4. adımda önce yanlış taraf; başlıklar tarafıyla çözülmeli ("Sağ yan, burun yere").
+          [40, 'e', 'L', 'con', 0, 5, [[30, 0], [30, 0], [30, 0], [30, 16], [30, 0]]]
+        ],
         q: [[60 * 22, 'm', 'R', 0, null, null]]
       }
     ]
@@ -712,11 +716,19 @@ await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı has
   await page.goto(BASE + '#/odyolog/ev-raporu/' + token);
   await page.getByTestId('hr-report').waitFor();
   const head = await page.getByTestId('hr-report-headline').innerText();
-  if (!head.includes('1 atak') || !head.includes('1 manevra (1 tamamlandı)')) throw new Error('rapor özeti hatalı: ' + head);
-  const steps = await page.getByTestId('hr-report-steps').innerText();
+  if (!head.includes('1 atak') || !head.includes('2 manevra (2 tamamlandı)')) throw new Error('rapor özeti hatalı: ' + head);
+  // Özet son atağın sonucuyla başlar (tur 5, k09).
+  if (!/^Son atak \(\d\d\.\d\d(\.\d{4})?\): düzeldi · /.test(head)) throw new Error('özet son atağın sonucuyla başlamıyor: ' + head);
+  // Tarihler ayrı adlarla: reçete (geçerlilik … dahil) · atak · rapor (tur 5, k09).
+  const title = await page.getByTestId('hr-report').locator('h3').first().innerText();
+  if (!/Reçete 31\.10(\.2026)? \(geçerlilik 13\.11(\.2026)? dahil\) · atak \S+ · rapor \S+/.test(title)) throw new Error('dönem tarihleri adlandırılmamış: ' + title);
+  const steps = (await page.getByTestId('hr-report-steps').allInnerTexts()).join('\n');
   if (!steps.includes('komuttan önce hareket') || !steps.includes('oturuştan geçilmedi') || !steps.includes('hedef sınırında')) {
     throw new Error('adım işaretleri yok: ' + steps);
   }
+  // İçe aktarılan adım başlıklarında çözülmemiş "{…}" belirteci kalmaz; sol Epley'nin 4. adımı sağ yandır (tur 4–5, k09/k10).
+  if (steps.includes('{')) throw new Error('adım başlığında "{" kaldı: ' + steps);
+  if (!steps.includes('Sağ yan, burun yere') || !steps.includes('önce yanlış taraf')) throw new Error('sol Epley adımları tarafıyla çözülmedi: ' + steps);
   if ((await page.getByTestId('hr-patient').inputValue()) !== 'p1') throw new Error('aynı kodlu hasta seçili gelmedi');
   await snap(page, 'ev-raporu-ice-aktar');
   await page.getByTestId('hr-attach').click();
@@ -740,11 +752,21 @@ await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı has
 await step('Klinisyen: kayıtsız tarayıcıda rapor bağlantısı kopyalama yönergesi; reçete bağlantısı yapıştırılınca açık mesaj; ses kipi profilde', async () => {
   const now = Date.now();
   const m = (t) => Math.floor(t / 60000);
-  const token = homeReportToken({ v: 1, g: m(now), p: 'NO-77', a: m(now - 3600e3), b: m(now), e: [{ s: m(now - 3600e3), u: 'a', t: [], m: [], q: [] }] });
+  // Açık atak: Epley yapıldı, 1. saat tekrar testi negatif (sabah testi bekleniyor).
+  const token = homeReportToken({
+    v: 1, g: m(now), p: 'NO-77', a: m(now - 3600e3), b: m(now),
+    e: [{ s: m(now - 3600e3), u: 'a', d: 'R', k: 1, m: [[2, 'e', 'R', 'con', 0, 5]], q: [[58, 'e', 'R', 0, null, null]] }]
+  });
   // 1) Klinisyen kaydı olmayan tarayıcı (iPhone'da QR Safari'de açılır): önce "kopyalayıp uygulamaya yapıştırın" yolu (k08).
   const a = await newPage(seed());
   await a.page.goto(BASE + '#/odyolog/ev-raporu/' + token);
   await a.page.getByTestId('hr-report').waitFor();
+  // Açık atakta 1. saat tekrar testi negatifse "sürüyor" denmez (tur 5, k08).
+  const openHead = await a.page.getByTestId('hr-report-headline').innerText();
+  if (!openHead.includes('atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor') || openHead.includes('sürüyor')) {
+    throw new Error('açık atak özeti hatalı: ' + openHead);
+  }
+  if ((await a.page.getByTestId('hr-report').innerText()).includes('sürüyor')) throw new Error('açık atak "sürüyor" diye yazıldı');
   const hint = await a.page.getByTestId('hr-copy-hint').innerText();
   if (!hint.includes('ana ekrandan') || !hint.includes('Hastanın ev raporu')) throw new Error('kopyalama yönergesi yok: ' + hint);
   await a.page.getByTestId('hr-copy-link').waitFor();
@@ -1054,6 +1076,105 @@ await step('Tur 2–3 kilidi: Epley 4. adımda karşı yana dönülünce "yanlı
   if (!seen) throw new Error('4. adıma gelinmedi');
   if (!seen.includes('yanlış taraf') || !seen.includes('SOL')) throw new Error('uyarı metni beklenmedik: ' + seen);
   if (phase !== 'done') throw new Error('yanlış taraftan sonra manevra tamamlanmadı: ' + phase);
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+// ------------------------------------------------------------------------------------------------
+// Kullanıcı turu 5 (k06 #4): elle denenip testle korunmayan davranışlar da uçtan uca kilit altında.
+
+/** Yeni ekrandaki seçenek grubunun ilk seçeneğine, grup hâlâ kilitliyken (çift dokunuşun ikincisi gibi) dokunur. */
+async function tapWhileLocked(page, group, sinceMs, lockMs) {
+  const g = page.getByRole('radiogroup', { name: group });
+  await g.waitFor({ timeout: 5000 });
+  const radio = g.getByRole('radio').first();
+  const b = await radio.boundingBox();
+  if ((await g.getAttribute('data-locked')) === null) throw new Error(`"${group}" kilitsiz açıldı (sınama geçersiz)`);
+  await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+  const ms = Date.now() - sinceMs;
+  if (ms > lockMs) throw new Error(`ikinci dokunuş kilit süresinden sonra yapıldı (${ms} ms; sınama geçersiz)`);
+  // Kilit kalktıktan sonra da soru yerinde ve yanıtsız.
+  await page.waitForTimeout(lockMs + 300);
+  if (!(await g.isVisible())) throw new Error(`kilitliyken dokunuş "${group}" sorusunu yanıtladı`);
+  if (await g.locator('[role="radio"][aria-checked="true"]').count()) throw new Error(`kilitliyken dokunuş "${group}" seçimini işaretledi`);
+}
+
+await step('Tur 5 kilidi: seçenek ekranlarında çift dokunuşun ikincisi sonraki soruyu yanıtlamaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  // Güvenlik soruları: sonuncusuna kadar normal; sonuncunun "Hayır"ından hemen sonra ilk seçenek ekranına kilitliyken dokunuş.
+  const seen = [];
+  let reachedChoice = false;
+  for (let i = 0; i < 30; i++) {
+    const q = page.getByTestId('redflag-question');
+    await q.waitFor();
+    const id = await q.getAttribute('data-qid');
+    seen.push(id);
+    await page.locator('.yesno:not([data-locked])').waitFor();
+    const t0 = Date.now();
+    await page.getByTestId('yn-no').click();
+    await page.waitForFunction(
+      (prev) => {
+        const el = document.querySelector('[data-testid="redflag-question"]');
+        return !el || el.getAttribute('data-qid') !== prev;
+      },
+      id
+    );
+    if (!(await q.isVisible().catch(() => false))) {
+      await tapWhileLocked(page, 'Tetikleyen hareket', t0, 800);
+      reachedChoice = true;
+      break;
+    }
+  }
+  if (!reachedChoice) throw new Error('güvenlik sorularından sonra seçenek ekranına gelinmedi');
+  // Seçenekten seçeneğe: "Tetikleyen hareket" yanıtlanınca "Süre" sorusu kilitli açılır; hemen gelen dokunuş yanıtlamaz.
+  await unlocked(page);
+  const t1 = Date.now();
+  await page.getByRole('radio', { name: /Yatarken ya da yataktan kalkarken/ }).click();
+  await tapWhileLocked(page, 'Süre', t1, 800);
+  await snap(page, 'secenek-cift-dokunus');
+  // Bilinçli yanıt kilit kalkınca çalışır.
+  await clickChoice(page, /1 dakikadan kısa/);
+  await page.getByRole('radiogroup', { name: 'Süre' }).waitFor({ state: 'detached', timeout: 5000 });
+  const rf = (await storeOf(page)).episodes.at(-1)?.redFlags?.at(-1)?.answers ?? {};
+  const unseen = Object.keys(rf).filter((k) => !seen.includes(k));
+  if (unseen.length) throw new Error('ekranda görülmeden yanıtlanan güvenlik sorusu: ' + unseen.join(', '));
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 5 kilidi: sık tekrar uyarısı varken 1. güvenlik sorusunun Evet/Hayır düğmeleri iPhone 13 ekranında görünür', async () => {
+  const now = Date.now();
+  const DAY = 24 * 3600e3;
+  // Son 6 ayda 4 kapanmış atak (+ yeni atak): sık tekrar uyarısı 1. soruda gösterilir.
+  const past = [8, 35, 70, 120].map((d, i) => ({
+    id: 'old' + i,
+    startedAt: now - d * DAY,
+    endedAt: now - d * DAY + 3600e3,
+    side: 'R',
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'resolved'
+  }));
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: past } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('redflag-question').waitFor();
+  await page.getByTestId('recurrence-warning').waitFor();
+  const vp = page.viewportSize();
+  for (const id of ['yn-yes', 'yn-no']) {
+    const b = await page.getByTestId(id).boundingBox();
+    if (!b || b.y < 0 || b.y + b.height > vp.height || b.x < 0 || b.x + b.width > vp.width) {
+      throw new Error(`${id} görünür alanın dışında: ${JSON.stringify(b)} (ekran ${vp.width}×${vp.height})`);
+    }
+  }
+  const scrolled = await page.evaluate(() => window.scrollY);
+  if (scrolled !== 0) throw new Error('1. soru sayfa kaydırılmış olarak açıldı: ' + scrolled);
+  await snap(page, 'sik-tekrar-1-soru');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });
