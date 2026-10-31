@@ -54,7 +54,7 @@ const E = '(?![\\p{L}\\p{N}])';
 
 /**
  * Sesli okumada açılan kısaltmalar. Yalnız anlamı tek ve yanlış okunma olasılığı yüksek olanlar: noktalı kısaltmalar
- * ("ör.", "vb.", "Dr.") her yerde; birim kısaltmaları ("dk", "sn") yalnız bir sayıdan sonra (başka bir sözcükle
+ * ("ör.", "vb.", "Dr.") her yerde; birim kısaltmaları ("dk", "sn", "s") yalnız bir sayıdan sonra (başka bir sözcükle
  * karışmasın). Büyük harfle başlayan kısaltma büyük harfle açılır ("Ör." → "Örneğin").
  */
 const ABBREVIATIONS: { re: RegExp; to: string }[] = [
@@ -68,6 +68,7 @@ const ABBREVIATIONS: { re: RegExp; to: string }[] = [
   { re: new RegExp(`${B}Dr\\.\\s*`, 'gu'), to: 'Doktor ' },
   { re: new RegExp(`(\\d)\\s*dk${E}`, 'gu'), to: ' dakika' },
   { re: new RegExp(`(\\d)\\s*sn${E}`, 'gu'), to: ' saniye' },
+  { re: new RegExp(`(\\d)\\s*s${E}`, 'gu'), to: ' saniye' },
 ];
 
 /** Kısaltmaları sesli okunacak biçimde açar (ekrandaki metin değişmez). */

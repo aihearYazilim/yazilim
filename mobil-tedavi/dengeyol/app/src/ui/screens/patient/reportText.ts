@@ -5,7 +5,7 @@
 import { type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidAt, rxValidityLabel, rxValidUntil } from '../../../core/prescription';
 import { wrapDeg } from '../../../core/geometry';
 import { capitalizeTr, type ProtocolId, PROTOCOLS, resolveProtocol, type Side, sideName, type StepDef } from '../../../core/protocols';
-import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
+import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary, stopReasonTextFor, PRONE_ARRIVAL_TEXT, REACH_TOUCHED_ONLY_TEXT } from '../../../core/runner';
 import { clampDose, DEFAULT_DOSE, type DoseLimits, localDayKey, RED_FLAGS, type SideDecision } from '../../../core/safety';
 import { formatDate, formatDateTimeYear, lastEpisodeOutcome, TREATMENT_WINDOW_DAYS } from '../../../state/episodes';
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from '../../../state/types';
@@ -69,7 +69,7 @@ export function symptomText(r: StepRecord): string | null {
 // ---------------------------------------------------------------------------------------------
 
 /** Arama sırasında ulaşılan en iyi açı (yürütücü kaydı; F1 `StepRecord.reach`). Eski kayıtlarda yok. */
-type Reach = { phi: number | null; theta: number | null };
+type Reach = NonNullable<StepRecord['reach']>;
 
 function readReach(r: StepRecord): Reach | null {
   const reach = r.reach;
@@ -87,7 +87,12 @@ export function reachText(r: StepRecord, step: StepDef | undefined): string | nu
   const reach = readReach(r);
   if (!reach || !step || step.target.kind !== 'lying') return null;
   const t = step.target;
+  // Hedefe yüzüstünden geçilerek gelindiyse açı farkı yanıltıcıdır (kullanıcı turu 4, k02).
+  if (r.proneArrival) return PRONE_ARRIVAL_TEXT;
   const parts: string[] = [];
+  const inTarget = reach.phi !== null && reach.phi >= t.phiMin && reach.phi <= t.phiMax;
+  // Hedefe yalnız bir an değildiyse hedef içindeki değer "sarktı" diye yazılmaz (k07, tur 4).
+  if (reach.touchedOnly && inTarget) return REACH_TOUCHED_ONLY_TEXT;
   if (reach.phi !== null) {
     const phi = Math.round(reach.phi);
     if (t.phiMin > 0) {
@@ -105,6 +110,7 @@ export function reachText(r: StepRecord, step: StepDef | undefined): string | nu
     const err = Math.round(Math.abs(wrapDeg(reach.theta - t.theta)));
     if (err > t.thetaTol) parts.push(`dönüş hedefe en yakın ~${err}° uzak kaldı (izin ±${t.thetaTol}°)`);
   }
+  if (reach.touchedOnly) parts.push(REACH_TOUCHED_ONLY_TEXT);
   return parts.length ? parts.join(', ') : null;
 }
 

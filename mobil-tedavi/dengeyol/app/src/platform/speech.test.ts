@@ -32,3 +32,11 @@ describe('konuşma metni (speechText)', () => {
     expect(speechText(t)).toBe(t);
   });
 });
+
+describe('saniye kısaltması (kullanıcı turu 4, k07)', () => {
+  it('sayıdan sonraki "s" "saniye" okunur; sözcük içindeki s değişmez', () => {
+    expect(speechText('72 s içinde gelinemedi')).toBe('72 saniye içinde gelinemedi');
+    expect(speechText('45 sn kaldı')).toBe('45 saniye kaldı');
+    expect(speechText('2 sağ yan')).toBe('2 sağ yan');
+  });
+});

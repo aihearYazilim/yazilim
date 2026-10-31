@@ -8,6 +8,7 @@ import {
   endNoteText,
   maneuverPauses,
   profileRxCode,
+  reachText,
   reportPlainText,
   rxHeaderLine,
   rxShortcutUsed,
@@ -192,6 +193,13 @@ describe('pozisyona gelinemedi: nerede durulduğu (k07, k02)', () => {
   // F1'in ekleyeceği alan (StepRecord.reach) henüz türde yok: kayıtta varmış gibi verilir.
   const withReach = (r: StepRecord, phi: number | null, theta: number | null) => ({ ...r, reach: { phi, theta } }) as StepRecord;
 
+  it('hedefe yalnız bir an değdiyse ya da yüzüstünden gelindiyse yanıltıcı açı yazılmaz (kullanıcı turu 4)', () => {
+    const step = stepDefFor('epley', 'R', 'ep-1');
+    const touched = rec({ stepId: 'ep-1', unreachable: true, reach: { phi: 16, theta: 44, touchedOnly: true } });
+    expect(reachText(touched, step)).toBe('hedefe yalnız bir an değdi, tutulamadı');
+    const prone = rec({ stepId: 'ep-1', unreachable: true, proneArrival: true, reach: { phi: 20, theta: 160 } });
+    expect(reachText(prone, step)).toBe('yüzüstünden geçilerek gelindi, kabul edilmedi');
+  });
   it('taraf testinde durulunca: manevra "yapılmadı", durulan yer taraf testi; stopDetail varsa o yazılır', () => {
     const e = ep();
     expect(maneuverHeadText(e)).toBe('yapılmadı (planlanan: Epley)');
