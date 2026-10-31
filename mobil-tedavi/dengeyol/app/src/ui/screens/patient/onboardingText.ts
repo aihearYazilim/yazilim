@@ -31,7 +31,8 @@ export function contraSpeech(helper: boolean): string {
 
 /**
  * Uygunluk adımı açılınca okunan kısa giriş (kullanıcı turu 4, k01: "Yavaş" seste tam liste ~90 s sürüyordu). Tam liste
- * "Tekrar dinle (bütün maddeler)" düğmesinde; okuyamayan kişi (k05) düğmeyi buradan öğrenir.
+ * "Tekrar dinle (bütün maddeler)" düğmesinde; okuyamayan kişi (k05) düğmeyi buradan öğrenir. Kullanıcı turu 5 (k05): "emin
+ * değilseniz işaretleyin ve doktorunuza sorun" kısa girişte de söylenir.
  */
 export function contraSpeechShort(helper: boolean): string {
   return [
@@ -39,6 +40,8 @@ export function contraSpeechShort(helper: boolean): string {
     helper
       ? 'Ekrandaki durumlardan hastaya uyan varsa işaretleyin; hiçbiri uymuyorsa en alttaki seçeneği işaretleyin.'
       : 'Ekrandaki durumlardan size uyan varsa işaretleyin; hiçbiri uymuyorsa en alttaki seçeneği işaretleyin.',
+    // Yalnız dinleyen kişi emin olmadığında ne yapacağını da duysun (kullanıcı turu 5, k05).
+    helper ? 'Emin değilseniz o maddeyi işaretleyin ve hastanın doktoruna sorun.' : 'Emin değilseniz o maddeyi işaretleyin ve doktorunuza sorun.',
     'Maddelerin hepsini dinlemek için Tekrar dinle düğmesine dokunun.'
   ].join(' ');
 }

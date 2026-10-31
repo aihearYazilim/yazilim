@@ -10,12 +10,16 @@ describe('uygunluk listesinin sesli okunuşu (kullanıcı turu 4, k01, k05)', ()
       expect(s).toMatch(/en alttaki seçeneği işaretleyin/);
       expect(s).toMatch(/Tekrar dinle/);
       for (const c of CONTRAINDICATIONS) expect(s).not.toContain(`madde: ${c.label}`);
-      // Tam listenin küçük bir parçası (normal hızda ~15 s).
-      expect(s.length).toBeLessThan(240);
+      // Tam listenin küçük bir parçası (normal hızda ~20 s).
+      expect(s.length).toBeLessThan(300);
+      // Kullanıcı turu 5 (k05): emin olmayan ne yapacağını kısa girişte de duyar.
+      expect(s).toMatch(/Emin değilseniz o maddeyi işaretleyin ve (hastanın )?doktoru(nuza|na) sorun\./);
       expect(s.length * 3).toBeLessThan(contraSpeech(helper).length);
     }
     expect(contraSpeechShort(true)).toMatch(/^Hasta için uygun mu\?/);
     expect(contraSpeechShort(false)).toMatch(/^Sizin için uygun mu\?/);
+    expect(contraSpeechShort(false)).toContain('Emin değilseniz o maddeyi işaretleyin ve doktorunuza sorun.');
+    expect(contraSpeechShort(true)).toContain('Emin değilseniz o maddeyi işaretleyin ve hastanın doktoruna sorun.');
   });
   it('"Tekrar dinle"de bütün maddeler ve "hiçbiri" seçeneğinin adı', () => {
     const s = contraSpeech(false);
@@ -54,5 +58,14 @@ describe('tansiyon ilacı notu (kullanıcı turu 4, k07)', () => {
     expect(CONTRA_NOT_BLOCKING_TEXT_HELPER).toMatch(
       /Hasta tansiyon ilacı kullanıyorsa.*ayağa kalkınca göz kararması.*durdurur.*hastanın hekimine önceden sorun/
     );
+  });
+});
+
+describe('tarihte gün başında sıfır yok (kullanıcı turu 5, k03)', () => {
+  it('"8 Kasım 2026", "08 Kasım" değil', () => {
+    const at = new Date('2026-10-24T10:00:00').getTime();
+    const t = dxRecentAnsweredText(at, at + 7 * 24 * 3600_000);
+    expect(t).toMatch(/^24 Ekim 2026 tarihinde seçildi; 8 Kasım 2026 tarihine kadar/);
+    expect(t).not.toMatch(/\b08 /);
   });
 });

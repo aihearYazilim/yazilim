@@ -146,6 +146,13 @@ export interface Episode {
    * bunu kullanır. Eski kayıtlarda yok.
    */
   unreachableAt?: { at: number; test: 'side' | 'maneuver' | 'retest' | 'practice'; protocolId: ProtocolId; side: Side; record?: StepRecord };
+  /**
+   * Taraf testi ya da tekrar testi "Kendimi kötü hissediyorum" ile durduruldu (kullanıcı turu 5, k01). Test kayıtları manevra
+   * gibi saklanmadığı ve yarım test sonuç sayılmadığı için (tekrar testi listesine yazılırsa "negatif" sanılır) ayrı tutulur;
+   * rapor "… durduruldu: hasta kendini iyi hissetmedi" yazar (testStopText, ui/screens/patient/reportText.ts). Atak açık kalır.
+   * Eski kayıtlarda yok.
+   */
+  testStops?: { at: number; test: 'side' | 'retest'; side: Side; reason: 'USER_FEELS_UNWELL' }[];
 }
 
 export interface ClinicPatient {

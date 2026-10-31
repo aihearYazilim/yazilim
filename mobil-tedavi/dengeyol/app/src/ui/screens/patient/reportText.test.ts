@@ -24,7 +24,10 @@ import {
   reportPeriod,
   stepDefFor,
   stepSummary,
+  PRONE_ARRIVAL_STOP_TEXT,
+  retestText,
   stopWhereText,
+  testStopText,
   unreachableStopDetail
 } from './reportText';
 
@@ -238,7 +241,16 @@ describe('pozisyona gelinemedi: nerede durulduğu (k07, k02)', () => {
     const rr = { ...r, reach: { phi: 0, theta: 0 } };
     const detail = unreachableStopDetail('maneuver', 'epley', 'R', [rr]);
     expect(detail).not.toMatch(/dönüş hedefe/);
-    expect(detail).toMatch(/yanlış taraftan geçilerek gelinen açı kabul edilmez/);
+    // Kural değil olay (kullanıcı turu 5, k02): yüzüstünden gelinmediyse yalnız "önce yanlış tarafa dönüldü…".
+    expect(detail).not.toMatch(/kabul edilmez/);
+    expect(detail).toMatch(/önce yanlış tarafa dönüldü, doğru yana gelinemedi/);
+    const prone = unreachableStopDetail('maneuver', 'epley', 'R', [{ ...rr, proneArrival: true, startedAt: 0, endedAt: 72_000 }]);
+    expect(prone).toBe(
+      'Epley sağ manevrası, 1. adım "Yan": önce yanlış tarafa dönüldü, doğru yana gelinemedi; hedef açıya yüzüstünden geçilerek gelindi; kabul edilmedi; 72 s içinde gelinemedi'
+    );
+    expect(prone).toContain(PRONE_ARRIVAL_STOP_TEXT);
+    // Açı farkı ve kısa "yüzüstünden geçilerek gelindi, kabul edilmedi" yinelenmez.
+    expect(prone).not.toMatch(/gelindi, kabul/);
     // Yanlış tarafta kalınmadıysa dönüş uzaklığı yine yazılır.
     expect(unreachableStopDetail('maneuver', 'epley', 'R', [{ ...rr, wrongSideStop: false, wrongSide: false }])).toMatch(/dönüş hedefe en yakın/);
   });
@@ -343,5 +355,37 @@ describe('dönem raporu (k09)', () => {
     const line = periodSummaryLine(periodEpisodes(d, now));
     expect(line.indexOf('hekime yönlendirildi')).toBeLessThan(line.indexOf('son sabah testi negatif'));
     expect(line).toMatch(new RegExp(`^Son atak \\(18 Kasım\\): hekime yönlendirildi — güvenlik sorusu: ${flag.label}`));
+  });
+});
+
+describe('testte "Kendimi kötü hissediyorum" (kullanıcı turu 5, k01)', () => {
+  const at = new Date('2026-11-08T14:05:00').getTime();
+  const e: Episode = {
+    id: 'e1',
+    startedAt: at - 600_000,
+    side: null,
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'active',
+    testStops: [
+      { at, test: 'side', side: 'R', reason: 'USER_FEELS_UNWELL' },
+      { at: at + 3600_000, test: 'retest', side: 'L', reason: 'USER_FEELS_UNWELL' }
+    ]
+  };
+  it('raporda "kendini iyi hissetmedi" yazılır; tarih gün başında sıfırsız', () => {
+    expect(testStopText(e.testStops![0]!)).toBe('8 Kasım 2026 14:05 — sağ taraf testi durduruldu: hasta kendini iyi hissetmedi');
+    expect(testStopText(e.testStops![1]!)).toMatch(/tekrar testi \(sol\) durduruldu: hasta kendini iyi hissetmedi$/);
+    const t = reportPlainText(e, emptyData(), at + 7200_000);
+    expect(t).toMatch(/Testte durdurma: 8 Kasım 2026 14:05 — sağ taraf testi durduruldu: hasta kendini iyi hissetmedi/);
+    expect(t).toMatch(/Testte durdurma: .*tekrar testi \(sol\)/);
+    expect(t).not.toMatch(/USER_FEELS_UNWELL/);
+    expect(t).not.toMatch(/\b08 Kasım/);
+    expect(retestText({ at, kind: 'early', side: 'R', vertigo: false, latencySec: null, durationSec: null })).toMatch(/^8 Kasım 2026 14:05/);
+  });
+  it('eski kayıtta (testStops yok) satır yazılmaz', () => {
+    expect(reportPlainText({ ...e, testStops: undefined }, emptyData(), at)).not.toMatch(/Testte durdurma/);
   });
 });

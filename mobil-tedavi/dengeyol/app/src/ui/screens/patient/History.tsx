@@ -1,5 +1,5 @@
 import { ReportQr } from './ReportQr';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
 import { RED_FLAGS } from '../../../core/safety';
@@ -37,7 +37,8 @@ import {
   stepDefFor,
   stepSummary,
   stopReasonText,
-  stopWhereText
+  stopWhereText,
+  testStopText
 } from './reportText';
 
 const STATUS: Record<EpisodeStatus, { label: string; cls: string }> = {
@@ -266,6 +267,12 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
               <dd data-testid="report-side-conflict">{e.sideConflictNote}</dd>
             </>
           )}
+          {(e.testStops ?? []).map((t, i) => (
+            <Fragment key={`ts${i}`}>
+              <dt>Testte durdurma</dt>
+              <dd data-testid="report-test-stop">{testStopText(t)}</dd>
+            </Fragment>
+          ))}
           {validity && !inPeriod && (
             <>
               <dt>Reçete geçerliliği</dt>

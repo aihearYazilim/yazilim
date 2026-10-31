@@ -153,12 +153,25 @@ export function unreachableStopDetail(
   const parts = [`${where}, ${kind === 'maneuver' && idx >= 0 ? `${idx + 1}. adım ` : ''}"${r.title}"${kind === 'maneuver' ? '' : ' adımı'}`];
   const details: string[] = [];
   if (r.wrongSide) details.push('önce yanlış tarafa dönüldü, doğru yana gelinemedi');
-  if (r.wrongSideStop) details.push('yanlış taraftan geçilerek gelinen açı kabul edilmez');
-  const reach = reachText(r, step);
+  // Kural değil olay yazılır (kullanıcı turu 5, k02): yüzüstünden gelindiyse bu; açı farkı yazılmaz (yanıltıcı).
+  if (r.proneArrival) details.push(PRONE_ARRIVAL_STOP_TEXT);
+  const reach = r.proneArrival ? null : reachText(r, step);
   if (reach) details.push(reach);
   else if (!r.wrongSide) details.push('ulaşılan açı kaydedilmedi');
   if (r.endedAt !== null && r.endedAt >= r.startedAt) details.push(`${Math.round((r.endedAt - r.startedAt) / 1000)} s içinde gelinemedi`);
   return `${parts[0]}: ${details.join('; ')}`;
+}
+
+/** "Durulan yer" satırında yüzüstünden gelme olayı (kullanıcı turu 5, k02). */
+export const PRONE_ARRIVAL_STOP_TEXT = 'hedef açıya yüzüstünden geçilerek gelindi; kabul edilmedi';
+
+/**
+ * Taraf testi ya da tekrar testinin "Kendimi kötü hissediyorum" ile durdurulması (Episode.testStops; kullanıcı turu 5,
+ * k01): "31 Ekim 2026 14:05 — sağ taraf testi durduruldu: hasta kendini iyi hissetmedi".
+ */
+export function testStopText(t: NonNullable<Episode['testStops']>[number]): string {
+  const what = t.test === 'side' ? `${sideName(t.side)} taraf testi` : `tekrar testi (${sideName(t.side)})`;
+  return `${formatDateTimeYear(t.at)} — ${what} durduruldu: ${CODE_TEXT[t.reason] ?? 'yarıda bırakıldı'}`;
 }
 
 /** Atakta "pozisyona gelinemedi" ile durdurulan manevra (son), yoksa null. */
@@ -429,6 +442,7 @@ function episodeHeadLines(e: Episode, d: AppData, now: number, inPeriod: boolean
   if (sc !== null) L.push(`Reçeteli kısa yol: ${rxShortcutText(sc)}`);
   if (!inPeriod) L.push(`Doz: ${doseSummaryText(e, d, now)}`);
   if (e.sideConflictNote) L.push(`Taraf uyuşmazlığı: ${e.sideConflictNote}`);
+  for (const t of e.testStops ?? []) L.push(`Testte durdurma: ${testStopText(t)}`);
   if (!inPeriod) {
     const cl = consentLine(p);
     if (cl) L.push(`Onam: ${cl}`);

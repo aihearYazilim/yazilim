@@ -197,7 +197,8 @@ export function rxValidAt(p: RxDate, now: number, validDays: number = RX_VALID_D
 export function rxValidityLabel(p: RxDate, style: 'long' | 'short' = 'long', validDays: number = RX_VALID_DAYS): string | null {
   const last = rxLastValidDay(p, validDays);
   if (!last) return null;
-  const txt = last.toLocaleDateString('tr-TR', { day: '2-digit', month: style === 'short' ? '2-digit' : 'long', year: 'numeric' });
+  // Uzun biçimde gün başında sıfır yok ("8 Kasım 2026"; kullanıcı turu 5, k03); kısa biçim "08.11.2026" kalır.
+  const txt = last.toLocaleDateString('tr-TR', style === 'short' ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: 'numeric', month: 'long', year: 'numeric' });
   return `${txt} tarihine kadar (dahil)`;
 }
 

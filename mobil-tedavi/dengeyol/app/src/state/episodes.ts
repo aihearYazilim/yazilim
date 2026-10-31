@@ -402,17 +402,18 @@ export function formatTime(t: number): string {
   return new Date(t).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 }
 
+/** Gün başında sıfır olmadan: "8 Kasım 14:05" (kullanıcı turu 5, k03; diğer tarih biçimleri de böyle). */
 export function formatDateTime(t: number): string {
-  return new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
+  return new Date(t).toLocaleString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Yıllı tarih-saat (paylaşılan rapor: hekim ay sonra okuyabilir). */
 export function formatDateTimeYear(t: number): string {
-  return new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(t).toLocaleString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatDate(t: number): string {
-  return new Date(t).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+  return new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 // ---- Güvenlik sorularının ilk okunuş kilidi (kullanıcı turu 3, k06) ------------------------------------------------------

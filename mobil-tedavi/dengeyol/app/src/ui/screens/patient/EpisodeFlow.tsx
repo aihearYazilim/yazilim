@@ -65,7 +65,7 @@ import { Choice, choiceSpeech, ListenAgain, Segmented, StepDots, takeTapRect, us
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
-import { HelperCard, HoldButton, RunnerView, type RunnerOutcome } from '../RunnerView';
+import { HoldButton, RunnerView, type RunnerOutcome } from '../RunnerView';
 import { BedSetup } from '../Illustrations';
 import { speech } from '../../../platform/speech';
 import { unlockAudio } from '../../../platform/feedback';
@@ -84,13 +84,16 @@ import {
   CONFIRM_GAP_PX,
   confirmBackPad,
   confirmPlacement,
+  PREP_HELPER_ITEMS,
   prepHearingText,
   prepItems,
   prepSpokenFull,
   prepSpokenShort,
   redFlagConfirmHeadline,
   safetyStopTextFor,
-  type SpokenOption
+  type SpokenOption,
+  UNWELL_END_TITLE,
+  unwellEndText
 } from './flowText';
 
 type Mode = 'start' | 'retest' | 'treat' | 'practice';
@@ -631,11 +634,28 @@ export function EpisodeFlow() {
     setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: `${safetyStopTextFor(stopTextFor('POSITION_UNREACHABLE', recs), store.get().settings.assist === 'helper')} Durulan yer: ${stopDetail}.`, testid: 'end-unreachable' });
   };
 
+  /**
+   * Taraf testi ya da tekrar testi "Kendimi kötü hissediyorum" ile durduruldu (kullanıcı turu 5, k01): manevradakiyle aynı
+   * "Dinlenin" ekranı ve sesi; atağa yazılır (rapor: "… durduruldu: hasta kendini iyi hissetmedi"). Atak açık kalır; yarım
+   * test sonuç sayılmaz (tekrar testi listesine yazılmaz).
+   */
+  const stopUnwell = (test: 'side' | 'retest', side: Side) => {
+    if (mode !== 'practice') {
+      const id = test === 'side' ? ensureEpisode() : activeEpisode(store.get())?.id;
+      if (id) updateEpisode(id, (e) => ({ ...e, testStops: [...(e.testStops ?? []), { at: Date.now(), test, side, reason: 'USER_FEELS_UNWELL' as const }] }));
+    }
+    setStage({ k: 'end', tone: 'warn', title: UNWELL_END_TITLE, text: unwellEndText('test'), testid: 'end-unwell' });
+  };
+
   const onSideRunExit = (o: RunnerOutcome, order: Side[], results: SideTestResult[]) => {
     if (notStarted(o)) return;
     const side = order[results.length]!;
     if (unreachable(o)) {
       referUnreachable(o, 'side', 'dix-hallpike', side);
+      return;
+    }
+    if (o.phase === 'aborted' && o.state.stopReason === 'USER_FEELS_UNWELL') {
+      stopUnwell('side', side);
       return;
     }
     if (o.phase === 'aborted') {
@@ -736,13 +756,7 @@ export function EpisodeFlow() {
       if (ep && mode !== 'practice') updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'VERTIGO_TOO_LONG' }));
       setStage({ k: 'end', tone: 'warn', title: 'Manevra durduruldu', text: safetyStopTextFor(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG, store.get().settings.assist === 'helper'), testid: 'end-safety' });
     } else if (o.state.stopReason === 'USER_FEELS_UNWELL') {
-      setStage({
-        k: 'end',
-        tone: 'warn',
-        title: 'Dinlenin',
-        text: 'Manevrayı durdurdunuz. Yavaşça oturun, dinlenin ve su için. Kendinizi iyi hissetmiyorsanız ya da yeni bir belirti varsa hekiminize başvurun; acil belirtilerde 112\'yi arayın.',
-        testid: 'end-unwell'
-      });
+      setStage({ k: 'end', tone: 'warn', title: UNWELL_END_TITLE, text: unwellEndText('maneuver'), testid: 'end-unwell' });
     } else {
       setStage({ k: 'end', tone: 'info', title: 'Manevra yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden başlayabilirsiniz.', testid: 'end-aborted' });
     }
@@ -750,6 +764,10 @@ export function EpisodeFlow() {
 
   const onRetestExit = (o: RunnerOutcome, side: Side) => {
     if (notStarted(o)) return;
+    if (o.phase === 'aborted' && o.state.stopReason === 'USER_FEELS_UNWELL') {
+      stopUnwell('retest', side);
+      return;
+    }
     if (o.phase === 'aborted') {
       setStage({ k: 'end', tone: 'info', title: 'Test yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden deneyin.', testid: 'end-aborted' });
       return;
@@ -1594,6 +1612,7 @@ function AfterManeuver({ onDone, practice }: { onDone: (sev: AfterSev) => void; 
       <ChoiceQuestion
         title="Şu an nasılsınız?"
         lead="Oturmaya devam edin; kalkarken dikkatli olun."
+        flowing
         deferPrompt={looking ? undefined : LOOK_AT_SCREEN}
         priority={looking ? 'high' : 'normal'}
         name="Manevra sonrası"
@@ -1834,6 +1853,7 @@ function ChoiceQuestion<T extends string>({
   lead,
   spokenLead,
   spokenPrefix,
+  flowing,
   deferPrompt,
   priority = 'high',
   name,
@@ -1849,6 +1869,8 @@ function ChoiceQuestion<T extends string>({
   /** Varsayılan okunuşta lead yerine okunacak kısa cümle; yoksa lead yalnız "Tekrar dinle"de. */
   spokenLead?: string;
   spokenPrefix?: string;
+  /** Varsayılan okunuşta seçenek adları "Birinci/İkinci" olmadan tek cümlede (kullanıcı turu 5, k01). */
+  flowing?: boolean;
   deferPrompt?: string;
   priority?: 'high' | 'normal';
   name: string;
@@ -1857,7 +1879,7 @@ function ChoiceQuestion<T extends string>({
   lockKey: string;
   lockMs?: number;
 }) {
-  const { short, full } = choiceSpeechParts({ title, spokenTitle, lead, spokenLead, prefix: spokenPrefix }, options);
+  const { short, full } = choiceSpeechParts({ title, spokenTitle, lead, spokenLead, prefix: spokenPrefix, flowing }, options);
   useDeferredRead(deferPrompt, short, priority);
   return (
     <>
@@ -2040,7 +2062,14 @@ function PrepScreen({ mode, maneuverId, sideTest, onReady }: { mode: Mode; maneu
             { value: 'helper', label: 'Bir yakınımla' }
           ]}
         />
-        {helper && <HelperCard />}
+        {helper && (
+          // Yalnız listede olmayanlar (kullanıcı turu 5, k02): yastık ve telefonu tutuş yukarıdaki maddelerde yazılı.
+          <ol className="small stack" style={{ margin: 0, paddingLeft: 20, gap: 6 }} data-testid="helper-card">
+            {PREP_HELPER_ITEMS.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ol>
+        )}
         {helper && (
           <label className="row">
             <input

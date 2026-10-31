@@ -17,6 +17,20 @@ function ordinalList(title: string, options: string[]): string {
   return [title, ...options.map((o, i) => `${ORDINALS[i] ?? `${i + 1}.`}: ${o.replace(/\.+$/, '')}.`)].join(' ');
 }
 
+const lowerFirst = (s: string) => s.charAt(0).toLocaleLowerCase('tr-TR') + s.slice(1);
+
+/**
+ * Seçenek adları "Birinci/İkinci" olmadan tek cümlede (kullanıcı turu 5, k01): "Şu an nasılsınız? İyiyim; hafif baş
+ * dönmesi ya da bulantı var; …". Seçenekler arası noktalı virgül (seste kısa duraklama); iç noktalar virgüle döner.
+ */
+function flowingList(title: string, options: string[]): string {
+  const items = options.map((o, i) => {
+    const t = o.replace(/\.+$/, '').replace(/:\s*(\S)/, (_m, c: string) => `: ${c.toLocaleLowerCase('tr-TR')}`).replace(/\.\s+/g, ', ');
+    return i === 0 ? t : lowerFirst(t);
+  });
+  return `${title} ${items.join('; ')}.`;
+}
+
 export interface SpokenOption {
   label: string;
   sub?: string;
@@ -33,14 +47,14 @@ export interface SpokenOption {
  * alt açıklamaları). Ekranda her şey yazılı kalır; hiçbir seçenek düşmez.
  */
 export function choiceSpeechParts(
-  q: { title: string; spokenTitle?: string; lead?: string; spokenLead?: string; prefix?: string },
+  q: { title: string; spokenTitle?: string; lead?: string; spokenLead?: string; prefix?: string; flowing?: boolean },
   options: SpokenOption[]
 ): { short: string; full: string } {
   const head = (title: string, lead?: string) => [q.prefix, title, lead].filter(Boolean).join(' ');
-  const short = ordinalList(
-    head(q.spokenTitle ?? q.title, q.spokenLead),
-    options.map((o) => sayable(o.sub && o.subAlways ? `${o.label}: ${o.sub}` : o.label))
-  );
+  const shortOptions = options.map((o) => sayable(o.sub && o.subAlways ? `${o.label}: ${o.sub}` : o.label));
+  const short = q.flowing
+    ? flowingList(head(q.spokenTitle ?? q.title, q.spokenLead), shortOptions)
+    : ordinalList(head(q.spokenTitle ?? q.title, q.spokenLead), shortOptions);
   const full = ordinalList(
     head(q.title, q.lead),
     options.map((o) => sayable(o.sub ? `${o.label}. ${o.sub}` : o.label))
@@ -120,6 +134,19 @@ export function prepItems({ helper, semontOnly, semontAfterTests }: PrepTextInpu
   ];
 }
 
+/**
+ * Hazırlıktaki yardımcı kartı (yakını modu): yalnız hazırlık listesinde olmayanlar (kullanıcı turu 5, k02). Yastık,
+ * telefonun parmak uçlarıyla tutulması ve "başı dönerse siz dokunun" listede yazılı; burada tekrarlanmaz. Yürütücü
+ * ekranındaki yardımcı kartı (RunnerView `HelperCard`) bütün maddeleri gösterir (orada liste yok).
+ */
+export const PREP_HELPER_ITEMS: readonly string[] = [
+  'Hastanın başucunda ya da yanında durun. Başucundaysanız ekranı size göre çevirin (aşağıdaki kutu); sonraki tüm ekranlar da size göre döner.',
+  'Başı iki elle tutup çevirin; ekran dokunuşu baş dönmesi işaretidir.',
+  'Hasta "dönüyor" deyince ekrana dokunun; geçince yeniden dokunun.',
+  'Ekrandaki ok ve yazı, başı hangi yöne çevireceğinizi söyler ("hastanın sağı/solu"). Durdurmak için "Duraklat"ı basılı tutun.',
+  'Telefonun otomatik ekran döndürmesini kapatın; yan yatışlarda yazılar yer değiştirmesin.'
+];
+
 const PREP_READY = 'Hazırsanız ekrandaki Hazırım düğmesine dokunun.';
 
 /** Hazırlık ekranı açılınca okunan kısa hâl (kullanıcı turu 3, k05): yatak ve yastık, ses, "Hazırım". */
@@ -168,6 +195,19 @@ export function afterManeuverSpoken(sev: 'none' | 'mild', time: string, night: b
 /** Kusma/şiddetli bulantı yanıtından sonraki kısa sesli metin (112 uyarısı kalır). */
 export const AFTER_SEVERE_SPOKEN =
   "Bugün manevrayı tekrarlamayın. Oturun, küçük yudumlarla su için. Konuşma bozukluğu, güçsüzlük, çift görme ya da şiddetli baş ağrısı olursa 112'yi arayın.";
+
+// ---- "Kendimi kötü hissediyorum" bitiş ekranı ---------------------------------------------------------------------------
+
+/**
+ * "Kendimi kötü hissediyorum" ile durdurulunca bitiş ekranının ("Dinlenin") metni. Manevrada, taraf testinde ve tekrar
+ * testinde aynı yönlendirme (kullanıcı turu 5, k01): oturun, dinlenin, su için; geçmiyorsa hekim, acil belirtide 112.
+ */
+export function unwellEndText(what: 'maneuver' | 'test'): string {
+  return `${what === 'maneuver' ? 'Manevrayı' : 'Testi'} durdurdunuz. Yavaşça oturun, dinlenin ve su için. Kendinizi iyi hissetmiyorsanız ya da yeni bir belirti varsa hekiminize başvurun; acil belirtilerde 112'yi arayın.`;
+}
+
+/** "Dinlenin" ekranının başlığı (manevra ve testlerde aynı). */
+export const UNWELL_END_TITLE = 'Dinlenin';
 
 // ---- Güvenlik durdurması bitiş ekranı, yakını modu -------------------------------------------------------------------
 

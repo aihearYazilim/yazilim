@@ -9,6 +9,7 @@ import {
   CONFIRM_GAP_PX,
   confirmBackPad,
   confirmPlacement,
+  PREP_HELPER_ITEMS,
   prepHearingText,
   prepItems,
   prepSpokenFull,
@@ -16,6 +17,8 @@ import {
   redFlagConfirmHeadline,
   SAFETY_STOP_TEXT_HELPER,
   safetyStopTextFor,
+  UNWELL_END_TITLE,
+  unwellEndText,
   verticalOverlap
 } from './flowText';
 
@@ -164,5 +167,45 @@ describe('yakını modunda hazırlık işitme notu ve durdurma bitiş ekranı (k
     }
     expect(SAFETY_STOP_TEXT_HELPER.VERTIGO_TOO_LONG).toMatch(/112/);
     expect(safetyStopTextFor('başka metin', true)).toBe('başka metin');
+  });
+});
+
+describe('kullanıcı turu 5 (k01, k02)', () => {
+  it('"Şu an nasılsınız?" varsayılan okunuşu tek cümle; "Yeni belirti" listesi kalır, tam hâl değişmez', () => {
+    const opts = [
+      { label: 'İyiyim' },
+      { label: 'Hafif baş dönmesi ya da bulantı var', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
+      { label: 'Kusma ya da şiddetli bulantı var' },
+      { label: 'Yeni belirti var', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.', subAlways: true }
+    ];
+    const q = { title: 'Şu an nasılsınız?', lead: 'Oturmaya devam edin; kalkarken dikkatli olun.' };
+    const { short, full } = choiceSpeechParts({ ...q, flowing: true }, opts);
+    expect(short).toBe(
+      'Şu an nasılsınız? İyiyim; hafif baş dönmesi ya da bulantı var; kusma ya da şiddetli bulantı var; yeni belirti var: konuşma bozukluğu, yüzde ya da kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.'
+    );
+    expect(short).not.toMatch(/Birinci|İkinci/);
+    expect(short.match(/[.?]/g)?.length).toBe(2);
+    expect(full).toBe(choiceSpeechParts(q, opts).full);
+    expect(short.length).toBeLessThan(choiceSpeechParts(q, opts).short.length);
+  });
+  it('"Dinlenin" metni manevrada ve testte aynı yönlendirme (dinlenme, su, hekim, 112)', () => {
+    expect(UNWELL_END_TITLE).toBe('Dinlenin');
+    for (const w of ['maneuver', 'test'] as const) {
+      expect(unwellEndText(w)).toMatch(/dinlenin ve su için.*hekiminize başvurun; acil belirtilerde 112'yi arayın\.$/);
+    }
+    expect(unwellEndText('maneuver')).toMatch(/^Manevrayı durdurdunuz\./);
+    expect(unwellEndText('test')).toMatch(/^Testi durdurdunuz\./);
+  });
+  it('hazırlıktaki yardımcı kartı listedeki yastık ve tutuş maddesini tekrarlamaz', () => {
+    const items = prepItems({ helper: true, semontOnly: false, semontAfterTests: false });
+    expect(items.join(' ')).toMatch(/yastık/i);
+    for (const t of PREP_HELPER_ITEMS) {
+      expect(t).not.toMatch(/yastı/i);
+      expect(t).not.toMatch(/parmak uç/);
+    }
+    const card = PREP_HELPER_ITEMS.join(' ');
+    expect(card).toMatch(/başucunda/);
+    expect(card).toMatch(/iki elle/);
+    expect(card).toMatch(/geçince yeniden dokunun/);
   });
 });
