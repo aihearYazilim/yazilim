@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { diagnosisGate, GATE_TEXT, RED_FLAGS } from '../../../core/safety';
+import { contraDoctorQuestions, contraindicationsFor, diagnosisGate, GATE_TEXT, RED_FLAGS, redFlagDoctorAsk } from '../../../core/safety';
 import {
   doseFor,
   doseLimitText,
@@ -9,14 +9,18 @@ import {
   formatDateTime,
   formatTime,
   nextAction,
+  nightNote,
   doseLimitsFor,
   pendingReferral,
   recurrenceWarning,
+  referralFlags,
   RX_VALID_DAYS,
   rxActive,
+  rxFirstEpisode,
   sameDayReopenable,
   startDose
 } from '../../../state/episodes';
+import type { AppData, Episode } from '../../../state/types';
 import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
 import { activeEpisode, store, useData } from '../../../state/store';
@@ -73,11 +77,16 @@ export function PatientHome() {
     d.episodes.map((e) => e.startedAt),
     now
   );
-  // Yeni atak için doz: sınır doluyken büyük düğme yerine sınır ve bir sonraki izinli zaman (11+ soru sordurulmaz).
-  // Bugün manevrayla kapatılmış atak yeniden açılacaksa (yeni atak açılmaz) sınır o atağın sıradaki adımında söylenir.
+  // Yeni atak için doz: sınır doluyken büyük düğme yerine sınır ve bir sonraki izinli zaman (14 soru sordurulmaz).
+  // Bugün manevrayla kapatılmış atak yeniden açılacaksa sınır o atağa göre hesaplanır (kullanıcı turu 2, k06: sınır doluyken
+  // "Bugünkü atağınıza devam edilir" düğmesi çıkmasın).
   const reopenable = !ep ? sameDayReopenable(d, now) : null;
-  const startDs = !ep && !reopenable ? startDose(d, now) : null;
+  const startDs = !ep ? startDose(d, now) : null;
   const startBlocked = startDs && !startDs.allowed ? startDs : null;
+  const referralEp = !ep ? pendingReferral(d) : null;
+  // Reçeteli kısa yolda taraf testi yapılmaz (kullanıcı turu 2, k02).
+  const rxShort = !reopenable && rxFirstEpisode(d, now);
+  const rxReport = !ep ? rxEndReport(d, now) : null;
 
   return (
     <Screen title="DengeYol" right={right}>
@@ -88,6 +97,7 @@ export function PatientHome() {
             <h3>Manevralar şu an kapalı</h3>
           </div>
           <p>{GATE_TEXT[gate.reason]}</p>
+          {gate.reason === 'CONTRAINDICATION' && <ContraSummary ids={p.contraindications} />}
           <button className="btn secondary" onClick={() => nav('/hasta/kurulum')}>
             Bilgilerimi düzenle
           </button>
@@ -104,6 +114,7 @@ export function PatientHome() {
             <h3>Önce hekiminizle görüşün</h3>
           </div>
           <p>Son atağınız hekime yönlendirmeyle sonlandı. Yeni bir manevradan önce hekiminiz ya da odyoloğunuzla görüşmeniz gerekir.</p>
+          {referralEp && <ReferralReason episode={referralEp} />}
           <DoctorClearance testid="home-doctor-cleared" />
         </div>
       )}
@@ -137,7 +148,11 @@ export function PatientHome() {
             <Icon name="sparkle" size={34} />
             Baş dönmem başladı
             <span className="sub">
-              {reopenable ? 'Bugünkü atağınıza devam edilir' : `${RED_FLAGS.length} güvenlik sorusu, iki kısa test ve manevra · ~15 dk`}
+              {reopenable
+                ? 'Bugünkü atağınıza devam edilir'
+                : rxShort
+                  ? `${RED_FLAGS.length} güvenlik sorusu ve manevra · ~8 dk (gerekirse kısa test)`
+                  : `${RED_FLAGS.length} güvenlik sorusu, iki kısa test ve manevra · ~15 dk`}
             </span>
           </button>
           <button className="btn secondary block" onClick={() => nav('/hasta/atak/practice')} data-testid="practice">
@@ -145,6 +160,8 @@ export function PatientHome() {
           </button>
         </>
       )}
+
+      {rxReport && <RxEndReportCard report={rxReport} />}
 
       {recurrent && (
         <div className="notice" data-testid="home-recurrence">
@@ -176,9 +193,13 @@ export function PatientHome() {
 
       {!ep && <InstallCard />}
 
-      <div className="card soft row">
+      <div className="card soft row" data-testid="home-112">
         <Icon name="phone" />
-        <span className="grow small">Acil belirtilerde (sürekli baş dönmesi, konuşma bozukluğu, güçsüzlük) uygulamayı bırakın.</span>
+        <span className="grow small">
+          Şunlardan biri varsa uygulamayı bırakıp 112'yi arayın: sürekli baş dönmesi, çift görme, konuşma ya da yutma bozukluğu, yüzde,
+          kolda ya da bacakta güçsüzlük veya uyuşma, baş dönmesi yokken de yürüyememe, ani ve şiddetli baş ya da boyun ağrısı, göğüs
+          ağrısı, çarpıntı ya da bayılma.
+        </span>
         <a className="btn danger" href="tel:112">
           112
         </a>
@@ -209,7 +230,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
     <div className="stack" data-testid="active-episode">
       <div className="card tint-primary stack">
         <div className="row">
-          <span className="chip primary">Aktif atak</span>
+          <span className="chip primary">Şu anki atak</span>
           <span className="small muted grow">başlangıç {formatDateTime(ep.startedAt)}</span>
         </div>
         <dl className="kv">
@@ -250,6 +271,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
               <Icon name="timer" />
               <span>
                 Test saati: <strong>{formatTime(na.at)}</strong>. Bu arada oturun ve dinlenin.
+                {nightNote(na.at) ? ` ${nightNote(na.at)}` : ''}
               </span>
             </div>
           )}
@@ -262,8 +284,8 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           <h2>Sabah testi</h2>
           <p>
             {na.needsSideTest
-              ? 'Pozisyon testleri baş dönmesini tetiklemedi; manevra yapılmadı. Sabah iki tarafı yeniden test edeceğiz.'
-              : 'Son test baş dönmesini tetiklemedi. Kristallerin yerinde kaldığını görmek için ertesi sabah bir kez daha test edelim.'}
+              ? 'Pozisyon testlerinde baş dönmesi başlamadı; manevra yapılmadı. Sabah iki tarafı yeniden test edeceğiz.'
+              : 'Son testte baş dönmesi gelmedi. Kristallerin yerinde kaldığını görmek için yarın sabah bir kez daha bakalım.'}
           </p>
           {na.ready ? (
             <button
@@ -290,7 +312,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           <h2>Baş dönmesi sürüyor</h2>
           {dose.allowed ? (
             <>
-              <p>Tekrar testi baş dönmesini tetikledi. Manevrayı yeniden yapabilirsiniz (bugün {dose.remainingToday} hakkınız kaldı).</p>
+              <p>Tekrar testinde baş dönmesi başladı. Manevrayı yeniden yapabilirsiniz (bugün {dose.remainingToday} hakkınız kaldı).</p>
               <button className="btn primary block xl" onClick={() => nav('/hasta/atak/treat')} data-testid="do-treat">
                 Manevrayı tekrarla
               </button>
@@ -320,7 +342,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
       {na.kind === 'resolved-suggest' && (
         <div className="card tint-ok stack">
           <h2>Düzelmiş görünüyor</h2>
-          <p>Hem 1 saat sonraki hem de sabah testi baş dönmesini tetiklemedi.</p>
+          <p>Ne 1 saat sonraki ne de sabah testinde baş dönmesi başladı.</p>
           <button className="btn primary block" onClick={() => close('resolved', 'Tekrar testleri negatif')} data-testid="close-resolved">
             Atağı kapat
           </button>
@@ -483,7 +505,154 @@ export function UrgencyLadder() {
           hareketle başladığını hekiminize anlatın. Ayağa kalkınca gözleriniz kararıyorsa bunu da söyleyin.
         </li>
       </ol>
+      <DoctorNotes />
       <p className="small muted">Tanı aldıktan sonra "Bilgilerimi düzenle" ile hekiminizin söylediğini girin; size uygunsa manevralar açılır.</p>
+    </div>
+  );
+}
+
+/** Tanısız kişinin muayenede hekime söyleyecekleri (kullanıcı turu 2, k03): paylaşılabilir, doldurulabilir liste. */
+export const DOCTOR_NOTES: string[] = [
+  'Baş dönmesi ilk kez ne zaman başladı?',
+  'Her seferinde ne kadar sürüyor: saniyeler mi, dakikalar mı, saatler mi?',
+  'Hangi hareketle başlıyor: yatarken, yataktan kalkarken, yatakta yana dönerken, yukarı bakınca ya da kendiliğinden?',
+  'Kulağınızda işitme azalması, tıkanma, çınlama, ağrı ya da akıntı var mı; hangi kulakta?',
+  'Bulantı ya da kusma oldu mu?',
+  'Ayağa kalkınca, etraf dönmeden gözleriniz kararıyor mu?',
+  'Yakın zamanda başınızı çarptınız mı ya da hastalandınız mı (ateş, grip)?',
+  'Kullandığınız ilaçlar (özellikle kan sulandırıcı ve tansiyon ilaçları).'
+];
+
+function DoctorNotes() {
+  const [msg, setMsg] = useState<string | null>(null);
+  const share = async () => {
+    const text = ['DengeYol — muayenede hekime söyleyeceklerim', ...DOCTOR_NOTES.map((q, i) => `${i + 1}. ${q} …`)].join('\n');
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Hekime söyleyeceklerim', text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setMsg('Liste kopyalandı; notlarınıza ya da bir mesaja yapıştırıp yanıtlarınızı yazabilirsiniz.');
+    } catch {
+      /* kullanıcı vazgeçti ya da pano kullanılamıyor */
+    }
+  };
+  return (
+    <div className="stack small" style={{ gap: 6 }} data-testid="doctor-notes">
+      <strong>Muayenede hekime söyleyecekleriniz</strong>
+      <ul style={{ margin: 0, paddingLeft: 22 }}>
+        {DOCTOR_NOTES.map((q) => (
+          <li key={q}>{q}</li>
+        ))}
+      </ul>
+      <button className="btn secondary" onClick={() => void share()} data-testid="doctor-notes-share">
+        <Icon name="share" /> Listeyi kaydet / gönder
+      </button>
+      {msg && <span className="muted">{msg}</span>}
+    </div>
+  );
+}
+
+/** Kapalı kartta engelleyen maddeler ve hekime sorulacaklar (kullanıcı turu 2, k07). */
+function ContraSummary({ ids }: { ids: string[] }) {
+  const items = contraindicationsFor(ids);
+  if (items.length === 0) return null;
+  const questions = contraDoctorQuestions(ids);
+  return (
+    <div className="stack small" style={{ gap: 4 }} data-testid="home-gate-items">
+      <strong>{items.length > 1 ? 'Sizi engelleyen durumlar:' : 'Sizi engelleyen durum:'}</strong>
+      <ul style={{ margin: 0, paddingLeft: 22 }}>
+        {items.map((c) => (
+          <li key={c.id}>{c.label}</li>
+        ))}
+      </ul>
+      <strong>Hekiminize sorun:</strong>
+      <ol style={{ margin: 0, paddingLeft: 22 }}>
+        {questions.map((q) => (
+          <li key={q}>{q}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/**
+ * Hekime yönlendirme kilidinde: hangi güvenlik sorusuna verilen yanıtla durdurulduğu ve hekime sorulacak cümle; sorunun
+ * açıklaması varsa (kulak: KBB değerlendirmesinden sonra nasıl yanıtlanır) o da (kullanıcı turu 2, k03).
+ */
+export function ReferralReason({ episode }: { episode: Episode }) {
+  const flags = referralFlags(episode);
+  if (flags.length === 0) return null;
+  return (
+    <div className="stack small" style={{ gap: 6 }} data-testid="referral-reason">
+      <p>
+        <strong>Durdurma nedeni:</strong> güvenlik sorularında {flags.map((q) => `"${q.label}"`).join(', ')} için "Evet" dediniz.
+      </p>
+      {flags.map((q) => (
+        <div key={q.id} className="stack" style={{ gap: 4 }}>
+          <p>
+            <strong>Hekiminize sorun:</strong> "{redFlagDoctorAsk(q)}"
+          </p>
+          {q.hint && <p className="muted">{q.hint}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Reçetenin süresi dolduysa ve o dönemde atak varsa: raporu reçeteyi yazan hekime gönderme hatırlatması (k09). */
+function rxEndReport(d: AppData, now: number): { episodeId: string; by?: string; key: string } | null {
+  const rx = d.patient?.prescription;
+  if (!rx || rxActive(d.patient, now)) return null;
+  const issued = new Date(`${rx.date}T00:00:00`).getTime();
+  if (!Number.isFinite(issued) || issued > now) return null;
+  const since = d.episodes.filter((e) => e.startedAt >= issued && e.status !== 'active').sort((a, b) => b.startedAt - a.startedAt);
+  const last = since[0];
+  if (!last) return null;
+  return { episodeId: last.id, by: rx.by, key: `dengeyol:rxReportHidden:${rx.date}:${rx.pid ?? ''}` };
+}
+
+function RxEndReportCard({ report }: { report: { episodeId: string; by?: string; key: string } }) {
+  const nav = useNavigate();
+  const [hidden, setHidden] = useState(() => {
+    try {
+      return localStorage.getItem(report.key) === '1';
+    } catch {
+      return false;
+    }
+  });
+  if (hidden) return null;
+  const hide = () => {
+    try {
+      localStorage.setItem(report.key, '1');
+    } catch {
+      /* yok say */
+    }
+    setHidden(true);
+  };
+  return (
+    <div className="card tint-accent stack" data-testid="home-rx-report">
+      <div className="card-title">
+        <Icon name="print" />
+        <h3>Reçetenizin süresi doldu</h3>
+      </div>
+      <p className="small">
+        Raporunuzu hekiminize{report.by ? ` (${report.by})` : ''} gönderin: hekiminiz tedavinin işe yarayıp yaramadığını görür.
+      </p>
+      <button
+        className="btn secondary block"
+        onClick={() => {
+          hide();
+          nav(`/hasta/rapor/${report.episodeId}`);
+        }}
+        data-testid="home-rx-report-open"
+      >
+        <Icon name="print" /> Raporu hekime gönder
+      </button>
+      <button className="btn ghost" onClick={hide}>
+        Gönderdim, gizle
+      </button>
     </div>
   );
 }
@@ -494,6 +663,11 @@ export function UrgencyLadder() {
  */
 export function DoctorClearance({ testid, onCleared }: { testid: string; onCleared?: () => void }) {
   const [ask, setAsk] = useState(false);
+  const d = useData();
+  const ref = pendingReferral(d);
+  const flags = ref ? referralFlags(ref) : [];
+  // Kilit bir güvenlik sorusundan geldiyse soru o belirtiyi de anar (ör. kulak belirtisi; k03).
+  const about = flags.length ? ` ve işaretlediğiniz belirti (${flags.map((q) => q.label).join(', ')})` : '';
   if (!ask) {
     return (
       <button className="btn secondary block" onClick={() => setAsk(true)} data-testid={testid}>
@@ -503,7 +677,7 @@ export function DoctorClearance({ testid, onCleared }: { testid: string; onClear
   }
   return (
     <div className="card stack" data-testid={`${testid}-confirm`}>
-      <strong>Hekiminiz, bu baş dönmesi için evde manevra yapmanızda sakınca olmadığını söyledi mi?</strong>
+      <strong>Hekiminiz, bu baş dönmesi{about} için evde manevra yapmanızda sakınca olmadığını söyledi mi?</strong>
       <button
         className="btn primary block"
         onClick={() => {

@@ -12,12 +12,26 @@ export type StopAction = 'emergency' | 'doctor';
 
 export interface RedFlagQuestion {
   id: string;
+  /** Ekrandaki tam soru (ilaç adları, parantezli açıklamalar dahil). */
   text: string;
+  /**
+   * Sesli okunan kısa biçim (kullanıcı turu 2: ilaç listesi ve parantezler yalnız ekranda; "/" okunmaz). Yoksa `text` okunur.
+   * Kısa biçim sorunun her belirtisini yine anar; yalnız örnekler ve açıklamalar ekranda kalır.
+   */
+  spoken?: string;
+  /** Kısa ad (kilit kartında "durdurma nedeni" ve hekime sorulacak cümlede). */
+  label: string;
+  /** Sorunun altında, ekranda gösterilen açıklama (ör. KBB değerlendirmesinden sonra nasıl yanıtlanır). */
+  hint?: string;
   /** Hangi yanıt durdurur? */
   stopsOn: 'yes' | 'no';
   action: StopAction;
   /** Durunca kullanıcıya gösterilecek açıklama. */
   why: string;
+  /** Hekime yönlendirmede kime başvurulacağı (durdurma ekranının alt satırı; `why` ile tutarlı). Yoksa genel metin. */
+  refer?: string;
+  /** Kilit kartında önerilen, hekime sorulacak cümle. Yoksa `redFlagDoctorAsk` genel cümle kurar. */
+  doctorAsk?: string;
   /** Soruya uyan yanıt etiketleri (varsayılan "Evet, var" / "Hayır, yok"). */
   yesLabel?: string;
   noLabel?: string;
@@ -26,11 +40,16 @@ export interface RedFlagQuestion {
 /**
  * Soru dili (kullanıcı turu 1): her soru olumlu kurulur ve "Evet" her zaman "bu belirti bende var" demektir (çift olumsuz
  * yok); uzun sorular kısa sorulara bölünür (bölünen soru, eski sorunun her belirtisini korur). Güvenli yanıt hep "Hayır"dır.
+ * Kullanıcı turu 2: BPPV hastası kendi baş dönmesini işaretleyip gereksiz yere kilitlenmesin diye ortostatik ve yürüme
+ * sorularına niteleyici eklendi (belirti düşmedi; durdurma anlamı aynı).
  */
 export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'continuous',
     text: 'Hiç kıpırdamadan otururken ya da yatarken bile etrafınız saatlerdir dönüyor mu, ya da saatlerdir ayakta duramayacak kadar dengesiz misiniz? (Ataktan sonra kalan hafif sersemlik sayılmaz.)',
+    spoken:
+      'Hiç kıpırdamadan otururken ya da yatarken bile etrafınız saatlerdir dönüyor mu, ya da saatlerdir ayakta duramayacak kadar dengesiz misiniz? Ataktan sonra kalan hafif sersemlik sayılmaz.',
+    label: 'sürekli baş dönmesi ya da dengesizlik',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'BPPV baş dönmesi yalnızca baş hareketiyle başlar ve saniyeler sürer. Sürekli baş dönmesi başka, acil bir nedene bağlı olabilir.'
@@ -39,6 +58,7 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'neuro',
     text: 'Gözünüz çift görüyor mu, ya da konuşmanız veya yutmanız bozuldu mu?',
+    label: 'çift görme, konuşma ya da yutma bozukluğu',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'Çift görme, konuşma ya da yutma bozukluğu inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
@@ -46,20 +66,25 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'neuroWeak',
     text: 'Yüzünüzde, kolunuzda ya da bacağınızda güçsüzlük ya da uyuşma var mı?',
+    label: 'yüzde, kolda ya da bacakta güçsüzlük veya uyuşma',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'Yüzde, kolda ya da bacakta güçsüzlük veya uyuşma inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
   },
   {
+    // Kullanıcı turu 2 (k09): şiddetli BPPV atağının ilk dakikalarında hasta da "yürüyemiyorum" der. Gövde ataksisi baş
+    // dönmesinden bağımsızdır: "kıpırdamadan dururken ya da baş dönmesi olmadığı anlarda bile" niteleyicisi (soru kalır).
     id: 'neuroGait',
-    text: 'Yürüyemeyecek kadar dengeniz bozuldu mu?',
+    text: 'Yürüyemeyecek kadar dengeniz bozuldu mu: başınızı kıpırdatmadan dururken ya da baş dönmesi olmadığı anlarda bile?',
+    label: 'baş dönmesi yokken de yürüyememe',
     stopsOn: 'yes',
     action: 'emergency',
-    why: 'Yürüyemeyecek kadar denge bozukluğu inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
+    why: 'Baş dönmesi olmadığı anlarda bile yürüyemeyecek kadar denge bozukluğu inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
   },
   {
     id: 'headache',
     text: 'Yeni başlayan ve şiddetli bir baş ağrısı ya da boyun ağrısı var mı?',
+    label: 'yeni ve şiddetli baş ya da boyun ağrısı',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'Baş dönmesiyle birlikte yeni ve şiddetli baş ya da boyun ağrısı acil değerlendirme gerektirir.'
@@ -67,22 +92,32 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'cardiac',
     text: 'Bu baş dönmesiyle birlikte göğüs ağrısı, çarpıntı ya da bayılma oldu mu?',
+    label: 'göğüs ağrısı, çarpıntı ya da bayılma',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'Bu belirtiler kalple ilgili olabilir ve acil değerlendirme gerektirir.'
   },
   {
     // Ortostatik hipotansiyon/presenkop: yaşlıda en sık BPPV taklitçisi (AAO-HNSF 2017 ayırıcı tanı; Bhattacharyya ve ark.
-    // Otolaryngol Head Neck Surg 2017;156(3S):S1–S47).
+    // Otolaryngol Head Neck Surg 2017;156(3S):S1–S47). Kullanıcı turu 2 (k01, k05, k09): ayırıcı nitelik dönme hissinin
+    // YOKLUĞUDUR; yataktan kalkarken başı dönen BPPV hastası "Evet" deyip gereksiz yere kilitlenmesin.
     id: 'orthostatic',
-    text: 'Ayağa kalkınca gözleriniz kararıyor ya da bayılacak gibi oluyor musunuz?',
+    text: 'Ayağa kalkınca, etrafınız dönmeden gözleriniz kararıyor ya da bayılacak gibi oluyor musunuz? (Yataktan kalkarken etrafın dönmesi sayılmaz; burada dönme hissini değil, göz kararmasını soruyoruz.)',
+    spoken: 'Ayağa kalkınca, etrafınız dönmeden gözleriniz kararıyor ya da bayılacak gibi oluyor musunuz? Yataktan kalkarken etrafın dönmesi sayılmaz.',
+    label: 'ayağa kalkınca dönme olmadan göz kararması ya da bayılacak gibi olma',
     stopsOn: 'yes',
     action: 'doctor',
-    why: 'Ayağa kalkınca göz kararması ve bayılacak gibi olma, tansiyon düşmesi ya da kalp ritmiyle ilgili olabilir; kristal oynamasına (BPPV) bağlı değildir. Birkaç gün içinde aile hekiminize ya da dahiliye hekimine başvurun; o zamana kadar yavaş kalkın ve bir yere tutunun. Bayılırsanız ya da göğüs ağrısı olursa hemen 112\'yi arayın.'
+    why: 'Ayağa kalkınca etraf dönmeden göz kararması ve bayılacak gibi olma, tansiyon düşmesi ya da kalp ritmiyle ilgili olabilir; kristal oynamasına (BPPV) bağlı değildir. Birkaç gün içinde aile hekiminize ya da dahiliye hekimine başvurun; o zamana kadar yavaş kalkın ve bir yere tutunun. Bayılırsanız ya da göğüs ağrısı olursa hemen 112\'yi arayın.',
+    refer: 'Aile hekiminize ya da dahiliye hekimine başvurun ve ayağa kalkınca gözlerinizin karardığını söyleyin.',
+    doctorAsk:
+      'Ayağa kalkınca, etraf dönmeden gözlerim kararıyor; DengeYol bu yüzden manevrayı durdurdu. Bunun nedeni nedir ve baş dönmem için evde manevra yapmamda sakınca var mı?'
   },
   {
     id: 'anticoag',
     text: 'Kan sulandırıcı ilaç kullanıyorsanız (aspirin/Coraspin, Plavix, Coumadin, Xarelto, Eliquis, Lixiana, Pradaxa gibi): yeni bir baş ağrınız var mı ya da yakın zamanda başınızı çarptınız mı?',
+    // İlaç adları yalnız ekranda (k01, k05, k09): seste "aspirin dahil" yeterli.
+    spoken: 'Aspirin dahil kan sulandırıcı bir ilaç kullanıyorsanız: yeni bir baş ağrınız var mı, ya da yakın zamanda başınızı çarptınız mı? İlaç adları ekranda yazıyor.',
+    label: 'kan sulandırıcı kullanırken yeni baş ağrısı ya da baş çarpması',
     stopsOn: 'yes',
     action: 'emergency',
     noLabel: 'Hayır / bu ilaçları kullanmıyorum',
@@ -91,6 +126,7 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'spontaneous',
     text: 'Başınızı hiç hareket ettirmeden, kendiliğinden başlayan ve dakikalar ya da saatler süren baş dönmesi atakları oluyor mu?',
+    label: 'kendiliğinden başlayan uzun baş dönmesi atakları',
     stopsOn: 'yes',
     action: 'doctor',
     why: 'Kendiliğinden gelen ve uzun süren ataklar BPPV\'ye uymaz; Meniere hastalığı ya da vestibüler migren gibi başka nedenler açısından değerlendirilmelisiniz.'
@@ -98,6 +134,7 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'headTrauma',
     text: 'Son birkaç hafta içinde başınızı çarptınız mı ya da bir kaza geçirdiniz mi?',
+    label: 'son haftalarda baş çarpması ya da kaza',
     stopsOn: 'yes',
     action: 'doctor',
     why: 'Kafa travması sonrası baş dönmesi hekim tarafından değerlendirilmelidir.'
@@ -105,13 +142,23 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'ear',
     text: 'Bir kulağınızda YENİ ya da ani başlayan işitme kaybı, dolgunluk (tıkanma), çınlama, kulak ağrısı ya da kulak akıntısı var mı? (Uzun süredir olan ve değişmeyen çınlama sayılmaz.)',
+    spoken:
+      'Bir kulağınızda yeni ya da ani başlayan işitme kaybı, tıkanma, çınlama, kulak ağrısı ya da kulak akıntısı var mı? Uzun süredir olan ve değişmeyen çınlama sayılmaz.',
+    label: 'yeni kulak belirtisi (işitme kaybı, tıkanma, çınlama, ağrı ya da akıntı)',
+    // Kullanıcı turu 2 (k03): KBB değerlendirmesinden sonra ne yanıtlanacağı. "Yeni" sözünün anlamını açar; durdurma aynı.
+    hint: 'Bir KBB hekimi bu kulak belirtinize baktıysa ve o günden beri artmadıysa artık yeni sayılmaz: "Hayır" deyin. Belirti arttıysa, değiştiyse ya da yeni bir kulak belirtisi eklendiyse "Evet" deyin.',
     stopsOn: 'yes',
     action: 'doctor',
-    why: 'Yeni kulak belirtileri kristal oynaması (BPPV) dışında bir kulak sorununu gösterebilir. Ani işitme kaybı ya da yeni kulak dolgunluğu varsa BUGÜN bir KBB hekimine ya da KBB hekimi olan bir hastanenin acil servisine başvurun: erken tedavi işitmeyi kurtarabilir. Yalnız yeni çınlama, ağrı ya da akıntı varsa birkaç gün içinde KBB hekimine başvurun ve bu belirtiyi söyleyin. Manevrayı KBB değerlendirmesinden sonra yapın.'
+    why: 'Yeni kulak belirtileri kristal oynaması (BPPV) dışında bir kulak sorununu gösterebilir. Ani işitme kaybı ya da yeni kulak dolgunluğu varsa BUGÜN bir KBB hekimine ya da KBB hekimi olan bir hastanenin acil servisine başvurun: erken tedavi işitmeyi kurtarabilir. Yalnız yeni çınlama, ağrı ya da akıntı varsa birkaç gün içinde KBB hekimine başvurun ve bu belirtiyi söyleyin. Manevrayı KBB değerlendirmesinden sonra yapın.',
+    refer: 'Yukarıdaki aciliyete göre bir KBB hekimine başvurun ve kulak belirtinizi söyleyin.',
+    doctorAsk:
+      'Kulağımda yeni bir belirti var (işitme azalması, tıkanma, çınlama, ağrı ya da akıntı); DengeYol bu yüzden manevrayı durdurdu. Bu belirtiyle evde manevra yapabilir miyim? Belirti değişmedikçe uygulamadaki kulak sorusuna "Hayır" diyebilir miyim?'
   },
   {
     id: 'neck',
     text: 'Son bir ay içinde boynunuzu incittiniz mi, boyun travması ya da boyun manipülasyonu (çıtlatma) oldu mu?',
+    spoken: 'Son bir ay içinde boynunuzu incittiniz mi, boyun travması ya da boyun çıtlatma oldu mu?',
+    label: 'son bir ayda boyun incinmesi, travması ya da çıtlatma',
     stopsOn: 'yes',
     action: 'doctor',
     why: 'Yakın zamanda boyun travması olanlarda baş-boyun manevraları güvenli olmayabilir.'
@@ -120,21 +167,49 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     // Olumlu kurulur ("…sıvı alamıyor musunuz?" sorusunda "Hayır" iki anlama gelebiliyordu).
     id: 'fever',
     text: 'Bugün ateşiniz var mı, ya da içtiğiniz suyu bile kusuyor musunuz?',
+    label: 'ateş ya da su bile içilemeyecek kadar kusma',
     stopsOn: 'yes',
     action: 'doctor',
-    why: 'Ateş ya da su bile içilemeyecek kadar kusma, kristal oynaması (BPPV) dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir. Bugün hekiminize ya da acil servise başvurun.'
+    why: 'Ateş ya da su bile içilemeyecek kadar kusma, kristal oynaması (BPPV) dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir. Bugün hekiminize ya da acil servise başvurun.',
+    refer: 'Bugün hekiminize ya da acil servise başvurun ve ateşinizi ya da kusmanızı söyleyin.'
   },
   {
     id: 'same',
     // Soru "farklı mı" diye sorulur: böylece her soruda güvenli yanıt "Hayır" olur (alışkanlıkla yanlış basmayı önler).
     text: 'Bu baş dönmesi, hekiminizin daha önce "kristal oynaması (BPPV)" dediği baş dönmesinden FARKLI mı? Kristal oynamasında dönme hissi yatarken, yataktan kalkarken, yatakta yana dönerken ya da yukarı bakarken başlar ve kısa sürer.',
+    // Kısa biçim (k05, k09): açıklama ekranda kalır.
+    spoken: 'Bu baş dönmesi, hekiminizin daha önce kristal oynaması dediği baş dönmesinden farklı mı?',
+    label: 'öncekinden farklı baş dönmesi',
     stopsOn: 'yes',
     action: 'doctor',
     yesLabel: 'Evet, farklı',
     noLabel: 'Hayır, aynı',
-    why: 'Baş dönmeniz önceki BPPV atağından farklıysa yeni bir değerlendirme gerekir.'
+    why: 'Baş dönmeniz, hekiminizin kristal oynaması (BPPV) dediği önceki baş dönmesinden farklıysa yeni bir değerlendirme gerekir.'
   }
 ];
+
+/** Sesli okunacak soru: kısa biçim ya da tam metin; "/" "ya da" diye okunur (bazı sesler "bölü" der). */
+export function redFlagSpoken(q: RedFlagQuestion): string {
+  return (q.spoken ?? q.text).replace(/\s*\/\s*/g, ' ya da ');
+}
+
+/** Hekime yönlendirmede (acil değilse) varsayılan alt satır. */
+export const RED_FLAG_DEFAULT_REFER = 'Hekiminize ya da odyoloğunuza başvurun ve işaretlediğiniz belirtiyi söyleyin.';
+
+/** Durdurma ekranının "ne yapmalı" satırı: acilde 112; değilse durduran soruların `refer` satırları (tekrarsız). */
+export function redFlagReferText(action: StopAction, triggered: RedFlagQuestion[]): string {
+  if (action === 'emergency') return 'Hemen 112\'yi arayın.';
+  const lines = [...new Set(triggered.filter((q) => q.action === 'doctor').map((q) => q.refer ?? RED_FLAG_DEFAULT_REFER))];
+  return lines.length ? lines.join(' ') : RED_FLAG_DEFAULT_REFER;
+}
+
+/** Kilit kartında hekime sorulacak cümle. */
+export function redFlagDoctorAsk(q: RedFlagQuestion): string {
+  return (
+    q.doctorAsk ??
+    `Güvenlik sorusunda "${q.label}" için "Evet" dedim; DengeYol bu yüzden manevrayı durdurdu. Bu durumla evde manevra yapmamda sakınca var mı?`
+  );
+}
 
 export type YesNo = 'yes' | 'no';
 

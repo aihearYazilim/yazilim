@@ -3,12 +3,17 @@ import {
   closeStaleEpisodes,
   doseLimitsFor,
   doseNextAllowedAt,
+  doseFor,
   dxSideCheck,
+  dxWarnText,
   EARLY_RETEST_MS,
   episodeDose,
+  isNightTime,
   nextAction,
   nextMorning,
+  nightNote,
   pendingReferral,
+  referralFlags,
   recentKnownSide,
   recurrenceWarning,
   reopenEpisode,
@@ -16,8 +21,12 @@ import {
   rxFirstEpisode,
   sameDayReopenable,
   startBlockedByPlan,
-  startDose
+  startDose,
+  SUBTYPE_VALID_MS,
+  subtypeRemembered,
+  totalPauses
 } from './episodes';
+import type { StepRecord } from '../core/runner';
 import { emptyData } from './types';
 import type { Episode, ManeuverLog } from './types';
 
@@ -226,11 +235,27 @@ describe('hekim tanısındaki tarafla çelişki (kullanıcı turu 1)', () => {
   it('14 gün içindeki tanıyla çelişki → yönlendir', () => {
     expect(dxSideCheck(prof({ dxDate: '2026-10-10' }), 'L', now)).toMatchObject({ kind: 'refer' });
   });
-  it('eski ya da tarihsiz tanıyla çelişki → uyarı ve not', () => {
+  it('eski tanıyla çelişki → uyarı ve not', () => {
     const old = dxSideCheck(prof({ dxDate: '2026-07-01' }), 'L', now);
     expect(old).toMatchObject({ kind: 'warn', dxSide: 'R' });
     if (old.kind === 'warn') expect(old.note).toMatch(/sağ.*sol/);
-    expect(dxSideCheck(prof(), 'L', now).kind).toBe('warn');
+    // Tarih yok ama kurulumda açıkça "daha önce" seçilmiş: uyarı.
+    expect(dxSideCheck(prof({ dxWhen: 'older' }), 'L', now).kind).toBe('warn');
+  });
+  it('tanı tarihi boşsa tanı yakın tarihli sayılır → yönlendir (kullanıcı turu 2, k03)', () => {
+    const r = dxSideCheck(prof(), 'L', now);
+    expect(r.kind).toBe('refer');
+    if (r.kind === 'refer') expect(r.note).toMatch(/tarih girilmemiş/);
+    expect(dxSideCheck(prof({ dxWhen: 'recent' }), 'L', now).kind).toBe('refer');
+    // Geçersiz tarih metni de boş sayılır.
+    expect(dxSideCheck(prof({ dxDate: 'abc' }), 'L', now).kind).toBe('refer');
+  });
+  it('geçiş ekranı uyarısı kısa: "tekrarlayan" demez, Bitir yolunu söyler', () => {
+    const t = dxWarnText('R', 'L');
+    expect(t).toMatch(/^Hekiminiz sağ demişti, test sol gösterdi\./);
+    expect(t).toMatch(/Bitir/);
+    expect(t).not.toMatch(/[Tt]ekrarlayan/);
+    expect(t.length).toBeLessThan(160);
   });
   it('geçerli reçete varsa denetim reçeteye bırakılır', () => {
     const rx = { v: 1 as const, side: 'R' as const, canal: 'PC' as const, maneuver: 'epley' as const, date: '2026-10-15', perDay: 3, days: 7 };
@@ -281,8 +306,48 @@ describe('aynı gün yeniden açma ve doz sınırı ana ekranda', () => {
     const next = new Date(doseNextAllowedAt(d, now)!);
     expect([next.getDate(), next.getHours()]).toEqual([28, 6]);
   });
+  it('yeniden açılacak atakta sınır doluysa ana ekran sınırı gösterir (kullanıcı turu 2, k06)', () => {
+    const d = emptyData();
+    d.episodes = [ep({ id: 'a', status: 'closed', endedAt: base + 8000e3, maneuvers: [man(base), man(base + 3600e3), man(base + 7200e3)] })];
+    const now = base + 9000e3;
+    expect(sameDayReopenable(d, now)?.id).toBe('a');
+    expect(startDose(d, now)).toMatchObject({ allowed: false, reason: 'DAILY_LIMIT' });
+    // Sınır dolmamışsa yeniden açılacak atakla aynı doz.
+    d.episodes = [ep({ id: 'a', status: 'closed', endedAt: base + 600e3, maneuvers: [man(base)] })];
+    expect(startDose(d, base + 900e3)).toEqual(doseFor(d, d.episodes[0]!, base + 900e3));
+    expect(startDose(d, base + 900e3).allowed).toBe(true);
+  });
   it('manevrasız atakta plan engeli yok (taraf testi sürebilir)', () => {
     expect(startBlockedByPlan(ep({ side: null }), base)).toBeNull();
     expect(startBlockedByPlan(null, base)).toBeNull();
+  });
+});
+
+describe('kullanıcı turu 2: hasta akışı', () => {
+  it('alt tip yanıtları aynı atakta 6 saat hatırlanır', () => {
+    const e = ep({ subtype: { at: base, trigger: 'liedown', duration: 'short' } });
+    expect(subtypeRemembered(e, base + 3600e3)).toBe(true);
+    expect(subtypeRemembered(e, base + SUBTYPE_VALID_MS + 1)).toBe(false);
+    expect(subtypeRemembered(ep({}), base)).toBe(false);
+    expect(subtypeRemembered(null, base)).toBe(false);
+  });
+  it('manevra kaydının duraklatma toplamı adım kayıtlarından', () => {
+    const rec = (pauses?: number) => ({ pauses }) as unknown as StepRecord;
+    expect(totalPauses([rec(1), rec(), rec(2)])).toBe(3);
+    expect(totalPauses([])).toBe(0);
+  });
+  it('gece saati: 22:00–06:00 arası "uyanınca" notu', () => {
+    expect(isNightTime(new Date(2026, 9, 27, 1, 26).getTime())).toBe(true);
+    expect(isNightTime(new Date(2026, 9, 27, 22, 30).getTime())).toBe(true);
+    expect(isNightTime(new Date(2026, 9, 27, 6, 0).getTime())).toBe(false);
+    expect(isNightTime(new Date(2026, 9, 27, 14, 0).getTime())).toBe(false);
+    expect(nightNote(new Date(2026, 9, 27, 1, 26).getTime())).toMatch(/uyanınca/);
+    expect(nightNote(new Date(2026, 9, 27, 14, 0).getTime())).toBeNull();
+  });
+  it('kilit kartı: atağı durduran güvenlik soruları', () => {
+    const answers = { ear: 'yes' as const, neuro: 'no' as const };
+    const e = ep({ status: 'referred', redFlags: [{ at: base, answers, stopped: true }] });
+    expect(referralFlags(e).map((q) => q.id)).toEqual(['ear']);
+    expect(referralFlags(ep({ status: 'referred', endNote: 'ATYPICAL_LONG' }))).toEqual([]);
   });
 });

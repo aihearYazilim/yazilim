@@ -1,5 +1,5 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
-import { speech } from '../../platform/speech';
+import { Speech, speech } from '../../platform/speech';
 import { Icon } from './Icon';
 
 /** Kilit süresince düğmeler soluk görünür: dokunuşun neden boşa gittiği anlaşılsın. */
@@ -19,6 +19,67 @@ export function useTapLock(lockKey: string | number | undefined, lockMs: number)
     return () => clearTimeout(t);
   }, [lockKey, lockMs]);
   return locked;
+}
+
+/** Sesli okuma gerçekten çalışacak mı (kapalıysa ya da tarayıcıda yoksa okuma kilidi uygulanmaz). */
+function speechOn(): boolean {
+  return speech.enabled && Speech.supported();
+}
+
+/** İlk okunuş kilidinin üst sınırı: soru sesi bundan uzun sürse de düğmeler açılır. */
+export const FIRST_READ_LOCK_MAX_MS = 2500;
+
+/**
+ * Soruyu `lockKey` değişince bir kez okur ve okuma sürerken true döner: ses bitene ya da en çok `maxMs`'ye dek (hangisi
+ * önce). Ses kapalıysa okuma yoktur, kilit de yoktur. "Tekrar dinle" kilitlemez (yalnız ilk okunuş).
+ */
+export function useReadLock(
+  lockKey: string | number | undefined,
+  text: string | undefined,
+  priority: 'high' | 'normal' = 'high',
+  maxMs: number = FIRST_READ_LOCK_MAX_MS
+): boolean {
+  const [reading, setReading] = useState(() => lockKey !== undefined && !!text && speechOn());
+  useLayoutEffect(() => {
+    if (lockKey === undefined || !text) {
+      setReading(false);
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setReading(false);
+    };
+    const on = speechOn();
+    setReading(on);
+    const t = on ? setTimeout(finish, maxMs) : undefined;
+    speech.speak(text, priority, finish);
+    return () => {
+      // Eski okunuşun bitişi (ör. yeni soru onu keserken) yeni sorunun kilidini açmasın.
+      done = true;
+      if (t) clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lockKey, text]);
+  return reading;
+}
+
+/**
+ * Son seçilen yanıt düğmesinin ekrandaki yeri (görünür alana göre). "Doğru mu?" onay ekranı "Yanlış dokundum" düğmesini
+ * tam bu yere koyar: aynı yere ikinci kör dokunuş onay değil geri dönüş olsun (kullanıcı turu 2, k06).
+ */
+let lastTap: { top: number; height: number; at: number } | null = null;
+
+function rememberTap(el: Element) {
+  const r = el.getBoundingClientRect();
+  lastTap = { top: r.top, height: r.height, at: Date.now() };
+}
+
+/** Son dokunuşun yeri (eskiyse ya da yoksa null). Silinmez: StrictMode'da iki kez çağrılan başlatıcı aynı sonucu alsın. */
+export function takeTapRect(maxAgeMs = 3000): { top: number; height: number } | null {
+  const t = lastTap;
+  return t && Date.now() - t.at <= maxAgeMs ? { top: t.top, height: t.height } : null;
 }
 
 /** Seçenekli soru ekranının sesli metni: başlık ve sırayla seçenekler ("Birinci: … İkinci: …"). */
@@ -47,7 +108,8 @@ export function Choice<T extends string>({
   onChange,
   name,
   lockKey,
-  lockMs = 800
+  lockMs = 800,
+  hushOnAnswer
 }: {
   options: { value: T; label: ReactNode; sub?: ReactNode }[];
   value: T | null | undefined;
@@ -55,6 +117,8 @@ export function Choice<T extends string>({
   name: string;
   lockKey?: string | number;
   lockMs?: number;
+  /** Seçim yapılınca ekranın okunuşu kesilsin (kalan seçenekler yanıttan sonra okunmasın). */
+  hushOnAnswer?: boolean;
 }) {
   const locked = useTapLock(lockKey, lockMs);
   return (
@@ -67,8 +131,11 @@ export function Choice<T extends string>({
           aria-checked={value === o.value}
           aria-disabled={locked || undefined}
           className="choice"
-          onClick={() => {
-            if (!locked) onChange(o.value);
+          onClick={(e) => {
+            if (locked) return;
+            rememberTap(e.currentTarget);
+            if (hushOnAnswer) speech.cancel();
+            onChange(o.value);
           }}
         >
           <span className="dot" />
@@ -112,7 +179,8 @@ export function CheckList({
 
 /**
  * Evet/Hayır düğmeleri. `lockKey` değişince düğmeler `lockMs` boyunca pasif kalır: titreyen el ya da çift dokunuş
- * bir sonraki soruyu okunmadan yanıtlamasın.
+ * bir sonraki soruyu okunmadan yanıtlamasın. `speak` verilirse soru (lockKey değişince) bir kez okunur ve ilk okunuşta
+ * düğmeler ses bitene ya da en çok 2,5 s'ye dek de kilitli kalır (kullanıcı turu 2, k05); yanıt verilince okuma kesilir.
  */
 export function YesNo({
   onAnswer,
@@ -120,7 +188,8 @@ export function YesNo({
   yesLabel = 'Evet',
   noLabel = 'Hayır',
   lockKey,
-  lockMs = 600
+  lockMs = 600,
+  speak
 }: {
   onAnswer: (v: 'yes' | 'no') => void;
   value?: 'yes' | 'no';
@@ -128,10 +197,17 @@ export function YesNo({
   noLabel?: string;
   lockKey?: string | number;
   lockMs?: number;
+  /** İlk okunuşta okunacak metin (okuma kilidi ve yanıtta susturma). */
+  speak?: string;
 }) {
-  const locked = useTapLock(lockKey, lockMs);
-  const click = (v: 'yes' | 'no') => {
-    if (!locked) onAnswer(v);
+  const tapLocked = useTapLock(lockKey, lockMs);
+  const reading = useReadLock(speak === undefined ? undefined : lockKey, speak);
+  const locked = tapLocked || reading;
+  const click = (v: 'yes' | 'no', el: Element) => {
+    if (locked) return;
+    rememberTap(el);
+    if (speak !== undefined) speech.cancel();
+    onAnswer(v);
   };
   return (
     <div className="yesno" data-locked={locked || undefined} style={locked ? LOCKED_STYLE : undefined}>
@@ -140,7 +216,7 @@ export function YesNo({
         className={`btn xl ${value === 'yes' ? 'primary' : 'secondary'}`}
         aria-pressed={value === 'yes'}
         aria-disabled={locked || undefined}
-        onClick={() => click('yes')}
+        onClick={(e) => click('yes', e.currentTarget)}
         data-testid="yn-yes"
       >
         {yesLabel}
@@ -150,7 +226,7 @@ export function YesNo({
         className={`btn xl ${value === 'no' ? 'primary' : 'secondary'}`}
         aria-pressed={value === 'no'}
         aria-disabled={locked || undefined}
-        onClick={() => click('no')}
+        onClick={(e) => click('no', e.currentTarget)}
         data-testid="yn-no"
       >
         {noLabel}

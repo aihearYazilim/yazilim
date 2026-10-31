@@ -30,6 +30,11 @@ export interface PatientProfile {
   consentAt?: string;
   diagnosedByDoctor: boolean;
   dxDate?: string;
+  /**
+   * Tarihi bilinmeyen tanının zamanı (kurulumdaki seçim). Taraf çelişkisinde tarih de bu da yoksa tanı yakın tarihli
+   * sayılır (dxSideCheck: hekime yönlendirme); yalnız 'older' ("daha önce") uyarıyla manevraya izin verir.
+   */
+  dxWhen?: 'recent' | 'older';
   dxBy?: string;
   canal: CanalAnswer;
   side: SideAnswer;
@@ -99,6 +104,11 @@ export interface Episode {
    * tarihli tanıda atak SIDE_CONFLICT ile yönlendirilir; eski tanıda uyarılır ve test tarafına manevra yapılır.
    */
   sideConflictNote?: string;
+  /**
+   * Bu atakta verilen alt tip yanıtları (kullanıcı turu 2, k06): 6 saat içinde atağa devam edilirse yeniden sorulmaz.
+   * trigger: 'turnUnsure' = yatay kanal onayında "Emin değilim".
+   */
+  subtype?: { at: number; trigger: 'liedown' | 'unsure' | 'turnUnsure'; duration: 'short' | 'mid' | 'unsure' };
 }
 
 export interface ClinicPatient {
