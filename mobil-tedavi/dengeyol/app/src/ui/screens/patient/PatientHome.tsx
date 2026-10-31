@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { diagnosisGate, DOSE_TEXT, frequentRecurrence, GATE_TEXT } from '../../../core/safety';
+import { diagnosisGate, GATE_TEXT, RED_FLAGS } from '../../../core/safety';
 import {
   doseFor,
+  doseLimitText,
   episodeSide,
   formatDate,
   formatDateTime,
@@ -10,8 +11,11 @@ import {
   nextAction,
   doseLimitsFor,
   pendingReferral,
+  recurrenceWarning,
   RX_VALID_DAYS,
-  rxActive
+  rxActive,
+  sameDayReopenable,
+  startDose
 } from '../../../state/episodes';
 import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
@@ -65,15 +69,20 @@ export function PatientHome() {
   const recentlyClosed = ep
     ? null
     : ([...d.episodes].reverse().find((e) => (e.status === 'resolved' || e.status === 'closed') && e.endedAt && now - e.endedAt < 24 * 3600_000) ?? null);
-  const recurrent = frequentRecurrence(
+  const recurrent = recurrenceWarning(
     d.episodes.map((e) => e.startedAt),
     now
   );
+  // Yeni atak için doz: sınır doluyken büyük düğme yerine sınır ve bir sonraki izinli zaman (11+ soru sordurulmaz).
+  // Bugün manevrayla kapatılmış atak yeniden açılacaksa (yeni atak açılmaz) sınır o atağın sıradaki adımında söylenir.
+  const reopenable = !ep ? sameDayReopenable(d, now) : null;
+  const startDs = !ep && !reopenable ? startDose(d, now) : null;
+  const startBlocked = startDs && !startDs.allowed ? startDs : null;
 
   return (
     <Screen title="DengeYol" right={right}>
       {!gate.ok && (
-        <div className="card tint-warn stack">
+        <div className="card tint-warn stack" data-testid="home-gate-blocked">
           <div className="card-title">
             <Icon name="alert" />
             <h3>Manevralar şu an kapalı</h3>
@@ -84,6 +93,7 @@ export function PatientHome() {
           </button>
         </div>
       )}
+      {!gate.ok && gate.reason === 'NO_DIAGNOSIS' && <UrgencyLadder />}
 
       {gate.ok && ep && <ActiveEpisodeCard now={now} />}
 
@@ -111,12 +121,24 @@ export function PatientHome() {
         </div>
       )}
 
-      {gate.ok && !ep && !referral && (
+      {gate.ok && !ep && !referral && startBlocked && (
+        <div className="card tint-warn stack" data-testid="home-dose-limit">
+          <div className="card-title">
+            <Icon name="timer" />
+            <h3>{startBlocked.reason === 'DAILY_LIMIT' ? 'Bugünlük manevra sınırı doldu' : 'Evde manevra sınırı doldu'}</h3>
+          </div>
+          <p>{doseLimitText(startBlocked, d, now)}</p>
+        </div>
+      )}
+
+      {gate.ok && !ep && !referral && !startBlocked && (
         <>
           <button className="big-action" onClick={() => nav('/hasta/atak/start')} data-testid="start-episode">
             <Icon name="sparkle" size={34} />
             Baş dönmem başladı
-            <span className="sub">11 güvenlik sorusu, iki kısa test ve manevra · ~15 dk</span>
+            <span className="sub">
+              {reopenable ? 'Bugünkü atağınıza devam edilir' : `${RED_FLAGS.length} güvenlik sorusu, iki kısa test ve manevra · ~15 dk`}
+            </span>
           </button>
           <button className="btn secondary block" onClick={() => nav('/hasta/atak/practice')} data-testid="practice">
             <Icon name="play" /> Deneme manevrası (baş dönmesi yokken)
@@ -125,9 +147,9 @@ export function PatientHome() {
       )}
 
       {recurrent && (
-        <div className="notice">
+        <div className="notice" data-testid="home-recurrence">
           <Icon name="alert" />
-          <span>Son 30 günde 3 ya da daha fazla atak yaşadınız. Sık tekrarlayan BPPV'de hekiminizle görüşün; hekiminiz D vitamini düzeyinize de bakabilir.</span>
+          <span>{recurrent.text}</span>
         </div>
       )}
 
@@ -192,7 +214,14 @@ function ActiveEpisodeCard({ now }: { now: number }) {
         </div>
         <dl className="kv">
           <dt>Taraf</dt>
-          <dd>{side === 'R' ? 'Sağ' : side === 'L' ? 'Sol' : 'Henüz belirlenmedi'}</dd>
+          <dd>
+            {/* Test yapılmadan profildeki eski tanının tarafı "taraf" diye gösterilmez (test gereksiz sanılmasın). */}
+            {ep.side || (d.patient && rxActive(d.patient, now))
+              ? `${side === 'R' ? 'Sağ' : 'Sol'}${ep.side ? '' : ' (reçete)'}`
+              : side
+                ? `Henüz test edilmedi (son tanı: ${side === 'R' ? 'sağ' : 'sol'})`
+                : 'Henüz belirlenmedi'}
+          </dd>
           <dt>Bugün</dt>
           <dd>
             {today === null
@@ -269,17 +298,24 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           ) : (
             <div className="notice danger">
               <Icon name="alert" />
-              <span>{DOSE_TEXT[dose.reason]}</span>
+              <span>{doseLimitText(dose, d, now)}</span>
             </div>
           )}
         </div>
       )}
 
-      {na.kind === 'retry-side-test' && (
-        <button className="btn primary block xl" onClick={() => nav('/hasta/atak/start')} data-testid="continue-episode">
-          Ataka devam et
-        </button>
-      )}
+      {/* Sınır doluyken "Ataka devam et" aynı sınır ekranına götüren çıkmaz bir döngüdür: yerine sınır ve sonraki zaman. */}
+      {na.kind === 'retry-side-test' &&
+        (dose.allowed ? (
+          <button className="btn primary block xl" onClick={() => nav('/hasta/atak/start')} data-testid="continue-episode">
+            Ataka devam et
+          </button>
+        ) : (
+          <div className="notice danger" data-testid="home-dose-limit">
+            <Icon name="alert" />
+            <span>{doseLimitText(dose, d, now)}</span>
+          </div>
+        ))}
 
       {na.kind === 'resolved-suggest' && (
         <div className="card tint-ok stack">
@@ -412,6 +448,44 @@ export function RxPaste() {
 
 function rxUntil(date: string): number {
   return new Date(`${date}T00:00:00`).getTime() + RX_VALID_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/**
+ * Tanısız (ilk) baş dönmesi: kilit kalır; ama kişi korkutulup yalnız bırakılmaz. İki sakinleştirici cümle ve belirtiye göre
+ * nereye, ne kadar acil gidileceği (112 / bugün acil / bugün KBB / birkaç gün içinde KBB). Belirti listesi kırmızı bayrak
+ * sorularıyla aynı belirtileri kapsar.
+ */
+export function UrgencyLadder() {
+  return (
+    <div className="card stack" data-testid="urgency-ladder">
+      <h3>İlk kez baş dönmesi: ne yapmalı?</h3>
+      <p>
+        Baş hareketiyle başlayıp saniyeler süren dönme hissinin en sık nedeni iyi huylu kristal oynamasıdır (BPPV); tehlikeli değildir ve
+        muayenede yapılan birkaç dakikalık bir manevrayla çoğunlukla düzelir. Yine de ilk atakta tanının muayeneyle konması gerekir;
+        aşağıdan size uyan ilk satıra göre davranın.
+      </p>
+      <ol className="stack small" style={{ margin: 0, paddingLeft: 22 }}>
+        <li>
+          <strong>Hemen 112:</strong> konuşma ya da yutma bozukluğu, çift görme, yüzde/kolda/bacakta güçsüzlük ya da uyuşma, yürüyememe, ani ve
+          çok şiddetli baş ya da boyun ağrısı, göğüs ağrısı, çarpıntı ya da bayılma.
+        </li>
+        <li>
+          <strong>Bugün acil servise:</strong> kıpırdamadan dururken de saatlerdir süren dönme, içtiğiniz suyu bile kusma, ateş, başınızı çarptıktan
+          sonra başlayan baş dönmesi (kan sulandırıcı kullanıyorsanız özellikle).
+        </li>
+        <li>
+          <strong>Bugün KBB hekimine</strong> (ya da KBB hekimi olan bir hastanenin acil servisine): bir kulakta ani işitme kaybı ya da yeni dolgunluk
+          (tıkanma). Erken tedavi işitmeyi kurtarabilir.
+        </li>
+        <li>
+          <strong>Birkaç gün içinde KBB hekimine ya da odyoloğa:</strong> yalnız yatarken, yataktan kalkarken, yatakta dönerken ya da yukarı bakınca
+          başlayan, kısa süren dönme; yanında hafif bulantı ya da çınlama olabilir. Ne zaman başladığını, ne kadar sürdüğünü ve hangi
+          hareketle başladığını hekiminize anlatın. Ayağa kalkınca gözleriniz kararıyorsa bunu da söyleyin.
+        </li>
+      </ol>
+      <p className="small muted">Tanı aldıktan sonra "Bilgilerimi düzenle" ile hekiminizin söylediğini girin; size uygunsa manevralar açılır.</p>
+    </div>
+  );
 }
 
 /**

@@ -97,6 +97,19 @@ async function step(name, fn) {
   }
 }
 
+/** Yeni soru/onay ekranında düğmeler kısa süre kilitli (çift dokunuş koruması): kilit kalkana dek bekle. */
+async function unlocked(page) {
+  await page.waitForFunction(() => !document.querySelector('[data-locked]'));
+}
+
+/** Seçenekli soru ekranında (kilit kalkınca) bir seçeneğe dokunur. */
+async function clickChoice(page, name) {
+  const radio = page.getByRole('radio', { name });
+  await radio.waitFor();
+  await unlocked(page);
+  await radio.click();
+}
+
 async function answerRedFlags(page, stopOn = null) {
   for (let i = 0; i < 20; i++) {
     const q = page.getByTestId('redflag-question');
@@ -106,6 +119,7 @@ async function answerRedFlags(page, stopOn = null) {
     await page.locator('.yesno:not([data-locked])').waitFor();
     if (stopOn && id === stopOn) {
       await page.getByTestId('yn-yes').click();
+      await unlocked(page);
       await page.getByTestId('redflag-confirm-yes').click();
       return;
     }
@@ -120,13 +134,13 @@ async function answerRedFlags(page, stopOn = null) {
 
 /** Yeni atakta alt tip soruları (arka kanala uyan yanıtlar). */
 async function answerSubtype(page) {
-  await page.getByRole('radio', { name: /Yatarken ya da yataktan kalkarken/ }).click();
-  await page.getByRole('radio', { name: /1 dakikadan kısa/ }).click();
+  await clickChoice(page, /Yatarken ya da yataktan kalkarken/);
+  await clickChoice(page, /1 dakikadan kısa/);
 }
 
 /** İki yönlü taraf testi (soru telefondan önce): sol negatif, sağ pozitif → tek dokunuşla sağ tarafa manevra. */
 async function sideTestRightPositive(page) {
-  await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
+  await clickChoice(page, 'Sağ yanıma yatınca');
   await calibrate(page);
   await driveRunner(page);
   await page.locator('[data-testid="rest-continue"]:not([disabled])').click({ timeout: 15000 });
@@ -233,7 +247,7 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
     }
   });
   if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
-  await page.getByRole('radio', { name: 'İyiyim' }).click();
+  await clickChoice(page, 'İyiyim');
   await page.getByTestId('end-maneuver-done').waitFor();
   await snap(page, 'manevra-bitti');
   await page.getByTestId('go-home').click();
@@ -276,7 +290,7 @@ await step('Hasta: taraf bilinmiyor → iki yönlü semptom testi → sağ taraf
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
   await answerSubtype(page);
-  await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
+  await clickChoice(page, 'Sağ yanıma yatınca');
   await snap(page, 'hazirlik');
   await calibrate(page);
   // Önce sol (şüpheli olmayan) test: baş dönmesi yok (tanıtmadan sonra kendiliğinden başlar)
@@ -372,11 +386,12 @@ await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekr
   await page.getByTestId('yn-yes').click();
   await page.getByTestId('redflag-confirm').waitFor();
   await snap(page, 'yanlis-dokunus-onayi');
+  await unlocked(page);
   await page.getByTestId('redflag-confirm-back').click();
   if ((await q.getAttribute('data-qid')) !== firstId) throw new Error('yanlış dokunuştan sonra aynı soruya dönülmedi');
   await answerRedFlags(page);
   await answerSubtype(page);
-  await page.getByRole('radio', { name: 'Sağa dönünce' }).click();
+  await clickChoice(page, 'Sağ yanıma yatınca');
   await page.getByTestId('prep').waitFor();
   await page.getByRole('button', { name: 'Bir yakınımla' }).click();
   await page.getByTestId('helper-card').waitFor();
@@ -421,8 +436,9 @@ await step('Hasta: "sırtüstü baş çevirince" yanıtı yatay kanal şüphesiy
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
-  await page.getByRole('radio', { name: /Yatakta sağa-sola dönerken/ }).click();
+  await clickChoice(page, /Sırtüstü yatarken sağa-sola/);
   await page.getByTestId('subtype-hc-confirm').waitFor();
+  await unlocked(page);
   await page.getByTestId('subtype-hc-yes').click();
   await page.getByTestId('end-refer').waitFor();
   await snap(page, 'alt-tip-yatay-kanal');

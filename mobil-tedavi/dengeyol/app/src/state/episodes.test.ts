@@ -1,5 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { closeStaleEpisodes, rxFirstEpisode, doseLimitsFor, EARLY_RETEST_MS, episodeDose, nextAction, nextMorning, pendingReferral, recentKnownSide, rxActive } from './episodes';
+import {
+  closeStaleEpisodes,
+  doseLimitsFor,
+  doseNextAllowedAt,
+  dxSideCheck,
+  EARLY_RETEST_MS,
+  episodeDose,
+  nextAction,
+  nextMorning,
+  pendingReferral,
+  recentKnownSide,
+  recurrenceWarning,
+  reopenEpisode,
+  rxActive,
+  rxFirstEpisode,
+  sameDayReopenable,
+  startBlockedByPlan,
+  startDose
+} from './episodes';
 import { emptyData } from './types';
 import type { Episode, ManeuverLog } from './types';
 
@@ -194,5 +212,77 @@ describe('manevra sonrası kusma', () => {
     const e = ep({ maneuvers: [m] });
     expect(episodeDose(e, undefined, base + 3600e3, [e])).toMatchObject({ allowed: false, reason: 'DAILY_LIMIT' });
     expect(nextAction(e, base + 2 * 3600e3)).toMatchObject({ kind: 'morning-retest' });
+  });
+});
+
+describe('hekim tanısındaki tarafla çelişki (kullanıcı turu 1)', () => {
+  const now = new Date('2026-10-20T10:00:00').getTime();
+  const prof = (p: Record<string, unknown> = {}) => ({ contraindications: [], diagnosedByDoctor: true, canal: 'PC' as const, side: 'R' as const, ...p });
+  it('aynı taraf ya da taraf bilinmiyor → sorun yok', () => {
+    expect(dxSideCheck(prof({ dxDate: '2026-10-15' }), 'R', now).kind).toBe('ok');
+    expect(dxSideCheck(prof({ side: 'unknown' }), 'L', now).kind).toBe('ok');
+    expect(dxSideCheck(prof({ diagnosedByDoctor: false }), 'L', now).kind).toBe('ok');
+  });
+  it('14 gün içindeki tanıyla çelişki → yönlendir', () => {
+    expect(dxSideCheck(prof({ dxDate: '2026-10-10' }), 'L', now)).toMatchObject({ kind: 'refer' });
+  });
+  it('eski ya da tarihsiz tanıyla çelişki → uyarı ve not', () => {
+    const old = dxSideCheck(prof({ dxDate: '2026-07-01' }), 'L', now);
+    expect(old).toMatchObject({ kind: 'warn', dxSide: 'R' });
+    if (old.kind === 'warn') expect(old.note).toMatch(/sağ.*sol/);
+    expect(dxSideCheck(prof(), 'L', now).kind).toBe('warn');
+  });
+  it('geçerli reçete varsa denetim reçeteye bırakılır', () => {
+    const rx = { v: 1 as const, side: 'R' as const, canal: 'PC' as const, maneuver: 'epley' as const, date: '2026-10-15', perDay: 3, days: 7 };
+    expect(dxSideCheck(prof({ dxDate: '2026-10-15', prescription: rx }), 'L', now).kind).toBe('ok');
+  });
+});
+
+describe('sık nüks uyarısı', () => {
+  const day = 24 * 3600e3;
+  it('aynı gün açılan ataklar tek atak sayılır', () => {
+    expect(recurrenceWarning([base, base + 3600e3, base + 7200e3], base + 8000e3)).toBeNull();
+  });
+  it('30 günde 3 ayrı atak → uyarı', () => {
+    expect(recurrenceWarning([base, base + 10 * day, base + 20 * day], base + 21 * day)).toMatchObject({ last30: 3 });
+  });
+  it('6 ayda 4 atak → uyarı; 6 ayda 3 atak (seyrek) → yok', () => {
+    const four = [base, base + 50 * day, base + 100 * day, base + 150 * day];
+    expect(recurrenceWarning(four, base + 160 * day)).toMatchObject({ last180: 4 });
+    expect(recurrenceWarning(four.slice(1), base + 160 * day)).toBeNull();
+  });
+});
+
+describe('aynı gün yeniden açma ve doz sınırı ana ekranda', () => {
+  it('bugün manevrayla kapatılan atak yeniden açılır, 1 saatlik test korunur', () => {
+    const d = emptyData();
+    d.episodes = [ep({ id: 'a', status: 'closed', endedAt: base + 600e3, maneuvers: [man(base)] })];
+    const re = sameDayReopenable(d, base + 900e3);
+    expect(re?.id).toBe('a');
+    const out = reopenEpisode(d, 'a');
+    const e = out.episodes[0]!;
+    expect(e.status).toBe('active');
+    expect(startBlockedByPlan(e, base + 900e3)).toMatchObject({ kind: 'early-retest', ready: false });
+  });
+  it('yönlendirilmiş, dünkü ya da manevrasız atak yeniden açılmaz', () => {
+    const d = emptyData();
+    d.episodes = [ep({ id: 'a', status: 'referred', endedAt: base + 600e3, maneuvers: [man(base)] })];
+    expect(sameDayReopenable(d, base + 900e3)).toBeNull();
+    d.episodes = [ep({ id: 'a', status: 'closed', endedAt: base + 600e3, maneuvers: [man(base)] })];
+    expect(sameDayReopenable(d, base + 24 * 3600e3)).toBeNull();
+    d.episodes = [ep({ id: 'a', status: 'closed', endedAt: base + 600e3 })];
+    expect(sameDayReopenable(d, base + 900e3)).toBeNull();
+  });
+  it('günlük sınır doluyken yeni atak başlatılamaz; bir sonraki izin ertesi sabah', () => {
+    const d = emptyData();
+    d.episodes = [ep({ id: 'a', status: 'closed', endedAt: base + 8000e3, maneuvers: [man(base), man(base + 3600e3), man(base + 7200e3)] })];
+    const now = base + 9000e3;
+    expect(startDose(d, now)).toMatchObject({ allowed: false, reason: 'DAILY_LIMIT' });
+    const next = new Date(doseNextAllowedAt(d, now)!);
+    expect([next.getDate(), next.getHours()]).toEqual([28, 6]);
+  });
+  it('manevrasız atakta plan engeli yok (taraf testi sürebilir)', () => {
+    expect(startBlockedByPlan(ep({ side: null }), base)).toBeNull();
+    expect(startBlockedByPlan(null, base)).toBeNull();
   });
 });

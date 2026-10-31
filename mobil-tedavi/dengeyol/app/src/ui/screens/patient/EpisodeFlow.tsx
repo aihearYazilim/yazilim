@@ -16,6 +16,7 @@ import {
   diagnosisGate,
   DOSE_TEXT,
   evaluateRedFlags,
+  GATE_TEXT,
   interpretSideTests,
   RED_FLAGS,
   REFER_TEXT,
@@ -27,7 +28,10 @@ import {
 } from '../../../core/safety';
 import {
   doseFor,
+  doseLimitText,
+  dxSideCheck,
   episodeSide,
+  formatDateTime,
   formatTime,
   EARLY_RETEST_MS,
   needsRedFlags,
@@ -36,13 +40,19 @@ import {
   pendingReferral,
   doseLimitsFor,
   recentKnownSide,
+  recurrenceWarning,
+  reopenEpisode,
   rxFirstEpisode,
   practiceAllowed,
-  PRACTICE_PER_DAY
+  PRACTICE_PER_DAY,
+  sameDayReopenable,
+  startBlockedByPlan,
+  startDose,
+  type NextAction
 } from '../../../state/episodes';
 import { activeEpisode, store, uid, useData } from '../../../state/store';
 import type { Episode, ManeuverLog } from '../../../state/types';
-import { Choice, Segmented, StepDots, YesNo as YesNoButtons } from '../../components/Controls';
+import { Choice, choiceSpeech, ListenAgain, Segmented, StepDots, useTapLock, YesNo as YesNoButtons } from '../../components/Controls';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
@@ -52,7 +62,7 @@ import { speech } from '../../../platform/speech';
 import { unlockAudio } from '../../../platform/feedback';
 import { useMotion } from '../../../platform/MotionContext';
 import { keepAwake, releaseAwake } from '../../../platform/wakeLock';
-import { DoctorClearance } from './PatientHome';
+import { DoctorClearance, UrgencyLadder } from './PatientHome';
 import { haptics } from '../../../platform/haptics';
 import { tones } from '../../../platform/tones';
 import { downloadReminder } from '../../../platform/reminders';
@@ -76,14 +86,61 @@ type Stage =
   | { k: 'sideQ' }
   | { k: 'sideRun'; order: Side[]; results: SideTestResult[]; chained?: boolean; auto?: boolean }
   /** Taraf testinden sonra, telefon alından inmeden manevraya geçiş (tek dokunuş, ekranın her yeri). */
-  | { k: 'chainGate'; side: Side }
+  | { k: 'chainGate'; side: Side; /** Eski hekim tanısındaki taraf testle çelişti: geçişte sesli uyarı. */ dxWarn?: Side | null }
   | { k: 'sideRest'; order: Side[]; results: SideTestResult[] }
   | { k: 'stronger'; results: SideTestResult[] }
   | { k: 'practiceSide' }
   | { k: 'maneuver'; side: Side; chained?: boolean; auto?: boolean }
   | { k: 'after'; side: Side }
   | { k: 'retestRun'; side: Side; chained?: boolean; auto?: boolean }
-  | { k: 'end'; tone: 'ok' | 'warn' | 'danger' | 'info'; title: string; text: string; testid: string; extra?: 'treat'; remindAt?: number; remindTitle?: string };
+  /** Bugün manevrayla kapatılmış atak yeniden açılıyor (yeni atak açılmaz; 1 saatlik test korunur). */
+  | { k: 'reopen'; id: string }
+  | {
+      k: 'end';
+      tone: 'ok' | 'warn' | 'danger' | 'info';
+      title: string;
+      text: string;
+      testid: string;
+      /** treat: yeniden manevra düğmesi; rest: 10 dk dinlenme sayacı (manevra sonrası). */
+      extra?: 'treat' | 'rest';
+      remindAt?: number;
+      remindTitle?: string;
+    };
+
+/** Aktif atakta manevra yapıldıysa yeni test/manevra yerine sıradaki adımı söyleyen ekran. */
+function planStage(na: NextAction): Stage {
+  const lead = 'Manevra yaptığınız atağa devam ediyoruz; yeni atak açılmaz.';
+  switch (na.kind) {
+    case 'early-retest':
+      return na.ready
+        ? { k: 'end', tone: 'info', title: 'Tekrar testinin zamanı geldi', text: `${lead} Ana ekrandaki "Tekrar testini yap" düğmesiyle manevranın işe yarayıp yaramadığına bakalım.`, testid: 'end-plan' }
+        : {
+            k: 'end',
+            tone: 'info',
+            title: 'Aynı atağa devam ediyoruz',
+            text: `${lead} Manevranın etkisini görmek için ${formatTime(na.at)} civarında kısa bir tekrar testi yapacağız. O zamana kadar manevrayı tekrarlamayın; oturun ve dinlenin.`,
+            testid: 'end-plan',
+            remindAt: na.at,
+            remindTitle: 'DengeYol: tekrar testi'
+          };
+    case 'morning-retest':
+      return na.ready
+        ? { k: 'end', tone: 'info', title: 'Sabah testinin zamanı geldi', text: 'Ana ekrandaki "Sabah testini yap" düğmesiyle kısa testi yapın.', testid: 'end-plan' }
+        : {
+            k: 'end',
+            tone: 'info',
+            title: 'Sabah testi bekleniyor',
+            text: `${lead} Kristallerin yerinde kaldığını görmek için ${formatDateTime(na.at)} sonrasında kısa bir test yapacağız.`,
+            testid: 'end-plan',
+            remindAt: na.at,
+            remindTitle: 'DengeYol: sabah testi'
+          };
+    case 'treat-again':
+      return { k: 'end', tone: 'info', title: 'Baş dönmesi hâlâ tetikleniyordu', text: `${lead} Son tekrar testi baş dönmesini tetikledi; ana ekrandaki "Manevrayı tekrarla" düğmesiyle manevrayı yeniden yapabilirsiniz.`, testid: 'end-plan' };
+    default:
+      return { k: 'end', tone: 'ok', title: 'Düzelmiş görünüyor', text: 'Tekrar testleri baş dönmesini tetiklemedi. Ana ekrandan atağı kapatabilirsiniz.', testid: 'end-plan' };
+  }
+}
 
 function updateEpisode(id: string, fn: (e: Episode) => Episode) {
   store.update((d) => ({ ...d, episodes: d.episodes.map((e) => (e.id === id ? fn(e) : e)) }));
@@ -155,13 +212,11 @@ export function EpisodeFlow() {
   /** Atak başında doz denetimi (test yapmadan önce). Sınır dolduysa bitiş sahnesi. */
   const doseBlockStage = (): Stage | null => {
     const cur = store.get();
-    const ep = activeEpisode(cur);
-    const probe: Episode =
-      ep ?? { id: '__probe', startedAt: Date.now(), side: null, protocolId: 'epley', redFlags: [], sideTests: [], maneuvers: [], retests: [], status: 'active' };
-    const ds = doseFor(cur, probe, Date.now());
+    const now = Date.now();
+    const ds = startDose(cur, now);
     if (ds.allowed) return null;
     // Yan etkisiz (ilk sahne hesabında çağrılabilir): yönlendirme kaydı manevra öncesi denetimde (checkDose) yazılır.
-    return { k: 'end', tone: 'warn', title: 'Manevra sınırına ulaşıldı', text: DOSE_TEXT[ds.reason], testid: 'end-dose' };
+    return { k: 'end', tone: 'warn', title: 'Manevra sınırına ulaşıldı', text: doseLimitText(ds, cur, now), testid: 'end-dose' };
   };
 
   /** Güvenlik sorularından sonra: yeni bir atakta önce alt tip soruları, sonra telefon. */
@@ -193,21 +248,76 @@ export function EpisodeFlow() {
 
   const initialStage = (): Stage => {
     const cur = store.get();
+    const now = Date.now();
     const ep = activeEpisode(cur);
     if (!ep && pendingReferral(cur)) return { k: 'blocked', why: 'referral' };
     if (mode === 'practice') {
-      if (!practiceAllowed(cur, Date.now())) return { k: 'blocked', why: 'practiceLimit' };
+      if (!practiceAllowed(cur, now)) return { k: 'blocked', why: 'practiceLimit' };
       // Deneme de doza sayılır: sınır doluyken deneme de yapılmaz.
       const blocked = doseBlockStage();
       if (blocked) return blocked;
       return { k: 'redflags', i: 0, answers: {} };
     }
-    if (needsRedFlags(ep, Date.now())) return { k: 'redflags', i: 0, answers: {} };
+    if (mode === 'start' || mode === 'treat') {
+      // Bugün manevrayla kapatılmış atak: yeni atak açılmaz, o atak yeniden açılır (1 saatlik tekrar testi korunur).
+      const re = !ep && mode === 'start' ? sameDayReopenable(cur, now) : null;
+      if (re) return { k: 'reopen', id: re.id };
+      // Manevra yapılmış atakta (adresle gelinse de) yeni test/manevra açılmaz: sıradaki adım söylenir. Yeniden manevra
+      // yalnız tekrar testi pozitifken.
+      const plan = startBlockedByPlan(ep, now);
+      if (mode === 'treat' ? plan?.kind !== 'treat-again' : plan) return plan ? planStage(plan) : { k: 'end', tone: 'info', title: 'Manevra şu an önerilmiyor', text: 'Ana ekrandaki sıradaki adımı izleyin.', testid: 'end-plan' };
+      // Doz/gün sınırı doluyken güvenlik soruları sordurulmaz: sınır ve bir sonraki izinli zaman hemen söylenir.
+      const blocked = doseBlockStage();
+      if (blocked) return blocked;
+    }
+    if (needsRedFlags(ep, now)) return { k: 'redflags', i: 0, answers: {} };
     return afterSafetyStage();
   };
   const [stage, setStage] = useState<Stage>(initialStage);
+  // Sık nüks uyarısı: yeni atağın başında (ilk güvenlik sorusunda) bir kez gösterilir ve okunur. Bu atak da sayılır.
+  const [recur] = useState(() =>
+    mode === 'start' && !activeEpisode(store.get())
+      ? recurrenceWarning([...store.get().episodes.map((e) => e.startedAt), Date.now()], Date.now())
+      : null
+  );
   // Akıştan çıkınca ekranı açık tutma bırakılır (Bitir/ana ekran).
   useEffect(() => () => void releaseAwake(), []);
+
+  // Güvenlik sorularında sistem geri tuşu/kenardan kaydırma yanıtları sessizce silmesin: üst çubuktaki geri gibi önceki
+  // soruya döner; ilk soruda yanıt varsa çıkmadan önce sorar.
+  const stageRef = useRef(stage);
+  stageRef.current = stage;
+  const [leaveAsk, setLeaveAsk] = useState(false);
+  const inQuestions = stage.k === 'redflags' || stage.k === 'redflagConfirm';
+  useEffect(() => {
+    if (!inQuestions) return;
+    const marker = { dengeyolQ: true };
+    window.history.pushState(marker, '');
+    const onPop = (ev: PopStateEvent) => {
+      // Başka bir işaret kaydına düşüldüyse (ör. önceki işaretin geri alınması) kullanıcı geri tuşu değildir.
+      if ((ev.state as { dengeyolQ?: boolean } | null)?.dengeyolQ) return;
+      const st = stageRef.current;
+      if (st.k === 'redflagConfirm') {
+        const answers = { ...st.answers };
+        delete answers[flags[st.i]!.id];
+        setStage({ k: 'redflags', i: st.i, answers });
+      } else if (st.k === 'redflags' && st.i > 0) {
+        setStage({ k: 'redflags', i: st.i - 1, answers: st.answers });
+      } else if (st.k === 'redflags' && Object.keys(st.answers).length === 0) {
+        nav('/hasta', { replace: true });
+        return;
+      } else {
+        setLeaveAsk(true);
+      }
+      window.history.pushState(marker, '');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      if ((window.history.state as { dengeyolQ?: boolean } | null)?.dengeyolQ) window.history.back();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inQuestions]);
   useEffect(() => {
     window.scrollTo(0, 0);
     if (stage.k === 'calibrate') calHandledRef.current = false;
@@ -250,13 +360,16 @@ export function EpisodeFlow() {
 
   // ---- Kilit: kurulum yapılmamış ya da kapı kapalı --------------------------------------------
   if (!profile?.consentAt || !gate || !gate.ok) {
+    // Kurulumu bitmiş kişiye "önce kurulum" denmez: kapının gerçek nedeni (ve tanısızsa nereye, ne kadar acil) söylenir.
+    const reason = profile?.consentAt && gate && !gate.ok ? gate.reason : null;
     return (
       <Screen title="DengeYol" back="/hasta">
-        <div className="card tint-warn">
-          <p>Önce kurulumu tamamlayın. Kurulum, manevranın sizin için uygun olup olmadığını kontrol eder.</p>
+        <div className="card tint-warn stack" data-testid="flow-gate-blocked">
+          <p>{reason ? GATE_TEXT[reason] : 'Önce kurulumu tamamlayın. Kurulum, manevranın sizin için uygun olup olmadığını kontrol eder.'}</p>
         </div>
+        {reason === 'NO_DIAGNOSIS' && <UrgencyLadder />}
         <button className="btn primary block" onClick={() => nav('/hasta/kurulum')}>
-          Kuruluma git
+          {reason ? 'Bilgilerimi düzenle' : 'Kuruluma git'}
         </button>
       </Screen>
     );
@@ -345,12 +458,13 @@ export function EpisodeFlow() {
   const checkDose = (): boolean => {
     const ep = activeEpisode(store.get());
     if (!ep) return true;
-    const ds = doseFor(store.get(), ep, Date.now());
+    const now = Date.now();
+    const ds = doseFor(store.get(), ep, now);
     if (!ds.allowed) {
       if (ds.reason !== 'DAILY_LIMIT') {
-        updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: DOSE_TEXT[ds.reason] }));
+        updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: now, endNote: DOSE_TEXT[ds.reason] }));
       }
-      setStage({ k: 'end', tone: 'warn', title: 'Manevra sınırına ulaşıldı', text: DOSE_TEXT[ds.reason], testid: 'end-dose' });
+      setStage({ k: 'end', tone: 'warn', title: 'Manevra sınırına ulaşıldı', text: doseLimitText(ds, store.get(), now), testid: 'end-dose' });
       return false;
     }
     return true;
@@ -391,12 +505,24 @@ export function EpisodeFlow() {
   const knownSideForConflict = (): Side | null => recentKnownSide(profile);
 
   const decide = (results: SideTestResult[], stronger: Side | 'equal' | null) => {
-    const dec = interpretSideTests(results, knownSideForConflict(), stronger);
+    let dec = interpretSideTests(results, knownSideForConflict(), stronger);
     if (dec.kind === 'ASK_STRONGER') {
       // Bilinen (reçete) taraf yoksa her yanıt yönlendirmeyle biter: soru sorulmaz, telefon indirilmez.
       if (!knownSideForConflict()) return decide(results, 'equal');
       setStage({ k: 'stronger', results });
       return;
+    }
+    // Kurulumda girilen hekim tanısındaki tarafla çelişki (reçete yokken): yakın tarihli tanıda reçetedeki gibi yönlendir,
+    // eski tanıda uyar ve rapora not düş.
+    let dxWarn: Side | null = null;
+    if (dec.kind === 'TREAT') {
+      const chk = dxSideCheck(profile, dec.side);
+      if (chk.kind !== 'ok') {
+        const id = ensureEpisode();
+        updateEpisode(id, (e) => ({ ...e, sideConflictNote: chk.note }));
+        if (chk.kind === 'refer') dec = { kind: 'REFER', reason: 'SIDE_CONFLICT' };
+        else dxWarn = chk.dxSide;
+      }
     }
     const triggeredNotBefore = !!activeEpisode(store.get())?.sideTests.some((t) => t.decision.kind === 'NOT_TRIGGERED');
     logSideTest(results, stronger, dec);
@@ -411,7 +537,7 @@ export function EpisodeFlow() {
     if (dec.kind === 'TREAT') {
       if (!checkDose()) return;
       // Ekrana bakılmadan karar verildiyse (şiddet sorusu sorulmadı) telefon alında: zincirle manevraya geç.
-      setStage(stronger === null ? { k: 'chainGate', side: dec.side } : { k: 'maneuver', side: dec.side });
+      setStage(stronger === null ? { k: 'chainGate', side: dec.side, dxWarn } : { k: 'maneuver', side: dec.side });
     } else if (dec.kind === 'NOT_TRIGGERED') {
       setStage({
         k: 'end',
@@ -593,6 +719,7 @@ export function EpisodeFlow() {
         <Screen title="DengeYol" back="/hasta">
           {stage.why === 'referral' ? (
             <>
+              <SpeakOnce text={BLOCKED_REFERRAL_TEXT} />
               <div className="card tint-warn stack" data-testid="blocked-referral">
                 <div className="card-title">
                   <Icon name="alert" />
@@ -602,6 +729,7 @@ export function EpisodeFlow() {
                   Son atağınız hekime ya da acile yönlendirmeyle sonlandı. Yeni bir manevra yapmadan önce bu durumu hekiminizle konuşmanız gerekir.
                 </p>
               </div>
+              <ListenAgain text={BLOCKED_REFERRAL_TEXT} />
               <DoctorClearance testid="doctor-cleared" onCleared={() => setStage(initialStage())} />
             </>
           ) : (
@@ -616,82 +744,109 @@ export function EpisodeFlow() {
         </Screen>
       );
 
+    case 'reopen':
+      return (
+        <RunOnce
+          key="reopen"
+          run={() => {
+            store.update((x) => reopenEpisode(x, stage.id));
+            setEpisodeId(stage.id);
+            const ep = activeEpisode(store.get());
+            const plan = startBlockedByPlan(ep, Date.now());
+            setStage(plan ? planStage(plan) : initialStage());
+          }}
+        />
+      );
+
     case 'redflags': {
       const q = flags[stage.i]!;
       const answer = (v: YesNo) => {
         const answers = { ...stage.answers, [q.id]: v };
+        setLeaveAsk(false);
         if (v === q.stopsOn) setStage({ k: 'redflagConfirm', i: stage.i, answers });
         else if (stage.i === flags.length - 1) onRedFlagsDone(answers);
         else setStage({ k: 'redflags', i: stage.i + 1, answers });
       };
+      const yes = q.yesLabel ?? 'Evet, var';
+      const no = q.noLabel ?? 'Hayır, yok';
+      // Özel yanıt etiketleri ("Evet, farklı / Hayır, aynı") de okunur: hangi yanıtın ne demek olduğu duyulsun.
+      const spoken = q.yesLabel || q.noLabel ? choiceSpeech(q.text, [yes, no].map((s) => s.replace(' / ', ' ya da '))) : q.text;
+      const intro = stage.i === 0 && recur ? `${recur.text} Şimdi güvenlik soruları.` : undefined;
       return (
         <Screen
           title="Güvenlik soruları"
           onBack={() => (stage.i === 0 ? nav('/hasta') : setStage({ k: 'redflags', i: stage.i - 1, answers: stage.answers }))}
         >
           <StepDots total={flags.length} index={stage.i} />
+          {intro && (
+            <div className="notice" data-testid="recurrence-warning">
+              <Icon name="alert" />
+              <span>{recur!.text}</span>
+            </div>
+          )}
           <p className="small muted">
             Soru {stage.i + 1} / {flags.length}
           </p>
-          <SpokenQuestion text={q.text} qid={q.id} />
+          <SpokenQuestion text={q.text} spoken={intro ? `${intro} ${spoken}` : spoken} qid={q.id} />
           <div className="spacer" />
-          <YesNoButtons onAnswer={answer} value={stage.answers[q.id]} yesLabel={q.yesLabel ?? 'Evet, var'} noLabel={q.noLabel ?? 'Hayır, yok'} lockKey={q.id} />
+          <YesNoButtons onAnswer={answer} value={stage.answers[q.id]} yesLabel={yes} noLabel={no} lockKey={q.id} />
+          <ListenAgain text={spoken} />
+          {leaveAsk && (
+            <div className="card tint-warn stack" data-testid="redflag-leave">
+              <strong>Sorulardan çıkılsın mı? Verdiğiniz yanıtlar silinir.</strong>
+              <button className="btn secondary block" onClick={() => setLeaveAsk(false)} data-testid="redflag-leave-no">
+                Hayır, sorulara devam
+              </button>
+              <button className="btn ghost block" onClick={() => nav('/hasta', { replace: true })} data-testid="redflag-leave-yes">
+                Evet, çık
+              </button>
+            </div>
+          )}
         </Screen>
       );
     }
 
-    case 'redflagConfirm': {
-      const q = flags[stage.i]!;
-      const back = () => {
+    case 'redflagConfirm':
+      return <RedFlagConfirm q={flags[stage.i]!} onConfirm={() => onRedFlagsDone(stage.answers)} onBack={() => {
         const answers = { ...stage.answers };
-        delete answers[q.id];
+        delete answers[flags[stage.i]!.id];
         setStage({ k: 'redflags', i: stage.i, answers });
-      };
-      return (
-        <Screen title="Güvenlik soruları" onBack={back}>
-          <div className="card tint-warn stack" data-testid="redflag-confirm">
-            <p className="small muted">Yanıtınız:</p>
-            <h2>{q.text}</h2>
-            <p className="lead">
-              <strong>{q.yesLabel ?? 'Evet, var'}</strong>
-            </p>
-            <p>Bu yanıt nedeniyle manevra yapılmayacak. Doğru mu?</p>
-          </div>
-          <button className="btn warn block xl" onClick={() => onRedFlagsDone(stage.answers)} data-testid="redflag-confirm-yes">
-            Evet, doğru
-          </button>
-          <button className="btn secondary block xl" onClick={back} data-testid="redflag-confirm-back">
-            Yanlış dokundum, soruya dön
-          </button>
-        </Screen>
-      );
-    }
+      }} />;
 
-    case 'stop':
+    case 'stop': {
+      const emergency = stage.action === 'emergency';
+      const title = emergency ? 'Manevra yapmayın, hemen yardım isteyin' : 'Manevra yapmayın';
+      const whys = stage.triggered.length === 0 ? [AFTER_NEURO_TEXT] : stage.triggered.map((q) => q.why);
+      const todo = emergency ? 'Hemen 112\'yi arayın.' : 'Hekiminize ya da odyoloğunuza başvurun ve işaretlediğiniz belirtiyi söyleyin.';
+      const spokenStop = `${title}. ${whys.join(' ')} ${todo}`;
+      // Rapor yalnız atak kaydı olan gerçek akışta var (denemede rapor yok).
+      const hasReport = !!episodeId && mode !== 'practice';
       return (
-        <Screen title={stage.action === 'emergency' ? 'Acil değerlendirme gerekli' : 'Hekiminize başvurun'} back="/hasta">
-          <div className={`card ${stage.action === 'emergency' ? 'tint-danger' : 'tint-warn'} stack`} data-testid={`stop-${stage.action}`}>
+        <Screen title={emergency ? 'Acil değerlendirme gerekli' : 'Hekiminize başvurun'} back="/hasta">
+          <SpeakOnce text={spokenStop} priority="high" />
+          <div className={`card ${emergency ? 'tint-danger' : 'tint-warn'} stack`} data-testid={`stop-${stage.action}`}>
             <div className="card-title">
               <Icon name="alert" />
-              <h2>{stage.action === 'emergency' ? 'Manevra yapmayın, hemen yardım isteyin' : 'Manevra yapmayın'}</h2>
+              <h2>{title}</h2>
             </div>
-            {stage.triggered.length === 0 && (
-              <p>Yeni bir nörolojik belirti bildirdiniz. Bu, BPPV'ye bağlı değildir ve acil değerlendirme gerektirir.</p>
-            )}
-            {stage.triggered.map((q) => (
-              <p key={q.id}>{q.why}</p>
+            {whys.map((w, i) => (
+              <p key={i}>{w}</p>
             ))}
           </div>
-          {stage.action === 'emergency' ? (
+          {emergency ? (
             <a className="btn danger block xl" href="tel:112">
               <Icon name="phone" /> 112'yi ara
             </a>
           ) : (
             <div className="card soft small">
-              <p>Hekiminize ya da odyoloğunuza başvurun. Aşağıdaki rapor, verdiğiniz yanıtları içerir.</p>
+              <p>
+                {todo}
+                {hasReport ? ' Aşağıdaki rapor, verdiğiniz yanıtları içerir; yanınızda götürün.' : ''}
+              </p>
             </div>
           )}
-          {episodeId && (
+          <ListenAgain text={spokenStop} />
+          {hasReport && (
             <button className="btn secondary block" onClick={() => nav(`/hasta/rapor/${episodeId}`)}>
               <Icon name="print" /> Raporu göster
             </button>
@@ -701,11 +856,13 @@ export function EpisodeFlow() {
           </button>
         </Screen>
       );
+    }
 
     case 'prep':
       return (
         <PrepScreen
           mode={mode}
+          maneuverId={maneuverId}
           sideTest={!!sideOrderRef.current}
           onReady={() => {
             fromPrepRef.current = true;
@@ -730,10 +887,10 @@ export function EpisodeFlow() {
     case 'rxSame':
       return (
         <Screen title="Baş dönmeniz" back="/hasta">
-          <h1>Muayeneden bu yana baş dönmeniz hiç tamamen geçti mi?</h1>
-          <Choice
+          <ChoiceQuestion
+            title="Muayeneden bu yana baş dönmeniz hiç tamamen geçti mi?"
             name="Reçete atağı"
-            value={null}
+            lockKey="rxSame"
             onChange={(v: 'same' | 'new' | 'unsure') => {
               if (v === 'same') setStage({ k: 'prep' });
               else {
@@ -759,45 +916,30 @@ export function EpisodeFlow() {
       };
       if (stage.q === 'hcConfirm') {
         return (
-          <Screen title="Baş dönmeniz" onBack={() => setStage({ k: 'subtype', q: 1 })}>
-            <div className="card tint-warn stack" data-testid="subtype-hc-confirm">
-              <h2>En çok yatakta sağa-sola dönerken mi?</h2>
-              <p>
-                Bu, evde tedavi edilemeyen yatay kanal BPPV'yi düşündürür. Bu yanıtla manevra yapılmaz ve hekiminize ya da odyoloğunuza
-                yönlendirilirsiniz. Yatıp kalkmak da en az o kadar baş dönmesi yapıyorsa "Emin değilim"i seçin; kısa bir testle bakalım.
-              </p>
-            </div>
-            <button
-              className="btn warn block xl"
-              onClick={() =>
-                refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)')
-              }
-              data-testid="subtype-hc-yes"
-            >
-              Evet, en çok dönerken
-            </button>
-            <button className="btn secondary block xl" onClick={() => setStage({ k: 'subtype', q: 2 })} data-testid="subtype-hc-unsure">
-              Emin değilim, kısa testle bakalım
-            </button>
-          </Screen>
+          <HcConfirm
+            onBack={() => setStage({ k: 'subtype', q: 1 })}
+            onYes={() => refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)')}
+            onUnsure={() => setStage({ k: 'subtype', q: 2 })}
+          />
         );
       }
       return stage.q === 1 ? (
         <Screen title="Baş dönmeniz" back="/hasta">
           <StepDots total={2} index={0} />
-          <h1>Baş dönmesini en çok hangisi başlatıyor?</h1>
-          <Choice
+          <ChoiceQuestion
+            title="Baş dönmesini en çok hangisi başlatıyor?"
             name="Tetikleyen hareket"
-            value={null}
+            lockKey="subtype-1"
             onChange={(v: 'liedown' | 'turn' | 'unsure') => {
               // Yönlendirme kalıcı kilit koyar: tek dokunuşla olmasın, onay istenir.
               if (v === 'turn') setStage({ k: 'subtype', q: 'hcConfirm' });
               else setStage({ k: 'subtype', q: 2 });
             }}
             options={[
-              // Kim HJ ve ark. JAMA Neurol 2023, 4. soru: karşılaştırmalı. "Yatakta dönmek" yatay kanalı düşündürür.
+              // Kim HJ ve ark. JAMA Neurol 2023, 4. soru: karşılaştırmalı. Sırtüstü yatarken sağa-sola dönmek (baş çevirmek)
+              // yatay kanalı düşündürür. Taraf sorusu "dönmek" değil "yana yatmak" sözüyle sorulur (ifadeler karışmasın).
               { value: 'liedown', label: 'Yatarken ya da yataktan kalkarken (ya da yukarı bakınca)' },
-              { value: 'turn', label: 'Yatakta sağa-sola dönerken', sub: 'Yatıp kalkmaktan daha çok.' },
+              { value: 'turn', label: 'Sırtüstü yatarken sağa-sola dönünce ya da başımı çevirince', sub: 'Yatıp kalkmaktan daha çok.' },
               { value: 'unsure', label: 'İkisi de / emin değilim' }
             ]}
           />
@@ -805,11 +947,11 @@ export function EpisodeFlow() {
       ) : (
         <Screen title="Baş dönmeniz" onBack={() => setStage({ k: 'subtype', q: 1 })}>
           <StepDots total={2} index={1} />
-          <h1>Dönme hissi her seferinde ne kadar sürüyor?</h1>
-          <p className="lead">Yalnız etrafın dönmesini sayın; sonrasında kalan sersemlik ve bulantı hariç.</p>
-          <Choice
+          <ChoiceQuestion
+            title="Dönme hissi her seferinde ne kadar sürüyor?"
+            lead="Yalnız etrafın dönmesini sayın; sonrasında kalan sersemlik ve bulantı hariç."
             name="Süre"
-            value={null}
+            lockKey="subtype-2"
             onChange={(v: 'short' | 'mid' | 'long' | 'unsure') => {
               // Kim 2023 tarama ölçütü: <3 dk. Hastalar süreyi sık fazla tahmin eder; 1–3 dk teste gider, test süreyi ölçer
               // (≥1 dk ölçülürse yine hekime yönlendirilir).
@@ -830,11 +972,11 @@ export function EpisodeFlow() {
     case 'sideQ':
       return (
         <Screen title="Taraf testi" back="/hasta">
-          <h1>Yatakta hangi tarafa döndüğünüzde baş dönmesi daha çok oluyor?</h1>
-          <p className="lead">Ardından her iki tarafı kısa bir testle deneyeceğiz. Test baş dönmesini tetikleyebilir; bu beklenen bir durumdur.</p>
-          <Choice
+          <ChoiceQuestion
+            title="Hangi yanınıza yatınca (hangi kulağınız alttayken) baş dönmesi daha çok oluyor?"
+            lead="Ardından her iki tarafı kısa bir testle deneyeceğiz. Test baş dönmesini başlatabilir; bu beklenen bir durumdur."
             name="Şüpheli taraf"
-            value={null}
+            lockKey="sideQ"
             onChange={(v: 'R' | 'L' | 'both') => {
               // Önce şüpheli olmayan taraf test edilir.
               const order: Side[] = v === 'R' ? ['L', 'R'] : v === 'L' ? ['R', 'L'] : ['R', 'L'];
@@ -846,9 +988,9 @@ export function EpisodeFlow() {
               }
             }}
             options={[
-              { value: 'R', label: 'Sağa dönünce' },
-              { value: 'L', label: 'Sola dönünce' },
-              { value: 'both', label: 'İki tarafta da / bilmiyorum' }
+              { value: 'R', label: 'Sağ yanıma yatınca' },
+              { value: 'L', label: 'Sol yanıma yatınca' },
+              { value: 'both', label: 'İki yanda da / bilmiyorum' }
             ]}
           />
         </Screen>
@@ -904,7 +1046,11 @@ export function EpisodeFlow() {
         <TapGate
           testid="chain-continue"
           title={`${sideName(stage.side).charAt(0).toLocaleUpperCase('tr-TR') + sideName(stage.side).slice(1)} tarafta baş dönmesi oldu`}
-          text={`Şimdi ${sideName(stage.side)} taraf için manevrayı yapacağız. Telefon alnınızda kalsın. Baş dönmeniz geçtiyse ve hazırsanız ekranın herhangi bir yerine dokunun.`}
+          text={`${
+            stage.dxWarn
+              ? `Dikkat: hekiminiz daha önce ${sideName(stage.dxWarn)} taraf demişti; bu kez ${sideName(stage.side)} tarafta baş dönmesi oldu. Tekrarlayan atakta taraf değişebilir. Bu durum raporunuza yazıldı; bir sonraki muayenede hekiminize söyleyin. Manevra yapmak istemiyorsanız telefonu alnınızdan alın, köşedeki Bitir düğmesini basılı tutun ve hekiminize danışın. `
+              : ''
+          }Şimdi ${sideName(stage.side)} taraf için manevrayı yapacağız. Telefon alnınızda kalsın. Baş dönmeniz geçtiyse ve hazırsanız ekranın herhangi bir yerine dokunun.`}
           onTap={() => setStage({ k: 'maneuver', side: stage.side, chained: true })}
           onExit={() =>
             setStage({ k: 'end', tone: 'info', title: 'Manevra başlatılmadı', text: 'Hazır olduğunuzda ana ekrandan devam edebilirsiniz; taraf kaydedildi.', testid: 'end-aborted' })
@@ -915,11 +1061,14 @@ export function EpisodeFlow() {
     case 'stronger':
       return (
         <Screen title="İki tarafta da baş dönmesi" back="/hasta">
-          <SpeakOnce text="İki tarafta da baş dönmesi oldu. Telefonu alnınızdan alıp ekrandaki soruyu yanıtlayın: hangisinde daha şiddetliydi?" />
-          <h1>Hangisinde baş dönmesi daha şiddetliydi?</h1>
-          <Choice
+          {/* Normal öncelik: yürütücünün son cümlesini kesmez. */}
+          <ChoiceQuestion
+            title="Hangisinde baş dönmesi daha şiddetliydi?"
+            spokenPrefix="İki tarafta da baş dönmesi oldu. Telefonu alnınızdan alıp ekrandaki soruyu yanıtlayın."
+            priority="normal"
             name="Şiddetli taraf"
-            value={null}
+            lockKey="stronger"
+            lockMs={1000}
             onChange={(v: 'R' | 'L' | 'equal') => decide(stage.results, v)}
             options={[
               { value: 'R', label: 'Sağ tarafa yatınca' },
@@ -933,10 +1082,10 @@ export function EpisodeFlow() {
     case 'practiceSide':
       return (
         <Screen title="Deneme manevrası" back="/hasta">
-          <h1>Hangi taraf için denemek istersiniz?</h1>
-          <Choice
+          <ChoiceQuestion
+            title="Hangi taraf için denemek istersiniz?"
             name="Deneme tarafı"
-            value={null}
+            lockKey="practiceSide"
             onChange={(v: Side) => {
               practiceSideRef.current = v;
               setStage(calibratedRef.current ? { k: 'maneuver', side: v } : { k: 'prep' });
@@ -1007,16 +1156,20 @@ export function EpisodeFlow() {
             testid: 'end-severe'
           });
         } else {
+          const mild =
+            sev === 'mild'
+              ? 'Hafif baş dönmesi ve bulantı manevradan sonra birkaç dakika, bazen birkaç saat sürebilir; bu beklenen bir durumdur. Geçmezse ya da artarsa manevrayı tekrarlamayın; kusma başlarsa bugün yeniden manevra yapmayın ve hekiminize danışın. '
+              : '';
           setStage({
             k: 'end',
-            tone: 'ok',
+            tone: mode === 'practice' || sev === 'none' ? 'ok' : 'info',
             title: mode === 'practice' ? 'Deneme tamamlandı' : 'Manevra tamamlandı',
             text:
               mode === 'practice'
                 ? 'Artık adımları biliyorsunuz. Baş dönmeniz başladığında aynı yönergelerle yapacaksınız.'
-                : `10 dakika oturarak dinlenin; kalkarken dikkatli olun. ${formatTime(Date.now() + EARLY_RETEST_MS)} civarında ana ekrandan tekrar testini yapın.`,
+                : `${mild}10 dakika oturarak dinlenin: baş dönmesi tamamen sönsün ve dengeniz yerine gelsin. Kalkarken önce yatağın kenarında oturun, bir yere tutunun; gece ise ışığı açın. ${formatTime(Date.now() + EARLY_RETEST_MS)} civarında ana ekrandan tekrar testini yapın.`,
             testid: 'end-maneuver-done',
-            ...(mode === 'practice' ? {} : { remindAt: Date.now() + EARLY_RETEST_MS, remindTitle: 'DengeYol: tekrar testi' })
+            ...(mode === 'practice' ? {} : { extra: 'rest' as const, remindAt: Date.now() + EARLY_RETEST_MS, remindTitle: 'DengeYol: tekrar testi' })
           });
         }
       }} />;
@@ -1054,14 +1207,17 @@ export function EpisodeFlow() {
       })();
       const ep = activeEpisode(d);
       const side = ep ? episodeSide(ep, profile) : null;
+      // "Manevra tamamlandı" yürütücüde söylendi; burada yalnız öneri okunur.
+      const endSpoken = stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`;
       return (
         <Screen title="DengeYol" back="/hasta">
-          {/* "Manevra tamamlandı" yürütücüde söylendi; burada yalnız öneri okunur. */}
-          <SpeakOnce text={stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`} />
+          <SpeakOnce text={endSpoken} />
           <div className={`card tint-${stage.tone === 'info' ? 'accent' : stage.tone === 'danger' ? 'danger' : stage.tone} stack`} data-testid={stage.testid}>
             <h1>{stage.title}</h1>
             <p className="lead">{stage.text}</p>
           </div>
+          {stage.extra === 'rest' && <RestTimer />}
+          <ListenAgain text={endSpoken} />
           {canTreat && side && (
             <button className="btn primary block xl" onClick={() => setStage({ k: 'maneuver', side })} data-testid="treat-now">
               Manevrayı şimdi tekrarla
@@ -1070,7 +1226,7 @@ export function EpisodeFlow() {
           {stage.extra === 'treat' && !canTreat && ep && (
             <div className="notice danger">
               <Icon name="alert" />
-              <span>{(() => { const ds = doseFor(d, ep, Date.now()); return ds.allowed ? '' : DOSE_TEXT[ds.reason]; })()}</span>
+              <span>{(() => { const now = Date.now(); const ds = doseFor(d, ep, now); return ds.allowed ? '' : doseLimitText(ds, d, now); })()}</span>
             </div>
           )}
           {stage.remindAt && (
@@ -1111,7 +1267,11 @@ function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onE
   useEffect(() => {
     void keepAwake();
     // Normal öncelik: yürütücünün "Test tamamlandı" cümlesini kesmez, ardından okunur.
-    speech.speak(`Oturun ve dinlenin. Telefon alnınızda kalsın. Otuz saniye sonra ${sideName(next)} tarafı test edeceğiz.`, 'normal');
+    // Beklemenin nedeni de söylenir (sayaç sırasında dokunuşlara tepki yok; hasta bozuk sanmasın).
+    speech.speak(
+      `Oturun ve dinlenin. Telefon alnınızda kalsın. Baş dönmesi tamamen sönsün diye otuz saniye bekliyoruz; sonra ${sideName(next)} tarafı test edeceğiz.`,
+      'normal'
+    );
     const id = setInterval(() => setLeft((l) => Math.max(0, l - step)), 1000);
     return () => clearInterval(id);
   }, [step, next]);
@@ -1136,7 +1296,9 @@ function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onE
       <span className="tap-gate-count" aria-live="polite">
         {ready ? 'Hazırsanız dokunun' : left}
       </span>
-      <span className="tap-gate-text">Telefon alnınızda kalsın. Ardından {sideName(next)} tarafı test edeceğiz.</span>
+      <span className="tap-gate-text">
+        Baş dönmesi tamamen sönsün diye bekliyoruz. Telefon alnınızda kalsın. Ardından {sideName(next)} tarafı test edeceğiz.
+      </span>
     </TapSurface>
   );
 }
@@ -1218,31 +1380,223 @@ function TapSurface({
   );
 }
 
-function AfterManeuver({ onDone, practice }: { onDone: (sev: 'none' | 'mild' | 'severe' | 'neuro') => void; practice: boolean }) {
+type AfterSev = 'none' | 'mild' | 'severe' | 'neuro';
+
+/**
+ * Manevra sonrası "Şu an nasılsınız?". Açılışta ~1 s dokunuş kilidi (telefonu alından alırken kör dokunuş seçim yapmasın);
+ * "Kusma" ve "Yeni belirti" kalıcı sonuç doğurduğu için (bugün manevra yok / acil kilidi) "Doğru mu?" onayı istenir.
+ * Onaylanınca yol aynıdır.
+ */
+function AfterManeuver({ onDone, practice }: { onDone: (sev: AfterSev) => void; practice: boolean }) {
+  const [confirm, setConfirm] = useState<'severe' | 'neuro' | null>(null);
+  const options: { value: AfterSev; label: string; sub?: string }[] = [
+    { value: 'none', label: 'İyiyim' },
+    { value: 'mild', label: 'Hafif baş dönmesi ya da bulantı var', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
+    { value: 'severe', label: 'Kusma ya da şiddetli bulantı var' },
+    { value: 'neuro', label: 'Yeni belirti var', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.' }
+  ];
+  if (confirm) {
+    const o = options.find((x) => x.value === confirm)!;
+    return (
+      <ConfirmAnswer
+        title={practice ? 'Deneme bitti' : 'Manevra bitti'}
+        question="Şu an nasılsınız?"
+        answer={o.sub ? `${o.label}: ${o.sub}` : o.label}
+        consequence={confirm === 'neuro' ? 'Bu yanıtla acil değerlendirme önerilecek ve atak kilitlenecek.' : 'Bu yanıtla bugün başka manevra yapılmayacak.'}
+        danger={confirm === 'neuro'}
+        testid="after-confirm"
+        onConfirm={() => onDone(confirm)}
+        onBack={() => setConfirm(null)}
+      />
+    );
+  }
   return (
     <Screen title={practice ? 'Deneme bitti' : 'Manevra bitti'}>
-      <SpeakOnce text="Oturmaya devam edin; kalkarken dikkatli olun. Yavaşça telefonu alnınızdan alın ve ekrandaki soruyu yanıtlayın: şu an nasılsınız?" />
-      <h1>Şu an nasılsınız?</h1>
-      <Choice
+      {/* Normal öncelik: yürütücünün "Manevra tamamlandı" cümlesini kesmez. */}
+      <ChoiceQuestion
+        title="Şu an nasılsınız?"
+        spokenPrefix="Oturmaya devam edin; kalkarken dikkatli olun. Yavaşça telefonu alnınızdan alın ve ekrandaki soruyu yanıtlayın."
+        priority="normal"
         name="Manevra sonrası"
-        value={null}
-        onChange={onDone}
-        options={[
-          { value: 'none', label: 'İyiyim' },
-          { value: 'mild', label: 'Hafif baş dönmesi ya da bulantı var', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
-          { value: 'severe', label: 'Kusma ya da şiddetli bulantı var' },
-          { value: 'neuro', label: 'Yeni belirti var', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.' }
-        ]}
+        lockKey="after"
+        lockMs={1000}
+        onChange={(v: AfterSev) => (v === 'severe' || v === 'neuro' ? setConfirm(v) : onDone(v))}
+        options={options}
       />
     </Screen>
   );
 }
 
-/** Soruyu ekranda gösterir ve (ses açıksa) bir kez sesli okur. */
-function SpokenQuestion({ text, qid }: { text: string; qid: string }) {
+/**
+ * Kalıcı sonuç doğuran yanıtın onayı ("Doğru mu?"). Düğmeler açılışta kısa süre kilitli: önceki ekrandaki çift dokunuşun
+ * ikincisi onayı da vermesin.
+ */
+function ConfirmAnswer({
+  title,
+  question,
+  answer,
+  consequence,
+  danger,
+  testid,
+  onConfirm,
+  onBack
+}: {
+  title: string;
+  question: string;
+  answer: string;
+  consequence: string;
+  danger?: boolean;
+  testid: string;
+  onConfirm: () => void;
+  onBack: () => void;
+}) {
+  const locked = useTapLock(testid, 800);
+  const spoken = choiceSpeech(`Yanıtınız: ${answer}. ${consequence} Doğru mu?`, ['Evet, doğru', 'Yanlış dokundum, soruya dön']);
+  return (
+    <Screen title={title} onBack={onBack}>
+      <SpeakOnce text={spoken} priority="high" />
+      <div className={`card ${danger ? 'tint-danger' : 'tint-warn'} stack`} data-testid={testid}>
+        <p className="small muted">Yanıtınız:</p>
+        <h2>{question}</h2>
+        <p className="lead">
+          <strong>{answer}</strong>
+        </p>
+        <p>{consequence} Doğru mu?</p>
+      </div>
+      <div className="stack" data-locked={locked || undefined} style={locked ? { opacity: 0.55 } : undefined}>
+        <button
+          className={`btn ${danger ? 'danger' : 'warn'} block xl`}
+          aria-disabled={locked || undefined}
+          onClick={() => !locked && onConfirm()}
+          data-testid={`${testid}-yes`}
+        >
+          Evet, doğru
+        </button>
+        <button className="btn secondary block xl" aria-disabled={locked || undefined} onClick={() => !locked && onBack()} data-testid={`${testid}-back`}>
+          Yanlış dokundum, soruya dön
+        </button>
+      </div>
+      <ListenAgain text={spoken} />
+    </Screen>
+  );
+}
+
+/** Güvenlik sorusunda durduran yanıtın onayı. */
+function RedFlagConfirm({ q, onConfirm, onBack }: { q: RedFlagQuestion; onConfirm: () => void; onBack: () => void }) {
+  return (
+    <ConfirmAnswer
+      title="Güvenlik soruları"
+      question={q.text}
+      answer={q.yesLabel ?? 'Evet, var'}
+      consequence="Bu yanıt nedeniyle manevra yapılmayacak."
+      danger={q.action === 'emergency'}
+      testid="redflag-confirm"
+      onConfirm={onConfirm}
+      onBack={onBack}
+    />
+  );
+}
+
+/**
+ * Seçenekli soru: başlık + seçenekler bir kez sesli okunur ("Birinci: …"), büyük "Tekrar dinle" düğmesi ve çift dokunuş
+ * kilidi. priority "high": önceki sorunun yarım kalan okunuşunu keser; yürütücüden hemen sonra "normal" (son cümlesi
+ * kesilmesin).
+ */
+function ChoiceQuestion<T extends string>({
+  title,
+  lead,
+  spokenPrefix,
+  priority = 'high',
+  name,
+  options,
+  onChange,
+  lockKey,
+  lockMs = 800
+}: {
+  title: string;
+  lead?: string;
+  spokenPrefix?: string;
+  priority?: 'high' | 'normal';
+  name: string;
+  options: { value: T; label: string; sub?: string }[];
+  onChange: (v: T) => void;
+  lockKey: string;
+  lockMs?: number;
+}) {
+  const spoken = choiceSpeech(
+    [spokenPrefix, title, lead].filter(Boolean).join(' '),
+    options.map((o) => (o.sub ? `${o.label}. ${o.sub}` : o.label).replace(/ \/ /g, ' ya da '))
+  );
+  return (
+    <>
+      <SpeakOnce text={spoken} priority={priority} />
+      <h1>{title}</h1>
+      {lead && <p className="lead">{lead}</p>}
+      <Choice name={name} value={null} onChange={onChange} options={options} lockKey={lockKey} lockMs={lockMs} />
+      <ListenAgain text={spoken} />
+    </>
+  );
+}
+
+/**
+ * Yatay kanal şüphesi onayı. İki düğme aynı görünüşte: öne çıkan renkli düğme alışkanlıkla basılıp kalıcı yönlendirmeye
+ * yol açmasın.
+ */
+function HcConfirm({ onBack, onYes, onUnsure }: { onBack: () => void; onYes: () => void; onUnsure: () => void }) {
+  const locked = useTapLock('hc', 800);
+  const title = 'En çok sırtüstü yatarken sağa-sola dönünce ya da başınızı çevirince mi?';
+  const text =
+    'Bu, evde tedavi edilemeyen bir kristal oynaması tipini (yatay kanal) düşündürür. Bu yanıtla manevra yapılmaz ve hekiminize ya da odyoloğunuza yönlendirilirsiniz. Yatıp kalkmak da en az o kadar baş dönmesi yapıyorsa "Emin değilim"i seçin; kısa bir testle bakalım.';
+  const spoken = choiceSpeech(`${title} ${text}`, ['Evet, en çok dönünce', 'Emin değilim, kısa testle bakalım']);
+  return (
+    <Screen title="Baş dönmeniz" onBack={onBack}>
+      <SpeakOnce text={spoken} priority="high" />
+      <div className="card tint-warn stack" data-testid="subtype-hc-confirm">
+        <h2>{title}</h2>
+        <p>{text}</p>
+      </div>
+      <div className="stack" data-locked={locked || undefined} style={locked ? { opacity: 0.55 } : undefined}>
+        <button className="btn secondary block xl" aria-disabled={locked || undefined} onClick={() => !locked && onYes()} data-testid="subtype-hc-yes">
+          Evet, en çok dönünce
+        </button>
+        <button className="btn secondary block xl" aria-disabled={locked || undefined} onClick={() => !locked && onUnsure()} data-testid="subtype-hc-unsure">
+          Emin değilim, kısa testle bakalım
+        </button>
+      </div>
+      <ListenAgain text={spoken} />
+    </Screen>
+  );
+}
+
+/** Manevra sonrası 10 dakikalık oturarak dinlenme sayacı; bitince kalkma uyarısı okunur. */
+function RestTimer() {
+  const st = store.get().settings;
+  const step = st.simulation ? st.timeScale : 1;
+  const [left, setLeft] = useState(REST_AFTER_SEC);
   useEffect(() => {
-    speech.speak(text, 'high');
-  }, [text]);
+    const id = setInterval(() => setLeft((l) => Math.max(0, l - step)), 1000);
+    return () => clearInterval(id);
+  }, [step]);
+  const done = left <= 0;
+  useEffect(() => {
+    if (done) speech.speak('On dakikalık dinlenme bitti. Kalkarken önce yatağın kenarında oturun ve bir yere tutunarak yavaşça kalkın.', 'normal');
+  }, [done]);
+  const mm = Math.floor(left / 60);
+  const ss = String(Math.floor(left % 60)).padStart(2, '0');
+  return (
+    <div className="notice info" data-testid="rest-timer" aria-live="off">
+      <Icon name="timer" />
+      <span>{done ? 'Dinlenme bitti. Yavaşça, tutunarak kalkın.' : `Oturarak dinlenme: ${mm}:${ss}`}</span>
+    </div>
+  );
+}
+
+/** Soruyu ekranda gösterir ve (ses açıksa) bir kez sesli okur. spoken: okunacak metin (varsayılan soru metni). */
+function SpokenQuestion({ text, spoken, qid }: { text: string; spoken?: string; qid: string }) {
+  const say = spoken ?? text;
+  useEffect(() => {
+    speech.speak(say, 'high');
+  }, [say]);
   return (
     <h1 data-testid="redflag-question" data-qid={qid}>
       {text}
@@ -1276,11 +1630,19 @@ const SUBTYPE_LONG_TEXT =
 const PRACTICE_VERTIGO_TEXT =
   'Deneme manevrası, baş dönmesi yokken adımları öğrenmek içindir ve tedavi yerine geçmez. Baş dönmeniz varsa ana ekrandaki "Baş dönmem başladı" ile ilerleyin: güvenlik soruları ve kısa bir test yapılır.';
 
+const AFTER_NEURO_TEXT = 'Yeni bir nörolojik belirti bildirdiniz. Bu, kristal oynamasına (BPPV) bağlı değildir ve acil değerlendirme gerektirir.';
+
+const BLOCKED_REFERRAL_TEXT =
+  'Önce hekiminizle görüşün. Son atağınız hekime ya da acile yönlendirmeyle sonlandı. Yeni bir manevra yapmadan önce bu durumu hekiminizle konuşmanız gerekir.';
+
+/** Manevra sonrası oturarak dinlenme (saniye). */
+const REST_AFTER_SEC = 10 * 60;
+
 const LONG_IN_MANEUVER_TEXT =
   'Manevra sırasında baş dönmesi 1 dakikadan uzun sürdü. Bu, tipik BPPV\'ye uymaz. Manevrayı tekrarlamayın; hekiminize ya da odyoloğunuza başvurun. Acil belirtilerde 112\'yi arayın.';
 
 /** Tek hazırlık ekranı: yatak ve yastık, ses, kim yapıyor. Sonrasında telefon alnadır ve akış dokunmadan ilerler. */
-function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean; onReady: () => void }) {
+function PrepScreen({ mode, maneuverId, sideTest, onReady }: { mode: Mode; maneuverId: 'epley' | 'semont'; sideTest: boolean; onReady: () => void }) {
   const d = useData();
   const { source } = useMotion();
   const helper = d.settings.assist === 'helper';
@@ -1291,15 +1653,34 @@ function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean
       : sideTest
         ? 'yaklaşık 12–15 dakika (iki kısa test ve manevra)'
         : 'yaklaşık 6–8 dakika';
+  // Yalnız Semont yapılacaksa (test yok) yastıklı Epley/Dix-Hallpike çizimi ve maddesi gösterilmez.
+  const semontOnly = maneuverId === 'semont' && !sideTest && mode !== 'retest';
+  const bedItem = semontOnly
+    ? 'Yatağın uzun kenarının ortasına oturun, bacaklarınız yataktan aşağı sarksın; iki yanınızda yatacak kadar yer olsun. Yastık gerekmez.'
+    : 'Yatağın üzerine oturun; yastık, sırtüstü yattığınızda omuzlarınızın altına gelsin.';
+  const items = [
+    bedItem,
+    ...(maneuverId === 'semont' && sideTest
+      ? ['Testlerden sonraki Semont manevrası için yatağın uzun kenarının ortasına geçeceğiz; sırası gelince sesle söyleyeceğim.']
+      : []),
+    'Sesi açın, sessiz modu kapatın.',
+    'Telefonu yan kenarlarından parmak uçlarınızla tutun; avucunuz ekrana değmesin.',
+    'Telefonu alnınıza koyduktan sonra her şeyi sesle söyleyeceğim. Baş dönmesi olursa ekranın herhangi bir yerine dokunun.'
+  ];
+  const spoken = `Hazırlık. ${items.join(' ')} Hazırsanız ekrandaki Hazırım düğmesine dokunun.`;
   return (
     <Screen title="Hazırlık" back="/hasta">
-      <BedSetup />
+      {!semontOnly && <BedSetup />}
       <ol className="stack" style={{ margin: 0, paddingLeft: 22 }} data-testid="prep">
-        <li>Yatağın üzerine oturun; yastık, sırtüstü yattığınızda omuzlarınızın altına gelsin.</li>
-        <li>Sesi açın, sessiz modu kapatın.</li>
-        <li>Telefonu yan kenarlarından parmak uçlarınızla tutun; avucunuz ekrana değmesin.</li>
-        <li>Telefonu alnınıza koyduktan sonra her şeyi sesle söyleyeceğim. Baş dönmesi olursa ekranın herhangi bir yerine dokunun.</li>
+        {items.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
       </ol>
+      <ListenAgain text={spoken} />
+      <p className="small muted" data-testid="prep-hearing">
+        İşitme cihazı kullanıyorsanız: telefonla Bluetooth bağlantısını kontrol edin ve sesi deneyin. Cihaz yatarken kayabilir;
+        sabitleyin ya da bir yakınınızla yapın. Sesi kaçırırsanız titreşim ve bip sesleri ne zaman hareket edeceğinizi bildirir.
+      </p>
       {!speech.usable() && (
         <div className="notice" data-testid="prep-no-voice">
           <Icon name="alert" />
@@ -1355,9 +1736,9 @@ function PrepScreen({ mode, sideTest, onReady }: { mode: Mode; sideTest: boolean
  * Ekran açıldığında metni bir kez sesli okur (zincirden sonra telefon alındayken hasta sessiz kalmasın). Normal öncelik:
  * yürütücünün son cümlesini ("Test tamamlandı") kesmez, ardından okunur.
  */
-function SpeakOnce({ text }: { text: string }) {
+function SpeakOnce({ text, priority = 'normal' }: { text: string; priority?: 'high' | 'normal' }) {
   useEffect(() => {
-    speech.speak(text, 'normal');
-  }, [text]);
+    speech.speak(text, priority);
+  }, [text, priority]);
   return null;
 }

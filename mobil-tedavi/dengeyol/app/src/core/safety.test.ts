@@ -38,6 +38,47 @@ describe('kırmızı bayraklar', () => {
   });
 });
 
+describe('kırmızı bayrak dili (kullanıcı turu 1)', () => {
+  const q = (id: string) => RED_FLAGS.find((x) => x.id === id)!;
+  it('eski soruların hiçbiri düşmedi; kimlikler tekil', () => {
+    for (const id of ['continuous', 'neuro', 'headache', 'cardiac', 'anticoag', 'spontaneous', 'headTrauma', 'ear', 'neck', 'fever', 'same']) {
+      expect(q(id)).toBeDefined();
+    }
+    expect(new Set(RED_FLAGS.map((x) => x.id)).size).toBe(RED_FLAGS.length);
+  });
+  it('bölünen nörolojik soru eski sorunun her belirtisini korur ve hepsi acil', () => {
+    const neuro = RED_FLAGS.filter((x) => x.id.startsWith('neuro'));
+    expect(neuro.length).toBeGreaterThanOrEqual(2);
+    expect(neuro.length).toBeLessThanOrEqual(3);
+    const all = neuro.map((x) => x.text).join(' ');
+    for (const w of ['çift', 'konuşma', 'yutma', 'Yüzünüzde', 'kolunuzda', 'bacağınızda', 'güçsüzlük', 'uyuşma', 'Yürü']) expect(all).toContain(w);
+    expect(neuro.every((x) => x.action === 'emergency' && x.stopsOn === 'yes')).toBe(true);
+    const a = allSafe();
+    a.neuroWeak = 'yes';
+    expect(evaluateRedFlags(a)).toMatchObject({ stop: true, action: 'emergency' });
+  });
+  it('ateş/kusma sorusu olumlu kurulur: "Evet" durdurur', () => {
+    expect(q('fever').text).toMatch(/kusuyor musunuz\?/);
+    expect(q('fever').text).not.toMatch(/alamıyor/);
+    expect(q('fever').stopsOn).toBe('yes');
+  });
+  it('kan sulandırıcı sorusunda aspirin dahil ilaç örnekleri; kullanmayan "Hayır" der', () => {
+    expect(q('anticoag').text).toMatch(/aspirin/i);
+    expect(q('anticoag').noLabel).toMatch(/kullanmıyorum/);
+    expect(q('anticoag').action).toBe('emergency');
+  });
+  it('ortostatik/bayılacak gibi olma sorusu hekime yönlendirir', () => {
+    expect(q('orthostatic')).toMatchObject({ stopsOn: 'yes', action: 'doctor' });
+    expect(q('orthostatic').text).toMatch(/Ayağa kalkınca/);
+  });
+  it('kulak sorusu yeni/ani belirtiye odaklı; durdurma metni aynı gün KBB der', () => {
+    expect(q('ear').text).toMatch(/YENİ/);
+    expect(q('ear').text).toMatch(/işitme kaybı/);
+    expect(q('ear').why).toMatch(/BUGÜN/);
+    expect(q('ear').why).toMatch(/KBB/);
+  });
+});
+
 describe('tanı kapısı', () => {
   const base = { diagnosedByDoctor: true, canal: 'PC' as const, side: 'R' as const, hasPrescription: false, contraindications: [] };
   it('tanılı arka kanal → izin, taraf testi gerekmez', () => {
