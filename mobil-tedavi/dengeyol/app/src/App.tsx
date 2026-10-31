@@ -9,6 +9,7 @@ import { SimPanel } from './ui/components/SimPanel';
 import { About } from './ui/screens/About';
 import { ClinicianHome } from './ui/screens/clinician/ClinicianHome';
 import { Exam } from './ui/screens/clinician/Exam';
+import { ReportImport } from './ui/screens/clinician/ReportImport';
 import { EpisodeFlow } from './ui/screens/patient/EpisodeFlow';
 import { EpisodeReport, History, PeriodReport } from './ui/screens/patient/History';
 import { Onboarding } from './ui/screens/patient/Onboarding';
@@ -63,6 +64,7 @@ export function App() {
           <Route path="/hasta/rapor/:id" element={<EpisodeReport />} />
           <Route path="/odyolog" element={<ClinicianHome />} />
           <Route path="/odyolog/muayene/:id" element={<Exam />} />
+          <Route path="/odyolog/ev-raporu/:token" element={<ReportImport />} />
           <Route path="/recete/:token" element={<PrescriptionImport />} />
           <Route path="/ayarlar" element={<Settings />} />
           <Route path="/hakkinda" element={<About />} />

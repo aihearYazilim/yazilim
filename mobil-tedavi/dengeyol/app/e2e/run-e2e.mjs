@@ -604,6 +604,79 @@ await step('Bozuk reçete bağlantısı reddedilir', async () => {
   await ctx.close();
 });
 
+/** core/reportShare.ts v1 biçiminde ev dönemi raporu bağlantısı (gövde base64url JSON; sağlama toplamı FNV-1a("E" + gövde)). */
+function homeReportToken(wire) {
+  const body = Buffer.from(JSON.stringify(wire), 'utf8').toString('base64url');
+  let h = 0x811c9dc5;
+  for (const b of Buffer.from('E' + body, 'utf8')) {
+    h ^= b;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${body}.${h.toString(16).padStart(8, '0')}`;
+}
+
+await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı hasta koduna "ev dönemi" olarak eklenir', async () => {
+  const now = Date.now();
+  const m = (t) => Math.floor(t / 60000);
+  const start = now - 2 * 24 * 3600 * 1000;
+  const wire = {
+    v: 1,
+    g: m(now),
+    p: 'NO-2611',
+    c: '83635d6f',
+    r: ['2026-10-31', 'R', 'e', 3, 5],
+    a: m(start),
+    b: m(now),
+    e: [
+      {
+        s: m(start),
+        z: 60 * 23,
+        u: 'r',
+        d: 'R',
+        t: [[5, [1, 3, 20], [0, null, null], 'TR']],
+        m: [[10, 's', 'R', 'chn', 1, 4, [[5, 0], [60, 6, 41, 2, 15], [60, 8], [30, 32]]]],
+        q: [[60 * 22, 'm', 'R', 0, null, null]]
+      }
+    ]
+  };
+  const token = homeReportToken(wire);
+  const data = seed({
+    settings: { role: 'clinician' },
+    data: {
+      clinician: { name: 'Dr. Test' },
+      clinicPatients: [{ id: 'p1', code: 'NO-2611', sex: '-', createdAt: start - 86400000 }],
+      clinicExams: [{ id: 'x1', patientId: 'p1', at: start - 86400000, findings: {}, maneuvers: [], retestFindings: {} }]
+    }
+  });
+  const { ctx, page, errors } = await newPage(data);
+  await page.goto(BASE + '#/odyolog/ev-raporu/' + token);
+  await page.getByTestId('hr-report').waitFor();
+  const head = await page.getByTestId('hr-report-headline').innerText();
+  if (!head.includes('1 atak') || !head.includes('1 manevra (1 tamamlandı)')) throw new Error('rapor özeti hatalı: ' + head);
+  const steps = await page.getByTestId('hr-report-steps').innerText();
+  if (!steps.includes('komuttan önce hareket') || !steps.includes('oturuştan geçilmedi') || !steps.includes('hedef sınırında')) {
+    throw new Error('adım işaretleri yok: ' + steps);
+  }
+  if ((await page.getByTestId('hr-patient').inputValue()) !== 'p1') throw new Error('aynı kodlu hasta seçili gelmedi');
+  await snap(page, 'ev-raporu-ice-aktar');
+  await page.getByTestId('hr-attach').click();
+  await page.getByTestId('report-home').waitFor();
+  const st = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')));
+  const added = st.clinicExams.filter((e) => e.homeReports?.length);
+  if (st.clinicPatients.length !== 1 || st.clinicExams.length !== 2 || added.length !== 1 || added[0].patientId !== 'p1') {
+    throw new Error('ev dönemi yeni kontrol muayenesine eklenmedi');
+  }
+  await snap(page, 'ev-raporu-muayenede');
+  // Aynı rapor ikinci kez eklenmez.
+  await page.goto(BASE + '#/odyolog/ev-raporu/' + token);
+  await page.getByTestId('hr-already').waitFor();
+  // Bozuk bağlantı reddedilir.
+  await page.goto(BASE + '#/odyolog/ev-raporu/' + token.replace(/\.([0-9a-f]{8})$/, '.00000000'));
+  await page.getByTestId('hr-error').waitFor();
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
 await step('Koyu tema ve büyük yazı ekran görüntüleri', async () => {
   const data = seed({
     settings: { role: 'patient', theme: 'dark', fontScale: 'large' },

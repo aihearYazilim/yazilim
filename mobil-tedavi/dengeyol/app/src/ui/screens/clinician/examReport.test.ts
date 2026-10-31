@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Finding, Findings } from '../../../core/diagnosis';
-import { encodePrescription, rxValidUntil } from '../../../core/prescription';
+import { encodePrescription, rxCode, rxValidUntil } from '../../../core/prescription';
+import { decodeHomeReport, encodeHomeReport, type HomeReport } from '../../../core/reportShare';
 import type { StepRecord } from '../../../core/runner';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
@@ -13,6 +14,12 @@ import {
   maneuverLineText,
   maneuverStatus,
   manualDxLabel,
+  homeManeuverFlags,
+  homeManeuverText,
+  homeReportHeadline,
+  homeReportNoteLine,
+  homeStepText,
+  homeTruncationText,
   methodHeader,
   primaryMethod,
   rxBlockReason,
@@ -20,6 +27,7 @@ import {
   rxLastValidDay,
   rxValidityText,
   shortDate,
+  stepFlagLabels,
   stepLines
 } from './examReport';
 
@@ -160,6 +168,23 @@ describe('manevra adımları', () => {
     expect(stepLines(m([withPhi]))[0]!.phi).toEqual({ mean: 25, min: 18 });
   });
 
+  it('adım işaretleri rapor tablosu için etiketlenir (sınırda, oturuştan geçilmedi, komuttan önce, yanlış taraf)', () => {
+    const lines = stepLines(
+      m(
+        [
+          rec({ stepId: 'se-sit' }),
+          rec({ stepId: 'se-1', movedBeforeCommand: true, borderline: true }),
+          rec({ stepId: 'se-2', noSitThrough: true }),
+          rec({ stepId: 'se-3', wrongSide: true })
+        ],
+        true,
+        'semont'
+      )
+    );
+    expect(lines.map((l) => l.flags)).toEqual([[], ['komuttan önce hareket', 'hedef sınırında'], ['oturuştan geçilmedi'], ['önce yanlış taraf']]);
+    expect(stepFlagLabels({})).toEqual([]);
+  });
+
   it('Semont geçiş süresi ve manevra sırasındaki nistagmus işaretleri', () => {
     const lines = stepLines(
       m([rec({ stepId: 'se-1', vertigoMarks: [{ start: 5, end: 20 }] }), rec({ stepId: 'se-2', transitionSec: 4.12 })], true, 'semont')
@@ -297,5 +322,87 @@ describe('yardımcılar', () => {
     expect(findingSummary(full, true)).toMatch(/yorulma var · oturunca ters nistagmus yok · gözlem: Frenzel · not: n/);
     expect(findingSummary(full, true, 'Frenzel')).toMatch(/oturunca ters nistagmus yok · not: n$/);
     expect(findingSummary(f({ nystagmus: 'upbeat-torsional', fatigue: true }))).not.toMatch(/yorulma/);
+  });
+});
+
+describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
+  const MIN = 60_000;
+  const S = new Date(2026, 9, 31, 9, 0).getTime();
+  const rxToken = encodePrescription({ v: 2, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-31', perDay: 3, days: 5, pid: 'NO-2611' });
+  const report = (p: Partial<HomeReport> = {}): HomeReport => ({
+    v: 1,
+    generatedAt: S + 5 * 24 * 60 * MIN,
+    pid: 'NO-2611',
+    rxCode: rxCode(rxToken),
+    period: { from: new Date(2026, 9, 31).getTime(), to: new Date(2026, 10, 13, 23, 59).getTime() },
+    episodes: [
+      {
+        startedAt: S,
+        status: 'resolved',
+        side: 'R',
+        sideTests: [
+          {
+            at: S + 5 * MIN,
+            R: { vertigo: true, latencySec: 3, durationSec: 20, safetyStopped: false },
+            L: { vertigo: false, latencySec: null, durationSec: null, safetyStopped: false },
+            decision: { kind: 'TREAT', side: 'R', note: null }
+          }
+        ],
+        maneuvers: [
+          {
+            at: S + 10 * MIN,
+            protocolId: 'semont',
+            side: 'R',
+            completed: true,
+            stopReason: null,
+            pauses: 1,
+            assisted: true,
+            manual: false,
+            afterSymptoms: 'none',
+            stepCount: 4,
+            steps: [
+              { index: 0, title: 'a', holdSec: 5, flags: [], transitionSec: null, vertigo: null },
+              { index: 1, title: 'b', holdSec: 60, flags: ['slowTransition', 'movedBeforeCommand'], transitionSec: 4.1, vertigo: { latencySec: 2, durationSec: 15, marks: 1 } },
+              { index: 2, title: 'c', holdSec: 60, flags: ['noSitThrough'], transitionSec: null, vertigo: null }
+            ]
+          },
+          { at: S + 60 * MIN, protocolId: 'epley', side: 'R', completed: false, stopReason: 'USER_ABORT', pauses: 0, manual: true, stepCount: 2, steps: null }
+        ],
+        retests: [{ at: S + 22 * 60 * MIN, kind: 'morning', side: 'R', vertigo: false, latencySec: null, durationSec: null }]
+      }
+    ],
+    stepsDropped: false,
+    episodesOmitted: 0,
+    maneuversOmitted: 0,
+    ...p
+  });
+
+  it('manevra, adım ve sonuç satırları okunur Türkçe', () => {
+    const r = report();
+    expect(homeManeuverText(r.episodes[0]!.maneuvers[0]!)).toBe('Semont sağ: tamamlandı (4/4 adım) · yakını yaptırdı · 1 kez duraklatıldı · sonrası: iyi');
+    expect(homeManeuverText(r.episodes[0]!.maneuvers[1]!)).toMatch(/^Epley sağ: yarıda bırakıldı \(2\/5 adım\) · sensörsüz$/);
+    expect(homeStepText(r.episodes[0]!.maneuvers[0]!.steps![1]!)).toBe('60 s · yavaş geçiş 4.1 s · komuttan önce hareket · baş dönmesi: gecikme 2 s, süre 15 s');
+    expect(homeManeuverFlags(r.episodes[0]!.maneuvers[0]!)).toEqual(['2. adımda yavaş geçiş 4.1 s', '2. adımda komuttan önce hareket', '3. adımda oturuştan geçilmedi']);
+    expect(homeReportHeadline(r)).toMatch(/^1 atak · 2 manevra \(1 tamamlandı\) · son tekrar test \(01\.11\) sabah, sağ: baş dönmesi gelmedi$/);
+    expect(homeTruncationText(r)).toBeNull();
+    expect(homeTruncationText(report({ stepsDropped: true, episodesOmitted: 2 }))).toMatch(/adım ayrıntısı çıkarıldı, en eski 2 atak çıkarıldı/);
+  });
+
+  it('HBYS notuna eklenen her ev dönemi raporu bir satır; reçete kodu eşleşirse belirtilir', () => {
+    const token = encodeHomeReport(report()).token;
+    expect(decodeHomeReport(token).ok).toBe(true);
+    const e = exam({}, undefined, { prescriptionToken: rxToken, homeReports: [{ id: 'x', token, importedAt: S }] });
+    const lines = examNoteText(e, 'NO-2611', {}).split('\n');
+    const home = lines.filter((l) => l.startsWith('Ev dönemi'));
+    expect(home).toHaveLength(1);
+    expect(home[0]).toContain(`reçete kodu ${rxCode(rxToken)} (bu muayenenin reçetesi)`);
+    expect(home[0]).toMatch(/31\.10\.2026 – 13\.11\.2026/);
+    expect(home[0]).toMatch(/1 atak · 2 manevra \(1 tamamlandı\)/);
+    expect(home[0]).toMatch(/son atak: düzeldi/);
+    expect(home[0]).toMatch(/adım işaretleri: yavaş geçiş 4\.1 s, komuttan önce hareket, oturuştan geçilmedi\.$/);
+    // Başka reçetenin raporu: eşleşme yazılmaz; bozuk kayıt nota girmez.
+    expect(homeReportNoteLine(report({ rxCode: '00000000' }), rxCode(rxToken))).not.toMatch(/bu muayenenin/);
+    const broken = exam({}, undefined, { homeReports: [{ id: 'y', token: token.slice(0, -1) + '0', importedAt: S }] });
+    expect(examNoteText(broken, undefined, {})).not.toMatch(/Ev dönemi/);
   });
 });

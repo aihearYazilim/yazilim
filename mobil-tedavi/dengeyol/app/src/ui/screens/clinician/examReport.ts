@@ -14,8 +14,18 @@ import {
 import { decodePrescription, rxValidUntil as rxValidUntilMs } from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
 import { recordStats, STOP_REASON_TEXT, vertigoSummary } from '../../../core/runner';
+import {
+  decodeHomeReport,
+  type HomeEpisode,
+  type HomeManeuver,
+  type HomeReport,
+  type HomeRetest,
+  type HomeSideTest,
+  type HomeStep
+} from '../../../core/reportShare';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
+import { decisionText, endNoteText, STATUS_LABEL } from '../patient/reportText';
 
 // ---- Tanı geçerliliği ------------------------------------------------------------------------------
 
@@ -196,6 +206,27 @@ export interface StepLine {
   nystagmus: string | null;
   /** Pozisyona gelinip ~1 s içinde bitirildi. */
   early: boolean;
+  /**
+   * Yürütücünün adım işaretlerinin rapor tablosundaki etiketleri ("hedef sınırında", "oturuştan geçilmedi", "komuttan önce
+   * hareket", "önce yanlış taraf"); HBYS notundaki işaretlerle aynı kayıttan (kullanıcı turu 3, k10 #4).
+   */
+  flags: string[];
+}
+
+/** Yürütücü adım işaretlerinin kısa etiketleri (klinisyen raporu tablosu; ev dönemi raporu da kullanır). */
+export const STEP_FLAG_LABEL = {
+  movedBeforeCommand: 'komuttan önce hareket',
+  noSitThrough: 'oturuştan geçilmedi',
+  wrongSide: 'önce yanlış taraf',
+  borderline: 'hedef sınırında'
+} as const;
+
+export type StepFlagKey = keyof typeof STEP_FLAG_LABEL;
+const STEP_FLAG_ORDER: StepFlagKey[] = ['movedBeforeCommand', 'noSitThrough', 'wrongSide', 'borderline'];
+
+/** Adım kaydındaki işaretlerin etiketleri (sabit sırada). */
+export function stepFlagLabels(r: Partial<Record<StepFlagKey, boolean | undefined>>): string[] {
+  return STEP_FLAG_ORDER.filter((k) => !!r[k]).map((k) => STEP_FLAG_LABEL[k]);
 }
 
 /** Erken bitirme eşiği (s): pozisyona gelindikten sonra bu kadar ya da daha az beklenip adım geçildiyse. */
@@ -230,7 +261,8 @@ export function stepLines(m: ManeuverLog): StepLine[] {
       transitionSec: r.transitionSec !== null ? round1(r.transitionSec) : null,
       fastTargetSec: st?.fastTransitionSec ?? null,
       nystagmus,
-      early
+      early,
+      flags: stepFlagLabels(r)
     };
   });
 }
@@ -356,7 +388,144 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
       );
     }
   }
+  for (const h of exam.homeReports ?? []) {
+    const r = decodeHomeReport(h.token);
+    if (r.ok) lines.push(homeReportNoteLine(r.value, exam.prescriptionToken ? rxCode(exam.prescriptionToken) : null));
+  }
   if (exam.notes?.trim()) lines.push(`Not: ${exam.notes.trim()}`);
   if (clinician.name) lines.push(`${clinician.name}${clinician.clinic ? `, ${clinician.clinic}` : ''}`);
   return lines.join('\n');
+}
+
+
+// ---- Ev dönemi raporu (hastanın QR/bağlantıyla getirdiği; core/reportShare.ts) -----------------------------------
+
+/** "01.11" (yerel ayar gün-ay biçimini "01/11" yazabildiği için elle). */
+const dayMonth = (t: number) => {
+  const d = new Date(t);
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const dateTime = (t: number) =>
+  new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** Ev adımı işaretlerinin etiketleri (klinisyen tablosuyla aynı sözcükler). */
+const HOME_FLAG_LABEL: Record<HomeStep['flags'][number], string> = {
+  endedEarly: 'süre dolmadan geçildi',
+  slowTransition: 'yavaş geçiş',
+  ...STEP_FLAG_LABEL,
+  unreachable: 'POZİSYONA GELİNEMEDİ',
+  manual: 'elle onaylandı'
+};
+
+/** "31.10.2026 – 13.11.2026" */
+export function homePeriodText(r: HomeReport): string {
+  return `${shortDate(new Date(r.period.from))} – ${shortDate(new Date(r.period.to))}`;
+}
+
+export function homeCounts(r: HomeReport): { episodes: number; maneuvers: number; completed: number } {
+  const ms = r.episodes.flatMap((e) => e.maneuvers);
+  return { episodes: r.episodes.length, maneuvers: ms.length, completed: ms.filter((m) => m.completed).length };
+}
+
+const RETEST_KIND: Record<HomeRetest['kind'], string> = { early: 'erken (1. saat)', morning: 'sabah', other: 'diğer' };
+
+export function homeRetestText(t: HomeRetest): string {
+  const res = t.vertigo ? `baş dönmesi var (gecikme ${t.latencySec ?? '?'} s, süre ${t.durationSec ?? '?'} s)` : 'baş dönmesi gelmedi';
+  return `${RETEST_KIND[t.kind]}, ${sideName(t.side)}: ${res}`;
+}
+
+function cellText(c: HomeSideTest['R']): string {
+  if (!c) return 'yapılmadı';
+  if (c.safetyStopped) return 'durduruldu (baş dönmesi 2 dakikadan uzun)';
+  return c.vertigo ? `baş dönmesi, gecikme ${c.latencySec ?? '?'} s, süre ${c.durationSec ?? '?'} s` : 'baş dönmesi yok';
+}
+
+export function homeSideTestText(t: HomeSideTest): string {
+  return `Sağ: ${cellText(t.R)}; Sol: ${cellText(t.L)} → ${decisionText(t.decision)}`;
+}
+
+export function homeStepText(st: HomeStep): string {
+  const parts = [`${st.holdSec} s`];
+  for (const f of st.flags) parts.push(f === 'slowTransition' && st.transitionSec !== null ? `yavaş geçiş ${st.transitionSec} s` : HOME_FLAG_LABEL[f]);
+  if (st.vertigo) {
+    parts.push(
+      `baş dönmesi: gecikme ${st.vertigo.latencySec} s, ${st.vertigo.durationSec !== null ? `süre ${st.vertigo.durationSec} s` : 'bitişi işaretlenmedi'}${st.vertigo.marks > 1 ? ` (${st.vertigo.marks} işaret)` : ''}`
+    );
+  }
+  return parts.join(' · ');
+}
+
+const AFTER_TEXT: Record<NonNullable<HomeManeuver['afterSymptoms']>, string> = {
+  none: 'sonrası: iyi',
+  mild: 'sonrası: hafif belirti',
+  severe: 'sonrası: şiddetli belirti',
+  neuro: 'sonrası: yeni nörolojik belirti'
+};
+
+/** "Epley sağ: tamamlandı (5/5 adım) · yakını yaptırdı · 1 kez duraklatıldı · sonrası: iyi" */
+export function homeManeuverText(m: HomeManeuver): string {
+  const def = PROTOCOLS[m.protocolId];
+  const total = def?.steps.length;
+  const status = m.completed ? 'tamamlandı' : m.stopReason ? STOP_REASON_TEXT[m.stopReason] : 'yarıda kaldı';
+  const parts = [`${def?.shortName ?? m.protocolId}${m.side ? ` ${sideName(m.side)}` : ''}: ${status}${total ? ` (${m.stepCount}/${total} adım)` : ''}`];
+  if (m.assisted === true) parts.push('yakını yaptırdı');
+  else if (m.assisted === false) parts.push('kendi başına');
+  if (m.manual) parts.push('sensörsüz');
+  if (m.pauses > 0) parts.push(`${m.pauses} kez duraklatıldı`);
+  if (m.afterSymptoms) parts.push(AFTER_TEXT[m.afterSymptoms]);
+  return parts.join(' · ');
+}
+
+/** Ev manevrasının adım işaretleri özeti (adım ayrıntısı yoksa boş): "2. adımda oturuştan geçilmedi". */
+export function homeManeuverFlags(m: HomeManeuver): string[] {
+  return (m.steps ?? []).flatMap((st, i) =>
+    st.flags.filter((f) => f !== 'manual').map((f) => `${i + 1}. adımda ${f === 'slowTransition' && st.transitionSec !== null ? `yavaş geçiş ${st.transitionSec} s` : HOME_FLAG_LABEL[f]}`)
+  );
+}
+
+/** "Atak 31.10.2026 09:12 — Düzeldi" (+ kapanış notu). */
+export function homeEpisodeTitle(e: HomeEpisode): string {
+  const note = e.endNote ? endNoteText(e.endNote) : '';
+  return `Atak ${dateTime(e.startedAt)} — ${STATUS_LABEL[e.status]}${note ? ` (${note})` : ''}`;
+}
+
+function lastRetest(r: HomeReport): HomeRetest | null {
+  const all = r.episodes.flatMap((e) => e.retests).sort((a, b) => a.at - b.at);
+  return all[all.length - 1] ?? null;
+}
+
+/** Kısa sonuç satırı: "2 atak · 4 manevra (3 tamamlandı) · son tekrar test (02.11, sabah, sağ): baş dönmesi gelmedi". */
+export function homeReportHeadline(r: HomeReport): string {
+  const c = homeCounts(r);
+  const parts = [`${c.episodes} atak`, `${c.maneuvers} manevra (${c.completed} tamamlandı)`];
+  const referred = r.episodes.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
+  if (referred) parts.push(`${referred} atakta hekime/acile yönlendirildi`);
+  const rt = lastRetest(r);
+  if (rt) parts.push(`son tekrar test (${dayMonth(rt.at)}) ${homeRetestText(rt)}`);
+  return parts.join(' · ');
+}
+
+/** Boyut nedeniyle kısaltma uyarısı (yoksa null). */
+export function homeTruncationText(r: HomeReport): string | null {
+  const parts: string[] = [];
+  if (r.stepsDropped) parts.push('adım ayrıntısı çıkarıldı');
+  if (r.episodesOmitted) parts.push(`en eski ${r.episodesOmitted} atak çıkarıldı`);
+  if (r.maneuversOmitted) parts.push(`en eski ${r.maneuversOmitted} manevra çıkarıldı`);
+  return parts.length ? `QR kodu küçük kalsın diye ${parts.join(', ')}; ayrıntı hastanın metin raporundadır.` : null;
+}
+
+/**
+ * HBYS notunun ev dönemi satırı. `examRxCode`: bu muayenede verilen reçetenin kodu (eşleşirse belirtilir).
+ */
+export function homeReportNoteLine(r: HomeReport, examRxCode: string | null = null): string {
+  const parts = [`Ev dönemi (hastanın DengeYol raporu, QR ile aktarıldı): ${homePeriodText(r)}`];
+  if (r.rxCode) parts.push(`reçete kodu ${r.rxCode}${examRxCode && examRxCode === r.rxCode ? ' (bu muayenenin reçetesi)' : ''}`);
+  parts.push(homeReportHeadline(r));
+  const last = r.episodes[r.episodes.length - 1];
+  if (last) parts.push(`son atak: ${STATUS_LABEL[last.status].toLocaleLowerCase('tr-TR')}${last.endNote ? ` (${endNoteText(last.endNote)})` : ''}`);
+  const flags = r.episodes.flatMap((e) => e.maneuvers.flatMap(homeManeuverFlags));
+  if (flags.length) parts.push(`adım işaretleri: ${[...new Set(flags.map((f) => f.replace(/^\d+\. adımda /, '')))].join(', ')}`);
+  const trunc = homeTruncationText(r);
+  if (trunc) parts.push('kısaltılmış rapor');
+  return parts.join(' · ') + '.';
 }
