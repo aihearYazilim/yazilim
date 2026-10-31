@@ -73,6 +73,10 @@ export function stepSummary(r: StepRecord): string {
   if (r.unreachable) parts.push('POZİSYONA GELİNEMEDİ');
   if (r.endedEarly) parts.push('süre dolmadan geçildi');
   if (r.slowTransition && r.transitionSec != null) parts.push(`yavaş geçiş ${Math.round(r.transitionSec * 10) / 10} s`);
+  if (r.movedBeforeCommand) parts.push('komuttan önce hareket edildi');
+  if (r.noSitThrough) parts.push('oturuştan geçilmedi');
+  if (r.wrongSide) parts.push('önce yanlış tarafa dönüldü');
+  if (r.borderline) parts.push('hedefin sınırında tutuldu');
   parts.push(symptomText(r) ?? 'baş dönmesi işaretlenmedi');
   return parts.join(' · ');
 }

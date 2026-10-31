@@ -13,7 +13,7 @@
 
 | # | Adım | Hedef | En az bekleme | Belirti bitince + | Belirti üst sınırı (hasta) | Not |
 |---|---|---|---|---|---|---|
-| 1 | Oturuş, baş sağa 45° | Oturur, ψ -25…35° | 4 s | 0 s | —  | oturur baş dönüşü sensörle doğrulanamaz |
+| 1 | Oturuş, baş sağa 45° | Oturur, ψ -25…35° | 7 s | 0 s | —  | oturur baş dönüşü sensörle doğrulanamaz |
 | 2 | Sırtüstü, baş sağa 45° ve sarkık | Yatar, θ 45° ±10°, φ 15…40° | 60 s | 10 s | 120 s | bulgu: dhR |
 | 3 | Oturuş | Oturur, ψ -20…35° | 20 s | 5 s | —  |  |
 
@@ -54,7 +54,7 @@ Uyarılar:
 
 | # | Adım | Hedef | En az bekleme | Belirti bitince + | Belirti üst sınırı (hasta) | Not |
 |---|---|---|---|---|---|---|
-| 1 | Oturuş, baş sağa 45° | Oturur, ψ -25…35° | 5 s | 0 s | —  | oturur baş dönüşü sensörle doğrulanamaz |
+| 1 | Oturuş, baş sağa 45° | Oturur, ψ -25…35° | 7 s | 0 s | —  | oturur baş dönüşü sensörle doğrulanamaz |
 | 2 | Sırtüstü, baş sağa 45° ve sarkık | Yatar, θ 45° ±10°, φ 15…40° | 45 s | 30 s | 120 s |  |
 | 3 | Sırtüstü, baş sola 45° | Yatar, θ -45° ±10°, φ 15…40° | 45 s | 30 s | 120 s |  |
 | 4 | Sol yan, burun yere | Yatar, θ -135° ±15°, φ -25…30° | 45 s | 30 s | 120 s |  |
@@ -78,7 +78,7 @@ Uyarılar:
 
 | # | Adım | Hedef | En az bekleme | Belirti bitince + | Belirti üst sınırı (hasta) | Not |
 |---|---|---|---|---|---|---|
-| 1 | Oturuş, baş sola 45° | Oturur, ψ -25…35° | 5 s | 0 s | —  | oturur baş dönüşü sensörle doğrulanamaz |
+| 1 | Oturuş, baş sola 45° | Oturur, ψ -25…35° | 7 s | 0 s | —  | oturur baş dönüşü sensörle doğrulanamaz |
 | 2 | Sağ yan, burun yukarı | Yatar, θ 45° ±12°, φ -30…30° | 60 s | 30 s | 120 s |  |
 | 3 | Sol yan, burun yere (tek hızlı hareket) | Yatar, θ -135° ±15°, φ -30…30° | 60 s | 30 s | 120 s | hızlı geçiş hedefi ≤2 s |
 | 4 | Oturuş | Oturur, ψ -15…35° | 60 s | 15 s | —  |  |

@@ -55,6 +55,7 @@ yokken **Ayarlar → Titreşimleri tanı**'dan (kurulumda da var) tek tek çalı
 | Ritim | Anlamı |
 |---|---|
 | İki uzun | Şimdi hareket edin (yeni adım) |
+| İki kısa | Hazırsanız ekrana dokunun |
 | Bir uzun | Doğru, böyle kalın |
 | Hızlı, sürekli vızıltı | Pozisyon bozuldu |
 | Üç kısa | Bu adım bitti |
@@ -64,7 +65,7 @@ yokken **Ayarlar → Titreşimleri tanı**'dan (kurulumda da var) tek tek çalı
 | Bir çok uzun | Duraklatıldı |
 | Üç çok uzun | Durun: güvenlik için durduruldu |
 
-"Hazırsanız dokunun" anlarının da kendi deseni vardır; güncel liste her zaman "Titreşimleri tanı" ekranındadır. Söylenen her
+Güncel liste her zaman "Titreşimleri tanı" ekranındadır. Söylenen her
 cümle ekranda da yazılır (yardımcı okuyabilir). iPhone'da yandaki sessiz anahtarı kapalı ve sesi yüksek tutun.
 
 ### Yardımcı modu (bir yakınınız yaptırıyorsa)
@@ -94,8 +95,8 @@ gelemiyor"); ekrandaki yönler her zaman **"hastanın sağı / solu"**dur. Yakı
    onaylarsınız. Nistagmusu ekrana dokunarak işaretlemeniz gerekmez: test bitince açılan bulgu formuna (ya da **"Elle gir"**)
    VNG kaydındaki tipi, gecikme ve süreyi, torsiyon yönünü ve yorulmayı yazın; kayıt numarası gibi ayrıntıyı serbest nota
    ekleyin. Gözlem yöntemi formda hazır gelir.
-   **Sesli yönerge:** Klinisyen modunda "açık / kısa / kapalı" seçilebilir; varsayılan **kısa**dır (yalnız kısa komutlar ve
-   sayım; klinisyene yönelik uzun cümleler hastanın alnından okunmaz).
+   **Sesli yönerge:** Test ekranının üst çubuğundaki ses düğmesi kısa → açık → kapalı arasında geçer; varsayılan **kısa**dır
+   (adım adı "hastanın sağı/solu" ile, sayım ve uyarılar; düzeltme ipuçları ve uzun cümleler hastanın alnından okunmaz).
 4. **Tanı:** Uygulama Bárány 2015 ölçütlerine göre öneri ve uyarılar gösterir. Uyarı varsa hiçbir öneri "tipik" sayılmaz ve onay
    düğmesi "Uyarıları okudum, yine de onayla" olur; uyarılar rapora yazılır. "Bu öneri neye dayanır?" kutusu sınırları ve sevk
    ölçütlerini listeler. Onaydan sonra bulgu değişirse tanı geçersiz sayılır ve yeniden onay istenir.

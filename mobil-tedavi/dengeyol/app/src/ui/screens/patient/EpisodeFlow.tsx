@@ -1395,7 +1395,7 @@ function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onE
   const ready = left <= 0;
   useEffect(() => {
     if (!ready) return;
-    haptics.play('move'); // TODO(birleşim): 'ready' — E1'in "hazırsanız dokunun" titreşimi gelince bununla değiştirilecek.
+    haptics.play('ready'); // "Hazırsanız dokunun": hareket et (move) titreşiminden ayrı desen.
     tones.play('move');
     speech.speak(`Baş dönmeniz geçtiyse ekranın herhangi bir yerine dokunun; ${sideName(next)} tarafı test edeceğiz.`, 'high');
   }, [ready, next]);
@@ -1416,7 +1416,7 @@ function RestBetween({ onContinue, onExit, next }: { onContinue: () => void; onE
 function TapGate({ title, text, onTap, onExit, testid }: { title: string; text: string; onTap: () => void; onExit: () => void; testid: string }) {
   useEffect(() => {
     void keepAwake();
-    haptics.play('move'); // TODO(birleşim): 'ready' — E1'in "hazırsanız dokunun" titreşimi gelince bununla değiştirilecek.
+    haptics.play('ready'); // "Hazırsanız dokunun": hareket et (move) titreşiminden ayrı desen.
     tones.play('move');
     speech.speak(`${title}. ${text}`, 'normal');
   }, [title, text]);

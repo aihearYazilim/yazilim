@@ -12,7 +12,7 @@ bir sonraki tur hem düzeltmeleri hem yeni sorunları denetledi. Görev tanımı
 Her turun raporları: [tur-1](tur-1/), [tur-2](tur-2/), [tur-3](tur-3/).
 
 ## Son durum
-- 287 birim testi, 13/13 uçtan uca senaryo (gerçek Chromium, telefon boyutu, sanal sensör; hasta akışları tanıtmada dokunmadan).
+- 346 birim testi, 13/13 uçtan uca senaryo (gerçek Chromium, telefon boyutu, sanal sensör; hasta akışları tanıtmada dokunmadan).
 - Klinik son onay: **Koşullu** — genel yayına değil; etik kurul ve TİTCK onayıyla, klinikte gözetimli bir pilota uygun.
   En büyük açık, belirtiye dayalı taraf testinin nistagmusla karşılaştırılmamış olmasıdır; pilotta (Aşama A, VNG/Frenzel
   eşliğinde) ölçülmelidir.
@@ -27,3 +27,12 @@ Her turun raporları: [tur-1](tur-1/), [tur-2](tur-2/), [tur-3](tur-3/).
   açı doğruluğu (VNG/Frenzel ve gözlemci karşılaştırması).
 - Aşama B (evde): 1–3. gün telefon görüşmesi, 7. gün kontrolde Dix-Hallpike (Kim 2023 benzeri); yönlendirme nedenlerinin
   ve sıklığının kaydı (aşırı yönlendirme ölçümü); güvenlik sonlanımları (düşme, acil başvuru).
+
+## On kullanıcı tipiyle iki kullanım turu
+Hastalar (yalnız yaşayan yaşlı, yardımcı evlat, tanısız kaygılı, işitme cihazlı, okuma güçlüğü çeken, sabırsız genç,
+kontrendikasyon sınırındaki hasta) ve klinisyenler (odyolog, KBB uzmanı, vestibüler fizyoterapist) uygulamayı Playwright ile
+uçtan uca kullandı; her turdan sonra bulgular dört düzenleyiciye bölünüp uygulandı. Ortalama puan: 1. tur **6,5**, 2. tur
+**7,9** (en büyük artış kontrendikasyon sınırındaki hasta: 5 → 8). Ayrıntı: [kullanicilar/](kullanicilar/) (BRIEF, tur-1 ve
+tur-2 raporları, iki sentez). 2. turun bulguları da uygulandı (yanlış tarafa yuvarlanmada doğru uyarı, duraklatmada kör basış
+koruması, Semont'ta komuttan önce hareket ve oturuştan geçme denetimi, BPPV hastasını yanlışlıkla kilitlemeyen bayılma sorusu,
+tanı zamanı zorunlu seçimi, tek anlamlı reçete geçerliliği, kısa HBYS notu, klinisyen ses düğmesi).

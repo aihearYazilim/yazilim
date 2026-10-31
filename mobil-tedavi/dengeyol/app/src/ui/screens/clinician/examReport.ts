@@ -256,6 +256,14 @@ export function maneuverLineText(m: ManeuverLog, lines: StepLine[] = stepLines(m
       parts.push(`yavaş geçiş ${l.transitionSec} s (hedef <${l.fastTargetSec} s)`);
     }
   }
+  // Yürütücünün adım işaretleri (Semont komuttan önce/oturuştan geçmeden, yanlış taraf, hedef sınırında tutma).
+  const flags = m.records.flatMap((r, i) => [
+    ...(r.movedBeforeCommand ? [`${i + 1}. adımda komuttan önce hareket`] : []),
+    ...(r.noSitThrough ? [`${i + 1}. adımda oturuştan geçilmedi`] : []),
+    ...(r.wrongSide ? [`${i + 1}. adımda önce yanlış taraf`] : []),
+    ...(r.borderline ? [`${i + 1}. adım hedef sınırında`] : [])
+  ]);
+  if (flags.length) parts.push(flags.join('; '));
   if (m.manual) parts.push('elle onaylı');
   const nys = lines.flatMap((l, i) => (l.nystagmus ? [`${i + 1}. adımda ${l.nystagmus.replace(/^nistagmus /, '')}`] : []));
   parts.push(nys.length ? `nistagmus: ${nys.join('; ')}` : 'nistagmus işaretlenmedi');

@@ -55,3 +55,8 @@ yönlendirme kilidi, ağsızlık) zayıflatılmaz.
 - Ev kaydının kliniğe QR ile aktarılması (k09, k10): kapsam büyük; pilot öncesi ayrı iş.
 - Ses çıkışı değişince (işitme cihazı koptu) otomatik duraklatma (k04): tarayıcı API'si güvenilir değil.
 - Hatırlatıcı için .ics yerine bildirim (k01, k05): ağsız PWA'da arka plan bildirimi güvenilir değil; metin ve "uyanınca" seçeneği iyileştirilir.
+
+## Uygulama durumu (2. düzeltme turu sonunda)
+E1–E4'ün bütün maddeleri uygulandı ve birleştirildi; birleşim bağlantıları ('ready' titreşimi, yeni adım işaretleri →
+hasta ve klinisyen raporu, tanı zamanı → taraf çelişkisi, ortak reçete geçerlilik etiketi, reçeteli kısa yol kaydı) yapıldı.
+346 birim testi ve 13/13 uçtan uca senaryo geçiyor.
