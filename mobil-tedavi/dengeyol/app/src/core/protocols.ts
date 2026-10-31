@@ -240,7 +240,10 @@ const SUPINE_ROLL: ProtocolDef = {
   kind: 'test',
   canal: 'HC',
   sided: false,
-  patient: 'no',
+  // Yeniden tasarım (BRIEF §2b): hasta modunda yatay kanal şüphesinde iki yana baş çevirme; baş dönmesinin şiddeti karşılaştırılır.
+  patient: 'yes',
+  patientSummary:
+    'Yatay kanal için kısa test: sırtüstü yatıp başınızı hızla bir sağa, bir sola çevireceksiniz. Hangi yana çevirince baş dönmesinin daha güçlü olduğuna bakıyoruz. Yaklaşık 3 dakika.',
   summary:
     'Yatay kanal BPPV için tanı testi. Sırtüstü, baş ~30° fleksiyonda; baş hızla sağa ve sola 90° çevrilir; yatay nistagmusun yönü (geotropik/apogeotropik) ve şiddeti karşılaştırılır.',
   steps: [
@@ -254,19 +257,28 @@ const SUPINE_ROLL: ProtocolDef = {
       afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: true,
-      finding: 'rollCenter'
+      finding: 'rollCenter',
+      short: 'Sırtüstü; baş yastıkta, hafif öne eğik.',
+      helperTitle: 'Sırtüstü, baş hafif öne eğik',
+      helperSay: 'Hastayı sırtüstü yatırın; başı yastıkta ve hafifçe öne eğik dursun.',
+      helperShort: 'Sırtüstü yatırın; baş yastıkta, hafif öne eğik.'
     },
     {
       id: 'roll-right',
       title: 'Baş sağa 90°',
-      say: 'Başınızı hızla sağa doğru çevirin; sağ kulağınız yastığa değsin.',
+      say: 'Başınızı hızla sağa çevirin; sağ kulağınız yastığa değsin. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician: 'Başı hızla sağa 90° çevirin. Yatay nistagmusun yönünü (yere doğru = geotropik, tavana = apogeotropik), şiddetini ve süresini kaydedin.',
       target: lie(90, 15, -42, 15),
       minHoldSec: 45,
       afterVertigoSec: 10,
       maxVertigoSec: null,
       observe: true,
-      finding: 'rollR'
+      finding: 'rollR',
+      short: 'Başınızı hızla sağa çevirin; sağ kulak yastıkta.',
+      helperTitle: 'Baş hastanın sağına 90°',
+      helperSay:
+        'Hastanın başını iki elinizle hızla hastanın sağına çevirin; sağ kulağı yastığa değsin. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+      helperShort: 'Başı hızla hastanın sağına çevirin; sağ kulak yastıkta.'
     },
     {
       id: 'roll-back1',
@@ -277,19 +289,28 @@ const SUPINE_ROLL: ProtocolDef = {
       minHoldSec: 30,
       afterVertigoSec: 10,
       maxVertigoSec: null,
-      observe: false
+      observe: false,
+      short: 'Baş ortada; dönme geçene kadar bekleyin.',
+      helperTitle: 'Baş ortada',
+      helperSay: 'Hastanın başını yavaşça ortaya getirin; baş dönmesi geçene kadar bekleyin.',
+      helperShort: 'Baş ortada; dönme geçene kadar bekleyin.'
     },
     {
       id: 'roll-left',
       title: 'Baş sola 90°',
-      say: 'Başınızı hızla sola doğru çevirin; sol kulağınız yastığa değsin.',
+      say: 'Başınızı hızla sola çevirin; sol kulağınız yastığa değsin. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician: 'Başı hızla sola 90° çevirin. Nistagmusun yönünü, şiddetini ve süresini kaydedin.',
       target: lie(-90, 15, -42, 15),
       minHoldSec: 45,
       afterVertigoSec: 10,
       maxVertigoSec: null,
       observe: true,
-      finding: 'rollL'
+      finding: 'rollL',
+      short: 'Başınızı hızla sola çevirin; sol kulak yastıkta.',
+      helperTitle: 'Baş hastanın soluna 90°',
+      helperSay:
+        'Hastanın başını iki elinizle hızla hastanın soluna çevirin; sol kulağı yastığa değsin. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+      helperShort: 'Başı hızla hastanın soluna çevirin; sol kulak yastıkta.'
     },
     {
       id: 'roll-back2',
@@ -300,14 +321,20 @@ const SUPINE_ROLL: ProtocolDef = {
       minHoldSec: 10,
       afterVertigoSec: 5,
       maxVertigoSec: null,
-      observe: false
+      observe: false,
+      short: 'Baş ortada.',
+      helperTitle: 'Baş ortada',
+      helperSay: 'Hastanın başını yavaşça ortaya getirin.',
+      helperShort: 'Baş ortada.'
     }
   ],
   sources: [
     'Bhattacharyya N ve ark. Otolaryngol Head Neck Surg 2017 (supine roll test).',
     'von Brevern M ve ark. J Vestib Res 2015 (yatay kanal tanı ölçütleri).'
   ],
-  cautions: ['Yalnızca klinisyen tarafından yapılır.'],
+  cautions: [
+    'Hasta modunda nistagmus gözlenemez; yalnız baş dönmesinin şiddeti karşılaştırılır ve daha şiddetli taraf etkilenen taraf kabul edilir (geotropik varsayım).'
+  ],
   evidenceNote: 'Kılavuz tanımı.'
 };
 
@@ -535,7 +562,10 @@ const BBQ_ROLL: ProtocolDef = {
   kind: 'maneuver',
   canal: 'HC',
   sided: true,
-  patient: 'no',
+  // Yeniden tasarım (BRIEF §2b): yatay kanalda evde manevra (geotropik varsayım).
+  patient: 'yes',
+  patientSummary:
+    'Yatay kanaldaki kristalleri yerine götüren hareket: sırtüstünden başlayıp aynı yöne doğru adım adım tam bir tur dönersiniz (yüzüstü dahil). Her adımda yaklaşık 45 saniye; toplam 5–6 dakika.',
   summary:
     'Yatay kanal (geotropik) BPPV tedavisi. Etkilenen kulak altta başlanır; sağlam tarafa doğru 90°lik adımlarla toplam 360° dönülür.',
   // Klinisyende adım başına 30 s (k08, tur 1): 7 adım × 45 s klinikte 6 dakikayı aşıyordu.
@@ -543,14 +573,18 @@ const BBQ_ROLL: ProtocolDef = {
     {
       id: 'bbq-0',
       title: 'Sırtüstü, baş {Aya} 90°',
-      say: 'Sırtüstü yatın ve başınızı {Aya} 90 derece çevirin; {A} kulağınız yastığa değsin.',
+      say: 'Sırtüstü yatın ve başınızı {Aya} 90 derece çevirin; {A} kulağınız yastığa değsin. Baş dönmesi olabilir; başlarsa ekrana dokunun.',
       clinician: 'Hasta sırtüstü; baş {Aya} 90° çevrili ({A} kulak altta).',
       target: lie(90, 15, -42, 20),
       minHoldSec: 45,
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Sırtüstü; baş {Aya} 90°, {A} kulak yastıkta.',
+      helperTitle: 'Sırtüstü, baş hastanın {Aına} 90°',
+      helperSay: 'Hastayı sırtüstü yatırın ve başını hastanın {Aına} çevirin; {A} kulağı yastığa değsin. Hasta "dönüyor" derse ekrana siz dokunun.',
+      helperShort: 'Sırtüstü; baş hastanın {Aına} 90°.'
     },
     {
       id: 'bbq-1',
@@ -562,7 +596,11 @@ const BBQ_ROLL: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Baş ortada; yüz tavana.',
+      helperTitle: 'Yüz tavana',
+      helperSay: 'Hastanın başını hızla ortaya getirin; yüzü tavana baksın.',
+      helperShort: 'Baş ortada; yüz tavana.'
     },
     {
       id: 'bbq-2',
@@ -574,7 +612,11 @@ const BBQ_ROLL: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Baş {Hya} 90°; {H} kulak yastıkta.',
+      helperTitle: 'Baş hastanın {Hına} 90°',
+      helperSay: 'Hastanın başını hastanın {Hına} çevirin; {H} kulağı yastığa değsin.',
+      helperShort: 'Baş hastanın {Hına} 90°.'
     },
     {
       id: 'bbq-3',
@@ -586,7 +628,11 @@ const BBQ_ROLL: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Yüzüstü, dirsekler üzerinde; yüz yere.',
+      helperTitle: 'Yüzüstü, dirsekler üzerinde',
+      helperSay: 'Hastayı {H} yanından çevirerek yüzüstü getirin; dirseklerinin üzerinde dursun, yüzü yere baksın. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
+      helperShort: 'Yüzüstü getirin; dirsekler üzerinde, yüz yere.'
     },
     {
       id: 'bbq-4',
@@ -599,7 +645,11 @@ const BBQ_ROLL: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Aynı yönde dönün; {A} yan, {A} kulak yastıkta.',
+      helperTitle: 'Hastanın {A} yanı',
+      helperSay: 'Hastayı aynı yönde çevirmeye devam ederek {A} yanına getirin; {A} kulağı yastığa değsin.',
+      helperShort: 'Aynı yönde çevirin; {A} yan.'
     },
     {
       id: 'bbq-5',
@@ -610,7 +660,11 @@ const BBQ_ROLL: ProtocolDef = {
       minHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Aynı yönde dönün; sırtüstü, yüz tavana.',
+      helperTitle: 'Sırtüstü',
+      helperSay: 'Hastayı aynı yönde çevirerek sırtüstü getirin; yüzü tavana baksın.',
+      helperShort: 'Aynı yönde çevirin; sırtüstü.'
     },
     {
       id: 'bbq-6',
@@ -622,14 +676,21 @@ const BBQ_ROLL: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: false
+      observe: false,
+      short: 'Yavaşça oturun; baş dik.',
+      helperTitle: 'Oturuş',
+      helperSay: 'Hastayı yavaşça oturtun; başı dik dursun.',
+      helperShort: 'Yavaşça oturtun; baş dik.'
     }
   ],
   sources: [
     'Lempert T, Tiel-Wilck K. Laryngoscope 1996;106:476–478.',
     'Kim JS ve ark. Neurology 2012;79(7):700–707 (geotropik yatay kanal RKÇ: BBQ, Gufoni, sham; PMID 22855868).'
   ],
-  cautions: ['Yalnızca klinisyen modunda. Yüzüstü adım hastanın hareket kapasitesine göre uyarlanmalıdır.'],
+  cautions: [
+    'Hasta modunda yatay kanal kararı geotropik varsayımla (en sık biçim) verilir; düzelmezse hekime başvurulmalıdır.',
+    'Yüzüstü adım hastanın hareket kapasitesine göre uyarlanmalıdır.'
+  ],
   evidenceNote: 'Sınıf I kanıt (Kim 2012).'
 };
 

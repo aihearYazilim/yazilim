@@ -114,7 +114,8 @@ export function Choice<T extends string>({
   lockMs = 800,
   hushOnAnswer
 }: {
-  options: { value: T; label: ReactNode; sub?: ReactNode }[];
+  /** testid: seçenek düğmesinin `data-testid`'i (uçtan uca testler). */
+  options: { value: T; label: ReactNode; sub?: ReactNode; testid?: string }[];
   value: T | null | undefined;
   onChange: (v: T) => void;
   name: string;
@@ -134,6 +135,7 @@ export function Choice<T extends string>({
           aria-checked={value === o.value}
           aria-disabled={locked || undefined}
           className="choice"
+          data-testid={o.testid}
           onClick={(e) => {
             if (locked) return;
             rememberTap(e.currentTarget);
@@ -152,17 +154,27 @@ export function Choice<T extends string>({
   );
 }
 
+/**
+ * İşaret listesi. `testidPrefix` verilirse her madde `${testidPrefix}-${value}` testid'i taşır; `sub` maddenin altında küçük
+ * açıklama. `keepSpeech`: işaretlemek ekranın okunuşunu kesmesin (uzun liste okunurken kişi işaretleyebilsin; SpeechHush).
+ */
 export function CheckList({
   options,
   values,
-  onToggle
+  onToggle,
+  testidPrefix,
+  label,
+  keepSpeech
 }: {
-  options: { value: string; label: ReactNode }[];
+  options: { value: string; label: ReactNode; sub?: ReactNode }[];
   values: string[];
   onToggle: (v: string) => void;
+  testidPrefix?: string;
+  label?: string;
+  keepSpeech?: boolean;
 }) {
   return (
-    <div className="choices">
+    <div className="choices" role="group" aria-label={label} data-keep-speech={keepSpeech || undefined}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -171,9 +183,13 @@ export function CheckList({
           aria-checked={values.includes(o.value)}
           className="choice check"
           onClick={() => onToggle(o.value)}
+          data-testid={testidPrefix ? `${testidPrefix}-${o.value}` : undefined}
         >
           <span className="dot" />
-          <span>{o.label}</span>
+          <span>
+            {o.label}
+            {o.sub && <span className="sub">{o.sub}</span>}
+          </span>
         </button>
       ))}
     </div>

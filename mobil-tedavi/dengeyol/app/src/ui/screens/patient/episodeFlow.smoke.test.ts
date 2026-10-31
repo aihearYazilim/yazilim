@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Hasta akışının duman testi (jsdom): güvenlik sorusu → "Doğru mu?" onayı → hazırlık ekranı. Kullanıcı turu 3 (F2):
- * onay kartı başlığında yanıt, "Evet, doğru" kartın hemen altında; ilk okunuş kilidi yalnız ilk kez sorulan soruda;
- * hazırlık maddeleri yakını modunda yardımcıya göre ve "Titreşimleri tanı" hazırlıkta açılır.
+ * Hasta akışının duman testi (jsdom). Yeniden tasarım (BRIEF): güvenlik soruları tek ekranda; hiçbir uyarı kilitlemez
+ * ("Yine de devam et" kayda geçer); tanısız kullanıcı alt tip sorusundan hazırlığa geçer; hazırlık maddeleri yakını
+ * modunda yardımcıya göre ve "Titreşimleri tanı" hazırlıkta açılır.
  */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
@@ -12,7 +12,7 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { RED_FLAGS } from '../../../core/safety';
 import { firstReadLockNeeded } from '../../../state/episodes';
 import { store } from '../../../state/store';
-import { emptyData } from '../../../state/types';
+import { emptyData, type AppData } from '../../../state/types';
 import { MotionProvider } from '../../../platform/MotionContext';
 import { EpisodeFlow } from './EpisodeFlow';
 import { PatientHome } from './PatientHome';
@@ -38,10 +38,10 @@ afterEach(() => {
   root = null;
 });
 
-function seed(assist: 'self' | 'helper' = 'self') {
+function seed(assist: 'self' | 'helper' = 'self', patient: Partial<NonNullable<AppData['patient']>> = {}) {
   const d = emptyData();
   d.settings = { ...d.settings, role: 'patient', speech: false, assist };
-  d.patient = { consentAt: '2026-01-01T00:00:00.000Z', contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R' };
+  d.patient = { consentAt: '2026-01-01T00:00:00.000Z', contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R', ...patient };
   store.update(() => d);
 }
 
@@ -92,43 +92,125 @@ async function click(id: string) {
   act(() => byTestId(id)!.click());
 }
 
-describe('hasta akışı duman testi (kullanıcı turu 3, F2)', () => {
-  it('onay ekranı: başlıkta yanıt, "Evet, doğru" kartın hemen altında; geri dönüş aynı soruya', async () => {
-    seed();
+const ep = () => store.get().episodes.find((e) => e.status === 'active') ?? null;
+const kinds = () => (ep()?.overrides ?? []).map((o) => o.kind);
+
+describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran güvenlik listesi)', () => {
+  it('tanısız yeni kullanıcı: güvenlik listesi → "Hiçbiri yok" → alt tip (tek ekran) → hazırlık; NO_DIAGNOSIS kaydı', async () => {
+    seed('self', { diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
     mount();
-    const first = byTestId('redflag-question')!.getAttribute('data-qid')!;
-    await click('yn-yes');
-    const title = byTestId('redflag-confirm-title')!;
-    expect(title.textContent).toBe(`Sürekli baş dönmesi ya da dengesizlik var — doğru mu?`);
-    // jsdom'da her kutu (0, 0): dokunulan yer en üstte sayılır. Kart en üstte kalır; "Evet"e dokunulan yerin üstünde yer
-    // olmadığı için "Evet" en alta, "Yanlış dokundum"un da altına iner (çift kör dokunuş onay vermez).
-    const order = [...host!.querySelectorAll('[data-testid^="redflag-confirm"]')].map((e) => e.getAttribute('data-testid'));
-    expect(order.indexOf('redflag-confirm')).toBe(0);
-    expect(order.indexOf('redflag-confirm-back')).toBeLessThan(order.indexOf('redflag-confirm-yes'));
-    await click('redflag-confirm-back');
-    expect(byTestId('redflag-question')!.getAttribute('data-qid')).toBe(first);
-    // Yanıtlanan soru bu cihazda hatırlanır: bir dahaki sefere uzun okuma kilidi yok.
+    expect(byTestId('redflags')).not.toBeNull();
+    // Tanısı olmayan kişiye "hekiminizin dediğinden farklı mı" sorulmaz.
+    expect(byTestId('rf-same')).toBeNull();
+    expect(byTestId('rf-neuro')).not.toBeNull();
+    await click('redflags-none');
+    const e = ep()!;
+    expect(e.redFlags).toHaveLength(1);
+    expect(e.redFlags[0]!.stopped).toBe(false);
+    expect(Object.values(e.redFlags[0]!.answers).every((v) => v === 'no')).toBe(true);
+    expect(kinds()).toContain('NO_DIAGNOSIS');
+    // Yanıtlanan metinler bu cihazda hatırlanır.
     expect(firstReadLockNeeded(store.get().settings, RED_FLAGS[0]!)).toBe(false);
-    expect(firstReadLockNeeded(store.get().settings, RED_FLAGS[1]!)).toBe(true);
+    expect(byTestId('subtype-liedown')).not.toBeNull();
+    await click('subtype-liedown');
+    expect(ep()!.subtype?.trigger).toBe('liedown');
+    expect(byTestId('prep-ready')).not.toBeNull();
+    expect(byTestId('prep-hc')).toBeNull();
   });
 
-  it('bütün sorular "Hayır" → alt tip → taraf → hazırlık; yakını modunda maddeler yardımcıya göre, titreşim tanıtımı hazırlıkta', async () => {
+  it('alt tip "yatakta dönünce" → yatay kanal yolu (hazırlıkta yatay kanal notu); SUBTYPE kaydı', async () => {
+    seed('self', { diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    mount();
+    await click('redflags-none');
+    await click('subtype-turn');
+    expect(byTestId('prep-hc')).not.toBeNull();
+    expect(byTestId('prep')!.textContent).toMatch(/yastık, yatınca başınızın altına gelsin/);
+    expect(kinds()).toContain('SUBTYPE');
+    expect(ep()!.subtype?.trigger).toBe('turn');
+  });
+
+  it('kırmızı bayrak işaretlenince uyarı (112) + "Yine de devam et" → kayıt RED_FLAG, atak açık; hekim tanısı (arka kanal) varken alt tip atlanır', async () => {
+    seed();
+    mount();
+    expect(byTestId('rf-same')).not.toBeNull();
+    act(() => byTestId('rf-neuro')!.click());
+    expect(byTestId('redflags-none')).toBeNull();
+    await click('redflags-continue');
+    expect(byTestId('stop-emergency')).not.toBeNull();
+    expect(byTestId('call-112')!.getAttribute('href')).toBe('tel:112');
+    expect(ep()!.redFlags[0]!.answers.neuro).toBe('yes');
+    expect(ep()!.redFlags[0]!.stopped).toBe(true);
+    await click('redflag-override');
+    expect(kinds()).toContain('RED_FLAG');
+    expect(ep()!.overrides!.find((o) => o.kind === 'RED_FLAG')!.detail).toBe('neuro');
+    expect(ep()!.status).toBe('active');
+    expect(byTestId('prep-ready')).not.toBeNull();
+  });
+
+  it('kırmızı bayrak uyarısında "Durdur": atak acil olarak kapanır ve rapor açılır', async () => {
+    seed();
+    mount();
+    act(() => byTestId('rf-headache')!.click());
+    await click('redflags-continue');
+    const id = ep()!.id;
+    await click('redflag-stop');
+    const e = store.get().episodes.find((x) => x.id === id)!;
+    expect(e.status).toBe('emergency');
+    expect(byTestId('report-probe')!.textContent).toBe(id);
+  });
+
+  it('kontrendikasyon: uyarı + "Yine de devam et" → kayıt (atak açılınca yazılır)', async () => {
+    seed('self', { contraindications: ['neck'] });
+    mount();
+    expect(byTestId('contra-warn')!.textContent).toMatch(/Boyun sorunu/);
+    await click('contra-override');
+    await click('redflags-none');
+    expect(kinds()).toContain('CONTRAINDICATION');
+  });
+
+  it('önceki atak hekime yönlendirmeyle bitti: kilit yok, yeni atakta REFERRAL bilgi kaydı', async () => {
+    seed();
+    const t = Date.now() - 3 * 24 * 3600_000;
+    store.update((d) => ({
+      ...d,
+      episodes: [
+        { id: 'old', startedAt: t, endedAt: t + 1000, side: 'R', protocolId: 'epley', redFlags: [], sideTests: [], maneuvers: [], retests: [], status: 'referred', endNote: 'ear' }
+      ]
+    }));
+    mount();
+    expect(byTestId('blocked-referral')).toBeNull();
+    await click('redflags-none');
+    expect(kinds()).toContain('REFERRAL');
+  });
+
+  it('manevra az önce yapıldı ve günlük sınır doldu: "Yine de manevra yap" ve doz uyarısı aşılır (EARLY_REPEAT, DOSE)', async () => {
+    seed();
+    const now = Date.now();
+    const man = (i: number) => ({ id: 'm' + i, at: now - (10 - i) * 60_000, protocolId: 'epley' as const, side: 'R' as const, completed: true, stopReason: null, records: [], manual: false });
+    store.update((d) => ({
+      ...d,
+      episodes: [{ id: 'a', startedAt: now - 3600_000, side: 'R', protocolId: 'epley', redFlags: [], sideTests: [], maneuvers: [man(1), man(2), man(3)], retests: [], status: 'active' }]
+    }));
+    mount();
+    expect(byTestId('plan-warn')).not.toBeNull();
+    await click('plan-override');
+    expect(byTestId('dose-warn')).not.toBeNull();
+    await click('dose-override');
+    expect(kinds()).toEqual(['EARLY_REPEAT', 'DOSE']);
+    await click('redflags-none');
+    // Taraf biliniyor: doğrudan hazırlık (ardından manevra).
+    expect(byTestId('prep-ready')).not.toBeNull();
+  });
+
+  it('yakını modunda hazırlık maddeleri yardımcıya göre, titreşim tanıtımı hazırlıkta', async () => {
     seed('helper');
     mount();
-    for (let i = 0; i < 20 && byTestId('redflag-question'); i++) await click('yn-no');
-    const radio = (re: RegExp) => [...host!.querySelectorAll<HTMLElement>('[role="radio"]')].find((b) => re.test(b.textContent ?? ''))!;
-    await waitUnlocked();
-    act(() => radio(/Yatarken ya da yataktan kalkarken/).click());
-    await waitUnlocked();
-    act(() => radio(/1 dakikadan kısa/).click());
-    await waitUnlocked();
-    act(() => radio(/Sağ yanıma yatınca/).click());
+    await click('redflags-none');
     const prep = byTestId('prep')!;
     expect(prep.textContent).toMatch(/Hastayı yatağın üzerine oturtun/);
     expect(prep.textContent).not.toMatch(/alnınıza/);
     expect(byTestId('prep-haptic-legend')!.querySelector('[data-testid="haptic-legend"]')).not.toBeNull();
     expect(byTestId('helper-card')).not.toBeNull();
-    // İşitme cihazı notu da yardımcıya göre (kullanıcı turu 4, k02).
     expect(byTestId('prep-hearing')!.textContent).toMatch(/Hastanın işitme cihazı varsa/);
     expect(byTestId('prep-hearing')!.textContent).not.toMatch(/bir yakınınızla/);
     expect(byTestId('prep-ready')).not.toBeNull();

@@ -87,6 +87,8 @@ export interface SideTestLog {
   results: SideTestResult[];
   stronger: Side | 'equal' | null;
   decision: SideDecision;
+  /** Hangi testle (PC: Dix-Hallpike, HC: sırtüstü baş çevirme) yapıldı; eski kayıtlarda yok (PC). */
+  canal?: 'PC' | 'HC';
 }
 
 export interface RetestLog {
@@ -130,9 +132,9 @@ export interface Episode {
   rxShortcut?: boolean;
   /**
    * Bu atakta verilen alt tip yanıtları (kullanıcı turu 2, k06): 6 saat içinde atağa devam edilirse yeniden sorulmaz.
-   * trigger: 'turnUnsure' = yatay kanal onayında "Emin değilim".
+   * trigger: 'turnUnsure' = yatay kanal onayında "Emin değilim" (eski akış); 'turn' = yatakta dönünce (yatay kanal yolu).
    */
-  subtype?: { at: number; trigger: 'liedown' | 'unsure' | 'turnUnsure'; duration: 'short' | 'mid' | 'unsure' };
+  subtype?: { at: number; trigger: 'liedown' | 'unsure' | 'turnUnsure' | 'turn'; duration: 'short' | 'mid' | 'unsure' };
   /**
    * Atak manevra dışında (taraf testi ya da tekrar testi) "pozisyona gelinemedi" ile durdurulduysa nerede durulduğu
    * (kullanıcı turu 3, k07): "Sağ taraf testi, "Sırtüstü…" adımı: baş en çok ~8° geriye sarkabildi (hedef 15–40°)…".
