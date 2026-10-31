@@ -428,8 +428,3 @@ export const REFER_TEXT: Record<'ATYPICAL_LONG' | 'BOTH_SIDES' | 'SIDE_CONFLICT'
   INCOMPLETE: 'Test tamamlanmadı. Her iki taraf test edilmeden manevra yapılmaz.'
 };
 
-/** Son 30 günde kaç atak? Sık nüks → hekim önerisi. */
-export function frequentRecurrence(episodeStarts: number[], now: number): boolean {
-  const recent = episodeStarts.filter((t) => now - t <= 30 * DAY_MS);
-  return recent.length >= 3;
-}

@@ -179,6 +179,7 @@ export function reportPlainText(e: Episode, d: AppData, now: number = Date.now()
   L.push(`Tedavi edilen taraf: ${e.side ? sideName(e.side) : '—'}`);
   L.push(`Manevra: ${PROTOCOLS[e.protocolId].shortName}`);
   L.push(`Önceki tanı: ${priorDiagnosisText(p)}`);
+  if (e.sideConflictNote) L.push(`Taraf uyuşmazlığı: ${e.sideConflictNote}`);
   const af = assistFallbackText(e, d.settings);
   if (af) L.push(`Manevrayı yaptıran: ${af}`);
 

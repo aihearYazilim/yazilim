@@ -598,7 +598,9 @@ export function EpisodeFlow() {
       completed: o.phase === 'done',
       stopReason: o.state.stopReason,
       records: o.state.records,
-      manual: o.manual
+      manual: o.manual,
+      // Raporda "yakını yaptırdı": o anki ayar manevrayla birlikte saklanır.
+      assisted: store.get().settings.assist === 'helper'
     };
     updateEpisode(id, (e) => ({ ...e, side, maneuvers: [...e.maneuvers, log] }));
   };

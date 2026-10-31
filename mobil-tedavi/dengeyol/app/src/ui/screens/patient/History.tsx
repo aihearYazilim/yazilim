@@ -123,6 +123,12 @@ function ReportBody({ e }: { e: Episode }) {
           <dd>{PROTOCOLS[e.protocolId].shortName}</dd>
           <dt>Önceki tanı</dt>
           <dd>{priorDiagnosisText(p)}</dd>
+          {e.sideConflictNote && (
+            <>
+              <dt>Taraf uyuşmazlığı</dt>
+              <dd data-testid="report-side-conflict">{e.sideConflictNote}</dd>
+            </>
+          )}
           {validity && (
             <>
               <dt>Reçete geçerliliği</dt>
