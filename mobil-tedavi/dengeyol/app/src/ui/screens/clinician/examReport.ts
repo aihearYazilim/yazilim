@@ -1,10 +1,19 @@
 /**
  * Klinik muayene raporu ve HBYS notu için saf yardımcılar (arayüzden bağımsız; birim testli).
  */
-import { type Finding, type Findings, keyLabel, MECHANISM_LABEL, NYSTAGMUS_LABEL, rxFindingLock } from '../../../core/diagnosis';
-import { decodePrescription } from '../../../core/prescription';
+import {
+  type Finding,
+  type Findings,
+  keyLabel,
+  MECHANISM_LABEL,
+  NYSTAGMUS_LABEL,
+  type ObservationMethod,
+  OBSERVATION_METHODS,
+  rxFindingLock
+} from '../../../core/diagnosis';
+import { decodePrescription, rxValidUntil as rxValidUntilMs } from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
-import { recordStats, vertigoSummary } from '../../../core/runner';
+import { recordStats, STOP_REASON_TEXT, vertigoSummary } from '../../../core/runner';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
 
@@ -79,8 +88,9 @@ export function torsionText(s: Side): string {
 
 /**
  * Bulgu özeti. `full`: rapor/HBYS için ek alanlar (torsiyon, yorulma, oturunca ters nistagmus, yöntem, not) da yazılır.
+ * `baseMethod`: başlıkta bir kez yazılan muayene yöntemi; satırda yalnız bundan farklı yöntem yazılır (tekrar etmesin).
  */
-export function findingSummary(f: Finding | undefined, full = false): string {
+export function findingSummary(f: Finding | undefined, full = false, baseMethod?: string | null): string {
   if (!f) return '—';
   const parts: string[] = [];
   if (f.nystagmus === 'none') parts.push(f.vertigo ? 'Nistagmus yok, baş dönmesi var' : 'Negatif');
@@ -96,7 +106,7 @@ export function findingSummary(f: Finding | undefined, full = false): string {
       if (f.vertigo) parts.push('baş dönmesi var');
     }
   }
-  if (full && f.method) parts.push(`gözlem: ${f.method}`);
+  if (full && f.method && f.method !== baseMethod) parts.push(`gözlem: ${f.method}`);
   if (full && f.note) parts.push(`not: ${f.note}`);
   return parts.join(' · ');
 }
@@ -122,6 +132,46 @@ export function methodsOf(...fs: Findings[]): string[] {
   const out: string[] = [];
   for (const f of fs) for (const v of Object.values(f)) if (v?.method && !out.includes(v.method)) out.push(v.method);
   return out;
+}
+
+/** Muayenenin ana gözlem yöntemi (en çok kullanılan; eşitlikte ilk kullanılan). Başlıkta bir kez yazılır. */
+export function primaryMethod(...fs: Findings[]): string | null {
+  const count = new Map<string, number>();
+  for (const f of fs) for (const v of Object.values(f)) if (v?.method) count.set(v.method, (count.get(v.method) ?? 0) + 1);
+  let best: string | null = null;
+  for (const [m, n] of count) if (best === null || n > count.get(best)!) best = m;
+  return best;
+}
+
+/** Yöntem başlık satırı ("Gözlem yöntemi: VNG."); farklı yöntem kullanılan test kendi satırında belirtilir. */
+export function methodHeader(...fs: Findings[]): string | null {
+  const base = primaryMethod(...fs);
+  if (!base) return null;
+  return `Gözlem yöntemi: ${base}${methodsOf(...fs).length > 1 ? ' (farklı yöntem kullanılan test kendi satırında belirtildi)' : ''}.`;
+}
+
+const isMethod = (m: string | undefined): m is ObservationMethod => !!m && (OBSERVATION_METHODS as string[]).includes(m);
+
+/**
+ * Bulgu formunda varsayılan gözlem yöntemi: bu muayenede en son kullanılan → klinisyen profilindeki → klinisyenin önceki
+ * son muayenesindeki. Yöntem tanı imzasına girmez; yalnız dokunuş azaltır.
+ */
+export function defaultObservationMethod(
+  exam: ClinicExam,
+  profileMethod: ObservationMethod | undefined,
+  allExams: readonly ClinicExam[]
+): ObservationMethod | undefined {
+  const own = methodsOf(exam.findings, exam.retestFindings);
+  const last = own[own.length - 1];
+  if (isMethod(last)) return last;
+  if (profileMethod) return profileMethod;
+  const prev = allExams.filter((e) => e.id !== exam.id && e.at <= exam.at).sort((a, b) => b.at - a.at);
+  for (const e of prev) {
+    const ms = methodsOf(e.findings, e.retestFindings);
+    const m = ms[ms.length - 1];
+    if (isMethod(m)) return m;
+  }
+  return undefined;
 }
 
 // ---- Manevra adımları ---------------------------------------------------------------------------------
@@ -185,45 +235,60 @@ export function stepLines(m: ManeuverLog): StepLine[] {
   });
 }
 
-/** Adımın tek satırlık metni (HBYS notu). */
-export function stepLineText(s: StepLine, index: number): string {
-  const parts = [`${index + 1}. ${s.title}: ${s.holdSec}${s.targetSec !== null ? `/${s.targetSec}` : ''} s`];
-  if (s.early) parts.push('ERKEN BİTİRİLDİ');
-  if (s.inRangePct !== null) parts.push(`hedefte %${s.inRangePct}`);
-  else if (s.manual) parts.push('elle onay');
-  if (s.theta) parts.push(`θ sapma ort. ${s.theta.mean}° / en çok ${s.theta.max}°`);
-  if (s.phi) parts.push(`φ (sarkma) ort. ${s.phi.mean}° / en az ${s.phi.min}°`);
-  if (s.transitionSec !== null) {
-    parts.push(
-      `geçiş ${s.transitionSec} s${s.fastTargetSec !== null ? (s.transitionSec > s.fastTargetSec ? ` (yavaş; hedef <${s.fastTargetSec} s)` : ` (hedef <${s.fastTargetSec} s)`) : ''}`
-    );
-  }
-  if (s.nystagmus) parts.push(s.nystagmus);
-  return parts.join(' · ');
-}
-
 export function maneuverStatus(m: ManeuverLog, lines: StepLine[] = stepLines(m)): string {
   const early = lines.filter((l) => l.early).length;
-  if (!m.completed) return 'yarıda kaldı';
+  if (!m.completed) return m.stopReason ? STOP_REASON_TEXT[m.stopReason] : 'yarıda kaldı';
   return early ? `kısaltılmış (${early} adım erken bitirildi)` : 'tamamlandı';
+}
+
+/**
+ * Manevranın HBYS notundaki tek satırı: ad, taraf, durum, adım süreleri ve manevra sırasındaki nistagmus. Açı
+ * istatistikleri (θ/φ sapması, hedefte kalma) yalnız yazdırılan raporda yer alır.
+ */
+export function maneuverLineText(m: ManeuverLog, lines: StepLine[] = stepLines(m)): string {
+  const def = PROTOCOLS[m.protocolId as ProtocolId];
+  const name = `${def?.shortName ?? m.protocolId}${m.side ? ` ${sideName(m.side)}` : ''}`;
+  const total = def?.steps.length;
+  const parts = [`${name}: ${maneuverStatus(m, lines)}${!m.completed && total ? ` (${lines.length}/${total} adım)` : ''}`];
+  if (lines.length) parts.push(`adım süreleri ${lines.map((l) => `${l.holdSec}${l.early ? ' (erken)' : ''}`).join(', ')} s`);
+  for (const l of lines) {
+    if (l.transitionSec !== null && l.fastTargetSec !== null && l.transitionSec > l.fastTargetSec) {
+      parts.push(`yavaş geçiş ${l.transitionSec} s (hedef <${l.fastTargetSec} s)`);
+    }
+  }
+  if (m.manual) parts.push('elle onaylı');
+  const nys = lines.flatMap((l, i) => (l.nystagmus ? [`${i + 1}. adımda ${l.nystagmus.replace(/^nistagmus /, '')}`] : []));
+  parts.push(nys.length ? `nistagmus: ${nys.join('; ')}` : 'nistagmus işaretlenmedi');
+  return parts.join(' · ');
 }
 
 // ---- Reçete --------------------------------------------------------------------------------------------
 
-/** Reçetenin son geçerli günü (YYYY-AA-GG → yerel takvim; yaz saati kayması etkilemez). Hasta tarafı RX_VALID_DAYS kullanır. */
-export function rxValidUntil(dateKey: string): Date | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
-  if (!m) return null;
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + RX_VALID_DAYS);
+/**
+ * Reçetenin son geçerli günü (dahil; yerel takvim). Sınır hasta tarafıyla aynı kaynaktan gelir: `core/prescription.ts`
+ * `rxValidUntil` (rxActive ile aynı an). O andan hemen önceki gün yazılır; böylece aynı gün hem "… dahil" hem "süresi
+ * doldu" görünmez.
+ */
+export function rxLastValidDay(dateKey: string): Date | null {
+  const until = rxValidUntilMs({ date: dateKey }, RX_VALID_DAYS);
+  if (until === null) return null;
+  const d = new Date(until - 1);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 export function shortDate(d: Date): string {
   return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+/** "Geçerlilik: 14 gün, 12.11.2026 dahil" (HBYS notunun reçete satırı). */
+export function rxValidityShort(dateKey: string): string {
+  const last = rxLastValidDay(dateKey);
+  return `Geçerlilik: ${RX_VALID_DAYS} gün${last ? `, ${shortDate(last)} dahil` : ''}`;
+}
+
+/** Geçerlilik cümlesi (reçete ekranı, basılı rapor). */
 export function rxValidityText(dateKey: string): string {
-  const until = rxValidUntil(dateKey);
-  return `Geçerlilik: ${RX_VALID_DAYS} gün${until ? `, ${shortDate(until)} tarihine kadar` : ''}. Testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken; süre dolunca uygulama her atakta iki tarafı test eder.`;
+  return `${rxValidityShort(dateKey)}. Testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken; süre dolunca uygulama her atakta iki tarafı test eder.`;
 }
 
 /** Reçete kodu: bağlantıdaki sağlama toplamı (hasta raporundaki kodla karşılaştırmak için). */
@@ -236,16 +301,21 @@ export function rxCode(token: string): string {
 const fullDate = (t: number) =>
   new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-/** HBYS / e-Nabız muayene notuna yapıştırılacak düz metin: her test ve her adım ayrı satırda. */
+/**
+ * HBYS / e-Nabız muayene notuna yapıştırılacak kısa düz metin: başlık, her test bir satır, tanı + mekanizma + karar desteği,
+ * her manevra bir satır, reçete bir satır (kod ve geçerlilik). Gözlem yöntemi bir kez yazılır; açı istatistikleri yalnız
+ * yazdırılan raporda.
+ */
 export function examNoteText(exam: ClinicExam, code: string | undefined, clinician: { name?: string; clinic?: string }): string {
   const lines: string[] = [];
   lines.push(`Pozisyonel vertigo değerlendirmesi (DengeYol) — ${fullDate(exam.at)}${code ? ` — hasta kodu ${code}` : ''}`);
-  const methods = methodsOf(exam.findings, exam.retestFindings);
-  if (methods.length) lines.push(`Gözlem yöntemi: ${methods.join(', ')}.`);
+  const header = methodHeader(exam.findings, exam.retestFindings);
+  const base = primaryMethod(exam.findings, exam.retestFindings);
+  if (header) lines.push(header);
   const keys = Object.keys(exam.findings) as FindingKey[];
   if (keys.length) {
     lines.push('Testler:');
-    for (const k of keys) lines.push(`- ${keyLabel(k)}: ${findingSummary(exam.findings[k], true)}`);
+    for (const k of keys) lines.push(`- ${keyLabel(k)}: ${findingSummary(exam.findings[k], true, base)}`);
   }
   const dx = exam.diagnosis;
   if (dx && dxValid(exam)) {
@@ -263,26 +333,19 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
   if (lock) lines.push(`Ev reçetesi kilidi: ${lock.message}`);
   if (exam.maneuvers.length) {
     lines.push('Manevralar:');
-    for (const m of exam.maneuvers) {
-      const sl = stepLines(m);
-      lines.push(
-        `- ${PROTOCOLS[m.protocolId].shortName}${m.side ? ` ${sideName(m.side)}` : ''} — ${maneuverStatus(m, sl)}${m.manual ? ' · elle onaylı' : ''}`
-      );
-      sl.forEach((s, i) => lines.push(`  ${stepLineText(s, i)}`));
-    }
+    for (const m of exam.maneuvers) lines.push(`- ${maneuverLineText(m)}`);
   }
   const rk = Object.keys(exam.retestFindings) as FindingKey[];
   if (rk.length) {
     lines.push('Tekrar test:');
-    for (const k of rk) lines.push(`- ${keyLabel(k)}: ${findingSummary(exam.retestFindings[k], true)}`);
+    for (const k of rk) lines.push(`- ${keyLabel(k)}: ${findingSummary(exam.retestFindings[k], true, base)}`);
   }
   if (exam.prescriptionToken && rxCurrent(exam)) {
     const r = decodePrescription(exam.prescriptionToken);
     if (r.ok) {
       lines.push(
-        `Ev reçetesi: ${sideName(r.value.side)} ${r.value.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla ${r.value.perDay}, ${r.value.days} gün (DengeYol uygulaması, QR ile verildi; reçete kodu ${rxCode(exam.prescriptionToken)}).`
+        `Ev reçetesi: ${sideName(r.value.side)} ${r.value.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla ${r.value.perDay}, ${r.value.days} gün (DengeYol, QR ile verildi; reçete kodu ${rxCode(exam.prescriptionToken)}). ${rxValidityShort(r.value.date)}; testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken.`
       );
-      lines.push(rxValidityText(r.value.date));
     }
   }
   if (exam.notes?.trim()) lines.push(`Not: ${exam.notes.trim()}`);

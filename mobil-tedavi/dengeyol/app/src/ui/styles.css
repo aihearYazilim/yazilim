@@ -1243,4 +1243,24 @@ summary {
   .clin-report .clin-signature {
     min-height: 14mm;
   }
+  /* Boş 2. sayfa: ekran iskeletinin 100dvh en az yüksekliği basılı sayfa yüksekliğine eşitlenip kenar boşluklarıyla
+     taşıyordu. Klinisyen raporu basılırken iskelet içerik kadar yer kaplar; son öğeden sonra sayfa sonu oluşmaz. */
+  html:has(.clin-report),
+  html:has(.clin-report) body,
+  html:has(.clin-report) #root,
+  .screen:has(.clin-report) {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    background-image: none !important;
+  }
+  .screen:has(.clin-report) > .content {
+    flex: none !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+  .clin-report,
+  .clin-report .clin-rx-block {
+    margin-bottom: 0 !important;
+  }
 }

@@ -488,6 +488,8 @@ await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley �
   await page.getByTestId('role-clinician').click();
   await page.locator('#cn').fill('Odyolog Test Kullanıcı');
   await page.locator('#cc').fill('Örnek Kliniği');
+  // Profildeki gözlem yöntemi bulgu formunda hazır gelir (k08 tur 2).
+  await page.getByTestId('clin-method').getByRole('button', { name: 'Frenzel' }).click();
   await page.getByTestId('clin-save-profile').click();
   await snap(page, 'odyolog-ana');
   await page.getByTestId('clin-new').click();
@@ -511,6 +513,11 @@ await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley �
     }
   });
   await page.getByTestId('finding-form').waitFor();
+  const methodPressed = await page
+    .getByRole('group', { name: 'Gözlem yöntemi', exact: true })
+    .getByRole('button', { name: 'Frenzel' })
+    .getAttribute('aria-pressed');
+  if (methodPressed !== 'true') throw new Error('profildeki gözlem yöntemi bulgu formunda hazır gelmedi');
   await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).click();
   await page.locator('#dur').fill('20');
   await snap(page, 'bulgu-formu');

@@ -66,11 +66,29 @@ yana yatmalı bakışın reddedildiğini doğrular (`calibration.test.ts`). **Ge
   yokluğu, bilişsel güçlük). İşitme kaybı tek başına kapatmaz (Bluetooth cihaz/kulaklık/yardımcı; titreşim, ton, altyazı).
 
 **Her atakta akış (telefona dokunmadan önce sorular, sonra kesintisiz):**
-1. **Kırmızı bayrak soruları** (her seans; 6 saatten eskiyse yeniden). Her soruda güvenli yanıt "Hayır"dır (son soru "önceki
-   BPPV'den farklı mı?"). Sorular sesli okunur; düğmeler her soruda 0,6 s kilitli; durduran yanıtta "Yanlış dokundum" onayı.
-   Sorular: sürekli baş dönmesi; nörolojik belirti ("5D"); yeni şiddetli baş/boyun ağrısı; göğüs ağrısı/çarpıntı/bayılma;
-   kan sulandırıcı + baş ağrısı/çarpma; kendiliğinden gelen uzun ataklar; yakın kafa travması; ani işitme kaybı/kulak
-   belirtisi; boyun travması/manipülasyonu; ateş/sıvı alamama; önceki BPPV'den farklı mı. Acil olanlarda 112 ekranı.
+1. **Kırmızı bayrak soruları** (her seans; 6 saatten eskiyse yeniden; kaynak `core/safety.ts` `RED_FLAGS`). 14 soru; her
+   soruda güvenli yanıt "Hayır"dır (son soru "önceki BPPV'den farklı mı?"). Sorular sesli okunur; düğmeler ilk okunuşta kısa
+   süre kilitli; durduran yanıtta "Yanlış dokundum" onayı. Ayırıcı tanı dayanağı: AAO-HNSF 2017 (Bhattacharyya ve ark.) ve
+   inme/santral neden belirtileri.
+
+   | # | Soru (özet) | Yanıt "Evet" ise |
+   |---|---|---|
+   | 1 | Kıpırdamadan dururken bile saatlerdir süren dönme ya da ayakta duramama (sürekli baş dönmesi) | 112 |
+   | 2 | Çift görme, konuşma ya da yutma bozukluğu | 112 |
+   | 3 | Yüz, kol ya da bacakta güçsüzlük veya uyuşma | 112 |
+   | 4 | Baş dönmesi olmadığı anlarda bile yürüyememe (gövde ataksisi; BPPV atağının ilk dakikaları sayılmaz) | 112 |
+   | 5 | Yeni ve şiddetli baş ya da boyun ağrısı | 112 |
+   | 6 | Baş dönmesiyle birlikte göğüs ağrısı, çarpıntı ya da bayılma | 112 |
+   | 7 | Ayağa kalkınca, etraf dönmeden göz kararması ya da bayılacak gibi olma (ortostatik; yataktan kalkarken dönme sayılmaz) | Aile hekimi / dahiliye |
+   | 8 | Kan sulandırıcı kullanırken yeni baş ağrısı ya da yakın baş çarpması | 112 |
+   | 9 | Baş hareketi olmadan gelen, dakikalar–saatler süren ataklar | Hekim |
+   | 10 | Son birkaç haftada kafa travması ya da kaza | Hekim |
+   | 11 | Bir kulakta yeni/ani işitme kaybı, dolgunluk, çınlama, ağrı ya da akıntı | Ani işitme kaybı/dolgunlukta **bugün** KBB; diğerlerinde birkaç gün içinde KBB |
+   | 12 | Son bir ayda boyun travması ya da manipülasyonu | Hekim |
+   | 13 | Ateş ya da su bile içilemeyecek kadar kusma | Bugün hekim / acil |
+   | 14 | Önceki BPPV atağından farklı mı? | Hekim |
+
+   Yönlendirmeyle biten her yanıt hekime yönlendirme kilidini koyar (aşağıda).
 2. **Alt tip soruları** (Kim HJ ve ark. JAMA Neurol 2023;80:244–250): (a) "En çok hangisi başlatıyor: yatarken/kalkarken mi,
    yatakta sağa-sola dönerken mi?" — "dönerken" yatay kanalı düşündürür; onaydan sonra hekime yönlendirilir. (b) "Dönme hissi
    ne kadar sürüyor?" (sersemlik/bulantı hariç) — "3 dakikadan uzun" hekime yönlendirir (Kim 2023 tarama ölçütü <3 dk);
@@ -81,7 +99,8 @@ yana yatmalı bakışın reddedildiğini doğrular (`calibration.test.ts`). **Ge
    ekranı açık tutmayı başlatır. Sonra telefon alna konur ve akış dokunmadan ilerler: (ilk kez) tanıtma → 1. taraf testi →
    30 s dinlenme → 2. taraf testi → karar → tek dokunuşla manevra. Zincirdeki her adımdan önce 1 s'lik sessiz yer kontrolü
    yapılır; telefon 12°'den fazla kaymışsa tam yerleştirme ölçümü istenir.
-5. **Reçeteli kısa yol:** Klinisyen reçetesi 14 gün geçerlidir (doz ve taraf çelişkisi denetimi bu süre boyunca). Testsiz kısa
+5. **Reçeteli kısa yol:** Klinisyen reçetesi 14 gün geçerlidir (doz ve taraf çelişkisi denetimi bu süre boyunca); hasta ve
+   klinisyen ekranı son geçerli günü aynı sınırdan "… dahil" diye yazar. Testsiz kısa
    yol yalnız reçetenin verildiği atak içindir: hasta "muayeneden beri hiç geçmedi" derse reçetedeki tarafa manevra yapılır;
    "geçip yeniden başladı" ya da "emin değilim" derse ve reçeteden sonra kapanmış bir atak varsa tam akış uygulanır.
 6. **Doz denetimi atak başında:** Sınır dolduysa provokatif testler yapılmadan söylenir. Manevra sonrası kusma bildirilirse o gün
@@ -94,11 +113,19 @@ hiç tetiklenmezse manevra yapılmaz ve ertesi sabah yeniden test önerilir; iki
 "baş dönmesi sürüyorsa hekime başvurun (evde test edilemeyen yatay kanal olabilir)" denir (kilit konmaz).
 
 **Seans içi:** Hasta modunda her gözlem adımında baş dönmesi 2 dakikayı aşarsa manevra durur ve hekime yönlendirilir
-(tipik BPPV <1 dk). Baş dönmesi işaretliyken her 30 saniyede "geçtiyse dokunun" hatırlatması yapılır; duraklatmada "geçti"
-işaretlenebilir ve duraklatma süresi sınıra sayılmaz. Manevranın herhangi bir pozisyonunda tek bir baş dönmesi dalgası
+(tipik BPPV <1 dk). Baş dönmesi işaretliyken ilk "geçtiyse dokunun" hatırlatması 15 s'de, sonra aralıklı yapılır; duraklatmada
+"geçti" işaretlenebilir ve duraklatma süresi sınıra sayılmaz. Manevranın herhangi bir pozisyonunda tek bir baş dönmesi dalgası
 ≥1 dk sürdüyse (tamamlanan ya da yarıda bırakılan manevrada) hekime yönlendirilir. Süre en uzun tek dalgadır (aralıklı kısa
-dalgalar toplanmaz). Duraklatma basılı tutmayla; geri tuşu manevrayı bitirmez, duraklatır; ekran kapatılırsa yapılan kısım
-"kesildi" olarak kaydedilir ve doza sayılır. Manevra sonrası "yeni nörolojik belirti" yanıtı acil ekranı açar ve kilit koyar.
+dalgalar toplanmaz). Ekrana bakmadan duraklatma: ekranın herhangi bir yerine 2 s basılı tutmak duraklatır, duraklatmada
+düğmelerin dışına 2 s basılı tutmak devam ettirir (uzun basış alttaki düğmeleri seçmez); geri tuşu manevrayı bitirmez,
+duraklatır. Duraklatma seçenekleri: devam, "baş dönmesi geçti", "Kendimi kötü hissediyorum", "Pozisyona gelemiyorum / boynum
+ağrıyor", "Şimdilik bırak (iyiyim)". Ekran kapatılırsa yapılan kısım "kesildi" olarak kaydedilir ve doza sayılır. Manevra
+sonrası "yeni nörolojik belirti" yanıtı acil ekranı açar ve kilit koyar.
+
+**Pozisyona gelinemedi:** Hasta modunda bir pozisyona 60 s içinde gelinip doğrulanamazsa ya da duraklatmada "Pozisyona
+gelemiyorum / boynum ağrıyor" seçilirse manevra durur, kayda "pozisyona gelinemedi" yazılır ve hekime yönlendirilir (yönlendirme
+kilidi). Hedef açı gevşetilmez; hasta zorlanmaz. Gerekçe: boyun/bel kısıtlılığında değiştirilmiş manevra ya da gözetimli
+uygulama gerekir.
 
 **Doz (14 günlük tedavi dönemi):** Reçetesiz günde en fazla 3 manevra, en fazla 3 farklı gün, toplam 9; reçeteyle günde en
 fazla 3, en fazla 7 gün, toplam 21. Sınırlar son 14 günde TÜM ataklar ve deneme manevraları birlikte sayılır; atağı kapatıp
@@ -131,6 +158,15 @@ girilmişken belirlenir. Birden çok kanalda öneri → çok kanallı uyarısı.
 Ev reçetesi yalnız geçerli, taraflı arka kanal kanalolitiazisi tanısında verilir (çok kanallı ya da kupulolitiazis şüphesinde
 verilmez; uyarılı ya da "belirsiz" tanıda ek onay); taraf tanıdan gelir. Klinikte Epley pozisyonları en az 30 s (AAO-HNSF
 2017: 20–30 s ya da nistagmus sönene kadar); hasta modunda 45 s.
+
+Bulguya dayanan reçete kilidi: herhangi bir testte (tekrar test dahil) ≥1 dk yanıt ya da çok kanallı tutulum varsa, tanı elle
+"kanalolitiazis" girilse de ev reçetesi verilmez; kilit gerekçesi rapora ve HBYS notuna yazılır.
+
+**Kayıt:** Gözlem yöntemi (VNG / Frenzel / çıplak göz) bulgu formunda seçilir; profildeki ya da son muayenedeki yöntemle dolu
+gelir ve tanı imzasına girmez. HBYS notu kısadır: başlık, yöntem bir kez, test başına bir satır, tanı + mekanizma + karar
+desteği (öneri / klinisyen girişi), manevra başına bir satır (ad, taraf, tamamlandı / kısaltılmış / durma nedeni, adım süreleri,
+manevra sırasındaki nistagmus), reçete satırı (kod, son geçerli gün). Açı istatistikleri (θ/φ sapması, hedefte kalma) yalnız
+yazdırılan raporda yer alır.
 
 ## 6. Bilinçli olarak yapılmayanlar
 

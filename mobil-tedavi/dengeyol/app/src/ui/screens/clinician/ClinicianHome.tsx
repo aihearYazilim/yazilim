@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { ObservationMethod } from '../../../core/diagnosis';
 import { formatDateTime } from '../../../state/episodes';
 import { store, uid, useData } from '../../../state/store';
 import type { ClinicExam, ClinicPatient } from '../../../state/types';
@@ -18,6 +19,7 @@ export function ClinicianHome() {
   const [name, setName] = useState(d.clinician.name ?? '');
   const [clinic, setClinic] = useState(d.clinician.clinic ?? '');
   const [sensorless, setSensorless] = useState(!!d.clinician.sensorless);
+  const [method, setMethod] = useState<ObservationMethod | 'last'>(d.clinician.method ?? 'last');
   const [query, setQuery] = useState('');
   const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
   const existing = code.trim() ? d.clinicPatients.find((p) => norm(p.code) === norm(code)) : undefined;
@@ -87,12 +89,33 @@ export function ClinicianHome() {
               </span>
             </span>
           </label>
+          <div className="field" data-testid="clin-method">
+            <label>Bulgu formunda gözlem yöntemi hazır gelsin</label>
+            <Segmented
+              label="Varsayılan gözlem yöntemi"
+              value={method}
+              onChange={setMethod}
+              options={[
+                { value: 'VNG', label: 'VNG' },
+                { value: 'Frenzel', label: 'Frenzel' },
+                { value: 'çıplak göz', label: 'Çıplak göz' },
+                { value: 'last', label: 'Son muayenedeki' }
+              ]}
+            />
+            <span className="small muted">Her formda değiştirilebilir; tanıyı etkilemez.</span>
+          </div>
           <button
             className="btn primary"
             onClick={() => {
               store.update((x) => ({
                 ...x,
-                clinician: { name: name.trim() || undefined, clinic: clinic.trim() || undefined, sensorless: sensorless || undefined }
+                clinician: {
+                  ...x.clinician,
+                  name: name.trim() || undefined,
+                  clinic: clinic.trim() || undefined,
+                  sensorless: sensorless || undefined,
+                  method: method === 'last' ? undefined : method
+                }
               }));
               setEditProfile(false);
             }}
@@ -109,6 +132,7 @@ export function ClinicianHome() {
             <div className="small muted">
               {d.clinician.clinic}
               {d.clinician.sensorless ? ' · VNG/Frenzel (sensörsüz)' : ''}
+              {d.clinician.method ? ` · gözlem: ${d.clinician.method}` : ''}
             </div>
           </div>
           <button className="btn ghost" onClick={() => setEditProfile(true)}>

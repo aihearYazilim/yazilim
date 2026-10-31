@@ -1,5 +1,5 @@
 import type { Calibration } from '../core/calibration';
-import type { Findings } from '../core/diagnosis';
+import type { Findings, ObservationMethod } from '../core/diagnosis';
 import type { Prescription } from '../core/prescription';
 import type { Canal, ProtocolId, Side } from '../core/protocols';
 import type { StepRecord, StopReason } from '../core/runner';
@@ -145,7 +145,14 @@ export interface AppData {
   settings: Settings;
   patient?: PatientProfile;
   episodes: Episode[];
-  clinician: { name?: string; clinic?: string; /** VNG/Frenzel kullanılıyor: testler varsayılan olarak sensörsüz. */ sensorless?: boolean };
+  clinician: {
+    name?: string;
+    clinic?: string;
+    /** VNG/Frenzel kullanılıyor: testler varsayılan olarak sensörsüz. */
+    sensorless?: boolean;
+    /** Bulgu formunda varsayılan gözlem yöntemi (yoksa son muayenedeki yöntem). */
+    method?: ObservationMethod;
+  };
   clinicPatients: ClinicPatient[];
   clinicExams: ClinicExam[];
   /** Deneme manevrası zamanları (günlük sınır için). */

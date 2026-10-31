@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import type { Finding, Findings } from '../../../core/diagnosis';
-import { encodePrescription } from '../../../core/prescription';
+import { encodePrescription, rxValidUntil } from '../../../core/prescription';
 import type { StepRecord } from '../../../core/runner';
+import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
 import {
+  defaultObservationMethod,
   dxValid,
   examNoteText,
   findingsKeyOf,
   findingSummary,
+  maneuverLineText,
   maneuverStatus,
   manualDxLabel,
+  methodHeader,
+  primaryMethod,
   rxBlockReason,
   rxCurrent,
-  rxValidUntil,
+  rxLastValidDay,
+  rxValidityText,
   shortDate,
   stepLines
 } from './examReport';
@@ -164,41 +170,76 @@ describe('manevra adımları', () => {
   });
 });
 
-describe('HBYS notu', () => {
-  it('her test ayrı satırda; elle tanıda mekanizma ve öneri satırı; reçete geçerlilik bitişi', () => {
-    const fx: Findings = {
-      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20, torsionToward: 'R', method: 'VNG', note: 'yorgun hasta' }),
-      dhL: f({ method: 'VNG' })
-    };
-    const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 3 });
+const log = (records: StepRecord[], p: Partial<ManeuverLog> = {}): ManeuverLog => ({
+  id: 'm1',
+  at: T0,
+  protocolId: 'epley',
+  side: 'R',
+  completed: true,
+  stopReason: null,
+  records,
+  manual: false,
+  ...p
+});
+
+describe('HBYS notu (kısa)', () => {
+  const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 3 });
+  const fx: Findings = {
+    dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20, torsionToward: 'R', method: 'VNG', note: 'yorgun hasta' }),
+    dhL: f({ method: 'VNG' })
+  };
+  const build = () => {
     const e = exam(fx, { ...manualPC('canalithiasis'), suggestedLabels: ['Sağ arka kanal BPPV (kanalolitiazis)'] }, {
       prescriptionToken: token,
-      maneuvers: [
-        {
-          id: 'm1',
-          at: T0,
-          protocolId: 'epley',
-          side: 'R',
-          completed: true,
-          stopReason: null,
-          records: [rec({ stepId: 'ep-1', title: 'Sağ sarkık' }), rec({ stepId: 'ep-2', title: 'Sola dönüş', holdSec: 0.5 })],
-          manual: false
-        }
-      ]
+      maneuvers: [log([rec({ stepId: 'ep-1', title: 'Sağ sarkık' }), rec({ stepId: 'ep-2', title: 'Sola dönüş', holdSec: 0.5 })])]
     });
     e.prescriptionFindingsKey = e.diagnosis!.findingsKey;
-    const text = examNoteText(e, 'NO-2611', { name: 'Dr. Test' });
+    return examNoteText(e, 'NO-2611', { name: 'Dr. Test' });
+  };
+
+  it('başlık, test başına bir satır, tanı + karar desteği, manevra ve reçete birer satır', () => {
+    const text = build();
     const lines = text.split('\n');
-    expect(lines).toContain('Gözlem yöntemi: VNG.');
+    expect(lines[0]).toMatch(/^Pozisyonel vertigo değerlendirmesi \(DengeYol\) — .* — hasta kodu NO-2611$/);
     expect(lines.some((l) => l.startsWith('- Sağ Dix-Hallpike: Yukarı vuran + torsiyonel · gecikme 3 s · süre 20 s · torsiyon sağ kulağa'))).toBe(true);
     expect(lines.some((l) => l.startsWith('- Sol Dix-Hallpike: Negatif'))).toBe(true);
     expect(text).toMatch(/Tanı: Sağ arka kanal BPPV — kanalolitiazis \(elle\) — klinisyen girişi/);
     expect(text).toMatch(/Karar desteği önerisi: Sağ arka kanal BPPV \(kanalolitiazis\)\. Klinisyen tanıyı elle girdi\./);
-    expect(text).toMatch(/Epley sağ — kısaltılmış \(1 adım erken bitirildi\)/);
-    expect(lines.some((l) => /^ {2}2\. Sola dönüş: 1\/30 s · ERKEN BİTİRİLDİ/.test(l))).toBe(true);
-    expect(text).toMatch(/θ sapma ort\. 5° \/ en çok 12°/);
-    expect(text).toMatch(/13\.11\.2026 tarihine kadar/);
-    expect(text).toMatch(/reçete kodu [0-9a-f]{8}/);
+    // Manevra tek satır: ad, taraf, durum, adım süreleri, nistagmus özeti.
+    expect(lines).toContain('- Epley sağ: kısaltılmış (1 adım erken bitirildi) · adım süreleri 30, 1 (erken) s · nistagmus işaretlenmedi');
+    expect(lines.filter((l) => /^ {2}/.test(l))).toEqual([]);
+    // Reçete tek satır: kod ve son geçerli gün ("dahil").
+    const rxLines = lines.filter((l) => l.startsWith('Ev reçetesi:'));
+    expect(rxLines).toHaveLength(1);
+    expect(rxLines[0]).toMatch(/reçete kodu [0-9a-f]{8}/);
+    expect(rxLines[0]).toContain(`Geçerlilik: ${RX_VALID_DAYS} gün, ${shortDate(rxLastValidDay('2026-10-30')!)} dahil`);
+    expect(rxLines[0]).toMatch(/testsiz kısa yol/);
+    expect(lines[lines.length - 1]).toBe('Dr. Test');
+  });
+
+  it('açı istatistikleri HBYS notunda yok (yalnız basılı raporda)', () => {
+    const text = build();
+    expect(text).not.toMatch(/θ|φ|sapma|hedefte %/);
+    expect(text.split('\n').length).toBeLessThanOrEqual(12);
+  });
+
+  it('gözlem yöntemi bir kez yazılır; test satırında tekrar etmez', () => {
+    const lines = build().split('\n');
+    expect(lines.filter((l) => /VNG/.test(l))).toEqual(['Gözlem yöntemi: VNG.']);
+    expect(lines.some((l) => /gözlem:/.test(l))).toBe(false);
+  });
+
+  it('farklı yöntem kullanılan test kendi satırında belirtilir', () => {
+    const mixed: Findings = {
+      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20, method: 'VNG' }),
+      dhL: f({ method: 'Frenzel' }),
+      rollR: f({ method: 'VNG' })
+    };
+    expect(primaryMethod(mixed)).toBe('VNG');
+    expect(methodHeader(mixed)).toMatch(/^Gözlem yöntemi: VNG \(farklı yöntem/);
+    const lines = examNoteText(exam(mixed), undefined, {}).split('\n');
+    expect(lines.find((l) => l.startsWith('- Sol Dix-Hallpike'))).toMatch(/gözlem: Frenzel/);
+    expect(lines.find((l) => l.startsWith('- Sağ Dix-Hallpike'))).not.toMatch(/gözlem:/);
   });
 
   it('bulgu kilidi notta yazılır', () => {
@@ -207,11 +248,43 @@ describe('HBYS notu', () => {
   });
 });
 
+describe('manevra satırı', () => {
+  it('nistagmus işaretleri adım numarasıyla; yavaş Semont geçişi belirtilir', () => {
+    const t = maneuverLineText(
+      log([rec({ stepId: 'se-1', vertigoMarks: [{ start: 5, end: 20 }] }), rec({ stepId: 'se-2', transitionSec: 4.12 })], { protocolId: 'semont' })
+    );
+    expect(t).toMatch(/^Semont sağ: tamamlandı · adım süreleri 30, 30 s · yavaş geçiş 4\.1 s \(hedef <2 s\) · nistagmus: 1\. adımda gecikme 3 s, süre 15 s$/);
+  });
+
+  it('yarıda kalan manevra durma nedeni ve tamamlanan adım sayısıyla', () => {
+    const t = maneuverLineText(log([rec({ stepId: 'ep-1' })], { completed: false, stopReason: 'POSITION_UNREACHABLE', manual: true }));
+    expect(t).toMatch(/^Epley sağ: durduruldu: pozisyona gelinemedi \(1\/\d+ adım\) · adım süreleri 30 s · elle onaylı · nistagmus işaretlenmedi$/);
+  });
+});
+
+describe('gözlem yöntemi varsayılanı', () => {
+  const e1 = exam({ dhR: f({ method: 'Frenzel' }) }, undefined, { id: 'old', at: T0 - 86_400_000 });
+  const cur = exam({}, undefined, { id: 'cur' });
+
+  it('muayenedeki son yöntem > profil > önceki muayene', () => {
+    expect(defaultObservationMethod({ ...cur, findings: { dhR: f({ method: 'çıplak göz' }) } }, 'VNG', [e1])).toBe('çıplak göz');
+    expect(defaultObservationMethod(cur, 'VNG', [e1, cur])).toBe('VNG');
+    expect(defaultObservationMethod(cur, undefined, [e1, cur])).toBe('Frenzel');
+    expect(defaultObservationMethod(cur, undefined, [cur])).toBeUndefined();
+  });
+});
+
 describe('yardımcılar', () => {
-  it('reçete geçerlilik bitişi: muayene + 14 gün (takvim günü)', () => {
-    expect(shortDate(rxValidUntil('2026-10-30')!)).toBe('13.11.2026');
-    expect(shortDate(rxValidUntil('2026-03-20')!)).toBe('03.04.2026');
-    expect(rxValidUntil('bozuk')).toBeNull();
+  it('son geçerli gün: hasta tarafındaki bitiş anından hemen önceki takvim günü ("dahil")', () => {
+    for (const date of ['2026-10-30', '2026-03-20', '2026-10-17']) {
+      const until = rxValidUntil({ date }, RX_VALID_DAYS)!;
+      const last = rxLastValidDay(date)!;
+      const nextDay = new Date(last.getFullYear(), last.getMonth(), last.getDate() + 1).getTime();
+      expect(last.getTime()).toBeLessThan(until);
+      expect(nextDay).toBeGreaterThanOrEqual(until);
+    }
+    expect(rxValidityText('2026-10-30')).toMatch(/^Geçerlilik: 14 gün, \d\d\.\d\d\.2026 dahil\. Testsiz kısa yol/);
+    expect(rxLastValidDay('bozuk')).toBeNull();
   });
 
   it('elle tanı etiketi mekanizmayı içerir', () => {
@@ -219,12 +292,10 @@ describe('yardımcılar', () => {
     expect(manualDxLabel('HC', null, 'unknown')).toBe('yatay kanal BPPV — mekanizma belirsiz (elle)');
   });
 
-  it('tam bulgu özeti ek alanları yazar', () => {
-    const s = findingSummary(
-      f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 15, fatigue: true, reversalOnSitting: false, method: 'Frenzel', note: 'n' }),
-      true
-    );
-    expect(s).toMatch(/yorulma var · oturunca ters nistagmus yok · gözlem: Frenzel · not: n/);
+  it('tam bulgu özeti ek alanları yazar; başlıktaki yöntem satırda tekrar etmez', () => {
+    const full = f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 15, fatigue: true, reversalOnSitting: false, method: 'Frenzel', note: 'n' });
+    expect(findingSummary(full, true)).toMatch(/yorulma var · oturunca ters nistagmus yok · gözlem: Frenzel · not: n/);
+    expect(findingSummary(full, true, 'Frenzel')).toMatch(/oturunca ters nistagmus yok · not: n$/);
     expect(findingSummary(f({ nystagmus: 'upbeat-torsional', fatigue: true }))).not.toMatch(/yorulma/);
   });
 });

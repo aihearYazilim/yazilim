@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
-import { type Finding, type Findings, keyLabel, type ObservationMethod, rxFindingLock, suggestDiagnosis } from '../../../core/diagnosis';
+import { type Finding, type Findings, keyLabel, rxFindingLock, suggestDiagnosis } from '../../../core/diagnosis';
 import { decodePrescription, encodePrescription, type Prescription } from '../../../core/prescription';
 import {
   type Canal,
@@ -27,6 +27,7 @@ import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
 import { RunnerView, type RunnerOutcome } from '../RunnerView';
 import {
+  defaultObservationMethod,
   dxText,
   dxValid,
   examNoteText,
@@ -35,6 +36,7 @@ import {
   manualDxLabel,
   maneuverStatus,
   methodsOf,
+  primaryMethod,
   rxBlockReason,
   rxCode,
   rxCurrent,
@@ -63,12 +65,6 @@ const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | n
 
 function updateExam(id: string, fn: (e: ClinicExam) => ClinicExam) {
   store.update((d) => ({ ...d, clinicExams: d.clinicExams.map((e) => (e.id === id ? fn(e) : e)) }));
-}
-
-/** Muayenede en son kullanılan gözlem yöntemi (bulgu formunda varsayılan). */
-function lastMethod(exam: ClinicExam): ObservationMethod | undefined {
-  const all = methodsOf(exam.findings, exam.retestFindings);
-  return all[all.length - 1] as ObservationMethod | undefined;
 }
 
 /**
@@ -238,7 +234,7 @@ export function Exam() {
           initial={cur.initial}
           showIntensity={showIntensity}
           dixHallpike={cur.key === 'dhR' || cur.key === 'dhL'}
-          defaultMethod={lastMethod(exam)}
+          defaultMethod={defaultObservationMethod(exam, d.clinician.method, d.clinicExams)}
           onSave={(f) => {
             updateExam(exam.id, (e) => ({ ...e, [cur.target]: { ...e[cur.target], [cur.key]: f } }));
             setEditQueue((q) => q.slice(1));
@@ -259,7 +255,7 @@ export function Exam() {
           initial={exam.findings[k] ?? { ...emptyFinding(), nystagmusUnset: true }}
           showIntensity={k === 'rollR' || k === 'rollL'}
           dixHallpike={k === 'dhR' || k === 'dhL'}
-          defaultMethod={lastMethod(exam)}
+          defaultMethod={defaultObservationMethod(exam, d.clinician.method, d.clinicExams)}
           onSave={(f) => {
             updateExam(exam.id, (e) => ({ ...e, findings: { ...e.findings, [k]: f } }));
             setManualEdit(null);
@@ -867,7 +863,9 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
     void QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' }).then(setQr);
   }, [exam.prescriptionToken, rxOk]);
   const methods = methodsOf(exam.findings, exam.retestFindings);
-  const lock = rxFindingLock(exam.findings, exam.retestFindings);
+  // Yöntem başlıkta bir kez; satırda yalnız farklı olan yazılır.
+  const baseMethod = primaryMethod(exam.findings, exam.retestFindings);
+  const lock =rxFindingLock(exam.findings, exam.retestFindings);
   const fx = (title: string, f: Findings) => {
     const keys = Object.keys(f) as FindingKey[];
     if (keys.length === 0) return null;
@@ -879,7 +877,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             {keys.map((k) => (
               <tr key={k}>
                 <th>{keyLabel(k)}</th>
-                <td>{findingSummary(f[k], true)}</td>
+                <td>{findingSummary(f[k], true, baseMethod)}</td>
               </tr>
             ))}
           </tbody>
