@@ -12,6 +12,12 @@ export type HintKey =
   /** Yüz yere hedefte gövde dönmemiş (yalnız baş çevrili): boyun zorlanmasın, bütün vücutla dönülsün. */
   | 'TURN_BODY_RIGHT'
   | 'TURN_BODY_LEFT'
+  /**
+   * Yan yatış hedefinde (ör. Epley 3, burun yere) hasta KARŞI yanda: en kısa açıyla yön verilirse yüzüstü üzerinden
+   * döndürülür. Önce sırtüstüne dönülmesi söylenir; ad, hedefin (hastanın) yanıdır (k02, tur 2).
+   */
+  | 'WRONG_SIDE_RIGHT'
+  | 'WRONG_SIDE_LEFT'
   | 'HANG_MORE'
   | 'HANG_LESS'
   | 'CHIN_DOWN'
@@ -33,6 +39,8 @@ export interface Evaluation {
   closeness: number;
   /** En öncelikli düzeltme. */
   hint: HintKey | null;
+  /** Yan yatış hedefinde hasta karşı yanda (ya da oradan yüzüstü üzerinden geliyor); bkz. `sideGuarded`. */
+  wrongSide?: boolean;
 }
 
 /** Dik oturuş sınırı: başın dikeyden sapması bundan küçükse "oturuyor" sayılır. */
@@ -50,6 +58,28 @@ export const HOLD_HYSTERESIS_DEG = 3;
 /** Baş bu dönüşün altındaysa (aynı yanda) gövde henüz dönmemiş sayılır: tek başına boyunla yüz yere bakılamaz. */
 const BODY_NOT_TURNED_MAX = 110;
 
+/** Sırtüstü bölgesi: yatarken |θ| bundan küçükse hasta sırtüstü sayılır; "yanlış taraf" kilidi burada çözülür. */
+export const SUPINE_ZONE_DEG = 30;
+/** Karşı yan bölgesinin üst sınırı: |θ| bunun ötesi yüzüstüdür (doğru yandan biraz fazla dönen hasta da buraya gelir). */
+const WRONG_SIDE_MAX_DEG = 160;
+
+/**
+ * Yan yatış hedefi mi (yanlış taraf denetimi): gövdeyle dönülen hedef ya da |θ| 90°–150° arası hedef. Yüzüstü hedef
+ * (BBQ 180°) ve yüzüstünden gelinen hedef (`viaProne`) hariç: bu manevralarda yüzüstü yolun bir parçasıdır.
+ */
+export function sideGuarded(target: Target): boolean {
+  if (target.kind !== 'lying' || target.viaProne) return false;
+  const a = Math.abs(target.theta);
+  return !!target.bodyTurn || (a >= 90 && a <= 150);
+}
+
+/** Yatan hasta, yan yatış hedefinin karşı yanında mı (sırtüstünü geçmiş, yüzüstüne varmamış). */
+export function onWrongSide(pose: HeadPose, target: Target): boolean {
+  if (!sideGuarded(target) || target.kind !== 'lying') return false;
+  const a = Math.abs(pose.theta);
+  return Math.sign(pose.theta) !== Math.sign(target.theta) && a >= SUPINE_ZONE_DEG && a <= WRONG_SIDE_MAX_DEG;
+}
+
 function rangeDistance(v: number, lo: number, hi: number): number {
   if (v < lo) return lo - v;
   if (v > hi) return hi - v;
@@ -59,6 +89,11 @@ function rangeDistance(v: number, lo: number, hi: number): number {
 export interface EvaluateOptions {
   /** Tutma sırasında sarkma aralığına eklenen pay (°); bkz. HOLD_HYSTERESIS_DEG. */
   holdMarginDeg?: number;
+  /**
+   * Hasta bu adımda karşı yana geçti ve henüz sırtüstüne (ya da oturuşa) dönmedi (yürütücü tutar). Bu sürece hedefe
+   * yüzüstü üzerinden gelinse de kabul edilmez; ipucu "önce sırtüstüne dönün" olur.
+   */
+  wrongSideLatched?: boolean;
 }
 
 export function evaluate(pose: HeadPose, target: Target, opts: EvaluateOptions = {}): Evaluation {
@@ -107,6 +142,20 @@ export function evaluate(pose: HeadPose, target: Target, opts: EvaluateOptions =
     };
   }
   const thetaErr = angleDiff(target.theta, pose.theta);
+  // Karşı yanda en kısa açı yüzüstünden geçirir: yön verilmez, önce sırtüstüne dönülmesi söylenir (k02, tur 2).
+  if (onWrongSide(pose, target) || (opts.wrongSideLatched && sideGuarded(target) && Math.abs(pose.theta) >= SUPINE_ZONE_DEG)) {
+    return {
+      inRange: false,
+      postureOk,
+      thetaErr,
+      phiErr: null,
+      psiErr: null,
+      errorDeg: Math.abs(thetaErr),
+      closeness: 0,
+      hint: target.theta > 0 ? 'WRONG_SIDE_RIGHT' : 'WRONG_SIDE_LEFT',
+      wrongSide: true
+    };
+  }
   const thetaExcess = Math.max(0, Math.abs(thetaErr) - target.thetaTol);
   const margin = Math.max(0, opts.holdMarginDeg ?? 0);
   const phiErr = rangeDistance(pose.phi, target.phiMin - margin, target.phiMax + margin);
@@ -141,6 +190,8 @@ export const HINT_TEXT_PATIENT: Record<HintKey, string> = {
   TURN_LEFT: 'Başınızı biraz daha sola çevirin.',
   TURN_BODY_RIGHT: 'Yalnız başınızı değil, bütün vücudunuzla sağ yanınıza dönün; sonra burnunuz yere baksın.',
   TURN_BODY_LEFT: 'Yalnız başınızı değil, bütün vücudunuzla sol yanınıza dönün; sonra burnunuz yere baksın.',
+  WRONG_SIDE_RIGHT: 'Durun, yanlış taraftasınız. Önce sırtüstüne dönün, sonra bütün vücudunuzla sağ yanınıza dönün.',
+  WRONG_SIDE_LEFT: 'Durun, yanlış taraftasınız. Önce sırtüstüne dönün, sonra bütün vücudunuzla sol yanınıza dönün.',
   HANG_MORE: 'Başınızı biraz daha geriye bırakın.',
   HANG_LESS: 'Başınızı biraz kaldırın.',
   CHIN_DOWN: 'Çenenizi biraz göğsünüze doğru indirin.',
@@ -151,10 +202,13 @@ export const HINT_TEXT_PATIENT: Record<HintKey, string> = {
 export const HINT_TEXT_CLINICIAN: Record<HintKey, string> = {
   LIE_DOWN: 'Hasta henüz yatar pozisyonda değil.',
   SIT_UP: 'Hasta oturtulmalı.',
-  TURN_RIGHT: 'Başı sağa çevirin.',
-  TURN_LEFT: 'Başı sola çevirin.',
+  // Klinisyen hastanın karşısında ya da başucunda durur: yön her zaman hastaya göre söylenir (k10, tur 2).
+  TURN_RIGHT: 'Başı hastanın sağına çevirin.',
+  TURN_LEFT: 'Başı hastanın soluna çevirin.',
   TURN_BODY_RIGHT: 'Gövdeyi hastanın sağına çevirin (yalnız baş değil).',
   TURN_BODY_LEFT: 'Gövdeyi hastanın soluna çevirin (yalnız baş değil).',
+  WRONG_SIDE_RIGHT: 'Yanlış taraf: hastayı önce sırtüstüne, sonra hastanın sağına çevirin (yüzüstünden geçirmeyin).',
+  WRONG_SIDE_LEFT: 'Yanlış taraf: hastayı önce sırtüstüne, sonra hastanın soluna çevirin (yüzüstünden geçirmeyin).',
   HANG_MORE: 'Ekstansiyonu artırın (baş daha sarkık).',
   HANG_LESS: 'Ekstansiyonu azaltın.',
   CHIN_DOWN: 'Fleksiyonu artırın (çene aşağı).',
@@ -170,6 +224,8 @@ export const HINT_TEXT_HELPER: Record<HintKey, string> = {
   TURN_LEFT: 'Başı hastanın soluna biraz daha çevirin.',
   TURN_BODY_RIGHT: 'Hastayı bütün vücuduyla sağ yanına çevirin; yalnız başı değil. Sonra burnu yere baksın.',
   TURN_BODY_LEFT: 'Hastayı bütün vücuduyla sol yanına çevirin; yalnız başı değil. Sonra burnu yere baksın.',
+  WRONG_SIDE_RIGHT: 'Durun, yanlış taraf. Hastayı önce sırtüstüne getirin, sonra bütün vücuduyla sağ yanına çevirin.',
+  WRONG_SIDE_LEFT: 'Durun, yanlış taraf. Hastayı önce sırtüstüne getirin, sonra bütün vücuduyla sol yanına çevirin.',
   HANG_MORE: 'Başı biraz daha geriye sarkıtın.',
   HANG_LESS: 'Başı biraz kaldırın.',
   CHIN_DOWN: 'Hastanın çenesini biraz göğsüne doğru indirin.',

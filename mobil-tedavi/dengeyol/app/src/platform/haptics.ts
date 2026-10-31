@@ -9,7 +9,8 @@ export type HapticPattern =
   | 'move'
   | 'markOn'
   | 'markOff'
-  | 'pause';
+  | 'pause'
+  | 'ready';
 
 /**
  * Sesi duyamayan kullanıcı için "ne zaman / ne oldu" bilgisi (yön bilgisi taşımaz). Her anlam SAYI ve SÜREYLE ayrılır;
@@ -19,6 +20,7 @@ export type HapticPattern =
  *   reached   1 uzun                             500                         doğru, böyle kalın
  *   pause     1 çok uzun                         1400                        duraklatıldı
  *   move      2 uzun                             450·450                     şimdi hareket edin (yeni adım / "şimdi!")
+ *   ready     2 kısa                             120·120                     hazırsanız ekrana dokunun (karar/ara ekranı)
  *   stepDone  3 kısa                             120·120·120                 adım bitti
  *   done      3 kısa + 1 çok uzun                120·120·120·900             manevra/test bitti
  *   alarm     3 çok uzun                         1000·1000·1000              dur (güvenlik)
@@ -31,6 +33,8 @@ const PATTERNS: Record<HapticPattern, number[]> = {
   reached: [500],
   pause: [1400],
   move: [450, 250, 450],
+  // "Hazırsanız dokunun" anları: "hareket edin"den (2 uzun) ayrı; aynı sayıda vuruş, ~4 kat kısa (k04, tur 2).
+  ready: [120, 200, 120],
   stepDone: [120, 120, 120, 120, 120],
   done: [120, 120, 120, 120, 120, 300, 900],
   alarm: [1000, 300, 1000, 300, 1000],
@@ -52,6 +56,7 @@ export function hapticTimings(p: HapticPattern): readonly number[] {
 export const HAPTIC_LEGEND: { pattern: HapticPattern; label: string }[] = [
   { pattern: 'move', label: 'İki uzun: şimdi hareket edin' },
   { pattern: 'reached', label: 'Bir uzun: doğru, böyle kalın' },
+  { pattern: 'ready', label: 'İki kısa: hazırsanız ekrana dokunun' },
   { pattern: 'drift', label: 'Hızlı, sürekli vızıltı: pozisyon bozuldu' },
   { pattern: 'stepDone', label: 'Üç kısa: bu adım bitti' },
   { pattern: 'done', label: 'Üç kısa ve bir çok uzun: manevra ya da test bitti' },

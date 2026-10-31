@@ -121,6 +121,23 @@ describe('BBQ roll yönü', () => {
   });
 });
 
+describe('tur 2 (E1-10): hasta konuşma metinleri kısa ve derecesiz', () => {
+  it('Epley/Dix-Hallpike/Semont hasta yönergeleri ~12 s\'yi geçmez, "derece" ve "yarı yolda" yok', () => {
+    for (const id of ['epley', 'dix-hallpike', 'semont'] as const) {
+      for (const st of resolveProtocol(id, 'R').steps) {
+        expect(st.say, `${id} ${st.id}`).not.toMatch(/derece|yarı yolda/);
+        // 13 karakter/s (hız 1,0): Semont geçiş yönergesi iki parçalıdır (bekle + nasıl), biraz uzun.
+        expect(st.say.length / 13, `${id} ${st.id}`).toBeLessThanOrEqual(id === 'semont' && st.id === 'se-2' ? 15 : 12.5);
+      }
+    }
+  });
+  it('Epley yatış yönergesi kısa eylem cümlesiyle başlar', () => {
+    const first = resolveProtocol('epley', 'R').steps[1]!.say.split('.')[0]!;
+    expect(first.length).toBeLessThanOrEqual(50);
+    expect(first).toMatch(/yatın/);
+  });
+});
+
 describe('Dix-Hallpike bulgu anahtarı', () => {
   it('sol testte dhL yazılır', () => {
     expect(resolveProtocol('dix-hallpike', 'L').steps[1]!.finding).toBe('dhL');
