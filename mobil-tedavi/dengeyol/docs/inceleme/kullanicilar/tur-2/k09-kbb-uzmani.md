@@ -7,8 +7,8 @@ içe aktarma ve gerçek hızda (timeScale 1) bir Epley atağı. Sınır durumlar
 
 ## 2. Yaşadıklarım (kısa günlük)
 - **Klinisyen:** Muayene başlığında artık "Hasta kodu NO-2611" yazıyor. Bulgu formuna gözlem yöntemi (VNG/Frenzel/çıplak göz) ve not
-  eklenmiş; nörootolojide işime yarar. Tanı önerisi ve kupulolitiazis kilidi aynı. Elle tanı girince de kilit aşılmıyor ("Tanı elle
-  değiştirilse de ev reçetesi verilmez"); çok doğru.
+  eklenmiş; nörootolojide işime yarar. Tanı önerisi ve kupulolitiazis kilidi aynı. Kilit artık bulguya da bakıyor ("Tanı elle değiştirilse de ev
+  reçetesi verilmez"); çok doğru. Bunu ekrandaki metinden ve koddan gördüm, elle tanıyla ayrıca denemedim.
 - **Reçete formu:** "Geçerlilik: 14 gün, 14.11.2026 tarihine kadar. Testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken…"
   yazıyor ve "Reçete kodu: 83635d6f" eklenmiş. Aynı satırlar basılı raporda ve HBYS notunda da var. HBYS notu artık satır satır;
   her pozisyonda θ ve φ (sarkma) sapması yazıyor. Poliklinik notu olarak doğrudan kullanılabilir.
@@ -23,7 +23,7 @@ içe aktarma ve gerçek hızda (timeScale 1) bir Epley atağı. Sınır durumlar
   10 dk dinlenme sayacı ve "kalkarken tutunun, gece ışığı açın" hatırlatması var.
 - **Rapor:** İlk satır "Hasta kodu NO-2611 · reçete 31 Ekim 2026 · Doç. Dr. Serkan K., Üniv. Hast. KBB Nörootoloji". Her adım tek
   satırda: "48 s · hedefte %100 · sapma … · sarkma ort. 28° · baş dönmesi: gecikme 15 s (pozisyona gelişten), süre 18 s". Altında
-  tanım cümlesi var. "kendi başına / yakını yaptırdı" ve duraklatma sayısı da yazıyor.
+  tanım cümlesi var. "kendi başına / yakını yaptırdı" etiketi de var.
 - **Hata denemeleri:** Kulak sorusuna "Evet" → durdurma ekranı ani işitme kaybında "BUGÜN KBB" diyor (AAO-HNSF 2019 ani SNHL
   kılavuzuyla uyumlu). Rapordaki "Durum" artık Türkçe cümle; ham kod kalmamış. Ortostatik soruya "Evet" → aile hekimi/dahiliye
   yönlendirmesi ve kilit. Geri tuşu duraklatıyor; ekrana bakmadan "2 s basılı tut → devam" var. Duraklatma ekranına "Pozisyona
@@ -51,6 +51,7 @@ içe aktarma ve gerçek hızda (timeScale 1) bir Epley atağı. Sınır durumlar
 | N3 | Düşük | `neuroGait` (`safety.ts:54`) | "Yürüyemeyecek kadar dengeniz bozuldu mu?" 112'ye yönlendiriyor. Şiddetli BPPV atağının ilk dakikalarında hasta "evet" diyebilir. Gövde ataksisi önemli bir inme bulgusu, soru kalmalı. | "Baş dönmesi geçtiği hâlde / başınızı kıpırdatmadan dururken de yürüyemiyor musunuz?" niteleyicisi. | Kod + metin |
 | N4 | Orta | Belgeler: `docs/RISK-ANALIZI.md:8`, `docs/KLINIK-PROTOKOL.md:71-73` | Belgelerde hâlâ "11 kırmızı bayrak" ve eski soru listesi var; ortostatik ve bölünmüş nörolojik sorular yok. RISK #2'deki "yanlış taraf Epley zararsız" ifadesi değişmemiş. Tasarım dosyası koddan ayrılmış durumda. | Belgeleri 14 soruya göre güncelleyin (kaynak: AAO-HNSF 2017 ayırıcı tanı). RISK #2'yi "genellikle zararsız; kanal değişimi bildirilmiştir" yapın. | Evet |
 | N5 | Düşük | Kırmızı bayrak süresi | 14 soru ve sesli okunan seçenekler, atak anında hasta için yaklaşık 2–2,5 dk ek yük demek. Güvenlik için kabul edilebilir, ama "same" (19 s) ve kan sulandırıcı (18 s) soruları kısaltılabilir. | İlaç listesini sesli okumada kısaltın ("aspirin dahil kan sulandırıcı"); ekranda tam liste kalsın. | Evet (konuşma kaydı) |
+| N6 | Düşük | Rapor etiketi: `reportText.ts:128`, `core/runner.ts:593` | Manevrayı geri tuşuyla bir kez duraklattım ama raporda "1 kez duraklatıldı" yok. Yürütücü duraklatmayı adım kaydına (`r.pauses`) yazıyor, rapor ise manevra düzeyindeki `m.pauses` alanını okuyor ve bu alanı dolduran bir kod yok. | Etiketi adım kayıtlarındaki duraklatmaların toplamından üretin. Duraklatma, hekim için uyum bilgisidir. | Evet (senaryo C + kod) |
 
 ## 4. Sevdiklerim
 1. Klinisyen tarafındaki izlenebilirlik: hasta kodu, reçete kodu, geçerlilik ve kısa yol kuralı HBYS notunda; adım başına θ/φ
