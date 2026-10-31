@@ -22,6 +22,7 @@ import {
   type HomeRetest,
   type HomeSideTest,
   type HomeStep,
+  type HomeTestStop,
   homeReportDatesText,
   REPORT_DECODE_ERROR_TEXT
 } from '../../../core/reportShare';
@@ -227,8 +228,8 @@ export const STEP_FLAG_LABEL = {
 
 /**
  * Hedef açıya yüzüstünden geçilerek gelindi ve kabul edilmedi (yürütücü kaydında `proneArrival`). Klinisyen tablosunda ve HBYS
- * notunda düz "önce yanlış taraf" yerine bu yazılır (kullanıcı turu 5, k10 #4). Ev raporu bağlantısında bu bayrak yoktur
- * (bağlantı biçimi değişmesin diye); orada "önce yanlış taraf" görünür.
+ * notunda düz "önce yanlış taraf" yerine bu yazılır (kullanıcı turu 5, k10 #4). Ev raporu bağlantısı bu bayrağı biçim
+ * sürümü 2'den beri taşır (kullanıcı turu 6, k09/k02); eski (v1) bağlantılarda yine "önce yanlış taraf" görünür.
  */
 export const PRONE_ARRIVAL_LABEL = 'yüzüstünden gelme reddedildi';
 
@@ -431,8 +432,18 @@ const HOME_FLAG_LABEL: Record<HomeStep['flags'][number], string> = {
   slowTransition: 'yavaş geçiş',
   ...STEP_FLAG_LABEL,
   unreachable: 'POZİSYONA GELİNEMEDİ',
-  manual: 'elle onaylandı'
+  manual: 'elle onaylandı',
+  proneArrival: PRONE_ARRIVAL_LABEL
 };
+
+/**
+ * Ev adımının gösterilecek işaretleri: yüzüstünden gelme yanlış taraf kilidi sürerken olur; o adımda "önce yanlış taraf"
+ * yerine (aynı sırada) yalnız "yüzüstünden gelme reddedildi" yazılır (klinisyen tablosundaki `stepFlagLabels` gibi).
+ */
+function homeStepFlags(st: HomeStep): HomeStep['flags'] {
+  if (!st.flags.includes('proneArrival')) return st.flags;
+  return st.flags.flatMap((f) => (f === 'wrongSide' ? ['proneArrival' as const] : f === 'proneArrival' ? [] : [f]));
+}
 
 /**
  * Yapıştırılan metin bir ev reçetesi bağlantısı mı (hasta raporu değil)? Doğrudan açılan reçete bağlantısındaki açık mesaj
@@ -482,7 +493,7 @@ export function homeSideTestText(t: HomeSideTest): string {
 
 export function homeStepText(st: HomeStep): string {
   const parts = [`${st.holdSec} s`];
-  for (const f of st.flags) parts.push(f === 'slowTransition' && st.transitionSec !== null ? `yavaş geçiş ${st.transitionSec} s` : HOME_FLAG_LABEL[f]);
+  for (const f of homeStepFlags(st)) parts.push(f === 'slowTransition' && st.transitionSec !== null ? `yavaş geçiş ${st.transitionSec} s` : HOME_FLAG_LABEL[f]);
   if (st.vertigo) {
     parts.push(
       `baş dönmesi: gecikme ${st.vertigo.latencySec} s, ${st.vertigo.durationSec !== null ? `süre ${st.vertigo.durationSec} s` : 'bitişi işaretlenmedi'}${st.vertigo.marks > 1 ? ` (${st.vertigo.marks} işaret)` : ''}`
@@ -512,10 +523,35 @@ export function homeManeuverText(m: HomeManeuver): string {
   return parts.join(' · ');
 }
 
+const TEST_STOP_REASON: Record<HomeTestStop['reason'], string> = { USER_FEELS_UNWELL: 'hasta kendini iyi hissetmedi' };
+
+/** Durdurulan test: "sağ taraf testi" ya da "tekrar testi (sol)". */
+function testStopWhat(t: HomeTestStop): string {
+  return t.test === 'side' ? `${sideName(t.side)} taraf testi` : `tekrar testi (${sideName(t.side)})`;
+}
+
+/**
+ * Testte durdurma (biçim v2; kullanıcı turu 6, k01/k09): "sağ taraf testi durduruldu — hasta kendini iyi hissetmedi". Yarım
+ * test sonuç sayılmaz; atak açık kalır.
+ */
+export function homeTestStopText(t: HomeTestStop): string {
+  return `${testStopWhat(t)} durduruldu — ${TEST_STOP_REASON[t.reason]}`;
+}
+
+/** HBYS satırı için kısa özet: "testte durdurma: sağ taraf testi 31.10 (hasta kendini iyi hissetmedi)"; yoksa null. */
+export function homeTestStopsShort(r: HomeReport): string | null {
+  const all = r.episodes.flatMap((e) => e.testStops ?? []).sort((a, b) => a.at - b.at);
+  if (!all.length) return null;
+  const shown = all.slice(-3).map((t) => `${testStopWhat(t)} ${dayMonth(t.at)}`);
+  const more = all.length > shown.length ? `${all.length} kez, son: ` : '';
+  const reasons = [...new Set(all.map((t) => TEST_STOP_REASON[t.reason]))].join(', ');
+  return `testte durdurma: ${more}${shown.join(', ')} (${reasons})`;
+}
+
 /** Ev manevrasının adım işaretleri özeti (adım ayrıntısı yoksa boş): "2. adımda oturuştan geçilmedi". */
 export function homeManeuverFlags(m: HomeManeuver): string[] {
   return (m.steps ?? []).flatMap((st, i) =>
-    st.flags.filter((f) => f !== 'manual').map((f) => `${i + 1}. adımda ${f === 'slowTransition' && st.transitionSec !== null ? `yavaş geçiş ${st.transitionSec} s` : HOME_FLAG_LABEL[f]}`)
+    homeStepFlags(st).filter((f) => f !== 'manual').map((f) => `${i + 1}. adımda ${f === 'slowTransition' && st.transitionSec !== null ? `yavaş geçiş ${st.transitionSec} s` : HOME_FLAG_LABEL[f]}`)
   );
 }
 
@@ -580,8 +616,18 @@ export function homeLastOutcomeText(r: HomeReport): string | null {
 }
 
 /**
+ * Baştaki sonuç (açık atağın durumu) bu tekrar testini zaten söylüyor mu? Açık son atağın son tekrar testi, raporun son
+ * tekrar testiyse evet: "atak açık: 1. saat tekrar testi negatif…" yazıldıktan sonra aynı test bir daha yazılmaz.
+ */
+function leadCoversRetest(r: HomeReport, rt: HomeRetest): boolean {
+  const last = [...r.episodes].sort((a, b) => a.startedAt - b.startedAt)[r.episodes.length - 1];
+  return !!last && last.status === 'active' && last.retests.includes(rt);
+}
+
+/**
  * Kısa sonuç satırı, önce son atağın sonucu: "Son atak (02.11): düzeldi · 2 atak · 4 manevra (3 tamamlandı) · son tekrar test
- * (02.11) sabah, sağ: baş dönmesi gelmedi".
+ * (02.11) sabah, sağ: baş dönmesi gelmedi". Açık atakta baştaki sonuç son tekrar testini zaten söylüyorsa test bir daha
+ * yazılmaz (kullanıcı turu 6, k08 #4); pozitif testte yalnız söylenmeyen kısım (taraf, gecikme, süre) eklenir.
  */
 export function homeReportHeadline(r: HomeReport): string {
   const c = homeCounts(r);
@@ -590,7 +636,8 @@ export function homeReportHeadline(r: HomeReport): string {
   const referred = r.episodes.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
   if (referred) parts.push(`${referred} atakta hekime/acile yönlendirildi`);
   const rt = lastRetest(r);
-  if (rt) parts.push(`son tekrar test (${dayMonth(rt.at)}) ${homeRetestText(rt)}`);
+  if (rt && !leadCoversRetest(r, rt)) parts.push(`son tekrar test (${dayMonth(rt.at)}) ${homeRetestText(rt)}`);
+  else if (rt?.vertigo) parts.push(`son tekrar test ${sideName(rt.side)}: gecikme ${rt.latencySec ?? '?'} s, süre ${rt.durationSec ?? '?'} s`);
   return parts.join(' · ');
 }
 
@@ -613,6 +660,8 @@ export function homeReportNoteLine(r: HomeReport, examRxCode: string | null = nu
   if (r.rxCode) parts.push(`reçete kodu ${r.rxCode}${examRxCode && examRxCode === r.rxCode ? ' (bu muayenenin reçetesi)' : ''}`);
   const flags = r.episodes.flatMap((e) => e.maneuvers.flatMap(homeManeuverFlags));
   if (flags.length) parts.push(`adım işaretleri: ${[...new Set(flags.map((f) => f.replace(/^\d+\. adımda /, '')))].join(', ')}`);
+  const stops = homeTestStopsShort(r);
+  if (stops) parts.push(stops);
   const trunc = homeTruncationText(r);
   if (trunc) parts.push('kısaltılmış rapor');
   return parts.join(' · ') + '.';

@@ -1373,6 +1373,28 @@ summary {
   .clin-report .clin-signature {
     min-height: 14mm;
   }
+  /* Reçete kartında QR metnin yanında (sağda) durur, altına ayrı bir sıra açmaz: blok kısalır (kullanıcı turu 6, k08 #5). */
+  .clin-report .clin-rx {
+    display: grid !important;
+    grid-template-columns: 1fr auto;
+    column-gap: 4mm;
+    align-items: start;
+  }
+  .clin-report .clin-rx > * {
+    grid-column: 1;
+  }
+  .clin-report .clin-rx > .clin-rx-qr {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    flex-direction: column;
+    align-items: center !important;
+    gap: 1mm;
+    width: 34mm;
+  }
+  .clin-report .clin-rx-qr .small {
+    font-size: 7.5pt;
+    text-align: center;
+  }
   /* Ev dönemi eklendiğinde basılı raporda kısa özet (başlık, kodlar, tek satır sonuç): atak ayrıntısı yazdırılmaz. Böylece
      rapor tek sayfada kalır; reçete + QR + imza bloğu 2. sayfaya yalnız düşmez (kullanıcı turu 4, k08). */
   .clin-report .home-report-detail {
@@ -1381,6 +1403,29 @@ summary {
   .clin-report .home-report {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+  /* Ev dönemi ekliyken basılı rapor tek A4 sayfasına sığsın diye (kullanıcı turu 6, k08 #5): ev dönemi özeti küçük yazıyla
+     ve sıkı satırlarla, reçete QR'ı biraz daha küçük (28 mm; modül ~0,5 mm, kâğıttan telefonla okunur), imza alanı daha
+     alçak. Yine sığmazsa reçete + QR + imza bloğu bölünmeden 2. sayfaya geçer (bugünkü davranış). */
+  .clin-report .home-report h3 {
+    font-size: 10pt;
+  }
+  .clin-report .home-report p {
+    font-size: 8.5pt;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .clin-report .home-report [data-testid$='-print-note'] {
+    font-size: 7.5pt;
+  }
+  .clin-report:has(.home-report) .clin-rx .qr {
+    width: 28mm !important;
+  }
+  .clin-report:has(.home-report) .clin-rx > .clin-rx-qr {
+    width: 30mm;
+  }
+  .clin-report:has(.home-report) .clin-signature {
+    min-height: 10mm;
   }
   /* Reçete + QR + imza bölünmez; önceki içerikle aynı sayfaya sığmazsa birlikte yeni sayfaya geçer. Flex kapsayıcı içinde
      de bölünmesin diye kapsayıcı yazdırmada blok düzenine alınır. */

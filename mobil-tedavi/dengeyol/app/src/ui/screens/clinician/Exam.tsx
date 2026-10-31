@@ -1075,7 +1075,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             </p>
             <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz sınırları uygulamada uygulanır.</p>
             {qr && (
-              <div className="row" style={{ alignItems: 'center' }}>
+              <div className="row clin-rx-qr" style={{ alignItems: 'center' }}>
                 <div className="qr" style={{ width: 120 }} dangerouslySetInnerHTML={{ __html: qr }} aria-label="Reçete QR kodu" />
                 <span className="small">Hasta bu kodu DengeYol yüklü telefonun kamerasıyla okutur.</span>
               </div>

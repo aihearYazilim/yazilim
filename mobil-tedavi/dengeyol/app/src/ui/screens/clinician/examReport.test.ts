@@ -25,6 +25,8 @@ import {
   reportPasteErrorText,
   homeReportNoteLine,
   homeStepText,
+  homeTestStopText,
+  homeTestStopsShort,
   homeTruncationText,
   methodHeader,
   primaryMethod,
@@ -457,6 +459,55 @@ describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
     );
     expect(homeOpenEpisodeText({ ...ep, status: 'active', retests: [] })).toBe('atak açık: manevra sonrası tekrar testi yapılmadı');
     expect(homeOpenEpisodeText({ ...ep, status: 'active', retests: [], maneuvers: [], sideTests: [] })).toBe('sürüyor');
+  });
+
+  it('açık atakta baştaki sonuç tekrar testini söylüyorsa "son tekrar test" bir daha yazılmaz (tur 6, k08 #4)', () => {
+    const ep = report().episodes[0]!;
+    const early = { at: S + 70 * MIN, kind: 'early' as const, side: 'R' as const, vertigo: false, latencySec: null, durationSec: null };
+    const open = report({ episodes: [{ ...ep, status: 'active', retests: [early] }] });
+    const head = homeReportHeadline(open);
+    expect(head).toBe('Son atak (31.10) — atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor · 1 atak · 2 manevra (1 tamamlandı)');
+    expect(head.match(/tekrar test/g)).toHaveLength(1);
+    const line = homeReportNoteLine(open);
+    expect(line.match(/tekrar test/g)).toHaveLength(1);
+    expect(line).not.toMatch(/erken \(1\. saat\)/);
+    // Pozitif testte baştaki sonuç tarafı ve süreleri söylemez: yalnız o kısım eklenir, test adı tekrarlanmaz.
+    const pos = report({ episodes: [{ ...ep, status: 'active', retests: [{ ...early, vertigo: true, latencySec: 3, durationSec: 20 }] }] });
+    expect(homeReportHeadline(pos)).toBe(
+      'Son atak (31.10) — sürüyor: 1. saat tekrar testi pozitif (baş dönmesi var) · 1 atak · 2 manevra (1 tamamlandı) · son tekrar test sağ: gecikme 3 s, süre 20 s'
+    );
+    // Kapanmış atakta baştaki sonuç testi söylemez: son tekrar test yazılmaya devam eder.
+    expect(homeReportHeadline(report())).toMatch(/· son tekrar test \(01\.11\) sabah, sağ: baş dönmesi gelmedi$/);
+  });
+
+  it('biçim v2: yüzüstünden gelme adım işaretinde "önce yanlış taraf" yerine; testte durdurma ekranda ve HBYS\'de (tur 6, k09)', () => {
+    const ep = report().episodes[0]!;
+    const m0 = ep.maneuvers[0]!;
+    const proneStep = { index: 2, title: 'c', holdSec: 0, flags: ['wrongSide' as const, 'proneArrival' as const], transitionSec: null, vertigo: null };
+    const stop = { at: S + 3 * MIN, test: 'side' as const, side: 'R' as const, reason: 'USER_FEELS_UNWELL' as const };
+    const r = report({
+      v: 2,
+      episodes: [{ ...ep, status: 'active', retests: [], maneuvers: [{ ...m0, steps: [m0.steps![0]!, proneStep] }], testStops: [stop] }]
+    });
+    expect(homeStepText(proneStep)).toBe('0 s · yüzüstünden gelme reddedildi');
+    expect(homeManeuverFlags(r.episodes[0]!.maneuvers[0]!)).toEqual(['2. adımda yüzüstünden gelme reddedildi']);
+    expect(homeTestStopText(stop)).toBe('sağ taraf testi durduruldu — hasta kendini iyi hissetmedi');
+    expect(homeTestStopText({ ...stop, test: 'retest', side: 'L' })).toBe('tekrar testi (sol) durduruldu — hasta kendini iyi hissetmedi');
+    expect(homeTestStopsShort(r)).toBe('testte durdurma: sağ taraf testi 31.10 (hasta kendini iyi hissetmedi)');
+    const line = homeReportNoteLine(r);
+    expect(line).toContain('adım işaretleri: yüzüstünden gelme reddedildi');
+    expect(line).not.toContain('önce yanlış taraf');
+    expect(line).toContain('· testte durdurma: sağ taraf testi 31.10 (hasta kendini iyi hissetmedi)');
+    // Çok sayıda durdurma kısa kalır: sayı ve son üçü.
+    const many = report({ episodes: [{ ...ep, testStops: Array.from({ length: 5 }, (_, i) => ({ ...stop, at: S + i * 24 * 60 * MIN })) }] });
+    expect(homeTestStopsShort(many)).toBe('testte durdurma: 5 kez, son: sağ taraf testi 02.11, sağ taraf testi 03.11, sağ taraf testi 04.11 (hasta kendini iyi hissetmedi)');
+    // Durdurma yoksa HBYS satırında da yok.
+    expect(homeTestStopsShort(report())).toBeNull();
+    expect(homeReportNoteLine(report())).not.toMatch(/testte durdurma/);
+    // Gidiş-dönüş: kodlanan v2 rapor aynı metinleri verir.
+    const dec = decodeHomeReport(encodeHomeReport(r).token);
+    if (!dec.ok) throw new Error(dec.error);
+    expect(homeReportNoteLine(dec.value)).toContain('testte durdurma: sağ taraf testi 31.10');
   });
 });
 

@@ -11,6 +11,9 @@ import {
   homeReportDatesText,
   homeReportId,
   homeReportUrl,
+  homeReportVersion,
+  REPORT_DECODE_ERROR_TEXT,
+  REPORT_SHARE_VERSION,
   REPORT_TOKEN_BUDGET,
   REPORT_TOKEN_MAX,
   selectReportEpisodes
@@ -373,9 +376,119 @@ describe('ev dönemi raporu: sürümler', () => {
   });
 
   it('daha yeni ya da bilinmeyen sürüm "güncelleyin" hatasıyla reddedilir', () => {
-    expect(decodeHomeReport(tokenOf({ ...minimal, v: 2 }))).toEqual({ ok: false, error: 'VERSION' });
+    expect(decodeHomeReport(tokenOf({ ...minimal, v: REPORT_SHARE_VERSION + 1 }))).toEqual({ ok: false, error: 'VERSION' });
     expect(decodeHomeReport(tokenOf({ ...minimal, v: 0 }))).toEqual({ ok: false, error: 'VERSION' });
     expect(decodeHomeReport(tokenOf({ ...minimal, v: '1' }))).toEqual({ ok: false, error: 'VERSION' });
+  });
+
+  it('sürüm hatası metni klinisyene uygulamayı güncellemesini ve bağlantıyı yeniden açmasını söyler', () => {
+    expect(REPORT_DECODE_ERROR_TEXT.VERSION).toMatch(/daha yeni bir sürümüyle/);
+    expect(REPORT_DECODE_ERROR_TEXT.VERSION).toMatch(/Uygulamayı güncelleyin/);
+    expect(REPORT_DECODE_ERROR_TEXT.VERSION).toMatch(/yeniden okutun/);
+  });
+});
+
+describe('ev dönemi raporu: biçim v2 (kullanıcı turu 6; k09, k02, k10)', () => {
+  const wireOf = (token: string) => JSON.parse(unb64u(token.split('.')[0]!)) as Record<string, unknown>;
+  const prone = () =>
+    maneuver(T0 + 10 * MIN, {
+      completed: false,
+      stopReason: 'POSITION_UNREACHABLE',
+      records: [rec('ep-sit'), rec('ep-1'), rec('ep-2'), rec('ep-3', { wrongSide: true, proneArrival: true, holdSec: 0 })]
+    });
+  const stops: NonNullable<Episode['testStops']> = [
+    { at: T0 + 3 * MIN, test: 'side', side: 'R', reason: 'USER_FEELS_UNWELL' },
+    { at: T0 + 70 * MIN, test: 'retest', side: 'L', reason: 'USER_FEELS_UNWELL' }
+  ];
+
+  it('yüzüstünden gelme bayrağı ve testte durdurmalar gidiş-dönüşte korunur; bağlantı v2', () => {
+    const d = data([episode(T0, { status: 'active', endedAt: undefined, endNote: undefined, maneuvers: [prone()], testStops: stops })]);
+    const rep = buildHomeReport(d, { now: T0 + 2 * 60 * MIN });
+    expect(rep.v).toBe(2);
+    const { token, report, truncated } = encodeHomeReport(rep);
+    expect(truncated).toBe(false);
+    expect(wireOf(token).v).toBe(2);
+    const r = decodeHomeReport(token);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.value).toEqual(report);
+    expect(r.value.v).toBe(2);
+    expect(r.value.episodes[0]!.maneuvers[0]!.steps![3]!.flags).toEqual(['wrongSide', 'proneArrival']);
+    expect(r.value.episodes[0]!.testStops).toEqual(stops);
+  });
+
+  it('yalnız biri yeterli: testte durdurma tek başına da, yüzüstünden gelme tek başına da v2 yazar', () => {
+    const onlyStops = buildHomeReport(data([episode(T0, { testStops: stops.slice(0, 1) })]), { now: T0 + 60 * MIN });
+    expect(wireOf(encodeHomeReport(onlyStops).token).v).toBe(2);
+    const onlyProne = buildHomeReport(data([episode(T0, { maneuvers: [prone()] })]), { now: T0 + 60 * MIN });
+    expect(wireOf(encodeHomeReport(onlyProne).token).v).toBe(2);
+  });
+
+  it('v2\'ye özgü bilgi yoksa bağlantı v1 kalır (eski klinisyen uygulamaları okuyabilsin); boş testStops da v1', () => {
+    const d = data([episode(T0, { testStops: [] })]);
+    const rep = buildHomeReport(d, { now: T0 + 60 * MIN });
+    expect(rep.v).toBe(1);
+    expect(rep.episodes[0]!.testStops).toBeUndefined();
+    const { token } = encodeHomeReport(rep);
+    const w = wireOf(token);
+    expect(w.v).toBe(1);
+    expect(JSON.stringify(w)).not.toMatch(/"y":/);
+    // v1 çözücünün kabul ettiği bayrak aralığında (8 bit).
+    const flags = ((w.e as { m: unknown[][] }[])[0]!.m.flatMap((m) => (m[6] as number[][] | undefined) ?? [])).map((st) => st[1]!);
+    expect(Math.max(...flags)).toBeLessThan(1 << 8);
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(rep);
+  });
+
+  it('adım ayrıntısı bütçe yüzünden çıkınca yüzüstü bayrağı da çıkar: başka v2 bilgisi yoksa bağlantı v1', () => {
+    const ms = Array.from({ length: 15 }, (_, i) => (i === 0 ? prone() : maneuver(T0 + (20 + i * 30) * MIN)));
+    const rep = buildHomeReport(data([episode(T0, { maneuvers: ms })]), { now: T0 + 2 * 24 * 60 * MIN });
+    expect(rep.v).toBe(2);
+    const { token, report, truncated } = encodeHomeReport(rep);
+    expect(truncated).toBe(true);
+    expect(report.stepsDropped).toBe(true);
+    expect(report.v).toBe(1);
+    expect(wireOf(token).v).toBe(1);
+    expect(homeReportVersion(report)).toBe(1);
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(report);
+  });
+
+  it('bütçe: testte durdurmalar da en eskiden kısaltılır, en az biri kalır', () => {
+    const many = Array.from({ length: 20 }, (_, i) => ({ at: T0 + i * MIN, test: 'side' as const, side: 'R' as const, reason: 'USER_FEELS_UNWELL' as const }));
+    const rep = buildHomeReport(data([episode(T0, { testStops: many })]), { now: T0 + 60 * MIN });
+    const tiny = encodeHomeReport(rep, 200);
+    expect(tiny.report.episodes[0]!.testStops).toHaveLength(1);
+    expect(tiny.report.episodes[0]!.testStops![0]!.at).toBe(T0 + 19 * MIN);
+    const r = decodeHomeReport(tiny.token);
+    expect(r.ok && r.value).toEqual(tiny.report);
+  });
+
+  it('v1 uyumluluğu: v1 bağlantısında 9. bayrak biti geçersiz, "y" alanı yok sayılır; v2\'de ikisi okunur', () => {
+    const m = Math.floor(T0 / MIN);
+    const ep = { s: m, u: 'a', d: 'R', m: [[10, 'e', 'R', 'P', 0, 4, [[5, 0], [30, 0], [30, 0], [0, 16 | 256]]]], y: [[3, 's', 'R', 'U']] };
+    const v1 = { v: 1, g: m + 60, a: m, b: m + 60, e: [{ ...ep, m: [[10, 'e', 'R', 'P', 0, 4, [[5, 0], [30, 0], [30, 0], [0, 16]]]] }] };
+    const r1 = decodeHomeReport(tokenOf(v1));
+    if (!r1.ok) throw new Error(r1.error);
+    expect(r1.value.episodes[0]!.testStops).toBeUndefined();
+    expect(r1.value.episodes[0]!.maneuvers[0]!.steps![3]!.flags).toEqual(['wrongSide']);
+    expect(decodeHomeReport(tokenOf({ ...v1, e: [ep] }))).toEqual({ ok: false, error: 'FIELDS' });
+    const r2 = decodeHomeReport(tokenOf({ ...v1, v: 2, e: [ep] }));
+    if (!r2.ok) throw new Error(r2.error);
+    expect(r2.value.episodes[0]!.maneuvers[0]!.steps![3]!.flags).toEqual(['wrongSide', 'proneArrival']);
+    expect(r2.value.episodes[0]!.testStops).toEqual([{ at: T0 + 3 * MIN, test: 'side', side: 'R', reason: 'USER_FEELS_UNWELL' }]);
+  });
+
+  it('v2: geçersiz testte durdurma kaydı reddedilir', () => {
+    const m = Math.floor(T0 / MIN);
+    const bad = (y: unknown) => decodeHomeReport(tokenOf({ v: 2, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', y }] }));
+    expect(bad([[3, 's', 'R', 'U']]).ok).toBe(true);
+    expect(bad([[3, 'x', 'R', 'U']])).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad([[3, 's', 'X', 'U']])).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad([[3, 's', 'R', 'V']])).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad([[3, 's', 'R']])).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad([[-1, 's', 'R', 'U']])).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad('yok')).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad(Array.from({ length: 21 }, () => [3, 's', 'R', 'U']))).toEqual({ ok: false, error: 'FIELDS' });
   });
 });
 
