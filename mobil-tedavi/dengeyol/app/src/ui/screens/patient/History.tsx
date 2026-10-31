@@ -313,7 +313,7 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
                 <span className="chip">
                   {PROTOCOLS[m.protocolId].shortName} {m.side ? sideName(m.side) : ''}
                 </span>
-                <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : stopReasonText(m.stopReason)}</span>
+                <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : stopReasonText(m.stopReason, m.records)}</span>
                 {maneuverTags(m).map((t) => (
                   <span key={t} className="chip">
                     {t}

@@ -13,7 +13,7 @@ import {
 } from '../../../core/diagnosis';
 import { decodePrescription, rxValidUntil as rxValidUntilMs } from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
-import { recordStats, STOP_REASON_TEXT, vertigoSummary } from '../../../core/runner';
+import { recordStats, STOP_REASON_TEXT, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
 import {
   decodeHomeReport,
   type HomeEpisode,
@@ -269,7 +269,7 @@ export function stepLines(m: ManeuverLog): StepLine[] {
 
 export function maneuverStatus(m: ManeuverLog, lines: StepLine[] = stepLines(m)): string {
   const early = lines.filter((l) => l.early).length;
-  if (!m.completed) return m.stopReason ? STOP_REASON_TEXT[m.stopReason] : 'yarıda kaldı';
+  if (!m.completed) return m.stopReason ? stopReasonTextFor(m.stopReason, m.records) : 'yarıda kaldı';
   return early ? `kısaltılmış (${early} adım erken bitirildi)` : 'tamamlandı';
 }
 

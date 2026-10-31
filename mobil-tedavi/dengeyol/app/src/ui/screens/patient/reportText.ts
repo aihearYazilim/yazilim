@@ -5,7 +5,7 @@
 import { type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidAt, rxValidityLabel, rxValidUntil } from '../../../core/prescription';
 import { wrapDeg } from '../../../core/geometry';
 import { capitalizeTr, type ProtocolId, PROTOCOLS, resolveProtocol, type Side, sideName, type StepDef } from '../../../core/protocols';
-import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary } from '../../../core/runner';
+import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
 import { clampDose, DEFAULT_DOSE, type DoseLimits, localDayKey, RED_FLAGS, type SideDecision } from '../../../core/safety';
 import { formatDate, formatDateTimeYear, TREATMENT_WINDOW_DAYS } from '../../../state/episodes';
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from '../../../state/types';
@@ -50,8 +50,9 @@ export function endNoteText(note: string): string {
   return n;
 }
 
-export function stopReasonText(r: string | null): string {
-  return r && r in STOP_REASON_TEXT ? STOP_REASON_TEXT[r as StopReason] : 'yarıda bırakıldı';
+export function stopReasonText(r: string | null, records: readonly StepRecord[] = []): string {
+  // Yanlış tarafta kalındığı için durdurulduysa gerekçe bu olur (stopReasonTextFor, k02).
+  return r && r in STOP_REASON_TEXT ? stopReasonTextFor(r as StopReason, records) : 'yarıda bırakıldı';
 }
 
 /** Adımdaki baş dönmesi: pozisyona gelişe göre gecikme ve süre (vertigoSummary). Yoksa null. */
@@ -71,15 +72,9 @@ export function symptomText(r: StepRecord): string | null {
 type Reach = { phi: number | null; theta: number | null };
 
 function readReach(r: StepRecord): Reach | null {
-  // TODO(birleşim F1): StepRecord.reach birleşince doğrudan r.reach okunsun ve bu biçimlendirici yerine
-  // runner.ts'teki reachSummary(record, step) kullanılsın.
-  const raw = (r as unknown as { reach?: unknown }).reach;
-  if (!raw || typeof raw !== 'object') return null;
-  const o = raw as Record<string, unknown>;
-  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-  const phi = num(o.phi);
-  const theta = num(o.theta);
-  return phi === null && theta === null ? null : { phi, theta };
+  const reach = r.reach;
+  if (!reach || (reach.phi === null && reach.theta === null)) return null;
+  return reach;
 }
 
 /**
@@ -185,7 +180,7 @@ export function episodeEndNoteText(e: Episode): string {
   if (e.endNote === 'POSITION_UNREACHABLE') {
     const m = unreachableManeuver(e);
     const r = m ? unreachableRecord(m.records) : null;
-    if (r?.wrongSide || (e.stopDetail && /yanlış tarafa/.test(e.stopDetail))) {
+    if (r?.wrongSideStop || (e.stopDetail && /yanlış tarafa/.test(e.stopDetail))) {
       return 'hasta yanlış tarafa döndü (döndürüldü) ve doğru yana getirilemedi; zorlamadan hekime yönlendirildi';
     }
   }
@@ -453,7 +448,7 @@ function episodeSectionLines(e: Episode): string[] {
   if (e.maneuvers.length > 0) {
     L.push('', 'MANEVRALAR');
     e.maneuvers.forEach((m, i) => {
-      const status = m.completed ? 'tamamlandı' : stopReasonText(m.stopReason);
+      const status = m.completed ? 'tamamlandı' : stopReasonText(m.stopReason, m.records);
       const tags = maneuverTags(m);
       L.push(
         `${i + 1}) ${formatDateTimeYear(m.at)} — ${PROTOCOLS[m.protocolId].shortName}${m.side ? ' ' + sideName(m.side) : ''} — ${status}${tags.length ? ' · ' + tags.join(' · ') : ''}`

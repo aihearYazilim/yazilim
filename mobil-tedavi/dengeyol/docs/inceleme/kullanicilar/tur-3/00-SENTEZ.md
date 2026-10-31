@@ -39,3 +39,8 @@ yer). k09'un koşulu (etik kurullu pilot, gerçek telefonda açı doğruluğu) y
 ## Klinik ekibin kararı gereken (uygulanmadı)
 - Ortostatik ve kulak sorularında "bilinen, değişmeyen" belirtinin ayrımı (k07, k03): sorular güvenli yönde kalır.
 - Gerçek telefonlarda açı doğruluğu ve etik kurullu pilot (k09).
+
+## Uygulama durumu (3. düzeltme turu sonunda)
+F1–F4'ün bütün maddeleri uygulandı ve birleştirildi (bağlantılar: yanlış taraf/boyun gerekçesine göre durdurma metni ve
+"Durulan yer" bitiş ekranında ve raporda, ulaşılan açı kaydı, atak raporunda hekime aktarım QR'ı). 420 birim testi ve 14/14
+uçtan uca senaryo geçiyor.

@@ -218,12 +218,17 @@ describe('pozisyona gelinemedi: nerede durulduğu (k07, k02)', () => {
     expect(episodeEndNoteText(e)).toMatch(/baş yeterince sarkamadı/);
   });
   it('yanlış tarafta kalınca gerekçe "yanlış tarafa döndü" olur (k02)', () => {
-    const r = rec({ stepId: 'ep-3', title: 'Yan', unreachable: true, wrongSide: true });
+    const r = rec({ stepId: 'ep-3', title: 'Yan', unreachable: true, wrongSide: true, wrongSideStop: true });
     const m = { id: 'm1', at: 0, protocolId: 'epley' as const, side: 'R' as const, completed: false, stopReason: 'POSITION_UNREACHABLE' as const, records: [r], manual: false };
     const e = ep({ side: 'R', maneuvers: [m] });
     expect(episodeEndNoteText(e)).toMatch(/yanlış tarafa döndü .* doğru yana getirilemedi/);
     expect(stopWhereText(e)).toMatch(/önce yanlış tarafa dönüldü, doğru yana gelinemedi/);
     expect(episodeEndNoteText(ep({ endNote: 'VERTIGO_TOO_LONG' }))).toMatch(/2 dakikadan uzun/);
+  });
+  it('önce yanlış tarafa dönüp sonra doğru yanda gelinemediyse gerekçe yanlış taraf değildir', () => {
+    const r = rec({ stepId: 'ep-3', title: 'Yan', unreachable: true, wrongSide: true });
+    const m = { id: 'm1', at: 0, protocolId: 'epley' as const, side: 'R' as const, completed: false, stopReason: 'POSITION_UNREACHABLE' as const, records: [r], manual: false };
+    expect(episodeEndNoteText(ep({ side: 'R', maneuvers: [m] }))).not.toMatch(/yanlış tarafa döndü/);
   });
 });
 

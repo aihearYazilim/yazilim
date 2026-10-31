@@ -40,6 +40,8 @@
      dışında bir yere 2 saniye basılı tutun ya da **Devam et**'e dokunun.
    - Duraklatma ekranındaki seçenekler: **Devam et**, **Baş dönmesi geçti** (işaretliyse), **Kendimi kötü hissediyorum**,
      **Pozisyona gelemiyorum / boynum ağrıyor**, **Şimdilik bırak (iyiyim)**.
+     Son üçü kalıcı sonuçludur: ilk dokunuş yalnız sorar, ekranın üstünde beliren **"Evet, … — eminim"** ile onaylanır (kör
+     dokunuşla yanlışlıkla seçilmesin). Baş dönmesi işaretliyken sayfadaki ilk dokunuş her zaman "geçti" sayılır.
    - **Pozisyona gelemiyorsanız zorlamayın.** "Pozisyona gelemiyorum"u seçin; bir pozisyona yaklaşık 1 dakika içinde
      gelinemezse uygulama da kendisi durdurur. Manevra kaydedilir ve hekiminize ya da odyoloğunuza başvurmanız istenir
      (boyun/bel kısıtlılığında manevranın değiştirilmiş biçimi gerekebilir).
@@ -47,6 +49,8 @@
    olun. **1 saat sonra** ana ekrandan tekrar testini yapın (**"Takvime hatırlatıcı ekle"**). Negatifse **ertesi sabah** bir kez
    daha test edin; ikisi de negatifse atağı kapatabilirsiniz.
 8. **Rapor:** Ana ekrandan ya da Geçmiş'ten açın; **"Hekime gönder"** ile mesaj ya da e-postayla paylaşın veya yazdırın.
+   Muayenede rapordaki **QR**'ı hekiminize gösterin: internet gerekmez, hekim telefonuyla okutup kendi muayene kaydına ekler.
+   Reçete dönemindeki bütün ataklar için Geçmiş'teki **"Dönem raporu"**nu açın (reçete bitince ana ekranda da önerilir).
 
 ### Sesi duyamıyorsanız
 Her önemli an titreşim ve bip ritmiyle de bildirilir (Android'de titreşim; iPhone'da yalnız bip). Desenleri baş dönmeniz
@@ -82,6 +86,9 @@ gelemiyor"); ekrandaki yönler her zaman **"hastanın sağı / solu"**dur. Yakı
 1. **"Klinisyenim"**i seçin; adınızı ve kurumunuzu girin (reçete ve raporda görünür). VNG/Frenzel gözlüğüyle çalışıyorsanız
    "Testlerde VNG / Frenzel gözlüğü kullanıyorum"u işaretleyin; testler sensörsüz başlar. "Bulgu formunda gözlem yöntemi hazır
    gelsin" ile VNG / Frenzel / çıplak göz seçin ("Son muayenedeki" seçiliyse son muayenenizin yöntemi gelir).
+2. **Hastanın ev raporu:** Hasta muayenede rapor QR'ını gösterirse telefonunuzla okutun (ya da bağlantıyı ana ekrandaki
+   "Hastanın ev raporu" alanına yapıştırın). Özet açılır; aynı hasta koduna bugünkü ya da yeni bir kontrol muayenesine "ev dönemi"
+   olarak eklenir ve HBYS notuna bir satır yazılır. Hasta kodu ya da reçete kodu uyuşmazsa uyarı verilir.
 2. **Yeni muayene:** Hasta adı yerine kurum içi bir kod kullanın. Aynı kod yeniden girilirse yeni hasta açılmaz, muayene o hastaya
    eklenir. Listede kodla arama yapılabilir.
 3. **Testler:** "Telefonla yap" → ilk kullanımda telefonu ekranı size bakacak şekilde hastanın alnına yerleştirip ~20 s kalibrasyon.

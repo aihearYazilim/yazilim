@@ -12,7 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
 import type { ProtocolId, Side } from '../../../core/protocols';
 import { sideName } from '../../../core/protocols';
-import { SAFETY_STOP_TEXT, vertigoSummary } from '../../../core/runner';
+import { SAFETY_STOP_TEXT, stopTextFor, vertigoSummary } from '../../../core/runner';
 import {
   diagnosisGate,
   DOSE_TEXT,
@@ -624,21 +624,14 @@ export function EpisodeFlow() {
         ]
       }));
     } else updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: now, endNote: 'POSITION_UNREACHABLE', unreachableAt: where, stopDetail }));
-    // TODO(birleşim F1): F1'in yürütücüsü gelince metin gerekçeye göre seçilsin (ör. yanlış tarafta kalındı, k02):
-    //   text: stopTextFor(o.state.stopReason!, o.state.records)   // core/runner.ts (F1), stopReason burada 'POSITION_UNREACHABLE'
-    // ve ekranda/raporda nerede durulduğu yazılsın:
-    //   const step = resolveProtocol(protocolId, side).steps.find((s) => s.id === record?.stepId)   // core/protocols.ts
-    //   const reach = record && step ? reachSummary(record, step) : null                  // ör. "baş en çok ~8° (hedef 15–40°)"
-    //   → `text`in sonuna `Durulan yer: ${record.title}${reach ? `, ${reach}` : ''}.` eklensin; `where`e `reach` alanı
-    //     (types.ts Episode.unreachableAt) eklenebilir. Kayıt (record) zaten saklanıyor; rapor (F3) reachSummary'yi kayıttan da kurabilir.
-    setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: SAFETY_STOP_TEXT.POSITION_UNREACHABLE, testid: 'end-unreachable' });
+    // Gerekçe kayda göre (boyun/bel kısıtı ya da yanlış tarafta kalma) ve nerede durulduğu (ulaşılan açı).
+    setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: `${stopTextFor('POSITION_UNREACHABLE', recs)} Durulan yer: ${stopDetail}.`, testid: 'end-unreachable' });
   };
 
   const onSideRunExit = (o: RunnerOutcome, order: Side[], results: SideTestResult[]) => {
     if (notStarted(o)) return;
     const side = order[results.length]!;
     if (unreachable(o)) {
-      // TODO(birleşim F1): referUnreachable içindeki stopTextFor/reachSummary notuna bakın (taraf testi: 'dix-hallpike').
       referUnreachable(o, 'side', 'dix-hallpike', side);
       return;
     }
@@ -697,7 +690,6 @@ export function EpisodeFlow() {
     if (notStarted(o)) return;
     logManeuver(o, side);
     if (unreachable(o)) {
-      // TODO(birleşim F1): referUnreachable içindeki stopTextFor/reachSummary notuna bakın (manevra: maneuverId).
       referUnreachable(o, 'maneuver', maneuverId, side);
       return;
     }
@@ -761,7 +753,6 @@ export function EpisodeFlow() {
     }
     if (unreachable(o)) {
       // Pozisyona gelinemedi: test sonucu "baş dönmesi var" sayılmaz; hekime yönlendirilir.
-      // TODO(birleşim F1): referUnreachable içindeki stopTextFor/reachSummary notuna bakın (tekrar testi: 'dix-hallpike').
       referUnreachable(o, 'retest', 'dix-hallpike', side);
       return;
     }
