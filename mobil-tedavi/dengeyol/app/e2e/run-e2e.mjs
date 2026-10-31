@@ -108,7 +108,9 @@ function fakeSpeech(ms) {
       while (queue.length) queue.shift().onerror?.({});
     },
     pause() {},
-    resume() {}
+    resume() {},
+    /** Test için: okunan ya da sırada bekleyen cümle var mı? */
+    __busy: () => !!cur || queue.length > 0
   };
   class Utt {
     constructor(text) {
@@ -1431,6 +1433,27 @@ await step('Tur 6 kilidi: manevra sürerken sayfayı kapatma/yenileme uyarısı 
   if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
   if (await unloadWarns(page)) throw new Error('manevra bitince kapatma uyarısı kalkmadı');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 6 kilidi: konuşma sürerken ileri ya da geri geçilince ses susar (yeni ekran eski cümleyi duymaz)', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', speech: true }, data: { patient: PATIENT_OK } }), { speechMs: 6000 });
+  // Geri düğmesi: Ayarlar'da "Sesi dene" konuşurken geri basılır.
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('nav-settings').click();
+  await page.getByRole('button', { name: /Sesi dene/ }).click();
+  await page.waitForFunction(() => window.speechSynthesis.__busy(), null, { timeout: 3000 });
+  await page.getByRole('button', { name: 'Geri' }).click();
+  await page.waitForTimeout(150);
+  if (await page.evaluate(() => window.speechSynthesis.__busy())) throw new Error('geri basınca önceki ekranın konuşması sürdü');
+  // İleri düğmesi: konuşma sürerken herhangi bir düğmeye basılır (Ayarlar'a gidiş), eski cümle kesilir.
+  await page.getByTestId('nav-settings').click();
+  await page.getByRole('button', { name: /Sesi dene/ }).click();
+  await page.waitForFunction(() => window.speechSynthesis.__busy(), null, { timeout: 3000 });
+  await page.evaluate(() => { location.hash = '#/hasta'; });
+  await page.waitForTimeout(150);
+  if (await page.evaluate(() => window.speechSynthesis.__busy())) throw new Error('sayfa değişince konuşma sürdü');
+  if (errors.length) throw new Error('konsol hatası: ' + errors.join(' | '));
   await ctx.close();
 });
 
