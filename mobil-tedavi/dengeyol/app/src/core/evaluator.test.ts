@@ -76,6 +76,13 @@ describe('tur 2 (E1-1): yan yatış hedefinde yanlış taraf (yüzüstünden ge�
     expect(at(135, 0, false).inRange).toBe(true);
     expect(at(10, 0, true).wrongSide).toBeUndefined();
   });
+  it('kilitliyken gecikme payı: karşı yanda 20–30° hâlâ yanlış taraf; ≤20° ya da hedef yanda değil (k02, tur 5)', () => {
+    expect(at(-25).wrongSide).toBeUndefined();
+    expect(at(-25, 0, true).wrongSide).toBe(true);
+    expect(at(-25, 0, true).hint).toBe('WRONG_SIDE_RIGHT');
+    expect(at(-15, 0, true).wrongSide).toBeUndefined();
+    expect(at(25, 0, true).wrongSide).toBeUndefined();
+  });
   it('metinler: hasta, yardımcı ve klinisyen ("hastanın sağına")', () => {
     // "Dur! Yanlış taraf." kısa uyarısını yürütücü ayrıca verir (tur 3); tam yönerge yönü söyler.
     expect(HINT_TEXT_PATIENT.WRONG_SIDE_RIGHT).toMatch(/^Önce sırtüstüne.*sağ yanınıza/);

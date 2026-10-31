@@ -27,6 +27,7 @@ import {
   onWrongSide,
   SITTING_MAX_TILT,
   sideGuarded,
+  SUPINE_RELEASE_DEG,
   SUPINE_ZONE_DEG
 } from './evaluator';
 import { angleDiff, wrapDeg } from './geometry';
@@ -95,8 +96,16 @@ export const HANG_MORE_MAX_HINTS = 3;
 export const HINT_AFTER_SPEECH_GAP_SEC = 2;
 /** Kısa "Dur! Yanlış taraf." uyarısından sonra tam yönergeye geçmeden önceki kısa ara (s). */
 export const WRONG_SIDE_FOLLOW_GAP_SEC = 0.3;
-/** Yanlış taraf kısa uyarısı, sırtüstüne dönülüp yeniden yanlış yana geçilse de bu süreden (s) sık verilmez. */
+/**
+ * Yanlış taraf kısa uyarısı, sırtüstüne dönülüp yeniden yanlış yana geçilse de bu süreden (s) sık verilmez. Bastırma yalnız
+ * arada GERÇEK bir sırtüstü dönüşü (kilit çözülmesi) olduysa işler: dönüş yoksa kilit sürer, ilk uyarı zaten geçerlidir.
+ */
 export const WRONG_SIDE_REALERT_SEC = 5;
+/**
+ * Yanlış yandan sırtüstüne dönülmüş sayılmak için |θ| ≤ SUPINE_RELEASE_DEG (yatarken) bu kadar (s) kesintisiz sürmeli; "Tamam,
+ * şimdi … yanınıza." ancak o zaman söylenir (k02, tur 5). Sırtüstünden geçip doğru yana gelen hastada beklenmez.
+ */
+export const SUPINE_CONFIRM_SEC = 1;
 /**
  * "Daha fazla zorlamayın" yalnız açı bu süre (s) ilerlemediyse söylenir: yavaş ama ilerleyen hasta korkutulmaz (k01, tur 2).
  * İlerleme: hedefe uzaklığın en az PROGRESS_MIN_DEG azalması.
@@ -130,6 +139,12 @@ export const EARLY_MOVE_SAY_AFTER_SEC = 1;
  * (k07, tur 4).
  */
 export const REACH_AVG_SEC = 1.5;
+/**
+ * En iyi açı yalnız başın durağan olduğu pencerelerden alınır: pencerenin iki yarısının ortancaları arasındaki değişim bu
+ * hızı (°/s) aşmamalı (her eksende). Savrulmanın sönen kuyruğu (hedeften uzaklaşırken) en iyi açıyı yükseltmesin (k07, tur 5).
+ * Hiç durağan pencere oluşmadıysa (sürekli kıpırdayan hasta) eski kural yedek olarak kullanılır.
+ */
+export const REACH_STILL_DEG_PER_SEC = 2;
 /** Hedefe yalnız bir an değilip tutulamadığında rapor/özet cümlesi (k07, tur 4). */
 export const REACH_TOUCHED_ONLY_TEXT = 'hedefe yalnız bir an değdi, tutulamadı';
 /** Hedef açıya yüzüstünden geçilerek gelindiğinde (kabul edilmez) rapor/özet cümlesi (k02, tur 4). */
@@ -138,7 +153,8 @@ export const PRONE_ARRIVAL_TEXT = 'yüzüstünden geçilerek gelindi, kabul edil
 export const PRONE_ARRIVAL_NOTICE = 'Hedef açıya yüzüstünden geçilerek gelindi; kabul edilmedi. Önce sırtüstüne, sonra doğru yana.';
 /**
  * Klinisyen kısa seste aynı yön ipucu art arda bu kadar söylendikten sonra seyrekleşir (k10, tur 4): sonraki yinelemeler en
- * az SAME_HINT_THIN_EVERY_SEC arayla. Yanlış taraf yönergesi seyrekleşmez (güvenlik).
+ * az SAME_HINT_THIN_EVERY_SEC arayla. Yanlış taraf yönergesi de ("Sırtüstünden hastanın soluna.") aynı kuralla seyrekleşir;
+ * kısa "Dur! Yanlış taraf." uyarısı ve ardından ilk yönerge beklemez (k10, tur 5).
  */
 export const SAME_HINT_THIN_AFTER = 3;
 export const SAME_HINT_THIN_EVERY_SEC = 10;
@@ -390,6 +406,14 @@ export interface RunnerState {
   reachRunStart: number | null;
   /** Yanlış yandan sırtüstüne gelince verilen "Tamam, şimdi … yanınıza." anı (ms; k04, tur 4). */
   supineCueAt: number | null;
+  /** Yatarken |θ| ≤ SUPINE_RELEASE_DEG kesintisiz dizisinin başı (ms); kilit SUPINE_CONFIRM_SEC sonra çözülür (k02, tur 5). */
+  supineSince: number | null;
+  /** Kilit sürerken son yatar ölçümün θ'sı (sırtüstünden mi yüzüstünden mi geçildi; seyrek ölçümde de). */
+  lastLyingTheta: number | null;
+  /** Kilit sürerken son yanlış yan ölçümünden sonra sırtüstü bölgesinden (|θ| < SUPINE_ZONE_DEG) geçildi mi. */
+  viaSupine: boolean;
+  /** Durağan olmayan pencereler dahil en iyi açı (yedek; hiç durağan pencere oluşmadıysa kullanılır; k07, tur 5). */
+  reachLoose: StepRecord['reach'];
   /** Bu ölçümde hedef açıdaydı ama yüzüstünden gelindiği için kabul edilmedi. */
   proneAtTarget: boolean;
   /** "Yüzüstünden geçilerek gelindi" bu yanlış taraf geçişinde söylendi mi (sırtüstüne dönülünce sıfırlanır). */
@@ -511,6 +535,10 @@ function stepScratch() {
     reachBuf: [] as RunnerState['reachBuf'],
     reachRunStart: null,
     supineCueAt: null,
+    supineSince: null,
+    lastLyingTheta: null,
+    viaSupine: false,
+    reachLoose: undefined,
     proneAtTarget: false,
     proneSaid: false,
     lastHintKey: null,
@@ -1063,9 +1091,11 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
           progressAt: null,
           hintQuietUntil: null,
           hintUtter: null,
-          // Duraklatma boşluğu ortalamaya girmez.
+          // Duraklatma boşluğu ortalamaya ve sırtüstü bekleme süresine girmez.
           reachBuf: [],
-          reachRunStart: null
+          reachRunStart: null,
+          supineSince: null,
+          lastLyingTheta: null
         },
         cues
       };
@@ -1287,29 +1317,48 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
   if (livePose && step.target.kind === 'lying' && sideGuarded(step.target) && step.fastTransitionSec === undefined) {
     // Yanlış taraf kilidi: karşı yana geçen hasta sırtüstüne (ya da oturuşa) dönene dek hedefe yüzüstünden gelemez (k02, tur 2).
     // Semont'ta hasta adım başında zaten önceki (karşı) yandadır; yol oturuştandır, kilit yoktur (ipucu yine "öbür yandasınız").
-    if (livePose.tiltFromUpright < LYING_MIN_TILT || Math.abs(livePose.theta) < SUPINE_ZONE_DEG) {
-      const wasLatched = s.wrongSideLatched;
-      s.wrongSideLatched = false;
-      // Sırtüstüne (ya da oturuşa) dönüldü: yeniden yanlış yana geçilirse kısa uyarı yine verilir.
-      s.wrongSideAlerted = false;
-      s.proneSaid = false;
-      // Yanlış yandan SIRTÜSTÜNE gelindi (oturuş değil): "2 uzun" (hareket) titreşimi ve kısa "Tamam, şimdi sağ yanınıza."
-      // (k04, tur 4). Sırtüstü sınırında gidip gelen hastaya sık yinelenmez.
-      const seeking = s.phase === 'intro' || s.phase === 'seeking' || s.phase === 'settling' || s.phase === 'drifting';
-      if (
-        wasLatched &&
-        seeking &&
-        livePose.tiltFromUpright >= LYING_MIN_TILT &&
-        (s.supineCueAt === null || sec(now - s.supineCueAt) >= WRONG_SIDE_REALERT_SEC)
-      ) {
-        s.supineCueAt = now;
-        cues.push({ kind: 'haptic', pattern: 'move' });
-        cues.push({ kind: 'tone', pattern: 'move' });
-        // O an okunan "önce sırtüstüne" yönergesini keser (hasta zaten sırtüstünde); sonraki ipucu bu cümleden sonra.
-        speakHint(cfg, s, now, cues, supineNowText(cfg, step), 'high', 'hint', HINT_AFTER_SPEECH_GAP_SEC);
-        s.lastHintAt = now;
+    // Gecikme payı (k02, tur 5): karşı yan |θ| ≥ SUPINE_ZONE_DEG ile algılanır; sırtüstüne dönmüş sayılmak için |θ| ≤
+    // SUPINE_RELEASE_DEG ve SUPINE_CONFIRM_SEC kesintisiz. Sınırın tam üstündeki sıçrama kilidi çözmez, "Dur!"u kesmez.
+    const tg = step.target;
+    const lyingNow = livePose.tiltFromUpright >= LYING_MIN_TILT;
+    const absT = Math.abs(livePose.theta);
+    if (lyingNow && absT <= SUPINE_RELEASE_DEG) s.supineSince ??= now;
+    else s.supineSince = null;
+    if (s.wrongSideLatched) {
+      const onTargetSide = lyingNow && absT > SUPINE_RELEASE_DEG && Math.sign(livePose.theta) === Math.sign(tg.theta);
+      // Seyrek ölçümde sırtüstü bölgesi atlanabilir: önceki ölçüm karşı yanda, bu ölçüm hedef yanda ve geçiş 0° üzerinden.
+      const prev = s.lastLyingTheta;
+      const crossedSupine =
+        onTargetSide && prev !== null && Math.sign(prev) !== Math.sign(tg.theta) && Math.abs(prev) + absT <= 180;
+      if (lyingNow && absT < SUPINE_ZONE_DEG) s.viaSupine = true;
+      else if (onWrongSide(livePose, tg)) s.viaSupine = false;
+      const sat = !lyingNow;
+      const supineHeld = s.supineSince !== null && now - s.supineSince >= SUPINE_CONFIRM_SEC * 1000 - 1;
+      // Sırtüstünden geçip doğru yana gelen hasta (yüzüstünden değil): kilit çözülür; "Tamam, şimdi …" gerekmez.
+      const passedSupine = onTargetSide && (s.viaSupine || crossedSupine);
+      if (sat || supineHeld || passedSupine) {
+        s.wrongSideLatched = false;
+        s.viaSupine = false;
+        // Gerçek sırtüstü (ya da oturuş) dönüşü: yeniden yanlış yana geçilirse kısa uyarı yine verilir.
+        s.wrongSideAlerted = false;
+        s.proneSaid = false;
+        // Yanlış yandan SIRTÜSTÜNE gelindi ve orada kalındı (oturuş değil): "2 uzun" (hareket) titreşimi ve kısa "Tamam, şimdi
+        // sağ yanınıza." (k04, tur 4). Sırtüstü sınırında gidip gelen hastaya sık yinelenmez.
+        const seeking = s.phase === 'intro' || s.phase === 'seeking' || s.phase === 'settling' || s.phase === 'drifting';
+        if (supineHeld && !sat && seeking && (s.supineCueAt === null || sec(now - s.supineCueAt) >= WRONG_SIDE_REALERT_SEC)) {
+          s.supineCueAt = now;
+          cues.push({ kind: 'haptic', pattern: 'move' });
+          cues.push({ kind: 'tone', pattern: 'move' });
+          // O an okunan "önce sırtüstüne" yönergesini keser (hasta zaten sırtüstünde); sonraki ipucu bu cümleden sonra.
+          speakHint(cfg, s, now, cues, supineNowText(cfg, step), 'high', 'hint', HINT_AFTER_SPEECH_GAP_SEC);
+          s.lastHintAt = now;
+        }
       }
-    } else if (onWrongSide(livePose, step.target)) s.wrongSideLatched = true;
+    } else if (onWrongSide(livePose, tg)) {
+      s.wrongSideLatched = true;
+      s.viaSupine = false;
+    }
+    s.lastLyingTheta = lyingNow ? livePose.theta : null;
   }
   const ev = livePose ? evaluate(livePose, step.target, { wrongSideLatched: s.wrongSideLatched }) : null;
   if (measuring) s.evaluation = ev;
@@ -1323,7 +1372,8 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
   else if (s.notice === PRONE_ARRIVAL_NOTICE) s.notice = null;
 
   // Hedef aranırken ulaşılan en iyi açılar (pozisyon doğrulanmadan önce; k07, tur 3): tek ölçüm değil, REACH_AVG_SEC'lik
-  // kesintisiz ölçümün ortancası (bir anlık savrulma "en iyi" sayılmasın; k07, tur 4).
+  // kesintisiz ölçümün ortancası (bir anlık savrulma "en iyi" sayılmasın; k07, tur 4). Kayda yalnız başın durağan olduğu
+  // pencereler girer (savrulmanın sönen kuyruğu değeri yükseltmesin; k07, tur 5); durağan olmayanlar yalnız yedek.
   const recNow = s.records[s.records.length - 1];
   if (livePose && ev && ev.postureOk && !ev.wrongSide && step.target.kind === 'lying' && recNow && recNow.reachedAt === null) {
     if (s.reachRunStart === null) s.reachRunStart = now;
@@ -1331,8 +1381,12 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
     s.reachBuf = [...s.reachBuf.filter((b) => b.t > from), { t: now, phi: livePose.phi, theta: livePose.theta }];
     if (now - s.reachRunStart >= REACH_AVG_SEC * 1000 - 1) {
       const avg = averageReach(s.reachBuf);
-      const next = avg ? betterReach(recNow.reach, avg, step.target) : null;
-      if (next) s = updateRecord(s, (r) => ({ ...r, reach: next }));
+      if (avg) {
+        const loose = betterReach(s.reachLoose, avg, step.target);
+        if (loose) s.reachLoose = loose;
+        const next = reachStill(s.reachBuf, now) ? betterReach(recNow.reach, avg, step.target) : null;
+        if (next) s = updateRecord(s, (r) => ({ ...r, reach: next }));
+      }
     }
   } else if (s.reachRunStart !== null || s.reachBuf.length) {
     // Dizi kesildi (oturdu, yanlış yana geçti, sensör kesildi ya da pozisyon doğrulandı): ortalama baştan.
@@ -1555,6 +1609,8 @@ function outOfTarget(
   } else {
     if (!hintsDue) return null;
     if (s.hintQuietUntil !== null && now < s.hintQuietUntil) return null;
+    // Kilit sürerken sırtüstünde (≤ SUPINE_RELEASE_DEG) bekleniyor: ~1 s sonra "Tamam, şimdi …" gelecek; araya yön ipucu girmez.
+    if (ev && s.wrongSideLatched && step.fastTransitionSec === undefined) return null;
   }
   // Hedef açıya yüzüstünden gelindi: ilk kez hemen ve açıkça söylenir (hasta "geldim" sanıp beklemesin; k02, tur 4).
   const proneFirst = wrongSide && s.proneAtTarget && !s.proneSaid;
@@ -1563,8 +1619,9 @@ function outOfTarget(
   const sinceHint = s.lastHintAt === null ? Infinity : sec(now - s.lastHintAt);
   // Zorlama uyarısından ya da yastık ipucundan sonra ipuçları seyrekleşir.
   let every = !wrongSide && (s.strainWarned || s.pillowSaid) ? cfg.hintEverySec * 3 : cfg.hintEverySec;
-  // Klinisyen kısa seste aynı yön art arda SAME_HINT_THIN_AFTER kez söylendiyse seyrekleşir (k10, tur 4); yanlış taraf hariç.
-  if (clinicianShort(cfg) && !wrongSide && ev?.hint && ev.hint === s.lastHintKey && s.sameHintRun >= SAME_HINT_THIN_AFTER) {
+  // Klinisyen kısa seste aynı yön art arda SAME_HINT_THIN_AFTER kez söylendiyse seyrekleşir (k10, tur 4). Yanlış taraf
+  // yönergesi de ("Sırtüstünden hastanın soluna."; k10, tur 5); "Dur!" ve ardından ilk yönerge beklemez (aşağıda).
+  if (clinicianShort(cfg) && ev?.hint && ev.hint === s.lastHintKey && s.sameHintRun >= SAME_HINT_THIN_AFTER) {
     every = Math.max(every, SAME_HINT_THIN_EVERY_SEC);
   }
   // Kısa uyarının ardından ilk tam yönerge aralık beklemez.
@@ -1667,6 +1724,9 @@ function wrongSideAlert(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cu
   s.wrongSideAlerted = true;
   if (s.wrongSideAlertAt !== null && sec(now - s.wrongSideAlertAt) < WRONG_SIDE_REALERT_SEC) return false;
   s.wrongSideAlertAt = now;
+  // Yeni yanlış taraf geçişi: yönerge tekrar sayısı baştan (seyrekleşme bu geçişin 3. tekrarından sonra; k10, tur 5).
+  s.lastHintKey = null;
+  s.sameHintRun = 0;
   cues.push({ kind: 'haptic', pattern: 'wrongSide' });
   cues.push({ kind: 'tone', pattern: 'wrongSide' });
   speakHint(cfg, s, now, cues, pick(cfg, TXT.wrongSideAlert), 'high', 'alert', WRONG_SIDE_FOLLOW_GAP_SEC);
@@ -1689,6 +1749,19 @@ function averageReach(buf: readonly { phi: number; theta: number }[]): { phi: nu
   const phi = median(buf.map((b) => b.phi));
   const d = median(buf.map((b) => angleDiff(first.theta, b.theta)));
   return { phi, theta: wrapDeg(first.theta - d) };
+}
+
+/**
+ * Pencerede baş durağan mı: iki yarının ortancaları arasındaki değişim her eksende REACH_STILL_DEG_PER_SEC'i aşmıyor
+ * (ortanca: titrek ölçüm gürültüsü durağanlığı bozmaz; savrulma ve sönen kuyruğu bozar; k07, tur 5).
+ */
+function reachStill(buf: readonly { t: number; phi: number; theta: number }[], now: number): boolean {
+  const half = (REACH_AVG_SEC * 1000) / 2;
+  const a = averageReach(buf.filter((b) => b.t <= now - half));
+  const b = averageReach(buf.filter((x) => x.t > now - half));
+  if (!a || !b) return false;
+  const lim = REACH_STILL_DEG_PER_SEC * (half / 1000);
+  return Math.abs(b.phi - a.phi) <= lim && Math.abs(angleDiff(a.theta, b.theta)) <= lim;
 }
 
 /** Hedefe daha yakın açı geldiyse yeni "en iyi ulaşılan" değerleri; değişiklik yoksa null. */
@@ -1727,12 +1800,15 @@ function reachInTarget(reach: StepRecord['reach'], target: Target): boolean {
 }
 
 /**
- * "Pozisyona gelinemedi" durdurmasında en iyi açı kaydının son hâli: ortalama hiç oluşmadıysa eldeki kısa dizinin
- * ortalaması; hedefe bir an değilip (ya da ortalama hedefteyken) pozisyon hiç doğrulanmadıysa `touchedOnly` (k07, tur 4).
+ * "Pozisyona gelinemedi" durdurmasında en iyi açı kaydının son hâli: durağan pencere yoksa durağan olmayanların en iyisi,
+ * hiç ortalama oluşmadıysa eldeki kısa dizinin ortalaması; hedefe bir an değilip (ya da ortalama hedefteyken) pozisyon
+ * hiç doğrulanmadıysa `touchedOnly` (k07, tur 4).
  */
 function finalReach(s: RunnerState, rec: StepRecord, step: StepDef | undefined): StepRecord['reach'] {
   if (!step || step.target.kind !== 'lying') return rec.reach;
   let reach = rec.reach;
+  // Hiç durağan pencere oluşmadıysa (sürekli kıpırdayan hasta) durağan olmayan pencerelerin en iyisi (k07, tur 5).
+  if (!reach && rec.reachedAt === null) reach = s.reachLoose;
   if (!reach && rec.reachedAt === null) {
     const avg = averageReach(s.reachBuf);
     if (avg) reach = betterReach(undefined, avg, step.target) ?? undefined;
