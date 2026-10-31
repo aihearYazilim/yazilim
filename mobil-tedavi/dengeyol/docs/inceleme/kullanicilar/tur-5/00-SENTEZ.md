@@ -35,3 +35,8 @@ Turda hemen düzeltilen geri adım: kısa duraklatma sesinden düşen "Boynunuz 
 - Güvenlik sorularının sesli gövdesinin kısaltılması, "bilinen/değişmeyen" belirti ayrımı (k04, k05, k07): klinik ekip kararı.
 - Taraf sorusunda "geçen sefer" notu, hazırlık listesini katlama, "hekime söyleyecekleriniz" yanıt alanı, reçetesiz "Tanınız" ekranının sesli okunması (k06, k03, k05): sonraki sürüm.
 - Gerçek telefonda doğrulama ve pilot: yazılım dışı.
+
+## Uygulama durumu
+H1–H3'ün bütün maddeleri uygulandı ve birleştirildi. 485 birim testi ve 23/23 uçtan uca senaryo geçiyor. Açık kalan: ev raporu
+QR biçimine "yüzüstünden gelme" ve testte durdurma bilgisinin eklenmesi (eski klinisyen sürümleri yeni biçimi reddedeceği için
+biçim sürümü 2 gerekir; bir sonraki sürüme bırakıldı).

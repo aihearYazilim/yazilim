@@ -18,7 +18,7 @@ gelince haber verir, pozisyon bozulursa sayacı durdurur ve hangi yöne düzelti
 
 | Alan | Durum |
 |---|---|
-| Klinik çekirdek (açı geometrisi, kalibrasyon, protokoller, yürütücü, tanı önerisi, güvenlik, reçete) | Tamam · 466 birim testi |
+| Klinik çekirdek (açı geometrisi, kalibrasyon, protokoller, yürütücü, tanı önerisi, güvenlik, reçete) | Tamam · 485 birim testi |
 | Bağımsız klinik inceleme | Yapıldı, düzeltmeler uygulandı — [docs/KLINIK-INCELEME.md](docs/KLINIK-INCELEME.md) |
 | Hasta modu ve odyolog modu arayüzü | Tamam |
 | Uçtan uca testler (gerçek Chromium, telefon boyutu, sanal sensör) | 12/12 senaryo geçiyor |

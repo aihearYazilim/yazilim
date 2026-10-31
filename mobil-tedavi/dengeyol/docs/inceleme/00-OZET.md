@@ -12,7 +12,7 @@ bir sonraki tur hem düzeltmeleri hem yeni sorunları denetledi. Görev tanımı
 Her turun raporları: [tur-1](tur-1/), [tur-2](tur-2/), [tur-3](tur-3/).
 
 ## Son durum
-- 466 birim testi, 21/21 uçtan uca senaryo (gerçek Chromium, telefon boyutu, sanal sensör; hasta akışları tanıtmada dokunmadan).
+- 485 birim testi, 23/23 uçtan uca senaryo (gerçek Chromium, telefon boyutu, sanal sensör; hasta akışları tanıtmada dokunmadan).
 - Klinik son onay: **Koşullu** — genel yayına değil; etik kurul ve TİTCK onayıyla, klinikte gözetimli bir pilota uygun.
   En büyük açık, belirtiye dayalı taraf testinin nistagmusla karşılaştırılmamış olmasıdır; pilotta (Aşama A, VNG/Frenzel
   eşliğinde) ölçülmelidir.
@@ -32,7 +32,7 @@ Her turun raporları: [tur-1](tur-1/), [tur-2](tur-2/), [tur-3](tur-3/).
 Hastalar (yalnız yaşayan yaşlı, yardımcı evlat, tanısız kaygılı, işitme cihazlı, okuma güçlüğü çeken, sabırsız genç,
 kontrendikasyon sınırındaki hasta) ve klinisyenler (odyolog, KBB uzmanı, vestibüler fizyoterapist) uygulamayı Playwright ile
 uçtan uca kullandı; her turdan sonra bulgular dört düzenleyiciye bölünüp uygulandı. Ortalama puan: 1. tur **6,5**, 2. tur
-**7,9**, 3. tur **8,75**, 4. (son) tur **9,1** (en büyük artış kontrendikasyon sınırındaki hasta: 5 → 8 → 9 → 9). 4. turda
+**7,9**, 3. tur **8,75**, 4. tur **9,1**, 5. tur **9,2** (en büyük artış kontrendikasyon sınırındaki hasta: 5 → 8 → 9 → 9). 4. turda
 "önerir miyim / klinikte kullanır mıyım": 8 Evet (çoğu koşullu), 2 Koşullu; ortak koşul gerçek telefonlarda açı, ses ve titreşim
 doğrulaması ve etik kurullu pilot (yazılım dışı). Ayrıntı: [kullanicilar/](kullanicilar/) (BRIEF, tur-1 ve
 tur-2 raporları, iki sentez). 2. turun bulguları da uygulandı (yanlış tarafa yuvarlanmada doğru uyarı, duraklatmada kör basış
@@ -45,3 +45,7 @@ kısa sesli metinler ve yalnız ilk sorulan soruda okuma kilidi; dönem raporu; 
 titreşim ve kısa yönlendirme; ulaşılan açı 1,5 s ortancasından ("hedefe yalnız bir an değdi" / "yüzüstünden geçilerek gelindi");
 ev raporu adım başlıkları tarafıyla; dönem raporunda önce son atağın sonucu ve QR; klinisyen profilinde ses kipi; basılı raporda
 reçete bloğu bölünmez. 2.–3. turda düzelen davranışlar 7 yeni uçtan uca senaryoyla korunuyor.
+5. turda (ortalama 9,2; 8 Evet, 2 Koşullu; yeni Kritik/Yüksek yok) bulunanlar da uygulandı: kısa duraklatma sesinde boyun
+güvenlik cümlesi; testte "Kendimi kötü hissediyorum" da "Dinlenin" ekranına gider ve rapora yazılır; sırtüstü sınırında gecikme
+payı; ulaşılan açı yalnız durağan anlardan; klinisyen ev raporu satırı önce son atağın sonucunu ve adlandırılmış tarihleri yazar.
+Ev raporu QR biçimi henüz "yüzüstünden gelme" ve testte durdurma bilgisini taşımıyor (biçim sürüm değişikliği gerektirir).
