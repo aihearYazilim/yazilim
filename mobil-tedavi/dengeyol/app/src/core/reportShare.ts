@@ -15,7 +15,7 @@
  * değişiklik sürümü artırır. Uygulamanın tanımadığı (daha yeni) sürüm "uygulamayı güncelleyin" hatasıyla reddedilir.
  */
 import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxValidUntil } from './prescription';
-import { PROTOCOLS, type ProtocolId, type Side } from './protocols';
+import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
 import { type StepRecord, type StopReason, vertigoSummary } from './runner';
 import type { SideDecision, SideTestResult } from './safety';
 // Yalnız tür içe aktarımı (çalışma zamanında core → state bağımlılığı yok).
@@ -138,11 +138,25 @@ function stepFlags(r: StepRecord): StepFlag[] {
   return FLAG_BITS.filter((f) => !!r[f]);
 }
 
-export function homeStepOf(protocolId: ProtocolId, r: StepRecord, index: number): HomeStep {
+/** Adım başlığı tarafı doldurulmuş biçimde ("Oturuş, baş sağa 45°"); taraf bilinmiyorsa "{…}" belirteçleri yazılmaz. */
+function stepTitle(protocolId: ProtocolId, side: Side | null, index: number): string | null {
+  const def = PROTOCOLS[protocolId];
+  if (!def) return null;
+  try {
+    const t = resolveProtocol(protocolId, side).steps[index]?.title;
+    if (t) return t;
+  } catch {
+    /* taraflı protokolde taraf yok */
+  }
+  const raw = def.steps[index]?.title;
+  return raw && !raw.includes('{') ? raw : null;
+}
+
+export function homeStepOf(protocolId: ProtocolId, r: StepRecord, index: number, side: Side | null = null): HomeStep {
   const v = vertigoSummary(r);
   return {
     index,
-    title: PROTOCOLS[protocolId]?.steps[index]?.title ?? r.title,
+    title: stepTitle(protocolId, side, index) ?? r.title,
     holdSec: Math.max(0, Math.round(r.holdSec)),
     flags: stepFlags(r),
     transitionSec: r.slowTransition && r.transitionSec != null ? Math.round(r.transitionSec * 10) / 10 : null,
@@ -161,7 +175,7 @@ export function homeManeuverOf(m: ManeuverLog): HomeManeuver {
     pauses,
     manual: m.manual,
     stepCount: m.records.length,
-    steps: m.records.slice(0, MAX_STEPS).map((r, i) => homeStepOf(m.protocolId, r, i))
+    steps: m.records.slice(0, MAX_STEPS).map((r, i) => homeStepOf(m.protocolId, r, i, m.side))
   };
   if (m.assisted !== undefined) out.assisted = m.assisted;
   if (m.afterSymptoms) out.afterSymptoms = m.afterSymptoms;
@@ -524,7 +538,7 @@ function readDecision(x: unknown): SideDecision {
   return { kind: 'REFER', reason: code(REFER_OF, x) };
 }
 
-function readStep(x: unknown, protocolId: ProtocolId, index: number): HomeStep {
+function readStep(x: unknown, protocolId: ProtocolId, index: number, side: Side | null): HomeStep {
   if (!Array.isArray(x) || x.length < 2 || x.length === 4 || x.length > 6) fail();
   const a = x as unknown[];
   const flagsN = int(a[1], 0, (1 << FLAG_BITS.length) - 1);
@@ -532,7 +546,7 @@ function readStep(x: unknown, protocolId: ProtocolId, index: number): HomeStep {
   const hasV = a.length >= 5;
   return {
     index,
-    title: PROTOCOLS[protocolId].steps[index]?.title ?? `${index + 1}. adım`,
+    title: stepTitle(protocolId, side, index) ?? `${index + 1}. adım`,
     holdSec: int(a[0], 0, SEC_MAX),
     flags: FLAG_BITS.filter((_, i) => flagsN & (1 << i)),
     transitionSec: tr !== null ? tr / 10 : null,
@@ -569,16 +583,17 @@ function readManeuver(x: unknown, base: number): HomeManeuver {
   // Epley/Semont yalnız kısa koduyla yazılır; diğer protokoller tam kimlikle.
   const protocolId: ProtocolId = own(PROTO_OF, pc) ? PROTO_OF[pc]! : own(PROTOCOLS, pc) && !PROTO_CODE[pc as ProtocolId] ? (pc as ProtocolId) : fail();
   const st = readState(a[3]);
+  const mSide = a[2] === 0 ? null : side(a[2]);
   const out: HomeManeuver = {
     at: base + int(a[0], 0, OFF_MAX) * MIN,
     protocolId,
-    side: a[2] === 0 ? null : side(a[2]),
+    side: mSide,
     completed: st.completed,
     stopReason: st.stopReason,
     pauses: int(a[4], 0, 999),
     manual: st.manual,
     stepCount: int(a[5], 0, 99),
-    steps: a.length === 7 ? arr(a[6], MAX_STEPS).map((s, i) => readStep(s, protocolId, i)) : []
+    steps: a.length === 7 ? arr(a[6], MAX_STEPS).map((s, i) => readStep(s, protocolId, i, mSide)) : []
   };
   if (st.assisted !== undefined) out.assisted = st.assisted;
   if (st.afterSymptoms !== undefined) out.afterSymptoms = st.afterSymptoms;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { emptyData, type AppData, type Episode, type ManeuverLog } from '../state/types';
 import { encodePrescription, fnv1a, type Prescription, rxCode, rxIssuedAt, rxValidUntil } from './prescription';
 import {
+  homeStepOf,
   buildHomeReport,
   decodeHomeReport,
   encodeHomeReport,
@@ -13,6 +14,7 @@ import {
   REPORT_TOKEN_MAX,
   selectReportEpisodes
 } from './reportShare';
+import { PROTOCOLS } from './protocols';
 import type { StepRecord } from './runner';
 
 const b64u = (json: string) => {
@@ -387,3 +389,16 @@ describe('ev dönemi raporu: bağlantı', () => {
     expect(homeReportId(token)).toBe(token.split('.')[1]);
   });
 });
+
+describe('adım başlıkları (kullanıcı turu 4, k10)', () => {
+  it('tarafı doldurulmuş başlık; şablon belirteci "{" kalmaz', () => {
+    const titles = (['epley', 'semont'] as const).flatMap((id) =>
+      (['R', 'L', null] as const).flatMap((sd) =>
+        PROTOCOLS[id].steps.map((_, i) => homeStepOf(id, rec('x', { title: 'kayıt' }), i, sd).title)
+      )
+    );
+    expect(titles.every((t) => !t.includes('{'))).toBe(true);
+    expect(homeStepOf('epley', rec('x', { title: 'kayıt' }), 0, 'R').title).toMatch(/sağ/);
+  });
+});
+

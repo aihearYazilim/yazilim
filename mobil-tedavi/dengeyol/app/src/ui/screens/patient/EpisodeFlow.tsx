@@ -1292,7 +1292,7 @@ export function EpisodeFlow() {
             text:
               mode === 'practice'
                 ? 'Artık adımları biliyorsunuz. Baş dönmeniz başladığında aynı yönergelerle yapacaksınız.'
-                : `${mild}10 dakika oturarak dinlenin: baş dönmesi tamamen sönsün ve dengeniz yerine gelsin. Kalkarken önce yatağın kenarında oturun, bir yere tutunun; gece ise ışığı açın. ${formatTime(retestAt)} civarında ana ekrandan tekrar testini yapın.`,
+                : `${mild}10 dakika oturarak dinlenin: baş dönmesi tamamen sönsün ve dengeniz yerine gelsin. Kalkarken önce yatağın kenarında oturun, bir yere tutunun; gece ise ışığı açın. ${formatTime(retestAt)} civarında ana ekrandan tekrar testini yapın. Uyku pozisyonu kısıtlaması ya da boyunluk gerekmez.`,
             testid: 'end-maneuver-done',
             ...(mode === 'practice'
               ? {}
