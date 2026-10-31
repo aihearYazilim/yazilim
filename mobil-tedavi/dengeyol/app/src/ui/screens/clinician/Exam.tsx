@@ -715,8 +715,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
 
   const make = () => {
     if (!side) return;
-    // TODO(D3 birleşimi): Prescription'a isteğe bağlı hasta kodu alanı eklenince (muhtemelen `pid`) burada doldurun:
-    //   pid: patientCode  (d.clinicPatients.find((x) => x.id === exam.patientId)?.code). prescription.ts bu düzenleyicide değiştirilmedi.
+    // Hasta kodu reçeteye yazılır: hastanın hekime gönderdiği rapor bu kodla muayene kaydıyla eşleşir (ad değil).
+    const pid = d.clinicPatients.find((x) => x.id === exam.patientId)?.code;
     const p: Prescription = {
       v: 1,
       side,
@@ -728,7 +728,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       clinic: d.clinician.clinic,
       perDay,
       days,
-      note: note.trim() || undefined
+      note: note.trim() || undefined,
+      pid
     };
     const token = encodePrescription(p);
     updateExam(exam.id, (e) => ({ ...e, prescriptionToken: token, prescriptionFindingsKey: e.diagnosis?.findingsKey }));
