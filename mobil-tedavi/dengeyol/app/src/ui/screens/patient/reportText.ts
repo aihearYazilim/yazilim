@@ -2,12 +2,13 @@
  * Hasta atak raporunun metinleri (ekran raporu ve hekime gönderilen düz metin aynı kaynaktan).
  * İç kodlar (endNote, StopReason, kırmızı bayrak kimliği) burada Türkçe cümleye çevrilir; ham kod rapora yazılmaz.
  */
-import { type Prescription, rxValidUntil } from '../../../core/prescription';
+import { type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidAt, rxValidityLabel, rxValidUntil } from '../../../core/prescription';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
 import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary } from '../../../core/runner';
-import { RED_FLAGS, type SideDecision } from '../../../core/safety';
-import { formatDate, formatDateTimeYear, RX_VALID_DAYS } from '../../../state/episodes';
+import { clampDose, DEFAULT_DOSE, type DoseLimits, localDayKey, RED_FLAGS, type SideDecision } from '../../../core/safety';
+import { formatDate, formatDateTimeYear, TREATMENT_WINDOW_DAYS } from '../../../state/episodes';
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from '../../../state/types';
+import { consentLine } from './consent';
 
 export const STATUS_LABEL: Record<EpisodeStatus, string> = {
   active: 'Şu anki atak (sürüyor)',
@@ -76,22 +77,42 @@ export function stepSummary(r: StepRecord): string {
   return parts.join(' · ');
 }
 
-/** Rapor başı: "Hasta kodu X · reçete 30 Ekim 2026 · Dr. Y, Kurum". Reçete yoksa null. */
-export function rxHeaderLine(rx: Prescription | undefined): string | null {
+/**
+ * Reçete kodu (klinisyenin raporu ve HBYS notundaki kodla aynı): içe aktarılan bağlantı saklandıysa ondan, yoksa
+ * reçeteden yeniden kodlanarak. Reçete yoksa null.
+ */
+export function profileRxCode(p: Pick<PatientProfile, 'prescription' | 'prescriptionToken'> | undefined): string | null {
+  if (!p?.prescription) return null;
+  const code = rxCode(p.prescriptionToken ?? p.prescription);
+  return code || rxCode(p.prescription) || null;
+}
+
+/** Rapor başı: "Hasta kodu X · reçete 30 Ekim 2026 · reçete kodu 1a2b3c4d · Dr. Y, Kurum". Reçete yoksa null. */
+export function rxHeaderLine(rx: Prescription | undefined, code: string | null = rx ? rxCode(rx) : null): string | null {
   if (!rx) return null;
   const parts: string[] = [];
   if (rx.pid) parts.push(`Hasta kodu ${rx.pid}`);
-  parts.push(`reçete ${formatDate(new Date(`${rx.date}T00:00:00`).getTime())}`);
+  const issued = rxIssuedAt(rx);
+  parts.push(`reçete ${issued !== null ? formatDate(issued) : rx.date}`);
+  if (code) parts.push(`reçete kodu ${code}`);
   const who = [rx.by, rx.clinic].filter(Boolean).join(', ');
   if (who) parts.push(who);
   return parts.join(' · ');
 }
 
+/** "12 Kasım 2026 tarihine kadar (dahil) geçerli" (+ " · süresi doldu"). Tarih okunamazsa null. */
 export function rxValidityText(rx: Prescription, now: number): string | null {
-  const until = rxValidUntil(rx, RX_VALID_DAYS);
-  if (until === null) return null;
-  return `${formatDate(until)} tarihine kadar geçerli${now > until ? ' (süresi doldu)' : ''}`;
+  const label = rxValidityLabel(rx);
+  const until = rxValidUntil(rx);
+  if (!label || until === null) return null;
+  return `${label} geçerli${now >= until ? ' · süresi doldu' : ''}`;
 }
+
+const DX_WHEN_TEXT: Record<NonNullable<PatientProfile['dxWhen']>, string> = {
+  recent: 'son 2 hafta içinde',
+  older: '2 haftadan önce',
+  date: ''
+};
 
 export function priorDiagnosisText(p: PatientProfile | undefined): string {
   if (p?.prescription) {
@@ -101,9 +122,86 @@ export function priorDiagnosisText(p: PatientProfile | undefined): string {
   if (p?.diagnosedByDoctor) {
     const canal = p.canal === 'PC' ? 'arka kanal' : p.canal === 'HC' ? 'yatay kanal' : 'kanal bilinmiyor';
     const side = p.side === 'R' ? 'sağ' : p.side === 'L' ? 'sol' : 'taraf bilinmiyor';
-    return `Hekim tanısı (hastanın beyanı: ${canal}, ${side})${p.dxDate ? ', ' + p.dxDate : ''}`;
+    const when = p.dxDate
+      ? `, tanı tarihi ${p.dxDate}`
+      : p.dxWhen && DX_WHEN_TEXT[p.dxWhen]
+        ? `, tanı ${DX_WHEN_TEXT[p.dxWhen]}${p.dxWhen === 'recent' && p.dxWhenAt ? ` (${formatDate(p.dxWhenAt)} tarihli beyan)` : ''}`
+        : '';
+    return `Hekim tanısı (hastanın beyanı: ${canal}, ${side}${when})`;
   }
   return '—';
+}
+
+/** Raporun kaynağı: herhangi bir manevrayı yakını yaptırdıysa "yakını eşliğinde". */
+export function reportOriginText(e: Episode): string {
+  return e.maneuvers.some((m) => m.assisted === true)
+    ? 'Hastanın telefonunda, yakını eşliğinde oluşturuldu'
+    : 'Hastanın kendi kullanımıyla oluşturuldu';
+}
+
+/**
+ * Reçeteli kısa yol (taraf testi yapmadan reçete tarafına manevra) bu atakta kullanıldı mı? Kayıtta (Episode.rxShortcut)
+ * varsa o; yoksa kayıtlardan çıkarılır: atak başında reçete geçerliydi, taraf testi yok ve manevra reçete tarafına yapıldı.
+ * Reçete atak başında geçerli değilse ya da karar verilemiyorsa null (rapora yazılmaz).
+ */
+export function rxShortcutUsed(e: Episode, p: PatientProfile | undefined): boolean | null {
+  const rx = p?.prescription;
+  if (!rx || !rxValidAt(rx, e.startedAt)) return typeof e.rxShortcut === 'boolean' ? e.rxShortcut : null;
+  if (typeof e.rxShortcut === 'boolean') return e.rxShortcut;
+  if (e.sideTests.length > 0) return false;
+  if (e.maneuvers.length === 0) return null;
+  return e.maneuvers.every((m) => m.side === rx.side);
+}
+
+export function rxShortcutText(used: boolean): string {
+  return used
+    ? 'evet (hasta "muayeneden beri hiç geçmedi" dedi; taraf testi yapılmadan reçete tarafına manevra)'
+    : 'hayır (taraf testi yapıldı)';
+}
+
+/** Doza sayılan manevra: tamamlanmış ya da en az bir pozisyon adımına geçilmiş (state/episodes.ts ile aynı kural). */
+function counted(m: ManeuverLog): boolean {
+  return m.completed || m.records.length > 1;
+}
+
+/**
+ * Tedavi dönemi doz özeti: atak başında reçete geçerliyse reçete dönemi (muayene günü → son geçerli gün), değilse son 14 gün.
+ * Tüm ataklar ve deneme manevraları birlikte sayılır (doz sınırı da böyle sayar).
+ * Ör.: "Reçete dönemi (30 Ekim 2026 – 12 Kasım 2026): 4/15 manevra, 2/5 gün (günde en çok 3; 1 deneme dahil)".
+ */
+export function doseSummaryText(e: Episode, d: AppData, now: number): string {
+  const rx = d.patient?.prescription;
+  const end = Math.min(now, e.endedAt ?? now);
+  let from: number;
+  let to: number;
+  let label: string;
+  let limits: DoseLimits;
+  const rxFrom = rx ? rxIssuedAt(rx) : null;
+  const rxTo = rx ? rxValidUntil(rx) : null;
+  const rxLast = rx ? rxLastValidDay(rx) : null;
+  if (rx && rxFrom !== null && rxTo !== null && rxLast && rxValidAt(rx, e.startedAt)) {
+    from = rxFrom;
+    to = Math.min(end, rxTo - 1);
+    label = `Reçete dönemi (${formatDate(rxFrom)} – ${formatDate(rxLast.getTime())})`;
+    limits = clampDose({ maxPerDay: rx.perDay, maxDays: rx.days });
+  } else {
+    to = end;
+    from = end - TREATMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    label = `Son ${TREATMENT_WINDOW_DAYS} gün`;
+    limits = DEFAULT_DOSE;
+  }
+  const inRange = (t: number) => t >= from && t <= to;
+  const times = d.episodes.flatMap((x) => x.maneuvers.filter(counted).map((m) => m.at)).filter(inRange);
+  const practice = (d.practiceLog ?? []).filter(inRange);
+  const all = [...times, ...practice];
+  const days = new Set(all.map(localDayKey)).size;
+  return `${label}: ${all.length}/${limits.maxTotal} manevra, ${days}/${limits.maxDays} gün (günde en çok ${limits.maxPerDay}${practice.length ? `; ${practice.length} deneme dahil` : ''})`;
+}
+
+/** Manevradaki duraklatma sayısı: manevra kaydında yoksa adım kayıtlarındaki duraklatmaların toplamı. */
+export function maneuverPauses(m: ManeuverLog): number {
+  if (typeof m.pauses === 'number') return m.pauses;
+  return m.records.reduce((s, r) => s + (r.pauses ?? 0), 0);
 }
 
 export function decisionText(d: SideDecision): string {
@@ -125,7 +223,8 @@ export function maneuverTags(m: ManeuverLog): string[] {
   if (m.assisted === true) tags.push('yakını yaptırdı');
   else if (m.assisted === false) tags.push('kendi başına');
   if (m.manual) tags.push('sensörsüz');
-  if (m.pauses && m.pauses > 0) tags.push(`${m.pauses} kez duraklatıldı`);
+  const pauses = maneuverPauses(m);
+  if (pauses > 0) tags.push(`${pauses} kez duraklatıldı`);
   if (m.afterSymptoms) {
     tags.push(
       m.afterSymptoms === 'none'
@@ -167,13 +266,13 @@ export function reportPlainText(e: Episode, d: AppData, now: number = Date.now()
   const p = d.patient;
   const L: string[] = [];
   L.push('DengeYol — BPPV atak raporu');
-  const head = rxHeaderLine(p?.prescription);
+  const head = rxHeaderLine(p?.prescription, profileRxCode(p));
   if (head) L.push(head);
   if (p?.prescription) {
     const v = rxValidityText(p.prescription, now);
     if (v) L.push(`Reçete geçerliliği: ${v}`);
   }
-  L.push(`(Hastanın kendi kullanımıyla oluşturuldu; tanı belgesi değildir. Oluşturma: ${formatDateTimeYear(now)})`);
+  L.push(`(${reportOriginText(e)}; tanı belgesi değildir. Oluşturma: ${formatDateTimeYear(now)})`);
   L.push('');
   L.push(`Atak başlangıcı: ${formatDateTimeYear(e.startedAt)}`);
   const note = e.endNote ? endNoteText(e.endNote) : '';
@@ -181,7 +280,12 @@ export function reportPlainText(e: Episode, d: AppData, now: number = Date.now()
   L.push(`Tedavi edilen taraf: ${e.side ? sideName(e.side) : '—'}`);
   L.push(`Manevra: ${PROTOCOLS[e.protocolId].shortName}`);
   L.push(`Önceki tanı: ${priorDiagnosisText(p)}`);
+  const sc = rxShortcutUsed(e, p);
+  if (sc !== null) L.push(`Reçeteli kısa yol: ${rxShortcutText(sc)}`);
+  L.push(`Doz: ${doseSummaryText(e, d, now)}`);
   if (e.sideConflictNote) L.push(`Taraf uyuşmazlığı: ${e.sideConflictNote}`);
+  const cl = consentLine(p);
+  if (cl) L.push(`Onam: ${cl}`);
   const af = assistFallbackText(e, d.settings);
   if (af) L.push(`Manevrayı yaptıran: ${af}`);
 

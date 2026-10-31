@@ -20,7 +20,7 @@ import {
 } from '../../core/calibration';
 import { useMotion } from '../../platform/MotionContext';
 import { collectSamples } from '../../platform/pose';
-import { speech } from '../../platform/speech';
+import { speech, speechText } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
 import { unlockAudio } from '../../platform/feedback';
@@ -111,7 +111,7 @@ export function Calibrate({
   /** Söyler ve konuşma bitene kadar (tahmini) + ek süre bekler: ölçüm yönerge bitmeden başlamasın. */
   const sayAndWait = async (t: string, extraMs: number) => {
     const st = store.get().settings;
-    const est = st.speech ? estimateSpeechSec(t, st.speechRate) * 1000 : 0;
+    const est = st.speech ? estimateSpeechSec(speechText(t), st.speechRate) * 1000 : 0;
     // Konuşmanın gerçek bitişini bekle (yavaş seslerde tahmin yetmez); olay gelmezse tahminin 2 katı + 2 s.
     if (st.simulation) {
       say(t);

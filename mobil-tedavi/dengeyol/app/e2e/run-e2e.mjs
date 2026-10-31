@@ -215,6 +215,8 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   await page.getByRole('radio', { name: 'Evet, tanı kondu' }).click();
   await page.getByRole('radio', { name: /Arka \(posterior\) kanal/ }).click();
   await page.getByRole('radio', { name: 'Sağ kulak' }).click();
+  // Tanı zamanı zorunlu seçim (tarih boşken tanı sessizce "eski" sayılmasın).
+  await page.getByRole('radio', { name: 'Son 2 hafta içinde' }).click();
   await snap(page, 'kurulum-tani');
   await page.getByTestId('ob-next').click();
   await page.getByTestId('ob-none').click();
@@ -342,6 +344,8 @@ await step('Hasta: tanısız ilk atak → manevralar kilitli', async () => {
   await page.getByTestId('ob-none').click();
   await page.getByTestId('ob-next').click();
   await page.getByTestId('ob-gate-blocked').waitFor();
+  // Tanısız kapı ekranında da aciliyet kartı (ana ekrandakiyle aynı).
+  await page.getByTestId('urgency-ladder').waitFor();
   await snap(page, 'kilit-tanisiz');
   await ctx.close();
 });
@@ -549,6 +553,8 @@ await step('Hasta: odyolog reçetesini QR bağlantısıyla içe aktarır', async
   const t = await page.getByTestId('rx-card').innerText();
   if (!t.includes('SAĞ') || !t.includes('Epley') || !t.includes('Odyolog Test Kullanıcı')) throw new Error('reçete içeriği hatalı: ' + t);
   await page.getByTestId('rx-unsigned').waitFor();
+  // Geçerlilik tek anlamlı: son geçerli gün "(dahil)".
+  if (!(await page.getByTestId('rx-valid-until').innerText()).includes('(dahil)')) throw new Error('reçete geçerliliği "(dahil)" yazmıyor');
   await snap(page, 'recete-ice-aktar');
   await page.getByTestId('rx-accept').click();
   await page.getByTestId('ob-consent').click();

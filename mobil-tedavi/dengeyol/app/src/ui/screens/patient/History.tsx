@@ -7,15 +7,21 @@ import { store, useData } from '../../../state/store';
 import type { Episode, EpisodeStatus } from '../../../state/types';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
+import { consentLine } from './consent';
 import {
   assistFallbackText,
   decisionText,
+  doseSummaryText,
   endNoteText,
   maneuverTags,
   priorDiagnosisText,
+  profileRxCode,
+  reportOriginText,
   reportPlainText,
   retestText,
   rxHeaderLine,
+  rxShortcutText,
+  rxShortcutUsed,
   rxValidityText,
   sideCellText,
   STATUS_LABEL,
@@ -93,10 +99,12 @@ function ReportBody({ e }: { e: Episode }) {
   const d = useData();
   const p = d.patient;
   const now = Date.now();
-  const head = rxHeaderLine(p?.prescription);
+  const head = rxHeaderLine(p?.prescription, profileRxCode(p));
   const validity = p?.prescription ? rxValidityText(p.prescription, now) : null;
   const note = e.endNote ? endNoteText(e.endNote) : '';
   const assistFallback = assistFallbackText(e, d.settings);
+  const shortcut = rxShortcutUsed(e, p);
+  const consent = consentLine(p);
   // Büyük yazıda sağdan taşmasın: tablolar yerine satır satır liste (uzun sözcükler de kırılır).
   const wrap = { overflowWrap: 'anywhere' as const };
   return (
@@ -108,7 +116,9 @@ function ReportBody({ e }: { e: Episode }) {
             <strong>{head}</strong>
           </p>
         )}
-        <p className="small muted">Bu rapor hastanın kendi kullanımıyla oluşturulmuştur; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}</p>
+        <p className="small muted" data-testid="report-origin">
+          {reportOriginText(e)}; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}
+        </p>
         <dl className="kv">
           <dt>Atak başlangıcı</dt>
           <dd>{formatDateTimeYear(e.startedAt)}</dd>
@@ -123,6 +133,14 @@ function ReportBody({ e }: { e: Episode }) {
           <dd>{PROTOCOLS[e.protocolId].shortName}</dd>
           <dt>Önceki tanı</dt>
           <dd>{priorDiagnosisText(p)}</dd>
+          {shortcut !== null && (
+            <>
+              <dt>Reçeteli kısa yol</dt>
+              <dd data-testid="report-shortcut">{rxShortcutText(shortcut)}</dd>
+            </>
+          )}
+          <dt>Doz</dt>
+          <dd data-testid="report-dose">{doseSummaryText(e, d, now)}</dd>
           {e.sideConflictNote && (
             <>
               <dt>Taraf uyuşmazlığı</dt>
@@ -139,6 +157,12 @@ function ReportBody({ e }: { e: Episode }) {
             <>
               <dt>Manevrayı yaptıran</dt>
               <dd>{assistFallback}</dd>
+            </>
+          )}
+          {consent && (
+            <>
+              <dt>Onam</dt>
+              <dd data-testid="report-consent">{consent}</dd>
             </>
           )}
         </dl>

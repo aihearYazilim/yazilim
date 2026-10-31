@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { decodePrescription, encodePrescription, fnv1a, PID_MAX_LEN, type Prescription, prescriptionUrl, rxValidUntil } from './prescription';
+import {
+  decodePrescription,
+  encodePrescription,
+  fnv1a,
+  PID_MAX_LEN,
+  type Prescription,
+  prescriptionUrl,
+  RX_VALID_DAYS,
+  rxCode,
+  rxLastValidDay,
+  rxValidAt,
+  rxValidityLabel,
+  rxValidUntil
+} from './prescription';
 
 /** Tarayıcıdaki gibi base64url (Node Buffer'a bağlı kalmasın). */
 const b64u = (json: string) => {
@@ -88,9 +101,38 @@ describe('reçete', () => {
     expect(d.ok && d.value.v).toBe(1);
     expect(decodePrescription(mk({ v: 3, ...base }))).toMatchObject({ ok: false, error: 'VERSION' });
   });
-  it('geçerlilik bitişi: muayene günü + gün sayısı', () => {
+  it('geçerlilik bitişi: muayene günü + gün sayısı (dışlayıcı an)', () => {
     const until = rxValidUntil({ date: '2026-10-30' }, 14);
     expect(until).toBe(new Date('2026-11-13T00:00:00').getTime());
+    expect(rxValidUntil('2026-10-30')).toBe(until);
     expect(rxValidUntil({ date: 'bozuk' }, 14)).toBeNull();
+    expect(rxValidUntil('2026-13-01')).toBeNull();
+  });
+  it('son geçerli gün D+13 (dahil); hasta ve klinisyen metni aynı günü yazar', () => {
+    expect(RX_VALID_DAYS).toBe(14);
+    expect(rxLastValidDay('2026-10-31')?.getTime()).toBe(new Date('2026-11-13T00:00:00').getTime());
+    expect(rxValidityLabel('2026-10-31')).toBe('13 Kasım 2026 tarihine kadar (dahil)');
+    expect(rxValidityLabel({ date: '2026-10-31' }, 'short')).toBe('13.11.2026 tarihine kadar (dahil)');
+    expect(rxValidityLabel('bozuk')).toBeNull();
+    // Ay sonu ve yıl geçişi yerel takvimle.
+    expect(rxValidityLabel('2026-12-25', 'short')).toBe('07.01.2027 tarihine kadar (dahil)');
+  });
+  it('geçerlilik sınırları: D 00:00 geçerli, D+13 23:59 geçerli, D+14 00:00 geçersiz, gelecek tarih geçersiz', () => {
+    const d = '2026-10-17';
+    expect(rxValidAt(d, new Date('2026-10-16T23:59:59').getTime())).toBe(false);
+    expect(rxValidAt(d, new Date('2026-10-17T00:00:00').getTime())).toBe(true);
+    expect(rxValidAt(d, new Date('2026-10-30T23:59:59').getTime())).toBe(true);
+    expect(rxValidAt(d, new Date('2026-10-31T00:00:00').getTime())).toBe(false);
+    expect(rxValidAt('2026-11-02', new Date('2026-10-31T12:00:00').getTime())).toBe(false);
+    expect(rxValidAt('bozuk', Date.now())).toBe(false);
+  });
+  it('reçete kodu: bağlantının sağlama toplamı; çözülen reçeteden yeniden kodlanınca aynı', () => {
+    const tok = encodePrescription({ ...p, pid: 'NO-2611' });
+    const code = rxCode(tok);
+    expect(code).toMatch(/^[0-9a-f]{8}$/);
+    expect(code).toBe(tok.split('.')[1]);
+    const d = decodePrescription(tok);
+    expect(d.ok && rxCode(d.value)).toBe(code);
+    expect(rxCode('bozuk')).toBe('');
   });
 });
