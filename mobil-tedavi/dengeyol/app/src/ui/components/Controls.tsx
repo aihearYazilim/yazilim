@@ -88,12 +88,15 @@ export function choiceSpeech(title: string, options: string[]): string {
   return [title, ...options.map((o, i) => `${ORDINALS[i] ?? `${i + 1}.`}: ${o.replace(/\.+$/, '')}.`)].join(' ');
 }
 
-/** Büyük "Tekrar dinle" düğmesi: metni baştan (öncekini keserek) okur. Ses kapalı/yoksa görünmez. */
-export function ListenAgain({ text, testid = 'listen-again' }: { text: string; testid?: string }) {
+/**
+ * Büyük "Tekrar dinle" düğmesi: metni baştan (öncekini keserek) okur. Ses kapalı/yoksa görünmez. Ekran açılınca kısa hâl
+ * okunuyorsa burada tam hâl verilir; etiket o zaman "Ayrıntıyı dinle" olabilir (kullanıcı turu 3).
+ */
+export function ListenAgain({ text, testid = 'listen-again', label = 'Tekrar dinle' }: { text: string; testid?: string; label?: string }) {
   if (!speech.enabled) return null;
   return (
     <button type="button" className="btn secondary block" onClick={() => speech.speak(text, 'high')} data-testid={testid}>
-      <Icon name="volume" /> Tekrar dinle
+      <Icon name="volume" /> {label}
     </button>
   );
 }
@@ -181,6 +184,8 @@ export function CheckList({
  * Evet/Hayır düğmeleri. `lockKey` değişince düğmeler `lockMs` boyunca pasif kalır: titreyen el ya da çift dokunuş
  * bir sonraki soruyu okunmadan yanıtlamasın. `speak` verilirse soru (lockKey değişince) bir kez okunur ve ilk okunuşta
  * düğmeler ses bitene ya da en çok 2,5 s'ye dek de kilitli kalır (kullanıcı turu 2, k05); yanıt verilince okuma kesilir.
+ * `readLock={false}`: soru yine okunur ama okuma kilidi uygulanmaz (bu kişi aynı metni daha önce yanıtladı; kullanıcı
+ * turu 3, k06). Çift dokunuş kilidi (`lockMs`) her durumda kalır.
  */
 export function YesNo({
   onAnswer,
@@ -189,7 +194,8 @@ export function YesNo({
   noLabel = 'Hayır',
   lockKey,
   lockMs = 600,
-  speak
+  speak,
+  readLock = true
 }: {
   onAnswer: (v: 'yes' | 'no') => void;
   value?: 'yes' | 'no';
@@ -199,10 +205,12 @@ export function YesNo({
   lockMs?: number;
   /** İlk okunuşta okunacak metin (okuma kilidi ve yanıtta susturma). */
   speak?: string;
+  /** Okuma sürerken de kilitle (varsayılan). false: yalnız çift dokunuş kilidi. */
+  readLock?: boolean;
 }) {
   const tapLocked = useTapLock(lockKey, lockMs);
   const reading = useReadLock(speak === undefined ? undefined : lockKey, speak);
-  const locked = tapLocked || reading;
+  const locked = tapLocked || (readLock && reading);
   const click = (v: 'yes' | 'no', el: Element) => {
     if (locked) return;
     rememberTap(el);

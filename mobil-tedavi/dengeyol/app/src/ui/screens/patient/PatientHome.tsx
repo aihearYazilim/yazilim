@@ -16,6 +16,8 @@ import {
   referralFlags,
   rxActive,
   rxFirstEpisode,
+  rxPeriodEpisodes,
+  rxPeriodSummary,
   sameDayReopenable,
   startDose
 } from '../../../state/episodes';
@@ -596,19 +598,22 @@ export function ReferralReason({ episode }: { episode: Episode }) {
   );
 }
 
-/** Reçetenin süresi dolduysa ve o dönemde atak varsa: raporu reçeteyi yazan hekime gönderme hatırlatması (k09). */
-function rxEndReport(d: AppData, now: number): { episodeId: string; by?: string; key: string } | null {
+/** Reçete dönemi raporunun adresi (görünüm: History.tsx; kullanıcı turu 3, k09). */
+const RX_PERIOD_REPORT_PATH = '/hasta/rapor/donem';
+
+/**
+ * Reçetenin süresi dolduysa ve o dönemde atak varsa: dönem raporunu reçeteyi yazan hekime gönderme hatırlatması (k09).
+ * Kart dönemdeki bütün atakları kapsayan raporu açar (yalnız son atağı değil) ve tek satırlık sonucu gösterir.
+ */
+function rxEndReport(d: AppData, now: number): { summary: string; by?: string; key: string } | null {
   const rx = d.patient?.prescription;
   if (!rx || rxActive(d.patient, now)) return null;
-  const issued = new Date(`${rx.date}T00:00:00`).getTime();
-  if (!Number.isFinite(issued) || issued > now) return null;
-  const since = d.episodes.filter((e) => e.startedAt >= issued && e.status !== 'active').sort((a, b) => b.startedAt - a.startedAt);
-  const last = since[0];
-  if (!last) return null;
-  return { episodeId: last.id, by: rx.by, key: `dengeyol:rxReportHidden:${rx.date}:${rx.pid ?? ''}` };
+  const period = rxPeriodEpisodes(d);
+  if (period.length === 0) return null;
+  return { summary: rxPeriodSummary(period), by: rx.by, key: `dengeyol:rxReportHidden:${rx.date}:${rx.pid ?? ''}` };
 }
 
-function RxEndReportCard({ report }: { report: { episodeId: string; by?: string; key: string } }) {
+function RxEndReportCard({ report }: { report: { summary: string; by?: string; key: string } }) {
   const nav = useNavigate();
   const [hidden, setHidden] = useState(() => {
     try {
@@ -632,18 +637,22 @@ function RxEndReportCard({ report }: { report: { episodeId: string; by?: string;
         <Icon name="print" />
         <h3>Reçetenizin süresi doldu</h3>
       </div>
+      <p className="small" data-testid="home-rx-report-summary">
+        <strong>Reçete dönemi:</strong> {report.summary}
+      </p>
       <p className="small">
-        Raporunuzu hekiminize{report.by ? ` (${report.by})` : ''} gönderin: hekiminiz tedavinin işe yarayıp yaramadığını görür.
+        Dönem raporunu hekiminize{report.by ? ` (${report.by})` : ''} gönderin: bütün ataklar tek raporda; hekiminiz tedavinin
+        işe yarayıp yaramadığını görür.
       </p>
       <button
         className="btn secondary block"
         onClick={() => {
           hide();
-          nav(`/hasta/rapor/${report.episodeId}`);
+          nav(RX_PERIOD_REPORT_PATH);
         }}
         data-testid="home-rx-report-open"
       >
-        <Icon name="print" /> Raporu hekime gönder
+        <Icon name="print" /> Dönem raporunu hekime gönder
       </button>
       <button className="btn ghost" onClick={hide}>
         Gönderdim, gizle

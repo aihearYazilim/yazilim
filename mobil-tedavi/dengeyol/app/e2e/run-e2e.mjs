@@ -388,10 +388,15 @@ await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekr
   const q = page.getByTestId('redflag-question');
   const firstId = await q.getAttribute('data-qid');
   await page.locator('.yesno:not([data-locked])').waitFor();
+  const tapBox = await page.getByTestId('yn-yes').boundingBox();
   await page.getByTestId('yn-yes').click();
   await page.getByTestId('redflag-confirm').waitFor();
   await snap(page, 'yanlis-dokunus-onayi');
   await unlocked(page);
+  // Tur 3 (k05, k06): yanıt kartının başlığında yanıt; "Evet, doğru" dokunulan yerle çakışmaz, "Yanlış dokundum" oradadır.
+  if (!/— doğru mu\?$/.test((await page.getByTestId('redflag-confirm-title').innerText()).trim())) throw new Error('onay başlığında yanıt yok');
+  const yesBox = await page.getByTestId('redflag-confirm-yes').boundingBox();
+  if (tapBox && yesBox && yesBox.y < tapBox.y + tapBox.height && tapBox.y < yesBox.y + yesBox.height) throw new Error('"Evet, doğru" dokunulan yerin üstünde');
   await page.getByTestId('redflag-confirm-back').click();
   if ((await q.getAttribute('data-qid')) !== firstId) throw new Error('yanlış dokunuştan sonra aynı soruya dönülmedi');
   await answerRedFlags(page);
@@ -400,6 +405,9 @@ await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekr
   await page.getByTestId('prep').waitFor();
   await page.getByRole('button', { name: 'Bir yakınımla' }).click();
   await page.getByTestId('helper-card').waitFor();
+  // Tur 3: yakını modunda hazırlık maddeleri yardımcıya göre; "Titreşimleri tanı" hazırlıkta açılır (k02, k04).
+  if (!/Hastayı yatağın üzerine oturtun/.test(await page.getByTestId('prep').innerText())) throw new Error('hazırlık maddeleri yakını diline geçmedi');
+  await page.getByTestId('prep-haptic-legend').waitFor();
   await snap(page, 'yardimci-hazirlik');
   await calibrate(page);
   await page.getByTestId('runner').waitFor({ timeout: 30000 });

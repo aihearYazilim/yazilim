@@ -129,6 +129,9 @@ describe('kırmızı bayrak dili (kullanıcı turu 2)', () => {
     for (const w of ['işitme kaybı', 'tıkanma', 'çınlama', 'ağrı', 'akıntı']) expect(e).toContain(w);
     expect(redFlagSpoken(q('same'))).toMatch(/farklı mı\?$/);
     expect(redFlagSpoken(q('same'))).not.toMatch(/BPPV|FARKLI/);
+    // Kullanıcı turu 3 (k09): karşılaştırma ölçütü seste de kalır.
+    expect(redFlagSpoken(q('same'))).toMatch(/yatarken ya da kalkarken başlayan/);
+    expect(redFlagSpoken(q('same'))).toMatch(/saniyeler süren/);
   });
   it('kulak sorusu: KBB değerlendirmesinden sonra nasıl yanıtlanacağı ve hekime sorulacak cümle', () => {
     const e = q('ear');

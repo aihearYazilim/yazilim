@@ -28,6 +28,12 @@ export interface Settings {
    * Yoksa 'short'. Manevra ekranının başlığından değiştirilir.
    */
   clinicianVoice?: 'full' | 'short' | 'off';
+  /**
+   * Bu cihazda yanıtlanmış güvenlik soruları: soru kimliği → soru metninin sürümü (redFlagVersion, state/episodes.ts).
+   * Uzun ilk okunuş kilidi yalnız hiç yanıtlanmamış ya da metni değişmiş soruda uygulanır (kullanıcı turu 3, k06);
+   * çift dokunuş kilidi her zaman kalır. Sorular yine her atakta sorulur.
+   */
+  answeredQuestions?: Record<string, string>;
 }
 
 export interface PatientProfile {
@@ -127,6 +133,12 @@ export interface Episode {
    * trigger: 'turnUnsure' = yatay kanal onayında "Emin değilim".
    */
   subtype?: { at: number; trigger: 'liedown' | 'unsure' | 'turnUnsure'; duration: 'short' | 'mid' | 'unsure' };
+  /**
+   * "Pozisyona gelinemedi" durdurmasında nerede durulduğu (kullanıcı turu 3, k07): hangi test/manevra, taraf ve durulan
+   * adımın kaydı. Taraf testi ve tekrar testi kayıtları başka yerde saklanmadığı için rapor ("baş en çok ~8°, hedef 15–40°")
+   * bunu kullanır. Eski kayıtlarda yok.
+   */
+  unreachableAt?: { at: number; test: 'side' | 'maneuver' | 'retest' | 'practice'; protocolId: ProtocolId; side: Side; record?: StepRecord };
 }
 
 export interface ClinicPatient {
