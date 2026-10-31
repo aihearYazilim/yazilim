@@ -13,6 +13,14 @@
  *
  * Sürümler: v1 ilk biçim. Yeni alanlar isteğe bağlı eklenir (v1 çözücü tanımadığı alanı yok sayar); anlamı değişen bir
  * değişiklik sürümü artırır. Uygulamanın tanımadığı (daha yeni) sürüm "uygulamayı güncelleyin" hatasıyla reddedilir.
+ *
+ * v2 (kullanıcı turu 6; k09, k02, k10): adım bayraklarına "yüzüstünden gelme" (`proneArrival`, 9. bit) ve atağa testte
+ * durdurma kayıtları (`testStops`, "y" anahtarı) eklendi. v1 çözücü 9. biti geçersiz sayar (FIELDS: "eksik ya da geçersiz
+ * bilgi") ve "y"yi sessizce atar; bu yüzden ikisi ancak sürüm 2 ile yazılır. Kodlayıcı v2'yi YALNIZ bu bilgilerden biri
+ * bağlantıya girecekse yazar; değilse bağlantı bayt bayt v1'dir. Gerekçe: muayenehanedeki eski klinisyen uygulamaları
+ * bilinmeyen sürümü reddeder; raporların çoğunda (yüzüstünden gelme ve testte durdurma olmayan) eski sürüm de raporu
+ * okumaya devam eder. v2'ye özgü bilgi varsa eski sürüm "uygulamayı güncelleyin" der; bu, bilginin sessizce kaybolmasından
+ * iyidir (k09 #4). Bu sürüm v1 ve v2'yi okur.
  */
 import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
@@ -21,9 +29,10 @@ import type { SideDecision, SideTestResult } from './safety';
 // Yalnız tür içe aktarımı (çalışma zamanında core → state bağımlılığı yok).
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, RetestLog } from '../state/types';
 
-export const REPORT_SHARE_VERSION = 1;
+/** Bu uygulamanın yazabildiği en yeni sürüm (v2'ye özgü bilgi yoksa v1 yazılır: `homeReportVersion`). */
+export const REPORT_SHARE_VERSION = 2;
 /** Bu uygulamanın çözebildiği sürümler. */
-const SUPPORTED_VERSIONS = [1];
+const SUPPORTED_VERSIONS = [1, 2];
 /** Üretilen bağlantının hedef üst sınırı (karakter): QR (hata düzeltme L) telefon ekranından rahat okunsun. */
 export const REPORT_TOKEN_BUDGET = 1400;
 /** Çözücünün kabul ettiği en uzun bağlantı (karakter); daha uzunu bozuk/elle üretilmiş sayılır. */
@@ -35,6 +44,7 @@ const MAX_MANEUVERS = 60;
 const MAX_SIDE_TESTS = 20;
 const MAX_RETESTS = 20;
 const MAX_STEPS = 12;
+const MAX_TEST_STOPS = 20;
 const NOTE_MAX = 60;
 const MIN = 60_000;
 
@@ -48,10 +58,14 @@ export type StepFlag =
   | 'wrongSide'
   | 'borderline'
   | 'unreachable'
-  | 'manual';
+  | 'manual'
+  /** v2: hedef açıya yüzüstünden geçilerek gelindi, kabul edilmedi. */
+  | 'proneArrival';
 
 /** Bayrakların kodlamadaki bit sırası (değiştirilmez; yeni bayrak sona eklenir). */
-const FLAG_BITS: StepFlag[] = ['endedEarly', 'slowTransition', 'movedBeforeCommand', 'noSitThrough', 'wrongSide', 'borderline', 'unreachable', 'manual'];
+const FLAG_BITS: StepFlag[] = ['endedEarly', 'slowTransition', 'movedBeforeCommand', 'noSitThrough', 'wrongSide', 'borderline', 'unreachable', 'manual', 'proneArrival'];
+/** v1'deki bayrak sayısı (v1 bağlantısında daha yüksek bit geçersizdir). */
+const V1_FLAG_COUNT = 8;
 
 export interface HomeStep {
   /**
@@ -103,6 +117,9 @@ export interface HomeRetest {
   durationSec: number | null;
 }
 
+/** v2: taraf testi ya da tekrar testi "Kendimi kötü hissediyorum" ile durduruldu (Episode.testStops). */
+export type HomeTestStop = NonNullable<Episode['testStops']>[number];
+
 export interface HomeEpisode {
   startedAt: number;
   endedAt?: number;
@@ -113,6 +130,8 @@ export interface HomeEpisode {
   sideTests: HomeSideTest[];
   maneuvers: HomeManeuver[];
   retests: HomeRetest[];
+  /** v2: testte durdurmalar (yalnız varsa; v1 bağlantısında yok). */
+  testStops?: HomeTestStop[];
 }
 
 export interface HomeReport {
@@ -206,7 +225,20 @@ export function homeEpisodeOf(e: Episode): HomeEpisode {
   const note = cleanNote(e.endNote);
   if (note) out.endNote = note;
   if (e.rxShortcut) out.rxShortcut = true;
+  const stops = (e.testStops ?? []).slice(-MAX_TEST_STOPS).map((t) => ({ at: t.at, test: t.test, side: t.side, reason: t.reason }));
+  if (stops.length) out.testStops = stops;
   return out;
+}
+
+/**
+ * Raporun bağlantıya yazılacağı sürüm: v2'ye özgü bilgi (testte durdurma ya da, adım ayrıntısı bağlantıdaysa, yüzüstünden
+ * gelme bayrağı) varsa 2, yoksa 1 (eski klinisyen uygulamaları okuyabilsin; bkz. dosya başı).
+ */
+export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped'>): number {
+  const v2 = r.episodes.some(
+    (e) => (e.testStops?.length ?? 0) > 0 || (!r.stepsDropped && e.maneuvers.some((m) => m.steps?.some((st) => st.flags.includes('proneArrival'))))
+  );
+  return v2 ? 2 : 1;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -246,7 +278,7 @@ export function buildHomeReport(d: AppData, opts: { now?: number; focusEpisodeId
   const p = d.patient;
   const rx = p?.prescription;
   const out: HomeReport = {
-    v: REPORT_SHARE_VERSION,
+    v: 1,
     // Dakikaya yuvarlanır (bağlantıdaki duyarlık): ekranda gösterilen rapor çözülenle aynı olsun.
     generatedAt: toMin(now) * MIN,
     period: { from: toMin(sel.period.from) * MIN, to: toMin(sel.period.to) * MIN },
@@ -261,6 +293,7 @@ export function buildHomeReport(d: AppData, opts: { now?: number; focusEpisodeId
     if (rx.pid) out.pid = rx.pid;
     out.rx = { date: rx.date, side: rx.side, maneuver: rx.maneuver, perDay: rx.perDay, days: rx.days };
   }
+  out.v = homeReportVersion(out);
   return out;
 }
 
@@ -310,6 +343,7 @@ const STOP_CODE: Record<StopReason, string> = {
 };
 const AFTER_CODE: Record<AfterSymptoms, string> = { none: 'n', mild: 'm', severe: 's', neuro: 'x' };
 const KIND_CODE: Record<RetestLog['kind'], string> = { early: 'e', morning: 'm', other: 'o' };
+const TEST_CODE: Record<HomeTestStop['test'], string> = { side: 's', retest: 'r' };
 const REFER_CODE: Record<Extract<SideDecision, { kind: 'REFER' }>['reason'], string> = {
   ATYPICAL_LONG: 'FL',
   BOTH_SIDES: 'FB',
@@ -322,6 +356,8 @@ const STATUS_OF = invert(STATUS_CODE);
 const STOP_OF = invert(STOP_CODE);
 const AFTER_OF = invert(AFTER_CODE);
 const KIND_OF = invert(KIND_CODE);
+const TEST_OF = invert(TEST_CODE);
+const TEST_STOP_OF: Record<string, HomeTestStop['reason']> = { U: 'USER_FEELS_UNWELL' };
 const REFER_OF = invert(REFER_CODE);
 
 const toMin = (t: number) => Math.floor(t / MIN);
@@ -352,6 +388,8 @@ interface WireEpisode {
   t?: [number, WireCell, WireCell, string][];
   m?: WireManeuver[];
   q?: [number, string, Side, 0 | 1, number | null, number | null][];
+  /** v2: testte durdurma [başa göre dakika, 's' taraf testi / 'r' tekrar testi, taraf, neden kodu ('U')]. */
+  y?: [number, string, Side, string][];
 }
 interface Wire {
   v: number;
@@ -419,11 +457,12 @@ function wireEpisode(e: HomeEpisode, withSteps: boolean): WireEpisode {
   if (e.sideTests.length) w.t = e.sideTests.map((t) => [off(t.at, b), wireCell(t.R), wireCell(t.L), wireDecision(t.decision)]);
   if (e.maneuvers.length) w.m = e.maneuvers.map((m) => wireManeuver(m, b, withSteps));
   if (e.retests.length) w.q = e.retests.map((r) => [off(r.at, b), KIND_CODE[r.kind], r.side, r.vertigo ? 1 : 0, r.latencySec, r.durationSec]);
+  if (e.testStops?.length) w.y = e.testStops.map((t) => [off(t.at, b), TEST_CODE[t.test], t.side, STOP_CODE[t.reason]]);
   return w;
 }
 
 function toWire(r: HomeReport): Wire {
-  const w: Wire = { v: REPORT_SHARE_VERSION, g: toMin(r.generatedAt), a: toMin(r.period.from), b: toMin(r.period.to), e: [] };
+  const w: Wire = { v: homeReportVersion(r), g: toMin(r.generatedAt), a: toMin(r.period.from), b: toMin(r.period.to), e: [] };
   if (r.pid) w.p = r.pid.slice(0, PID_MAX_LEN);
   if (r.rxCode) w.c = r.rxCode;
   if (r.rx) w.r = [r.rx.date, r.rx.side, r.rx.maneuver === 'epley' ? 'e' : 's', r.rx.perDay, r.rx.days];
@@ -483,15 +522,22 @@ export function encodeHomeReport(r: HomeReport, budget: number = REPORT_TOKEN_BU
     const eps = cur.episodes.map((e, j) => (j === i ? { ...e, maneuvers: e.maneuvers.slice(1) } : e));
     retry({ ...cur, episodes: eps, maneuversOmitted: cur.maneuversOmitted + 1 });
   }
-  while (!fits() && cur.episodes.some((e) => e.sideTests.length > 1 || e.retests.length > 1)) {
-    const eps = cur.episodes.map((e) => ({
-      ...e,
-      sideTests: e.sideTests.length > 1 ? e.sideTests.slice(1) : e.sideTests,
-      retests: e.retests.length > 1 ? e.retests.slice(1) : e.retests
-    }));
+  while (!fits() && cur.episodes.some((e) => e.sideTests.length > 1 || e.retests.length > 1 || (e.testStops?.length ?? 0) > 1)) {
+    const eps = cur.episodes.map((e) => {
+      const next: HomeEpisode = {
+        ...e,
+        sideTests: e.sideTests.length > 1 ? e.sideTests.slice(1) : e.sideTests,
+        retests: e.retests.length > 1 ? e.retests.slice(1) : e.retests
+      };
+      if (e.testStops && e.testStops.length > 1) next.testStops = e.testStops.slice(1);
+      return next;
+    });
     retry({ ...cur, episodes: eps });
   }
-  return { token, report: cur, truncated: cur !== r };
+  const truncated = cur !== r;
+  // Dönen rapor bağlantıdaki sürümü taşır (adım ayrıntısı çıkınca yüzüstü bayrağı da çıkar; v2 gerekmeyebilir).
+  const v = homeReportVersion(cur);
+  return { token, report: cur.v === v ? cur : { ...cur, v }, truncated };
 }
 
 /** Uygulamanın kendi adresine göre ev raporu bağlantısı (klinisyen modunda açılır). */
@@ -520,7 +566,8 @@ export const REPORT_DECODE_ERROR_TEXT: Record<ReportDecodeError, string> = {
   SIZE: 'Hasta raporu bağlantısı beklenenden uzun; bozulmuş ya da başka bir uygulamaca üretilmiş olabilir.',
   CHECKSUM: 'Hasta raporu bağlantısı bozulmuş ya da eksik. QR kodu yeniden okutun ya da hastadan bağlantıyı yeniden isteyin.',
   KIND: 'Bu bir ev reçetesi bağlantısı, hasta raporu değil.',
-  VERSION: 'Bu rapor uygulamanın daha yeni bir sürümüyle oluşturulmuş. Uygulamayı güncelleyin.',
+  VERSION:
+    "Bu hasta raporu DengeYol'un daha yeni bir sürümüyle oluşturulmuş; bu sürüm okuyamıyor. Uygulamayı güncelleyin: internete bağlıyken uygulamayı kapatıp yeniden açın (ya da sayfayı yenileyin), sonra QR kodu yeniden okutun.",
   FIELDS: 'Hasta raporunda eksik ya da geçersiz bilgi var. Hastadan raporu yeniden göstermesini isteyin.'
 };
 
@@ -572,10 +619,10 @@ function readDecision(x: unknown): SideDecision {
   return { kind: 'REFER', reason: code(REFER_OF, x) };
 }
 
-function readStep(x: unknown, protocolId: ProtocolId, index: number, side: Side | null): HomeStep {
+function readStep(x: unknown, protocolId: ProtocolId, index: number, side: Side | null, v: number): HomeStep {
   if (!Array.isArray(x) || x.length < 2 || x.length === 4 || x.length > 6) fail();
   const a = x as unknown[];
-  const flagsN = int(a[1], 0, (1 << FLAG_BITS.length) - 1);
+  const flagsN = int(a[1], 0, (1 << (v >= 2 ? FLAG_BITS.length : V1_FLAG_COUNT)) - 1);
   const tr = optInt(a[2], 0, 36000);
   const hasV = a.length >= 5;
   return {
@@ -609,7 +656,7 @@ function readState(x: unknown): Pick<HomeManeuver, 'completed' | 'stopReason' | 
   return out;
 }
 
-function readManeuver(x: unknown, base: number): HomeManeuver {
+function readManeuver(x: unknown, base: number, v: number): HomeManeuver {
   if (!Array.isArray(x) || x.length < 6 || x.length > 7) fail();
   const a = x as unknown[];
   if (typeof a[1] !== 'string') fail();
@@ -627,14 +674,14 @@ function readManeuver(x: unknown, base: number): HomeManeuver {
     pauses: int(a[4], 0, 999),
     manual: st.manual,
     stepCount: int(a[5], 0, 99),
-    steps: a.length === 7 ? arr(a[6], MAX_STEPS).map((s, i) => readStep(s, protocolId, i, mSide)) : []
+    steps: a.length === 7 ? arr(a[6], MAX_STEPS).map((s, i) => readStep(s, protocolId, i, mSide, v)) : []
   };
   if (st.assisted !== undefined) out.assisted = st.assisted;
   if (st.afterSymptoms !== undefined) out.afterSymptoms = st.afterSymptoms;
   return out;
 }
 
-function readEpisode(x: unknown, stepsDropped: boolean): HomeEpisode {
+function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode {
   if (!isObj(x)) fail();
   const o = x as Record<string, unknown>;
   const startedAt = int(o.s, MIN_LO, MIN_HI) * MIN;
@@ -648,7 +695,7 @@ function readEpisode(x: unknown, stepsDropped: boolean): HomeEpisode {
       return { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, R: readCell(a[1]), L: readCell(a[2]), decision: readDecision(a[3]) };
     }),
     maneuvers: arr(o.m, MAX_MANEUVERS).map((m) => {
-      const hm = readManeuver(m, startedAt);
+      const hm = readManeuver(m, startedAt, v);
       return stepsDropped ? { ...hm, steps: null } : hm;
     }),
     retests: arr(o.q, MAX_RETESTS).map((r) => {
@@ -673,17 +720,27 @@ function readEpisode(x: unknown, stepsDropped: boolean): HomeEpisode {
     if (o.k !== 1) fail();
     out.rxShortcut = true;
   }
+  // v1 çözücü "y"yi tanımaz ve yok sayar; burada da yalnız v2'de okunur.
+  if (v >= 2 && o.y !== undefined) {
+    const stops = arr(o.y, MAX_TEST_STOPS).map((t): HomeTestStop => {
+      if (!Array.isArray(t) || t.length !== 4) fail();
+      const a = t as unknown[];
+      return { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, test: code(TEST_OF, a[1]), side: side(a[2]), reason: code(TEST_STOP_OF, a[3]) };
+    });
+    if (stops.length) out.testStops = stops;
+  }
   return out;
 }
 
 function readWire(o: Record<string, unknown>): HomeReport {
   if (!Array.isArray(o.e)) fail();
   const stepsDropped = o.x === undefined ? false : o.x === 1 ? true : fail();
+  const v = o.v as number;
   const out: HomeReport = {
-    v: o.v as number,
+    v,
     generatedAt: int(o.g, MIN_LO, MIN_HI) * MIN,
     period: { from: int(o.a, MIN_LO, MIN_HI) * MIN, to: int(o.b, MIN_LO, MIN_HI) * MIN },
-    episodes: arr(o.e, MAX_EPISODES).map((e) => readEpisode(e, stepsDropped)),
+    episodes: arr(o.e, MAX_EPISODES).map((e) => readEpisode(e, stepsDropped, v)),
     stepsDropped,
     episodesOmitted: o.o === undefined ? 0 : int(o.o, 1, 9999),
     maneuversOmitted: o.q === undefined ? 0 : int(o.q, 1, 9999)

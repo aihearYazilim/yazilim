@@ -12,6 +12,7 @@ import {
   homeRetestText,
   homeSideTestText,
   homeStepText,
+  homeTestStopText,
   homeTruncationText,
   shortDate
 } from './examReport';
@@ -80,7 +81,7 @@ export function HomeReportView({
       )}
       {printCompact && (
         <p className="small print-only" data-testid={`${testId}-print-note`}>
-          Hasta beyanıdır; klinik muayene bulgusu yerine geçmez. Atak, test ve manevra ayrıntısı uygulamadaki muayene raporundadır.
+          Hasta beyanıdır; muayene bulgusu yerine geçmez. Atak/test/manevra ayrıntısı uygulamadaki raporda ve HBYS notunda.
         </p>
       )}
       {report.episodes.map((e, i) => (
@@ -117,7 +118,13 @@ export function HomeReportView({
                 Tekrar test {time(r.at)}: {homeRetestText(r)}
               </li>
             ))}
-            {e.sideTests.length + e.maneuvers.length + e.retests.length === 0 && <li>Test ya da manevra kaydı yok.</li>}
+            {(e.testStops ?? []).map((t, j) => (
+              // Biçim v2 (kullanıcı turu 6): "Kendimi kötü hissediyorum" ile durdurulan test; yarım test sonuç sayılmaz.
+              <li key={`y${j}`} data-testid={`${testId}-test-stop`}>
+                Testte durdurma {time(t.at)}: {homeTestStopText(t)}
+              </li>
+            ))}
+            {e.sideTests.length + e.maneuvers.length + e.retests.length + (e.testStops?.length ?? 0) === 0 && <li>Test ya da manevra kaydı yok.</li>}
           </ul>
         </div>
       ))}
