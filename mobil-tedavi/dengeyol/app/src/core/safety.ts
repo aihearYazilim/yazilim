@@ -23,20 +23,39 @@ export interface RedFlagQuestion {
   noLabel?: string;
 }
 
+/**
+ * Soru dili (kullanıcı turu 1): her soru olumlu kurulur ve "Evet" her zaman "bu belirti bende var" demektir (çift olumsuz
+ * yok); uzun sorular kısa sorulara bölünür (bölünen soru, eski sorunun her belirtisini korur). Güvenli yanıt hep "Hayır"dır.
+ */
 export const RED_FLAGS: RedFlagQuestion[] = [
   {
     id: 'continuous',
-    text: 'Hiç kıpırdamadan dururken de etrafın dönmesi ya da şiddetli dengesizlik saatlerdir sürüyor mu?',
+    text: 'Hiç kıpırdamadan otururken ya da yatarken bile etrafınız saatlerdir dönüyor mu, ya da saatlerdir ayakta duramayacak kadar dengesiz misiniz? (Ataktan sonra kalan hafif sersemlik sayılmaz.)',
     stopsOn: 'yes',
     action: 'emergency',
     why: 'BPPV baş dönmesi yalnızca baş hareketiyle başlar ve saniyeler sürer. Sürekli baş dönmesi başka, acil bir nedene bağlı olabilir.'
   },
+  // Eski tek "nörolojik belirti" sorusu üçe bölündü (çift görme/konuşma/yutma · güçsüzlük/uyuşma · yürüyememe).
   {
     id: 'neuro',
-    text: 'Çift görme, konuşma ya da yutma güçlüğü, yüzünüzde, kolunuzda ya da bacağınızda güçsüzlük veya uyuşma, ya da yürüyememe var mı?',
+    text: 'Gözünüz çift görüyor mu, ya da konuşmanız veya yutmanız bozuldu mu?',
     stopsOn: 'yes',
     action: 'emergency',
-    why: 'Bu belirtiler inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
+    why: 'Çift görme, konuşma ya da yutma bozukluğu inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
+  },
+  {
+    id: 'neuroWeak',
+    text: 'Yüzünüzde, kolunuzda ya da bacağınızda güçsüzlük ya da uyuşma var mı?',
+    stopsOn: 'yes',
+    action: 'emergency',
+    why: 'Yüzde, kolda ya da bacakta güçsüzlük veya uyuşma inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
+  },
+  {
+    id: 'neuroGait',
+    text: 'Yürüyemeyecek kadar dengeniz bozuldu mu?',
+    stopsOn: 'yes',
+    action: 'emergency',
+    why: 'Yürüyemeyecek kadar denge bozukluğu inme gibi acil bir durumun işareti olabilir. Hemen 112\'yi arayın.'
   },
   {
     id: 'headache',
@@ -53,10 +72,20 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     why: 'Bu belirtiler kalple ilgili olabilir ve acil değerlendirme gerektirir.'
   },
   {
+    // Ortostatik hipotansiyon/presenkop: yaşlıda en sık BPPV taklitçisi (AAO-HNSF 2017 ayırıcı tanı; Bhattacharyya ve ark.
+    // Otolaryngol Head Neck Surg 2017;156(3S):S1–S47).
+    id: 'orthostatic',
+    text: 'Ayağa kalkınca gözleriniz kararıyor ya da bayılacak gibi oluyor musunuz?',
+    stopsOn: 'yes',
+    action: 'doctor',
+    why: 'Ayağa kalkınca göz kararması ve bayılacak gibi olma, tansiyon düşmesi ya da kalp ritmiyle ilgili olabilir; kristal oynamasına (BPPV) bağlı değildir. Birkaç gün içinde aile hekiminize ya da dahiliye hekimine başvurun; o zamana kadar yavaş kalkın ve bir yere tutunun. Bayılırsanız ya da göğüs ağrısı olursa hemen 112\'yi arayın.'
+  },
+  {
     id: 'anticoag',
-    text: 'Kan sulandırıcı ilaç kullanıyorsanız: yeni bir baş ağrınız var mı ya da yakın zamanda başınızı çarptınız mı?',
+    text: 'Kan sulandırıcı ilaç kullanıyorsanız (aspirin/Coraspin, Plavix, Coumadin, Xarelto, Eliquis, Lixiana, Pradaxa gibi): yeni bir baş ağrınız var mı ya da yakın zamanda başınızı çarptınız mı?',
     stopsOn: 'yes',
     action: 'emergency',
+    noLabel: 'Hayır / bu ilaçları kullanmıyorum',
     why: 'Kan sulandırıcı kullananlarda yeni baş ağrısı ya da baş çarpması kanama açısından acil değerlendirilmelidir.'
   },
   {
@@ -75,10 +104,10 @@ export const RED_FLAGS: RedFlagQuestion[] = [
   },
   {
     id: 'ear',
-    text: 'Ani işitme kaybı, yeni başlayan kulak çınlaması, kulak ağrısı ya da kulak akıntısı var mı?',
+    text: 'Bir kulağınızda YENİ ya da ani başlayan işitme kaybı, dolgunluk (tıkanma), çınlama, kulak ağrısı ya da kulak akıntısı var mı? (Uzun süredir olan ve değişmeyen çınlama sayılmaz.)',
     stopsOn: 'yes',
     action: 'doctor',
-    why: 'Ani işitme kaybı ya da kulak belirtileri BPPV dışı bir kulak sorununu gösterebilir. Ani işitme kaybı aynı gün değerlendirilmelidir.'
+    why: 'Yeni kulak belirtileri kristal oynaması (BPPV) dışında bir kulak sorununu gösterebilir. Ani işitme kaybı ya da yeni kulak dolgunluğu varsa BUGÜN bir KBB hekimine ya da KBB hekimi olan bir hastanenin acil servisine başvurun: erken tedavi işitmeyi kurtarabilir. Yalnız yeni çınlama, ağrı ya da akıntı varsa birkaç gün içinde KBB hekimine başvurun ve bu belirtiyi söyleyin. Manevrayı KBB değerlendirmesinden sonra yapın.'
   },
   {
     id: 'neck',
@@ -88,18 +117,17 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     why: 'Yakın zamanda boyun travması olanlarda baş-boyun manevraları güvenli olmayabilir.'
   },
   {
+    // Olumlu kurulur ("…sıvı alamıyor musunuz?" sorusunda "Hayır" iki anlama gelebiliyordu).
     id: 'fever',
-    text: 'Bugün ateşiniz var mı ya da kusma nedeniyle hiç sıvı alamıyor musunuz?',
+    text: 'Bugün ateşiniz var mı, ya da içtiğiniz suyu bile kusuyor musunuz?',
     stopsOn: 'yes',
-    yesLabel: 'Evet',
-    noLabel: 'Hayır',
     action: 'doctor',
-    why: 'Ateş ya da sıvı alamayacak kadar kusma, BPPV dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir.'
+    why: 'Ateş ya da su bile içilemeyecek kadar kusma, kristal oynaması (BPPV) dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir. Bugün hekiminize ya da acil servise başvurun.'
   },
   {
     id: 'same',
     // Soru "farklı mı" diye sorulur: böylece her soruda güvenli yanıt "Hayır" olur (alışkanlıkla yanlış basmayı önler).
-    text: 'Bu baş dönmesi, daha önce hekiminizin BPPV tanısı koyduğu baş dönmesinden FARKLI mı? (BPPV: yatarken, yatakta dönerken ya da yukarı bakarken başlayan, kısa süren dönme hissi)',
+    text: 'Bu baş dönmesi, hekiminizin daha önce "kristal oynaması (BPPV)" dediği baş dönmesinden FARKLI mı? Kristal oynamasında dönme hissi yatarken, yataktan kalkarken, yatakta yana dönerken ya da yukarı bakarken başlar ve kısa sürer.',
     stopsOn: 'yes',
     action: 'doctor',
     yesLabel: 'Evet, farklı',

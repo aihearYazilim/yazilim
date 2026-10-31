@@ -1,26 +1,75 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useState, type ReactNode } from 'react';
+import { speech } from '../../platform/speech';
+import { Icon } from './Icon';
 
+/** Kilit süresince düğmeler soluk görünür: dokunuşun neden boşa gittiği anlaşılsın. */
+const LOCKED_STYLE = { opacity: 0.55, transition: 'opacity 0.2s' } as const;
+
+/**
+ * Dokunuş kilidi: `lockKey` değişince (yeni soru/ekran) `lockMs` boyunca true. Titreyen el ya da çift dokunuşun ikincisi
+ * bir sonraki soruyu okunmadan yanıtlamasın. lockKey undefined → kilit yok.
+ */
+export function useTapLock(lockKey: string | number | undefined, lockMs: number): boolean {
+  const [locked, setLocked] = useState(lockKey !== undefined);
+  // Boyamadan önce kilitlenir: yeni soru ekranda görünürken arada kilitsiz bir an kalmasın.
+  useLayoutEffect(() => {
+    if (lockKey === undefined) return;
+    setLocked(true);
+    const t = setTimeout(() => setLocked(false), lockMs);
+    return () => clearTimeout(t);
+  }, [lockKey, lockMs]);
+  return locked;
+}
+
+/** Seçenekli soru ekranının sesli metni: başlık ve sırayla seçenekler ("Birinci: … İkinci: …"). */
+const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci', 'Altıncı'];
+export function choiceSpeech(title: string, options: string[]): string {
+  return [title, ...options.map((o, i) => `${ORDINALS[i] ?? `${i + 1}.`}: ${o.replace(/\.+$/, '')}.`)].join(' ');
+}
+
+/** Büyük "Tekrar dinle" düğmesi: metni baştan (öncekini keserek) okur. Ses kapalı/yoksa görünmez. */
+export function ListenAgain({ text, testid = 'listen-again' }: { text: string; testid?: string }) {
+  if (!speech.enabled) return null;
+  return (
+    <button type="button" className="btn secondary block" onClick={() => speech.speak(text, 'high')} data-testid={testid}>
+      <Icon name="volume" /> Tekrar dinle
+    </button>
+  );
+}
+
+/**
+ * Seçenek listesi. `lockKey` verilirse Evet/Hayır'daki gibi yeni ekranda `lockMs` boyunca dokunuş kilidi (çift dokunuşun
+ * ikincisi sonraki soruyu görmeden yanıtlamasın).
+ */
 export function Choice<T extends string>({
   options,
   value,
   onChange,
-  name
+  name,
+  lockKey,
+  lockMs = 800
 }: {
   options: { value: T; label: ReactNode; sub?: ReactNode }[];
   value: T | null | undefined;
   onChange: (v: T) => void;
   name: string;
+  lockKey?: string | number;
+  lockMs?: number;
 }) {
+  const locked = useTapLock(lockKey, lockMs);
   return (
-    <div className="choices" role="radiogroup" aria-label={name}>
+    <div className="choices" role="radiogroup" aria-label={name} data-locked={locked || undefined} style={locked ? LOCKED_STYLE : undefined}>
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          aria-disabled={locked || undefined}
           className="choice"
-          onClick={() => onChange(o.value)}
+          onClick={() => {
+            if (!locked) onChange(o.value);
+          }}
         >
           <span className="dot" />
           <span>
@@ -80,18 +129,12 @@ export function YesNo({
   lockKey?: string | number;
   lockMs?: number;
 }) {
-  const [locked, setLocked] = useState(lockKey !== undefined);
-  useEffect(() => {
-    if (lockKey === undefined) return;
-    setLocked(true);
-    const t = setTimeout(() => setLocked(false), lockMs);
-    return () => clearTimeout(t);
-  }, [lockKey, lockMs]);
+  const locked = useTapLock(lockKey, lockMs);
   const click = (v: 'yes' | 'no') => {
     if (!locked) onAnswer(v);
   };
   return (
-    <div className="yesno" data-locked={locked || undefined}>
+    <div className="yesno" data-locked={locked || undefined} style={locked ? LOCKED_STYLE : undefined}>
       <button
         type="button"
         className={`btn xl ${value === 'yes' ? 'primary' : 'secondary'}`}

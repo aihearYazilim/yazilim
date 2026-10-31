@@ -94,6 +94,11 @@ export interface Episode {
   status: EpisodeStatus;
   endedAt?: number;
   endNote?: string;
+  /**
+   * Taraf testi, hastanın kurulumda girdiği hekim tanısındaki taraftan farklı çıktıysa açıklama (rapora yazılır). Yakın
+   * tarihli tanıda atak SIDE_CONFLICT ile yönlendirilir; eski tanıda uyarılır ve test tarafına manevra yapılır.
+   */
+  sideConflictNote?: string;
 }
 
 export interface ClinicPatient {
