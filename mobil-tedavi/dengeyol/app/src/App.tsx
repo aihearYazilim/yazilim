@@ -6,6 +6,7 @@ import { closeStaleEpisodes } from './state/episodes';
 import { store, useData } from './state/store';
 import { ErrorBoundary } from './ui/components/ErrorBoundary';
 import { SimPanel } from './ui/components/SimPanel';
+import { SpeechHush } from './ui/components/SpeechHush';
 import { About } from './ui/screens/About';
 import { ClinicianHome } from './ui/screens/clinician/ClinicianHome';
 import { Exam } from './ui/screens/clinician/Exam';
@@ -72,6 +73,7 @@ export function App() {
         </Routes>
       </HashRouter>
       <SimPanel />
+      <SpeechHush />
     </MotionProvider>
     </ErrorBoundary>
   );
