@@ -9,11 +9,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { rxCode } from '../../../core/prescription';
 import { decodeHomeReport, extractReportToken, homeReportId, REPORT_DECODE_ERROR_TEXT } from '../../../core/reportShare';
 import { localDayKey } from '../../../core/safety';
+import { isStandalone } from '../../../platform/reminders';
 import { formatDateTime } from '../../../state/episodes';
 import { store, uid, useData } from '../../../state/store';
 import type { ClinicExam, ClinicPatient, HomeReportRecord } from '../../../state/types';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
+import { looksLikeRxLink, reportPasteErrorText } from './examReport';
 import { HomeReportView } from './HomeReportView';
 
 const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
@@ -22,7 +24,8 @@ const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
 export function ReportPaste() {
   const nav = useNavigate();
   const [v, setV] = useState('');
-  const [err, setErr] = useState(false);
+  /** Ret metni (açılamayan yapıştırma); null: hata yok. */
+  const [err, setErr] = useState<string | null>(null);
   return (
     <div className="stack" style={{ gap: 8 }}>
       <label htmlFor="hrpaste">Hastanın gönderdiği rapor bağlantısını yapıştırın:</label>
@@ -33,7 +36,7 @@ export function ReportPaste() {
           value={v}
           onChange={(e) => {
             setV(e.target.value);
-            setErr(false);
+            setErr(null);
           }}
           placeholder="https://…#/odyolog/ev-raporu/…"
           data-testid="hr-paste"
@@ -43,14 +46,18 @@ export function ReportPaste() {
           onClick={() => {
             const t = extractReportToken(v);
             if (t) nav(`/odyolog/ev-raporu/${t}`);
-            else setErr(true);
+            else setErr(reportPasteErrorText(v));
           }}
           data-testid="hr-paste-open"
         >
           Aç
         </button>
       </div>
-      {err && <span className="small" style={{ color: 'var(--danger)' }}>Bu bir hasta raporu bağlantısına benzemiyor.</span>}
+      {err && (
+        <span className="small" style={{ color: 'var(--danger)' }} role="alert" data-testid="hr-paste-error" data-kind={looksLikeRxLink(v) ? 'rx' : 'other'}>
+          {err}
+        </span>
+      )}
     </div>
   );
 }
@@ -141,16 +148,7 @@ export function ReportImport() {
           <span>Bu sayfa hekiminiz ya da odyoloğunuz içindir. Raporunuzu kendi telefonunuzdaki QR koddan ona okutun.</span>
         </div>
       ) : role !== 'clinician' ? (
-        <div className="card stack">
-          <p className="small">Raporu bir muayeneye eklemek için bu telefonda klinisyen modunu açın.</p>
-          <button
-            className="btn primary"
-            onClick={() => store.update((x) => ({ ...x, settings: { ...x.settings, role: 'clinician' } }))}
-            data-testid="hr-become-clinician"
-          >
-            Klinisyen modunda devam et
-          </button>
-        </div>
+        <NoClinicianHere />
       ) : already ? (
         <div className="notice info" data-testid="hr-already">
           <Icon name="check" />
@@ -234,5 +232,69 @@ export function ReportImport() {
         </div>
       )}
     </Screen>
+  );
+}
+
+/**
+ * Bu tarayıcıda klinisyen kaydı yok (kullanıcı turu 4, k08). iPhone'da QR kamerayla okutulunca bağlantı Safari'de açılır;
+ * ana ekrana eklenmiş uygulamanın kayıtları Safari'den ayrıdır. Burada klinisyen modunu açmak ikinci, boş bir kayıt açar:
+ * önce bağlantıyı kopyalayıp uygulamadaki "Hastanın ev raporu" alanına yapıştırma yolu söylenir.
+ */
+function NoClinicianHere() {
+  const [copied, setCopied] = useState<null | 'ok' | 'fail'>(null);
+  // Uygulamanın kendisinde (ana ekrandan) açıldıysa kopyalama yolu anlamsızdır: yalnız klinisyen modunu açma.
+  const standalone = isStandalone();
+  const url = window.location.href;
+  const copy = () => {
+    const p = navigator.clipboard?.writeText(url);
+    if (!p) {
+      setCopied('fail');
+      return;
+    }
+    p.then(
+      () => setCopied('ok'),
+      () => setCopied('fail')
+    );
+  };
+  return (
+    <div className="card stack" data-testid="hr-no-clinician">
+      {!standalone && (
+        <>
+          <p data-testid="hr-copy-hint">
+            <strong>DengeYol'u ana ekrandan kullanıyorsanız</strong> bağlantıyı kopyalayıp uygulamadaki "Hastanın ev raporu" alanına
+            yapıştırın. Ana ekrandaki uygulamanın kayıtları bu tarayıcıdan ayrıdır; burada klinisyen modunu açarsanız hastalarınız iki
+            yere bölünür.
+          </p>
+          <button className="btn primary block" onClick={copy} data-testid="hr-copy-link">
+            <Icon name="copy" /> {copied === 'ok' ? 'Kopyalandı' : 'Bağlantıyı kopyala'}
+          </button>
+          {copied === 'fail' && (
+            <>
+              <p className="small muted">Kopyalanamadı; bağlantıyı aşağıdan seçip kopyalayın.</p>
+              <input
+                className="input small"
+                readOnly
+                value={url}
+                onFocus={(e) => e.currentTarget.select()}
+                aria-label="Rapor bağlantısı"
+                data-testid="hr-link-text"
+              />
+            </>
+          )}
+        </>
+      )}
+      <p className="small">
+        {standalone
+          ? 'Raporu bir muayeneye eklemek için bu telefonda klinisyen modunu açın.'
+          : 'Klinisyen kayıtlarınızı bu tarayıcıda tutuyorsanız ya da DengeYol bu telefonda yüklü değilse:'}
+      </p>
+      <button
+        className={`btn ${standalone ? 'primary' : 'secondary'}`}
+        onClick={() => store.update((x) => ({ ...x, settings: { ...x.settings, role: 'clinician' } }))}
+        data-testid="hr-become-clinician"
+      >
+        Klinisyen modunda devam et
+      </button>
+    </div>
   );
 }

@@ -19,12 +19,33 @@ import {
 const time = (t: number) =>
   new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-export function HomeReportView({ report, rxNote, testId = 'home-report' }: { report: HomeReport; rxNote?: string | null; testId?: string }) {
+export function HomeReportView({
+  report,
+  rxNote,
+  testId = 'home-report',
+  printCompact = false
+}: {
+  report: HomeReport;
+  rxNote?: string | null;
+  testId?: string;
+  /**
+   * Basılı muayene raporunda kısa özet: atak/test/manevra ayrıntısı yazdırılmaz (ekranda ve HBYS notunda kalır). Ev dönemi
+   * ekliyken rapor tek sayfada kalsın; reçete, QR ve imza 2. sayfaya yalnız düşmesin (kullanıcı turu 4, k08).
+   */
+  printCompact?: boolean;
+}) {
   const trunc = homeTruncationText(report);
   return (
     <div className="card stack home-report" data-testid={testId}>
       <h3>Ev dönemi · {homePeriodText(report)}</h3>
-      <dl className="kv">
+      {printCompact && (
+        // Basılı özet: kodlar tek satırda (reçete ayrıntısı raporun reçete bölümünde zaten var).
+        <p className="small print-only" data-testid={`${testId}-print-codes`}>
+          Rapordaki hasta kodu: {report.pid ?? '—'}
+          {report.rxCode ? ` · reçete kodu: ${report.rxCode}${rxNote ? ` (${rxNote})` : ''}` : ''}
+        </p>
+      )}
+      <dl className={`kv${printCompact ? ' no-print' : ''}`}>
         <dt>Rapordaki hasta kodu</dt>
         <dd className="exam-code-value">{report.pid ?? '— (reçetesiz ya da kodsuz)'}</dd>
         {report.rxCode && (
@@ -57,8 +78,13 @@ export function HomeReportView({ report, rxNote, testId = 'home-report' }: { rep
           <span>{trunc}</span>
         </div>
       )}
+      {printCompact && (
+        <p className="small print-only" data-testid={`${testId}-print-note`}>
+          Hasta beyanıdır; klinik muayene bulgusu yerine geçmez. Atak, test ve manevra ayrıntısı uygulamadaki muayene raporundadır.
+        </p>
+      )}
       {report.episodes.map((e, i) => (
-        <div key={`${e.startedAt}-${i}`} className="stack" style={{ gap: 4 }}>
+        <div key={`${e.startedAt}-${i}`} className={`stack${printCompact ? ' home-report-detail' : ''}`} style={{ gap: 4 }}>
           <strong>
             {homeEpisodeTitle(e)}
             {e.rxShortcut ? ' · reçeteli kısa yol (taraf testi yapılmadı)' : ''}
@@ -95,7 +121,9 @@ export function HomeReportView({ report, rxNote, testId = 'home-report' }: { rep
           </ul>
         </div>
       ))}
-      <p className="small muted">Hastanın kendi telefonundaki kayıttır (hasta beyanı); klinik muayene bulgusu yerine geçmez.</p>
+      <p className={`small muted${printCompact ? ' no-print' : ''}`}>
+        Hastanın kendi telefonundaki kayıttır (hasta beyanı); klinik muayene bulgusu yerine geçmez.
+      </p>
     </div>
   );
 }

@@ -1329,6 +1329,23 @@ summary {
   .clin-report .clin-signature {
     min-height: 14mm;
   }
+  /* Ev dönemi eklendiğinde basılı raporda kısa özet (başlık, kodlar, tek satır sonuç): atak ayrıntısı yazdırılmaz. Böylece
+     rapor tek sayfada kalır; reçete + QR + imza bloğu 2. sayfaya yalnız düşmez (kullanıcı turu 4, k08). */
+  .clin-report .home-report-detail {
+    display: none !important;
+  }
+  .clin-report .home-report {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* Reçete + QR + imza bölünmez; önceki içerikle aynı sayfaya sığmazsa birlikte yeni sayfaya geçer. Flex kapsayıcı içinde
+     de bölünmesin diye kapsayıcı yazdırmada blok düzenine alınır. */
+  .clin-report .clin-rx-block {
+    display: block !important;
+  }
+  .clin-report .clin-rx-block > * + * {
+    margin-top: 4px;
+  }
   /* Boş 2. sayfa: ekran iskeletinin 100dvh en az yüksekliği basılı sayfa yüksekliğine eşitlenip kenar boşluklarıyla
      taşıyordu. Klinisyen raporu basılırken iskelet içerik kadar yer kaplar; son öğeden sonra sayfa sonu oluşmaz. */
   html:has(.clin-report),
