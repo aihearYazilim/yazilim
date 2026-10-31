@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SAFETY_STOP_TEXT, type StepRecord, stopTextFor } from '../../../core/runner';
-import { RED_FLAGS } from '../../../core/safety';
+import { RED_FLAGS, REFER_TEXT, STOP_SPOKEN_MAX_CHARS } from '../../../core/safety';
 import {
   AFTER_SEVERE_SPOKEN,
   AFTER_SPOKEN_MAX_CHARS,
@@ -9,17 +9,25 @@ import {
   CONFIRM_GAP_PX,
   confirmBackPad,
   confirmPlacement,
+  LONG_IN_MANEUVER_SPOKEN,
   PREP_HELPER_ITEMS,
   prepHearingText,
   prepItems,
   prepSpokenFull,
   prepSpokenShort,
   redFlagConfirmHeadline,
+  REFER_SPOKEN,
   SAFETY_STOP_TEXT_HELPER,
+  safetyStopSpoken,
   safetyStopTextFor,
+  SUBTYPE_HC_SPOKEN,
+  SUBTYPE_LONG_SPOKEN,
+  unreachableStopSpoken,
   UNWELL_END_TITLE,
+  unwellEndSpoken,
   unwellEndText,
-  verticalOverlap
+  verticalOverlap,
+  withoutBppv
 } from './flowText';
 
 describe('seçenekli ekranın sesli biçimi (kullanıcı turu 3, k01, k04, k05)', () => {
@@ -170,23 +178,28 @@ describe('yakını modunda hazırlık işitme notu ve durdurma bitiş ekranı (k
   });
 });
 
-describe('kullanıcı turu 5 (k01, k02)', () => {
-  it('"Şu an nasılsınız?" varsayılan okunuşu tek cümle; "Yeni belirti" listesi kalır, tam hâl değişmez', () => {
+describe('kullanıcı turu 5–6 (k01, k02, k05)', () => {
+  it('"Şu an nasılsınız?" varsayılan okunuşu kısa ama sıra sayılı (tur 6, k05); "Yeni belirti" listesi kalır, tam hâl değişmez', () => {
     const opts = [
       { label: 'İyiyim' },
-      { label: 'Hafif baş dönmesi ya da bulantı var', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
-      { label: 'Kusma ya da şiddetli bulantı var' },
-      { label: 'Yeni belirti var', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.', subAlways: true }
+      { label: 'Hafif baş dönmesi ya da bulantı var', spokenLabel: 'Hafif baş dönmesi ya da bulantı', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
+      { label: 'Kusma ya da şiddetli bulantı var', spokenLabel: 'Kusma ya da şiddetli bulantı' },
+      { label: 'Yeni belirti var', spokenLabel: 'Yeni belirti', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.', subAlways: true }
     ];
     const q = { title: 'Şu an nasılsınız?', lead: 'Oturmaya devam edin; kalkarken dikkatli olun.' };
-    const { short, full } = choiceSpeechParts({ ...q, flowing: true }, opts);
+    const { short, full } = choiceSpeechParts(q, opts);
     expect(short).toBe(
-      'Şu an nasılsınız? İyiyim; hafif baş dönmesi ya da bulantı var; kusma ya da şiddetli bulantı var; yeni belirti var: konuşma bozukluğu, yüzde ya da kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.'
+      'Şu an nasılsınız? Birinci: İyiyim. İkinci: Hafif baş dönmesi ya da bulantı. Üçüncü: Kusma ya da şiddetli bulantı. Dördüncü: Yeni belirti: Konuşma bozukluğu, yüzde ya da kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.'
     );
-    expect(short).not.toMatch(/Birinci|İkinci/);
-    expect(short.match(/[.?]/g)?.length).toBe(2);
-    expect(full).toBe(choiceSpeechParts(q, opts).full);
-    expect(short.length).toBeLessThan(choiceSpeechParts(q, opts).short.length);
+    // Açıklama satırı ve "birkaç dakika" yalnız "Tekrar dinle"de.
+    expect(short).not.toMatch(/Oturmaya|birkaç dakika/);
+    // "Tekrar dinle"de ekrandaki adlar ve bütün alt açıklamalar.
+    expect(full).toMatch(/^Şu an nasılsınız\? Oturmaya devam edin; kalkarken dikkatli olun\. Birinci: İyiyim\. İkinci: Hafif baş dönmesi ya da bulantı var\. Manevradan sonra/);
+    // Kısa ad olmadan (5. tur öncesi) okunuştan kısa kalır.
+    const withoutShortNames = choiceSpeechParts(q, opts.map(({ spokenLabel: _s, ...o }) => o)).short;
+    expect(short.length).toBeLessThan(withoutShortNames.length);
+    // Normal hızda (~13 karakter/s) ~17 s'yi aşmaz.
+    expect(short.length).toBeLessThanOrEqual(225);
   });
   it('"Dinlenin" metni manevrada ve testte aynı yönlendirme (dinlenme, su, hekim, 112)', () => {
     expect(UNWELL_END_TITLE).toBe('Dinlenin');
@@ -207,5 +220,56 @@ describe('kullanıcı turu 5 (k01, k02)', () => {
     expect(card).toMatch(/başucunda/);
     expect(card).toMatch(/iki elle/);
     expect(card).toMatch(/geçince yeniden dokunun/);
+  });
+});
+
+describe('kullanıcı turu 6: durdurma ekranlarının sesi önce kısa (k05, k07)', () => {
+  const kinds = Object.keys(SAFETY_STOP_TEXT) as (keyof typeof SAFETY_STOP_TEXT)[];
+  const shorts = [
+    ...Object.values(REFER_SPOKEN).filter((x): x is string => !!x),
+    LONG_IN_MANEUVER_SPOKEN,
+    SUBTYPE_LONG_SPOKEN,
+    SUBTYPE_HC_SPOKEN,
+    ...kinds.flatMap((k) => [safetyStopSpoken(k, false), safetyStopSpoken(k, true)]),
+    unwellEndSpoken('maneuver'),
+    unwellEndSpoken('test')
+  ];
+  it('kısa biçimler normal hızda ≤ ~12 s, hekime yönlendirir ve "BPPV" demez', () => {
+    for (const t of shorts) {
+      expect(t.length, t).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+      expect(t).toMatch(/hekim/i);
+      expect(t).not.toMatch(/BPPV/);
+    }
+    // Kısa biçim tam metinden kısa; tam metin "Ayrıntıyı dinle"de.
+    for (const k of Object.keys(REFER_SPOKEN) as (keyof typeof REFER_TEXT)[]) {
+      const sp = REFER_SPOKEN[k];
+      if (sp) expect(sp.length).toBeLessThan(REFER_TEXT[k].length);
+    }
+    for (const k of kinds) expect(safetyStopSpoken(k, false).length).toBeLessThan(SAFETY_STOP_TEXT[k].length);
+    expect(unwellEndSpoken('test').length).toBeLessThan(unwellEndText('test').length);
+    // Uzun baş dönmesinde acil belirtiler seste kalır.
+    for (const t of [REFER_SPOKEN.ATYPICAL_LONG!, LONG_IN_MANEUVER_SPOKEN, SUBTYPE_LONG_SPOKEN, safetyStopSpoken('VERTIGO_TOO_LONG', false)]) {
+      expect(t).toMatch(/Konuşma bozukluğu, güçsüzlük ya da çift görme olursa 112'yi arayın\.$/);
+    }
+  });
+  it('pozisyona gelinemedi: "Durduk. … oturun. Hekiminize …"; durulan yer ve açı seste yok (k07); yanlış taraf ayrı; yakını modu', () => {
+    const t = safetyStopSpoken('POSITION_UNREACHABLE', false);
+    expect(t).toMatch(/^Durduk\. Zorlamayın; yavaşça oturun\. Hekiminize/);
+    expect(t).not.toMatch(/Durulan yer|°/);
+    expect(unreachableStopSpoken(SAFETY_STOP_TEXT.POSITION_UNREACHABLE, false)).toBe(t);
+    expect(unreachableStopSpoken(SAFETY_STOP_TEXT.WRONG_SIDE, false)).toBe(safetyStopSpoken('WRONG_SIDE', false));
+    expect(safetyStopSpoken('WRONG_SIDE', false)).toMatch(/sırtüstüne gelin, sonra yavaşça oturun/);
+    for (const k of kinds) expect(safetyStopSpoken(k, true)).toMatch(/[Hh]asta/);
+  });
+  it('seste "BPPV" yerine "kristal oynaması"; ayraçlı kısaltma atılır, ek korunur', () => {
+    expect(withoutBppv('Bu, kristal oynamasına (BPPV) bağlı değildir.')).toBe('Bu, kristal oynamasına bağlı değildir.');
+    expect(withoutBppv("Bu, tipik arka kanal BPPV'ye uymuyor.")).toBe('Bu, tipik arka kanal kristal oynamasına uymuyor.');
+    expect(withoutBppv('evde tedavi edilemeyen yatay kanal BPPV olabilir.')).toBe('evde tedavi edilemeyen yatay kanal kristal oynaması olabilir.');
+    expect(withoutBppv('Yatay kanal tipi kristal oynamasının (yatay kanal BPPV) evde')).toBe('Yatay kanal tipi kristal oynamasının evde');
+    expect(withoutBppv('BPPV baş dönmesi yalnızca baş hareketiyle başlar.')).toBe('Kristal oynamasında baş dönmesi yalnızca baş hareketiyle başlar.');
+    expect(withoutBppv("Sürer. BPPV'nin tedavisi")).toBe('Sürer. Kristal oynamasının tedavisi');
+    for (const q of RED_FLAGS) expect(withoutBppv(q.why)).not.toMatch(/BPPV/);
+    for (const k of Object.keys(REFER_TEXT) as (keyof typeof REFER_TEXT)[]) expect(withoutBppv(REFER_TEXT[k])).not.toMatch(/BPPV/);
+    expect(withoutBppv(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG)).not.toMatch(/BPPV/);
   });
 });

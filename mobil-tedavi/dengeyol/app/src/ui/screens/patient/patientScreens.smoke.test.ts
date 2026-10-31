@@ -5,7 +5,8 @@
  * - uygunluk adımında işitme notu yakını modunda yardımcıya göre (k02), "Tekrar dinle" bütün maddeleri okur (k01);
  * - "Son 2 hafta içinde" seçilince tarih süre dolmadan da görünür (k03);
  * - reçete kartında ekran da "kristal oynaması (BPPV)" der (k05);
- * - dönem raporu önce son atağın sonucunu yazar ve QR kartını gösterir (k09).
+ * - dönem raporu önce son atağın sonucunu yazar ve QR kartını gösterir (k09);
+ * - kullanıcı turu 6: dönem satırı adlandırılmış tarih dizisi (k09); testte "kötüyüm" durdurmasından sonra ana ekran notu (k01).
  */
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { act, createElement } from 'react';
@@ -15,6 +16,7 @@ import { encodePrescription } from '../../../core/prescription';
 import { store } from '../../../state/store';
 import { emptyData, type Episode } from '../../../state/types';
 import { PeriodReport } from './History';
+import { PatientHome } from './PatientHome';
 import { Onboarding } from './Onboarding';
 import { PrescriptionImport } from './PrescriptionImport';
 
@@ -45,6 +47,7 @@ function mount(path: string) {
         createElement(
           Routes,
           null,
+          createElement(Route, { path: '/hasta', element: createElement(PatientHome) }),
           createElement(Route, { path: '/hasta/kurulum', element: createElement(Onboarding) }),
           createElement(Route, { path: '/hasta/rapor/donem', element: createElement(PeriodReport) }),
           createElement(Route, { path: '/recete/:token', element: createElement(PrescriptionImport) }),
@@ -166,5 +169,41 @@ describe('dönem raporu (kullanıcı turu 4, k09)', () => {
     const order = [...host!.querySelectorAll('[data-testid]')].map((e) => e.getAttribute('data-testid'));
     expect(order.indexOf('period-summary')).toBeLessThan(order.indexOf('report-qr'));
     expect(order.indexOf('report-qr')).toBeLessThan(order.indexOf('period-episode'));
+    // Kullanıcı turu 6 (k09): "Dönem" satırı adlandırılmış tarih dizisi (QR kartı ve klinisyen ekranıyla aynı biçim).
+    const dl = [...host!.querySelectorAll('dt')].find((x) => x.textContent === 'Dönem')!;
+    expect(dl.nextElementSibling!.textContent).toMatch(/^Son 14 gün · ataklar \d\d\.\d\d(\.\d{4})?–\d\d\.\d\d(\.\d{4})? · rapor \d\d\.\d\d/);
+  });
+});
+
+describe('ana ekran (kullanıcı turu 6, k01)', () => {
+  it('tekrar testi "kötü hissediyorum" ile durduysa atak kartında not; düğme kalır', () => {
+    const now = Date.now();
+    const d = emptyData();
+    d.settings = { ...d.settings, role: 'patient', speech: false };
+    d.patient = { consentAt: '2026-01-01T00:00:00.000Z', contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R' };
+    const manAt = now - 2 * 3600_000;
+    d.episodes = [
+      {
+        id: 'a',
+        startedAt: manAt - 600_000,
+        side: 'R',
+        protocolId: 'epley',
+        redFlags: [],
+        sideTests: [],
+        maneuvers: [{ id: 'm', at: manAt, protocolId: 'epley', side: 'R', completed: true, stopReason: null, records: [], manual: false }],
+        retests: [],
+        status: 'active',
+        testStops: [{ at: now - 60_000, test: 'retest', side: 'R', reason: 'USER_FEELS_UNWELL' }]
+      }
+    ];
+    store.update(() => d);
+    mount('/hasta');
+    expect(byTestId('home-unwell-stop')!.textContent).toBe(
+      'Son test, siz kötü hissettiğiniz için durdu. Kendinizi iyi hissettiğinizde yapın; geçmiyorsa hekiminize başvurun.'
+    );
+    expect(byTestId('do-retest')).not.toBeNull();
+    // Not, düğmeden önce.
+    const order = [...host!.querySelectorAll('[data-testid]')].map((e) => e.getAttribute('data-testid'));
+    expect(order.indexOf('home-unwell-stop')).toBeLessThan(order.indexOf('do-retest'));
   });
 });

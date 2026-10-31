@@ -15,6 +15,7 @@ import {
   rxPeriodSummary,
   lastEpisodeOutcome,
   isNightTime,
+  lastUnwellTestStop,
   nextAction,
   nextMorning,
   nightNote,
@@ -30,7 +31,8 @@ import {
   startDose,
   SUBTYPE_VALID_MS,
   subtypeRemembered,
-  totalPauses
+  totalPauses,
+  UNWELL_STOP_HOME_TEXT
 } from './episodes';
 import type { StepRecord } from '../core/runner';
 import { RED_FLAGS } from '../core/safety';
@@ -447,5 +449,24 @@ describe('reçete dönemi raporu (kullanıcı turu 3, k09)', () => {
     expect(line.indexOf('hekime yönlendirildi')).toBeLessThan(line.indexOf('son sabah testi negatif'));
     expect(lastEpisodeOutcome([])).toBeNull();
     expect(lastEpisodeOutcome([e3, e1])).toBe('son atak (10 Ekim): hekime yönlendirildi');
+  });
+});
+
+describe('testte "kötü hissediyorum" durdurmasından sonra ana ekran notu (kullanıcı turu 6, k01)', () => {
+  const stop = (at: number, test: 'side' | 'retest' = 'retest') => ({ at, test, side: 'R' as const, reason: 'USER_FEELS_UNWELL' as const });
+  it('son olay durdurmaysa not gösterilir; sonra test ya da manevra yapıldıysa gösterilmez', () => {
+    expect(lastUnwellTestStop(ep({}))).toBeNull();
+    expect(lastUnwellTestStop(ep({ testStops: [stop(base + 1000, 'side')] }))?.test).toBe('side');
+    // Tekrar testinde durdu (manevradan sonra).
+    const after = ep({ maneuvers: [man(base)], testStops: [stop(base + 3600_000)] });
+    expect(lastUnwellTestStop(after)?.test).toBe('retest');
+    // Ardından tekrar testi yapıldı: not kalkar.
+    const retested = { ...after, retests: [{ at: base + 7200_000, kind: 'early' as const, side: 'R' as const, vertigo: false, latencySec: null, durationSec: null }] };
+    expect(lastUnwellTestStop(retested)).toBeNull();
+    // Durdurmadan önceki manevra notu kaldırmaz; sonraki manevra kaldırır.
+    expect(lastUnwellTestStop(ep({ testStops: [stop(base + 1000, 'side')], maneuvers: [man(base + 2000)] }))).toBeNull();
+    expect(UNWELL_STOP_HOME_TEXT).toBe(
+      'Son test, siz kötü hissettiğiniz için durdu. Kendinizi iyi hissettiğinizde yapın; geçmiyorsa hekiminize başvurun.'
+    );
   });
 });

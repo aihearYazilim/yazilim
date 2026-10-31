@@ -19,9 +19,11 @@ import {
   evaluateRedFlags,
   GATE_TEXT,
   interpretSideTests,
+  RED_FLAG_STOP_TITLE,
   RED_FLAGS,
   redFlagReferText,
   redFlagSpoken,
+  redFlagStopSpoken,
   REFER_TEXT,
   type RedFlagQuestion,
   type SideDecision,
@@ -90,10 +92,18 @@ import {
   prepSpokenFull,
   prepSpokenShort,
   redFlagConfirmHeadline,
+  LONG_IN_MANEUVER_SPOKEN,
+  REFER_SPOKEN,
+  safetyStopSpoken,
   safetyStopTextFor,
   type SpokenOption,
+  SUBTYPE_HC_SPOKEN,
+  SUBTYPE_LONG_SPOKEN,
+  unreachableStopSpoken,
   UNWELL_END_TITLE,
-  unwellEndText
+  unwellEndSpoken,
+  unwellEndText,
+  withoutBppv
 } from './flowText';
 
 type Mode = 'start' | 'retest' | 'treat' | 'practice';
@@ -602,7 +612,7 @@ export function EpisodeFlow() {
         testid: 'end-not-triggered'
       });
     } else if (dec.kind === 'REFER') {
-      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize ya da odyoloğunuza başvurun', text: REFER_TEXT[dec.reason], testid: 'end-refer' });
+      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize ya da odyoloğunuza başvurun', text: REFER_TEXT[dec.reason], testid: 'end-refer', spoken: REFER_SPOKEN[dec.reason] ?? undefined });
     }
   };
 
@@ -631,7 +641,17 @@ export function EpisodeFlow() {
       }));
     } else updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: now, endNote: 'POSITION_UNREACHABLE', unreachableAt: where, stopDetail }));
     // Gerekçe kayda göre (boyun/bel kısıtı ya da yanlış tarafta kalma) ve nerede durulduğu (ulaşılan açı).
-    setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: `${safetyStopTextFor(stopTextFor('POSITION_UNREACHABLE', recs), store.get().settings.assist === 'helper')} Durulan yer: ${stopDetail}.`, testid: 'end-unreachable' });
+    // Seste önce kısa biçim (kullanıcı turu 6, k07): durulan yer ve açı ekranda ve "Ayrıntıyı dinle"de.
+    const helper = store.get().settings.assist === 'helper';
+    const stopText = stopTextFor('POSITION_UNREACHABLE', recs);
+    setStage({
+      k: 'end',
+      tone: 'warn',
+      title: 'Hekiminize başvurun',
+      text: `${safetyStopTextFor(stopText, helper)} Durulan yer: ${stopDetail}.`,
+      testid: 'end-unreachable',
+      spoken: unreachableStopSpoken(stopText, helper)
+    });
   };
 
   /**
@@ -644,7 +664,7 @@ export function EpisodeFlow() {
       const id = test === 'side' ? ensureEpisode() : activeEpisode(store.get())?.id;
       if (id) updateEpisode(id, (e) => ({ ...e, testStops: [...(e.testStops ?? []), { at: Date.now(), test, side, reason: 'USER_FEELS_UNWELL' as const }] }));
     }
-    setStage({ k: 'end', tone: 'warn', title: UNWELL_END_TITLE, text: unwellEndText('test'), testid: 'end-unwell' });
+    setStage({ k: 'end', tone: 'warn', title: UNWELL_END_TITLE, text: unwellEndText('test'), testid: 'end-unwell', spoken: unwellEndSpoken('test') });
   };
 
   const onSideRunExit = (o: RunnerOutcome, order: Side[], results: SideTestResult[]) => {
@@ -727,7 +747,7 @@ export function EpisodeFlow() {
       const ep = activeEpisode(store.get());
       if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'ATYPICAL_LONG' }));
       if (o.phase === 'aborted') {
-        setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
+        setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer', spoken: LONG_IN_MANEUVER_SPOKEN });
         return;
       }
       longVertigoRef.current = true;
@@ -742,7 +762,7 @@ export function EpisodeFlow() {
           { id: uid(), startedAt: Date.now(), side: null, protocolId: maneuverId, redFlags: [], sideTests: [], maneuvers: [], retests: [], status: 'referred', endedAt: Date.now(), endNote: 'Deneme manevrasında uzun baş dönmesi' }
         ]
       }));
-      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
+      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer', spoken: LONG_IN_MANEUVER_SPOKEN });
       return;
     }
     if (mode === 'practice' && o.state.records.some((r) => r.vertigoMarks.length > 0)) {
@@ -754,9 +774,17 @@ export function EpisodeFlow() {
     } else if (o.phase === 'safetyStop') {
       const ep = activeEpisode(store.get());
       if (ep && mode !== 'practice') updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'VERTIGO_TOO_LONG' }));
-      setStage({ k: 'end', tone: 'warn', title: 'Manevra durduruldu', text: safetyStopTextFor(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG, store.get().settings.assist === 'helper'), testid: 'end-safety' });
+      const helper = store.get().settings.assist === 'helper';
+      setStage({
+        k: 'end',
+        tone: 'warn',
+        title: 'Manevra durduruldu',
+        text: safetyStopTextFor(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG, helper),
+        testid: 'end-safety',
+        spoken: safetyStopSpoken('VERTIGO_TOO_LONG', helper)
+      });
     } else if (o.state.stopReason === 'USER_FEELS_UNWELL') {
-      setStage({ k: 'end', tone: 'warn', title: UNWELL_END_TITLE, text: unwellEndText('maneuver'), testid: 'end-unwell' });
+      setStage({ k: 'end', tone: 'warn', title: UNWELL_END_TITLE, text: unwellEndText('maneuver'), testid: 'end-unwell', spoken: unwellEndSpoken('maneuver') });
     } else {
       setStage({ k: 'end', tone: 'info', title: 'Manevra yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden başlayabilirsiniz.', testid: 'end-aborted' });
     }
@@ -790,7 +818,7 @@ export function EpisodeFlow() {
     }
     if (o.phase === 'safetyStop' || (v && (v.durationSec === null || v.durationSec >= 60))) {
       if (ep) updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'ATYPICAL_LONG' }));
-      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: REFER_TEXT.ATYPICAL_LONG, testid: 'end-refer' });
+      setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: REFER_TEXT.ATYPICAL_LONG, testid: 'end-refer', spoken: REFER_SPOKEN.ATYPICAL_LONG ?? undefined });
       return;
     }
     if (!v) {
@@ -944,11 +972,14 @@ export function EpisodeFlow() {
 
     case 'stop': {
       const emergency = stage.action === 'emergency';
-      const title = emergency ? 'Manevra yapmayın, hemen yardım isteyin' : 'Manevra yapmayın';
+      const title = RED_FLAG_STOP_TITLE[stage.action];
       const whys = stage.triggered.length === 0 ? [AFTER_NEURO_TEXT] : stage.triggered.map((q) => q.why);
       // Alt satır gerekçeyle tutarlı (ör. ortostatik: aile hekimi/dahiliye; kulak: KBB).
       const todo = redFlagReferText(stage.action, stage.triggered);
-      const spokenStop = `${title}. ${whys.join(' ')} ${todo}`;
+      // Kullanıcı turu 6 (k05): ekran açılınca kısa biçim (≤ ~12 s) okunur; gerekçenin tamamı ekranda ve "Ayrıntıyı dinle"de.
+      // Seste "BPPV" yerine "kristal oynaması".
+      const spokenStop = withoutBppv(redFlagStopSpoken(stage.action, stage.triggered, AFTER_NEURO_SPOKEN));
+      const fullStop = withoutBppv(`${title}. ${whys.join(' ')} ${todo}`);
       // Rapor yalnız atak kaydı olan gerçek akışta var (denemede rapor yok).
       const hasReport = !!episodeId && mode !== 'practice';
       return (
@@ -975,7 +1006,7 @@ export function EpisodeFlow() {
               </p>
             </div>
           )}
-          <ListenAgain text={spokenStop} />
+          <ListenAgain text={fullStop} label="Ayrıntıyı dinle" />
           {hasReport && (
             <button className="btn secondary block" onClick={() => nav(`/hasta/rapor/${episodeId}`)}>
               <Icon name="print" /> Raporu göster
@@ -1042,16 +1073,16 @@ export function EpisodeFlow() {
       );
 
     case 'subtype': {
-      const refer = (title: string, text: string, note: string) => {
+      const refer = (title: string, text: string, note: string, spoken: string) => {
         const id = ensureEpisode();
         updateEpisode(id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: note }));
-        setStage({ k: 'end', tone: 'warn', title, text, testid: 'end-refer' });
+        setStage({ k: 'end', tone: 'warn', title, text, testid: 'end-refer', spoken });
       };
       if (stage.q === 'hcConfirm') {
         return (
           <HcConfirm
             onBack={() => setStage({ k: 'subtype', q: 1 })}
-            onYes={() => refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)')}
+            onYes={() => refer('Hekiminize ya da odyoloğunuza başvurun', SUBTYPE_HC_TEXT, 'Alt tip sorusu: sırtüstü baş çevirmeyle (yatay kanal şüphesi)', SUBTYPE_HC_SPOKEN)}
             onUnsure={() => {
               subtypeTriggerRef.current = 'turnUnsure';
               setStage({ k: 'subtype', q: 2 });
@@ -1095,7 +1126,7 @@ export function EpisodeFlow() {
             onChange={(v: 'short' | 'mid' | 'long' | 'unsure') => {
               // Kim 2023 tarama ölçütü: <3 dk. Hastalar süreyi sık fazla tahmin eder; 1–3 dk teste gider, test süreyi ölçer
               // (≥1 dk ölçülürse yine hekime yönlendirilir).
-              if (v === 'long') refer('Hekiminize başvurun', SUBTYPE_LONG_TEXT, 'Alt tip sorusu: dönme hissi 3 dakikadan uzun');
+              if (v === 'long') refer('Hekiminize başvurun', SUBTYPE_LONG_TEXT, 'Alt tip sorusu: dönme hissi 3 dakikadan uzun', SUBTYPE_LONG_SPOKEN);
               else {
                 // Yarıda bırakılıp devam edilirse (6 saat içinde) yeniden sorulmasın.
                 const id = ensureEpisode();
@@ -1290,7 +1321,7 @@ export function EpisodeFlow() {
           setStage({ k: 'stop', action: 'emergency', triggered: [] });
         } else if (longVertigoRef.current && mode !== 'practice') {
           longVertigoRef.current = false;
-          setStage({ k: 'end', tone: 'warn', title: 'Manevra tamamlandı — hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer' });
+          setStage({ k: 'end', tone: 'warn', title: 'Manevra tamamlandı — hekiminize başvurun', text: LONG_IN_MANEUVER_TEXT, testid: 'end-refer', spoken: LONG_IN_MANEUVER_SPOKEN });
         } else if (sev === 'severe') {
           setStage({
             k: 'end',
@@ -1366,12 +1397,12 @@ export function EpisodeFlow() {
       // Sık tekrar uyarısı soruların sonunda okunur (1. soruda yalnız kısa satır).
       const recurEnd = recur && stage.testid !== 'end-dose' ? recur : null;
       // "Manevra tamamlandı" yürütücüde söylendi; burada yalnız öneri okunur.
-      const endFull = [stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`, night, recurEnd?.text]
-        .filter(Boolean)
-        .join(' ');
+      const endFull = withoutBppv(
+        [stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`, night, recurEnd?.text].filter(Boolean).join(' ')
+      );
       // Kısa sesli biçim varsa ekran açılınca o okunur (gece notu içinde); tam metin "Ayrıntıyı dinle"de. Sık tekrar uyarısı
       // her durumda sonda okunur (k06).
-      const endSpoken = stage.spoken ? [stage.spoken, recurEnd?.text].filter(Boolean).join(' ') : endFull;
+      const endSpoken = stage.spoken ? withoutBppv([stage.spoken, recurEnd?.text].filter(Boolean).join(' ')) : endFull;
       return (
         <Screen title="DengeYol" back="/hasta">
           <SpeakOnce text={endSpoken} />
@@ -1582,10 +1613,16 @@ function AfterManeuver({ onDone, practice }: { onDone: (sev: AfterSev) => void; 
   const [looking, setLooking] = useState(false);
   const options: ({ value: AfterSev } & SpokenOption)[] = [
     { value: 'none', label: 'İyiyim' },
-    { value: 'mild', label: 'Hafif baş dönmesi ya da bulantı var', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
-    { value: 'severe', label: 'Kusma ya da şiddetli bulantı var' },
+    { value: 'mild', label: 'Hafif baş dönmesi ya da bulantı var', spokenLabel: 'Hafif baş dönmesi ya da bulantı', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
+    { value: 'severe', label: 'Kusma ya da şiddetli bulantı var', spokenLabel: 'Kusma ya da şiddetli bulantı' },
     // "Yeni belirti"nin ne olduğu güvenlik için gerekli: alt açıklaması varsayılan okunuşta da okunur.
-    { value: 'neuro', label: 'Yeni belirti var', sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.', subAlways: true }
+    {
+      value: 'neuro',
+      label: 'Yeni belirti var',
+      spokenLabel: 'Yeni belirti',
+      sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.',
+      subAlways: true
+    }
   ];
   if (confirm) {
     const o = options.find((x) => x.value === confirm)!;
@@ -1612,7 +1649,6 @@ function AfterManeuver({ onDone, practice }: { onDone: (sev: AfterSev) => void; 
       <ChoiceQuestion
         title="Şu an nasılsınız?"
         lead="Oturmaya devam edin; kalkarken dikkatli olun."
-        flowing
         deferPrompt={looking ? undefined : LOOK_AT_SCREEN}
         priority={looking ? 'high' : 'normal'}
         name="Manevra sonrası"
@@ -1853,7 +1889,6 @@ function ChoiceQuestion<T extends string>({
   lead,
   spokenLead,
   spokenPrefix,
-  flowing,
   deferPrompt,
   priority = 'high',
   name,
@@ -1869,8 +1904,6 @@ function ChoiceQuestion<T extends string>({
   /** Varsayılan okunuşta lead yerine okunacak kısa cümle; yoksa lead yalnız "Tekrar dinle"de. */
   spokenLead?: string;
   spokenPrefix?: string;
-  /** Varsayılan okunuşta seçenek adları "Birinci/İkinci" olmadan tek cümlede (kullanıcı turu 5, k01). */
-  flowing?: boolean;
   deferPrompt?: string;
   priority?: 'high' | 'normal';
   name: string;
@@ -1879,7 +1912,7 @@ function ChoiceQuestion<T extends string>({
   lockKey: string;
   lockMs?: number;
 }) {
-  const { short, full } = choiceSpeechParts({ title, spokenTitle, lead, spokenLead, prefix: spokenPrefix, flowing }, options);
+  const { short, full } = choiceSpeechParts({ title, spokenTitle, lead, spokenLead, prefix: spokenPrefix }, options);
   useDeferredRead(deferPrompt, short, priority);
   return (
     <>
@@ -1986,6 +2019,9 @@ const PRACTICE_VERTIGO_TEXT =
   'Deneme manevrası, baş dönmesi yokken adımları öğrenmek içindir ve tedavi yerine geçmez. Baş dönmeniz varsa ana ekrandaki "Baş dönmem başladı" ile ilerleyin: güvenlik soruları ve kısa bir test yapılır.';
 
 const AFTER_NEURO_TEXT = 'Yeni bir nörolojik belirti bildirdiniz. Bu, kristal oynamasına (BPPV) bağlı değildir ve acil değerlendirme gerektirir.';
+
+/** Manevra sonrası "Yeni belirti" durdurmasının sesli kısa nedeni (kullanıcı turu 6). */
+const AFTER_NEURO_SPOKEN = 'Yeni bir belirti bildirdiniz; acil değerlendirme gerekir.';
 
 const BLOCKED_REFERRAL_TEXT =
   'Önce hekiminizle görüşün. Son atağınız hekime ya da acile yönlendirmeyle sonlandı. Yeni bir manevra yapmadan önce bu durumu hekiminizle konuşmanız gerekir.';

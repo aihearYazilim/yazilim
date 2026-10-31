@@ -381,6 +381,22 @@ export function nextAction(e: Episode, now: number): NextAction {
 }
 
 /**
+ * Atağın son olayı, "Kendimi kötü hissediyorum" ile durdurulan bir test mi (kullanıcı turu 6, k01)? Durdurmadan sonra taraf
+ * testi, manevra ya da tekrar testi kaydı yoksa o durdurma döner; ana ekran kartı "iyi hissettiğinizde yapın" der.
+ */
+export function lastUnwellTestStop(e: Episode): NonNullable<Episode['testStops']>[number] | null {
+  const stops = e.testStops ?? [];
+  const last = stops[stops.length - 1];
+  if (!last) return null;
+  const later = [...e.sideTests, ...e.maneuvers, ...e.retests].some((x) => x.at > last.at);
+  return later ? null : last;
+}
+
+/** Testte "kötü hissediyorum" durdurmasından sonra ana ekrandaki atak kartında gösterilen satır (kullanıcı turu 6, k01). */
+export const UNWELL_STOP_HOME_TEXT =
+  'Son test, siz kötü hissettiğiniz için durdu. Kendinizi iyi hissettiğinizde yapın; geçmiyorsa hekiminize başvurun.';
+
+/**
  * Yeni atağı başlatmak yerine söylenecek bekleme durumu: aktif atakta manevra yapılmışsa "Baş dönmem başladı"/devam yeni
  * test ya da manevra açmaz; sıradaki eylem (1 saat ya da sabah testi, yeniden manevra) gösterilir. null: akış sürebilir.
  */

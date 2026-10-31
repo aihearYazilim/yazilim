@@ -12,6 +12,9 @@ import {
   redFlagDoctorAsk,
   redFlagReferText,
   redFlagSpoken,
+  redFlagStopSpoken,
+  RED_FLAG_STOP_TITLE,
+  STOP_SPOKEN_MAX_CHARS,
   type SideTestResult
 } from './safety';
 
@@ -232,5 +235,46 @@ describe('hasta semptom testi yorumu', () => {
   });
   it('hiç tetiklenmedi', () => {
     expect(interpretSideTests([r('R'), r('L')], 'R', null)).toEqual({ kind: 'NOT_TRIGGERED' });
+  });
+});
+
+describe('durdurma ekranının kısa sesi (kullanıcı turu 6, k05)', () => {
+  const q = (id: string) => RED_FLAGS.find((x) => x.id === id)!;
+  it('ortostatik: kısa biçim, ayrıntı ekranda', () => {
+    expect(redFlagStopSpoken('doctor', [q('orthostatic')])).toBe(
+      "Manevra yapmayın. Birkaç gün içinde aile hekiminize gidin; yavaş kalkın, tutunun. Bayılırsanız 112'yi arayın."
+    );
+  });
+  it('her soru tek başına ≤ ~12 s; "BPPV" okunmaz; acilde 112 sonda, hekime yönlendirmede başlık önde', () => {
+    for (const x of RED_FLAGS) {
+      const t = redFlagStopSpoken(x.action, [x]);
+      expect(t.length, x.id).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+      expect(t).not.toMatch(/BPPV/);
+      expect(t.startsWith(`${RED_FLAG_STOP_TITLE[x.action]}.`)).toBe(true);
+      if (x.action === 'emergency') expect(t).toMatch(/Hemen 112'yi arayın\.$/);
+      // Kısa biçim, ekrandaki gerekçeden kısa.
+      expect(t.length).toBeLessThan(`${RED_FLAG_STOP_TITLE[x.action]}. ${x.why} ${redFlagReferText(x.action, [x])}`.length);
+    }
+  });
+  it('birden çok soru: sığmazsa ayrıntı ekranda; "bugün" aciliyeti seste kalır; acil soru varsa acil biçim', () => {
+    const doctor = RED_FLAGS.filter((x) => x.action === 'doctor');
+    for (const a of doctor) {
+      for (const b of doctor) {
+        const t = redFlagStopSpoken('doctor', [a, b]);
+        expect(t.length, `${a.id}+${b.id}`).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+        if (/bugün/i.test(a.stopSpoken + b.stopSpoken)) expect(t).toMatch(/bugün/i);
+      }
+    }
+    const all = redFlagStopSpoken('doctor', doctor);
+    expect(all.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+    expect(all).toMatch(/Ayrıntılar ekranda\.$/);
+    // Acil + hekim: durdurma eylemi acil (evaluateRedFlags değişmedi); seste acil neden ve 112.
+    const out = evaluateRedFlags({ neuro: 'yes', ear: 'yes' });
+    expect(out.action).toBe('emergency');
+    expect(redFlagStopSpoken(out.action!, out.triggered)).toBe(
+      "Manevra yapmayın, hemen yardım isteyin. Bu belirtiler inme gibi acil bir durumun işareti olabilir. Hemen 112'yi arayın."
+    );
+    // Soru yoksa (manevra sonrası yeni belirti) verilen neden.
+    expect(redFlagStopSpoken('emergency', [], 'Yeni belirti.')).toBe("Manevra yapmayın, hemen yardım isteyin. Yeni belirti. Hemen 112'yi arayın.");
   });
 });

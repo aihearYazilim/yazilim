@@ -22,6 +22,7 @@ import {
   type RunnerEvent,
   type RunnerState,
   runnerStep,
+  type StepRecord,
   SAFETY_STOP_TEXT,
   startSpeechText,
   stopReasonTextFor,
@@ -1581,7 +1582,7 @@ describe('tur 4 G1-3: en iyi açı tek ölçümden değil; hedefe bir an değmek
     expect(reachSummary(rec, edge.cfg.protocol.steps[1]!)).toBe(`baş en çok ~12° sarktı (hedef 15–40°); ${REACH_TOUCHED_ONLY_TEXT}`);
   });
 
-  it('bildirilen değer hedef aralığındaysa yalnız "hedefe yalnız bir an değdi" (çelişkili "~16° sarktı … gelinemedi" yok)', () => {
+  it('bildirilen değer hedef aralığındaysa çelişkisiz cümle: "hedef aralığına (~20°) kadar geldi, orada tutulamadı" (tur 6, k07)', () => {
     const x = sim('epley');
     // Yönerge çok uzun: hasta hedefte, ama pozisyon henüz doğrulanamadan "Pozisyona gelemiyorum" seçildi.
     x.cfg = { ...x.cfg, introSecFor: () => 30 };
@@ -1597,7 +1598,30 @@ describe('tur 4 G1-3: en iyi açı tek ölçümden değil; hedefe bir an değmek
     const rec = x.s.records[1]!;
     expect(rec.reachedAt).toBeNull();
     expect(rec.reach?.touchedOnly).toBe(true);
-    expect(reachSummary(rec, x.cfg.protocol.steps[1]!)).toBe(REACH_TOUCHED_ONLY_TEXT);
+    const s1 = x.cfg.protocol.steps[1]!;
+    const p = Math.round(rec.reach!.phi!);
+    expect(p).toBeGreaterThan(18);
+    // Çelişkili "~20° sarktı … gelinemedi" yok; açı yine yazılır.
+    expect(reachSummary(rec, s1)).toBe(`baş hedef aralığına (~${p}°) kadar geldi, orada tutulamadı`);
+    expect(reachSummary(rec, s1)).not.toMatch(/sarktı/);
+  });
+
+  it('tur 6 (k07): alt sınırda titreyip tutulamayan baş: "baş hedefin alt sınırına (~15°) kadar geldi, orada tutulamadı"', () => {
+    const x = sim('epley');
+    run(x);
+    const s1 = x.cfg.protocol.steps[1]!;
+    const t = s1.target;
+    if (t.kind !== 'lying') throw new Error('yatar hedef bekleniyordu');
+    const base = { ...x.s.records[1]!, unreachable: true } as StepRecord;
+    const at = (phi: number, extra: Partial<NonNullable<StepRecord['reach']>> = {}) =>
+      ({ ...base, reach: { phi, theta: t.theta, touchedOnly: true, ...extra } }) as StepRecord;
+    expect(reachSummary(at(15.4), s1)).toBe('baş hedefin alt sınırına (~15°) kadar geldi, orada tutulamadı');
+    expect(reachSummary(at(t.phiMin + 3), s1)).toMatch(/^baş hedefin alt sınırına/);
+    expect(reachSummary(at(t.phiMin + 4), s1)).toMatch(/^baş hedef aralığına/);
+    // Hedefin altında kalan değerde eski biçim: açı ve "bir an değdi".
+    expect(reachSummary(at(12), s1)).toBe(`baş en çok ~12° sarktı (hedef 15–40°); ${REACH_TOUCHED_ONLY_TEXT}`);
+    // Bir an değmediyse (pozisyon doğrulandı) hedef içindeki açı için özet yok.
+    expect(reachSummary({ ...base, reach: { phi: 16, theta: t.theta } } as StepRecord, s1)).toBeNull();
   });
 
   it('kısa dizide (ortalama oluşmadan) durdurulursa eldeki ölçümlerden; tamamlanan adımda özet yine yok', () => {

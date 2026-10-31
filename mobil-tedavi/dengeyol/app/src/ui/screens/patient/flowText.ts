@@ -3,8 +3,8 @@
  * Kullanıcı turu 3 (F2): sesli okuma kısalır (ayrıntı ekranda ve "Tekrar dinle"de), "Doğru mu?" onayında yanıt en üstte,
  * hazırlık maddeleri yakını modunda yardımcıya göre.
  */
-import { SAFETY_STOP_TEXT } from '../../../core/runner';
-import type { RedFlagQuestion } from '../../../core/safety';
+import { SAFETY_STOP_TEXT, SAFETY_STOP_TEXT_WRONG_SIDE_HELPER } from '../../../core/runner';
+import { REFER_TEXT, type RedFlagQuestion } from '../../../core/safety';
 
 // ---- Seçenekli sorular: varsayılan sesli biçim kısa, "Tekrar dinle" tam -----------------------------------------------
 
@@ -17,22 +17,13 @@ function ordinalList(title: string, options: string[]): string {
   return [title, ...options.map((o, i) => `${ORDINALS[i] ?? `${i + 1}.`}: ${o.replace(/\.+$/, '')}.`)].join(' ');
 }
 
-const lowerFirst = (s: string) => s.charAt(0).toLocaleLowerCase('tr-TR') + s.slice(1);
-
-/**
- * Seçenek adları "Birinci/İkinci" olmadan tek cümlede (kullanıcı turu 5, k01): "Şu an nasılsınız? İyiyim; hafif baş
- * dönmesi ya da bulantı var; …". Seçenekler arası noktalı virgül (seste kısa duraklama); iç noktalar virgüle döner.
- */
-function flowingList(title: string, options: string[]): string {
-  const items = options.map((o, i) => {
-    const t = o.replace(/\.+$/, '').replace(/:\s*(\S)/, (_m, c: string) => `: ${c.toLocaleLowerCase('tr-TR')}`).replace(/\.\s+/g, ', ');
-    return i === 0 ? t : lowerFirst(t);
-  });
-  return `${title} ${items.join('; ')}.`;
-}
-
 export interface SpokenOption {
   label: string;
+  /**
+   * Varsayılan okunuşta seçeneğin kısa adı (kullanıcı turu 6, k05): sıra sayısı kalır, "var" gibi dolgu düşer ("İkinci: Hafif
+   * baş dönmesi ya da bulantı."). Yoksa label. "Tekrar dinle"de ve ekranda label.
+   */
+  spokenLabel?: string;
   sub?: string;
   /**
    * Alt açıklama güvenlik için anlam taşıyor (ör. "Yeni belirti": hangi belirtiler): varsayılan okunuşta da okunur.
@@ -44,17 +35,20 @@ export interface SpokenOption {
 /**
  * Seçenekli ekranın iki sesli biçimi (kullanıcı turu 3, k01, k04, k05): `short` ekran açılınca okunur (soru ve seçenek
  * adları; açıklama satırı yerine varsa `spokenLead`), `full` "Tekrar dinle"de okunur (soru, açıklama satırı ve seçeneklerin
- * alt açıklamaları). Ekranda her şey yazılı kalır; hiçbir seçenek düşmez.
+ * alt açıklamaları). Ekranda her şey yazılı kalır; hiçbir seçenek düşmez. Seçenekler her iki biçimde de sıra sayısıyla
+ * ("Birinci: … İkinci: …"): kullanıcı turu 6 (k05) — sıra sayısız tek cümlede seçeneklerin sınırı duyulmuyordu; kısalık
+ * `spokenLabel` ile korunur.
  */
 export function choiceSpeechParts(
-  q: { title: string; spokenTitle?: string; lead?: string; spokenLead?: string; prefix?: string; flowing?: boolean },
+  q: { title: string; spokenTitle?: string; lead?: string; spokenLead?: string; prefix?: string },
   options: SpokenOption[]
 ): { short: string; full: string } {
   const head = (title: string, lead?: string) => [q.prefix, title, lead].filter(Boolean).join(' ');
-  const shortOptions = options.map((o) => sayable(o.sub && o.subAlways ? `${o.label}: ${o.sub}` : o.label));
-  const short = q.flowing
-    ? flowingList(head(q.spokenTitle ?? q.title, q.spokenLead), shortOptions)
-    : ordinalList(head(q.spokenTitle ?? q.title, q.spokenLead), shortOptions);
+  const shortOptions = options.map((o) => {
+    const name = o.spokenLabel ?? o.label;
+    return sayable(o.sub && o.subAlways ? `${name}: ${o.sub}` : name);
+  });
+  const short = ordinalList(head(q.spokenTitle ?? q.title, q.spokenLead), shortOptions);
   const full = ordinalList(
     head(q.title, q.lead),
     options.map((o) => sayable(o.sub ? `${o.label}. ${o.sub}` : o.label))
@@ -233,4 +227,86 @@ export function safetyStopTextFor(text: string, helper: boolean): string {
   if (!helper) return text;
   const key = (Object.keys(SAFETY_STOP_TEXT) as (keyof typeof SAFETY_STOP_TEXT)[]).find((k) => SAFETY_STOP_TEXT[k] === text);
   return key ? SAFETY_STOP_TEXT_HELPER[key] : text;
+}
+
+// ---- Durdurma ekranlarının sesi: önce kısa biçim, ayrıntı ekranda ve "Ayrıntıyı dinle"de -------------------------------
+
+/**
+ * Seste "BPPV" harf harf okunmaz (kullanıcı turu 6, k05): "kristal oynaması" denir. Ekrandaki metin değişmez.
+ * - "kristal oynaması (BPPV)", "(yatay kanal BPPV)" gibi ayraçlar atılır (yanındaki "kristal oynaması" zaten söylenir),
+ * - kalan "BPPV" ekiyle birlikte çevrilir: "BPPV'ye" → "kristal oynamasına", "yatay kanal BPPV" → "yatay kanal kristal
+ *   oynaması"; "BPPV baş dönmesi" → "Kristal oynamasında baş dönmesi".
+ */
+export function withoutBppv(text: string): string {
+  const WORD: Record<string, string> = {
+    '': 'kristal oynaması',
+    ye: 'kristal oynamasına',
+    yi: 'kristal oynamasını',
+    nin: 'kristal oynamasının',
+    de: 'kristal oynamasında',
+    den: 'kristal oynamasından',
+    le: 'kristal oynamasıyla'
+  };
+  return text
+    .replace(/\s*\([^()]*BPPV[^()]*\)/g, '')
+    .replace(/BPPV baş dönmesi/g, 'kristal oynamasında baş dönmesi')
+    .replace(/BPPV(?:'(ye|yi|nin|den|de|le))?(?![\p{L}])/gu, (_m, suf: string | undefined) => WORD[suf ?? '']!)
+    .replace(/(^|[.!?]\s+)kristal/g, '$1Kristal')
+    .replace(/\s{2,}/g, ' ');
+}
+
+/**
+ * Durdurma ekranının kısa sesli biçimleri (kullanıcı turu 6, k05, k07; normal hızda ≤ ~12 s, `STOP_SPOKEN_MAX_CHARS`):
+ * önce ne yapılacağı ("Durduk. Yavaşça oturun. Hekiminize başvurun."), durulan yer, açı ve gerekçenin tamamı ekranda ve
+ * "Ayrıntıyı dinle"de. Durdurma kuralı ve yönlendirme değişmez.
+ */
+const EMERGENCY_SIGNS = "Konuşma bozukluğu, güçsüzlük ya da çift görme olursa 112'yi arayın.";
+
+export const REFER_SPOKEN: Record<keyof typeof REFER_TEXT, string | null> = {
+  ATYPICAL_LONG: `Baş dönmesi uzun sürdü. Manevra yapmayın; hekiminize ya da odyoloğunuza başvurun. ${EMERGENCY_SIGNS}`,
+  BOTH_SIDES: 'Manevra yapmayın. İki tarafta da baş dönmesi oldu; bu evde ayırt edilemez. Hekiminize ya da odyoloğunuza başvurun.',
+  SIDE_CONFLICT: 'Manevra yapmayın. Baş dönmesi hekiminizin belirlediğinden farklı tarafta başladı. Hekiminize ya da odyoloğunuza başvurun.',
+  // Zaten kısa: tam metin okunur.
+  INCOMPLETE: null
+};
+
+/** Manevrada ≥1 dk baş dönmesi (EpisodeFlow `LONG_IN_MANEUVER_TEXT`) için kısa ses. */
+export const LONG_IN_MANEUVER_SPOKEN = `Baş dönmesi uzun sürdü. Manevrayı tekrarlamayın; hekiminize ya da odyoloğunuza başvurun. ${EMERGENCY_SIGNS}`;
+
+/** Alt tip sorusunda "her seferinde 3 dakikadan uzun" yanıtı için kısa ses. */
+export const SUBTYPE_LONG_SPOKEN = `Bu uzunlukta dönme hissi kristal oynamasına uymaz. Manevra yapmayın; hekiminize başvurun. ${EMERGENCY_SIGNS}`;
+
+/** Yatay kanal şüphesi (alt tip) için kısa ses. */
+export const SUBTYPE_HC_SPOKEN = 'Manevra yapmayın. Bu baş dönmesi evde tedavi edilemeyen bir tip olabilir. Hekiminize ya da odyoloğunuza başvurun.';
+
+/**
+ * Yürütücü güvenlik durdurmalarının (core/runner `SAFETY_STOP_TEXT`) kısa sesi; yakını modunda yardımcıya göre. Kullanıcı
+ * turu 6 (k07): "Durduk. Yavaşça oturun. Hekiminize başvurun." önce; durulan yer ve açı ekranda ve "Ayrıntıyı dinle"de.
+ */
+export function safetyStopSpoken(kind: keyof typeof SAFETY_STOP_TEXT, helper: boolean): string {
+  switch (kind) {
+    case 'VERTIGO_TOO_LONG':
+      return helper
+        ? `Durduk. Baş dönmesi çok uzun sürdü. Hastayı yavaşça oturtun; hastanın hekimine başvurun. ${EMERGENCY_SIGNS}`
+        : `Durduk. Baş dönmesi çok uzun sürdü. Yavaşça oturun; hekiminize başvurun. ${EMERGENCY_SIGNS}`;
+    case 'POSITION_UNREACHABLE':
+      return helper
+        ? 'Durduk. Zorlamayın; hastayı yavaşça oturtun. Hastanın hekimine ya da odyoloğuna başvurun. Nerede durduğumuz ekranda yazıyor.'
+        : 'Durduk. Zorlamayın; yavaşça oturun. Hekiminize ya da odyoloğunuza başvurun. Nerede durduğumuz ekranda yazıyor.';
+    case 'WRONG_SIDE':
+      return helper
+        ? 'Durduk. Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun. Bugün yeniden denemeden önce hastanın hekimine danışın.'
+        : 'Durduk. Önce sırtüstüne gelin, sonra yavaşça oturun. Bugün yeniden denemeden önce hekiminize ya da odyoloğunuza danışın.';
+  }
+}
+
+/** "Pozisyona gelinemedi" durdurmasında gösterilen metne göre kısa ses: yanlış tarafta kalındıysa WRONG_SIDE. */
+export function unreachableStopSpoken(stopText: string, helper: boolean): string {
+  const wrongSide = stopText === SAFETY_STOP_TEXT.WRONG_SIDE || stopText === SAFETY_STOP_TEXT_WRONG_SIDE_HELPER;
+  return safetyStopSpoken(wrongSide ? 'WRONG_SIDE' : 'POSITION_UNREACHABLE', helper);
+}
+
+/** "Kendimi kötü hissediyorum" ("Dinlenin") ekranının kısa sesi (kullanıcı turu 5'te tam metin ~20 s'ydi). */
+export function unwellEndSpoken(what: 'maneuver' | 'test'): string {
+  return `${what === 'maneuver' ? 'Manevrayı' : 'Testi'} durdurdunuz. Yavaşça oturun, dinlenin, su için. Geçmezse hekiminize başvurun; acil belirtide 112'yi arayın.`;
 }
