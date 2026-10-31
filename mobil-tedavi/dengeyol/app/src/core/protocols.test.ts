@@ -26,7 +26,8 @@ describe('protokol bütünlüğü', () => {
     for (const side of sides) {
       const p = resolveProtocol(id, side);
       for (const st of p.steps) {
-        for (const t of [st.title, st.say, st.clinician, st.unverifiable ?? '']) expect(t).not.toMatch(/\{|\}/);
+        const extra = [st.reachedSay, st.short, st.helperTitle, st.helperSay, st.helperShort, st.helperReachedSay];
+        for (const t of [st.title, st.say, st.clinician, st.unverifiable ?? '', ...extra.map((e) => e ?? '')]) expect(t).not.toMatch(/\{|\}/);
       }
     }
   });
@@ -43,6 +44,36 @@ describe('protokol bütünlüğü', () => {
         expect(evaluate(idealPose(prev.target), cur.target).inRange, `${id} ${prev.id}→${cur.id}`).toBe(false);
       }
     }
+  });
+});
+
+describe('tur 1 (D1): hasta modundaki protokollerde yardımcı ve kısa metinler', () => {
+  const patientIds = ids.filter((id) => PROTOCOLS[id].patient !== 'no');
+  it('hasta modu protokolleri: Dix-Hallpike, Epley, Semont', () => {
+    expect(patientIds.sort()).toEqual(['dix-hallpike', 'epley', 'semont']);
+  });
+  it.each(patientIds)('%s: her adımda yardımcı başlığı/yönergesi/özeti ve hasta özeti var', (id) => {
+    for (const side of ['R', 'L'] as const) {
+      const p = resolveProtocol(id, side);
+      for (const st of p.steps) {
+        expect(st.helperTitle, `${id} ${st.id}`).toBeTruthy();
+        expect(st.helperSay, `${id} ${st.id}`).toBeTruthy();
+        expect(st.helperShort, `${id} ${st.id}`).toBeTruthy();
+        expect(st.short, `${id} ${st.id}`).toBeTruthy();
+        // Yardımcı metni hastaya ikinci şahısla ("Başınızı") hitap etmez.
+        expect(st.helperSay).not.toMatch(/\b(Başınızı|başınızı|yatın\.|oturun\.)/);
+        if (st.unverifiable) {
+          expect(st.reachedSay).toBeTruthy();
+          expect(st.helperReachedSay).toBeTruthy();
+        }
+      }
+    }
+  });
+  it('yön sözleri "hastanın sağı/solu" ile doldurulur (sol Epley)', () => {
+    const p = resolveProtocol('epley', 'L');
+    expect(p.steps[1]!.helperTitle).toBe('Sırtüstü, baş hastanın soluna 45° ve sarkık');
+    expect(p.steps[2]!.helperSay).toMatch(/hastanın sağına doğru çevirin/);
+    expect(p.steps[3]!.helperSay).toMatch(/ekranı göremezsiniz; sesi dinleyin/);
   });
 });
 
