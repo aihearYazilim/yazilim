@@ -36,3 +36,7 @@ bağlantılarda da doğru görünür); bitiş ekranında "uyku pozisyonu kısıt
 - Güvenlik sorularının sesli gövdesinden "… sayılmaz" açıklamalarının çıkarılması ve ortostatik/kulak sorularında "bilinen, değişmeyen" belirti ayrımı (k04, k07): klinik ekip kararı; sorular güvenli yönde kalır.
 - "Hekime söyleyecekleriniz" listesini uygulamada yanıtlama (k03), taraf sorusunda "geçen sefer" notu ve hazırlık listesinin katlanması (k06): isteğe bağlı konfor; sonraki sürüm.
 - Hatırlatıcıda bildirim (k05): ağsız PWA'da güvenilir değil.
+
+## Uygulama durumu (son düzeltmeler sonunda)
+G1–G3'ün bütün maddeleri uygulandı ve birleştirildi. 466 birim testi ve 21/21 uçtan uca senaryo geçiyor (7'si 2.–3. tur
+davranışlarını kilitleyen yeni senaryo). Yapılmayanlar yukarıda gerekçeleriyle.
