@@ -1,8 +1,8 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { decodePrescription, DECODE_ERROR_TEXT } from '../../../core/prescription';
+import { decodePrescription, DECODE_ERROR_TEXT, rxValidUntil } from '../../../core/prescription';
 import { sideName } from '../../../core/protocols';
 import { store } from '../../../state/store';
-import { formatDate } from '../../../state/episodes';
+import { formatDate, RX_VALID_DAYS } from '../../../state/episodes';
 import { RxPaste } from './PatientHome';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
@@ -28,6 +28,8 @@ export function PrescriptionImport() {
     );
   }
   const p = res.value;
+  const until = rxValidUntil(p, RX_VALID_DAYS);
+  const expired = until !== null && Date.now() > until;
   const accept = () => {
     store.update((d) => ({
       ...d,
@@ -55,6 +57,12 @@ export function PrescriptionImport() {
           <h2>Ev manevrası reçetesi</h2>
         </div>
         <dl className="kv">
+          {p.pid && (
+            <>
+              <dt>Hasta kodu</dt>
+              <dd>{p.pid}</dd>
+            </>
+          )}
           <dt>Tanı</dt>
           <dd>{sideName(p.side).toLocaleUpperCase('tr-TR')} arka kanal BPPV</dd>
           <dt>Manevra</dt>
@@ -65,6 +73,14 @@ export function PrescriptionImport() {
           </dd>
           <dt>Muayene tarihi</dt>
           <dd>{formatDate(new Date(`${p.date}T00:00:00`).getTime())}</dd>
+          {until !== null && (
+            <>
+              <dt>Geçerlilik</dt>
+              <dd data-testid="rx-valid-until">
+                {formatDate(until)} tarihine kadar ({RX_VALID_DAYS} gün){expired ? ' · SÜRESİ DOLDU' : ''}
+              </dd>
+            </>
+          )}
           {p.by && (
             <>
               <dt>Yazan</dt>
@@ -85,9 +101,25 @@ export function PrescriptionImport() {
           )}
         </dl>
       </div>
+      {expired && (
+        <div className="notice small" data-testid="rx-expired">
+          <Icon name="alert" />
+          <span>
+            Bu reçetenin süresi doldu. Kabul ederseniz yalnız tanı bilgisi olarak kullanılır: manevra sayısı varsayılana döner ve her atakta iki taraf
+            yeniden test edilir.
+          </span>
+        </div>
+      )}
+      <div className="notice" role="note" data-testid="rx-unsigned">
+        <Icon name="alert" />
+        <span>
+          <strong>Bu bağlantı imzasızdır:</strong> kimin hazırladığı uygulama tarafından doğrulanamaz. Yalnız muayenede hekiminizin ya da odyoloğunuzun size elden
+          verdiği QR kodu ya da bağlantıyı kabul edin. Başka yoldan (mesaj, internet) gelen bir reçeteyi kabul etmeyin.
+        </span>
+      </div>
       <p className="small muted">
-        Reçeteyi kabul ettiğinizde bu bilgiler uygulamaya kaydedilir. Her seansta yine güvenlik soruları sorulur. Reçeteyi size veren kişiyi tanımıyorsanız kabul
-        etmeyin.
+        Reçeteyi kabul ettiğinizde bu bilgiler uygulamaya kaydedilir. Her seansta yine güvenlik soruları sorulur. Reçete, hekiminizin muayenede belirlediği ev
+        manevrası talimatıdır; durumunuz değişirse yeniden muayene gerekir.
       </p>
       <button className="btn primary block xl" onClick={accept} data-testid="rx-accept">
         Reçeteyi kabul et

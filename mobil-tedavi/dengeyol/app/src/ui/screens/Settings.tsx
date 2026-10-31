@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { speech, Speech } from '../../platform/speech';
+import { speech, Speech, SPEECH_RATES, SPEECH_SAMPLE } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
 import { applySettings, unlockAudio } from '../../platform/feedback';
 import { store, useData } from '../../state/store';
 import type { Settings as S } from '../../state/types';
 import { Segmented } from '../components/Controls';
+import { HapticLegend } from '../components/HapticLegend';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 
@@ -22,7 +23,8 @@ export function Settings() {
     applySettings({ ...s });
     tones.play('test');
     haptics.play('reached');
-    speech.speak('Ses testi. Bu sesi duyuyorsanız sesli yönergeler çalışıyor.', 'high');
+    // Seçili hızla örnek bir yönerge: kullanıcı hızın kendisine uyup uymadığını duyar.
+    speech.speak(SPEECH_SAMPLE, 'high');
   };
 
   const exportData = () => {
@@ -60,11 +62,7 @@ export function Settings() {
             label="Konuşma hızı"
             value={s.speechRate}
             onChange={(v) => set({ speechRate: v })}
-            options={[
-              { value: 0.8, label: 'Yavaş' },
-              { value: 1, label: 'Normal' },
-              { value: 1.15, label: 'Hızlı' }
-            ]}
+            options={SPEECH_RATES}
           />
         </div>
         <label className="row">
@@ -78,6 +76,18 @@ export function Settings() {
         <button className="btn secondary" onClick={testSound}>
           <Icon name="volume" /> Sesi dene
         </button>
+      </section>
+
+      <section className="card stack" id="titresimler">
+        <details>
+          <summary>
+            <strong>Titreşimleri tanı</strong>
+          </summary>
+          <p className="small muted" style={{ marginTop: 6 }}>
+            Sesi duymakta zorlanıyorsanız manevrada ne zaman hareket edeceğinizi titreşimlerden anlayabilirsiniz. Her düğme o anlamın titreşimini çalar.
+          </p>
+          <HapticLegend />
+        </details>
       </section>
 
       <section className="card stack">
