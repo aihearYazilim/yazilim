@@ -12,7 +12,17 @@ import {
   rxHeaderLine,
   rxShortcutUsed,
   rxValidityText,
-  symptomText
+  symptomText,
+  episodeEndNoteText,
+  maneuverHeadText,
+  periodEpisodes,
+  periodReportPlainText,
+  periodSummaryLine,
+  reportPeriod,
+  stepDefFor,
+  stepSummary,
+  stopWhereText,
+  unreachableStopDetail
 } from './reportText';
 
 const rec = (o: Partial<StepRecord> = {}): StepRecord => ({
@@ -160,5 +170,135 @@ describe('rapor metinleri', () => {
     expect(t).toMatch(/Sırtüstü, baş sarkık: 56 s · hedefte %92/);
     // Kayıtta yardım bilgisi varsa şu anki ayar ayrıca yazılmaz.
     expect(t).not.toMatch(/şu anki ayarı/);
+  });
+});
+
+describe('pozisyona gelinemedi: nerede durulduğu (k07, k02)', () => {
+  const ep = (o: Partial<Episode> = {}): Episode => ({
+    id: 'e1',
+    startedAt: new Date('2026-10-31T09:00:00').getTime(),
+    side: null,
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'referred',
+    endNote: 'POSITION_UNREACHABLE',
+    ...o
+  });
+  // F1'in ekleyeceği alan (StepRecord.reach) henüz türde yok: kayıtta varmış gibi verilir.
+  const withReach = (r: StepRecord, phi: number | null, theta: number | null) => ({ ...r, reach: { phi, theta } }) as StepRecord;
+
+  it('taraf testinde durulunca: manevra "yapılmadı", durulan yer taraf testi; stopDetail varsa o yazılır', () => {
+    const e = ep();
+    expect(maneuverHeadText(e)).toBe('yapılmadı (planlanan: Epley)');
+    expect(stopWhereText(e)).toMatch(/^taraf testi sırasında/);
+    const detail = unreachableStopDetail('side-test', 'dix-hallpike', 'R', [
+      rec({ stepId: 'dh-sit', title: 'Oturuş', unreachable: false }),
+      withReach(rec({ stepId: 'dh-lie', title: 'Sırtüstü, baş sağa 45° ve sarkık', unreachable: true, startedAt: 0, endedAt: 60_000 }), 8.4, 44)
+    ]);
+    expect(detail).toBe('Sağ taraf testi, "Sırtüstü, baş sağa 45° ve sarkık" adımı: baş en çok ~8° geriye sarkabildi (hedef 15–40°); 60 s içinde gelinemedi');
+    const t = reportPlainText(ep({ stopDetail: detail }), emptyData(), new Date('2026-10-31T10:00:00').getTime());
+    expect(t).toMatch(/Manevra: yapılmadı \(planlanan: Epley\)/);
+    expect(t).toMatch(/Durulan yer: Sağ taraf testi, .*~8° geriye sarkabildi \(hedef 15–40°\)/);
+    expect(t).not.toMatch(/POSITION_UNREACHABLE/);
+  });
+  it('manevrada durulunca: adım, ulaşılan açı ve hedef manevra kaydından çıkarılır', () => {
+    const r = withReach(rec({ stepId: 'ep-1', title: 'Sırtüstü, baş sola 45° ve sarkık', unreachable: true, holdSec: 0, startedAt: 0, endedAt: 60_000 }), 8, -44);
+    const m = { id: 'm1', at: 0, protocolId: 'epley' as const, side: 'L' as const, completed: false, stopReason: 'POSITION_UNREACHABLE' as const, records: [rec({ stepId: 'ep-sit' }), r], manual: false };
+    const e = ep({ side: 'L', maneuvers: [m] });
+    expect(stopWhereText(e)).toBe('Epley sol manevrası, 2. adım "Sırtüstü, baş sola 45° ve sarkık": baş en çok ~8° geriye sarkabildi (hedef 15–40°); 60 s içinde gelinemedi');
+    expect(stepSummary(r, stepDefFor('epley', 'L', 'ep-1'))).toMatch(/POZİSYONA GELİNEMEDİ \(baş en çok ~8° geriye sarkabildi \(hedef 15–40°\)\)/);
+    // Dönüş hedefin dışında kaldıysa uzaklık ve izin yazılır (sol tarafta hedef aynalanır: −45°).
+    expect(stepSummary(withReach(r, 20, -10), stepDefFor('epley', 'L', 'ep-1'))).toMatch(/dönüş hedefe en yakın ~35° uzak kaldı \(izin ±10°\)/);
+    // Açı kaydı yoksa (eski kayıt) yalnız durum yazılır.
+    expect(stepSummary(rec({ unreachable: true }))).toMatch(/POZİSYONA GELİNEMEDİ · /);
+    expect(maneuverHeadText(e)).toBe('Epley');
+    expect(episodeEndNoteText(e)).toMatch(/baş yeterince sarkamadı/);
+  });
+  it('yanlış tarafta kalınca gerekçe "yanlış tarafa döndü" olur (k02)', () => {
+    const r = rec({ stepId: 'ep-3', title: 'Yan', unreachable: true, wrongSide: true });
+    const m = { id: 'm1', at: 0, protocolId: 'epley' as const, side: 'R' as const, completed: false, stopReason: 'POSITION_UNREACHABLE' as const, records: [r], manual: false };
+    const e = ep({ side: 'R', maneuvers: [m] });
+    expect(episodeEndNoteText(e)).toMatch(/yanlış tarafa döndü .* doğru yana getirilemedi/);
+    expect(stopWhereText(e)).toMatch(/önce yanlış tarafa dönüldü, doğru yana gelinemedi/);
+    expect(episodeEndNoteText(ep({ endNote: 'VERTIGO_TOO_LONG' }))).toMatch(/2 dakikadan uzun/);
+  });
+});
+
+describe('dönem raporu (k09)', () => {
+  const day = 24 * 60 * 60 * 1000;
+  const man = (at: number, completed = true) => ({
+    id: `m${at}`,
+    at,
+    protocolId: 'epley' as const,
+    side: 'R' as const,
+    completed,
+    stopReason: completed ? null : ('USER_ABORT' as const),
+    records: [rec(), rec()],
+    manual: false
+  });
+  const base = new Date('2026-10-30T09:00:00').getTime();
+  const mk = (id: string, startedAt: number, o: Partial<Episode> = {}): Episode => ({
+    id,
+    startedAt,
+    side: 'R',
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'resolved',
+    ...o
+  });
+
+  it('reçete tarihinden bu yana bütün ataklar; başta tek satır sonuç; düz metin ataklar sırayla', () => {
+    const d = emptyData();
+    d.patient = {
+      consentAt: '2026-10-30T08:00:00.000Z',
+      diagnosedByDoctor: true,
+      canal: 'PC',
+      side: 'R',
+      contraindications: [],
+      prescription: { v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 5 }
+    };
+    const e1 = mk('e1', base, {
+      maneuvers: [man(base + 600_000), man(base + 4 * 3600_000)],
+      retests: [{ at: base + day, kind: 'morning', side: 'R', vertigo: true, latencySec: 3, durationSec: 20 }],
+      status: 'closed'
+    });
+    const e2 = mk('e2', base + 3 * day, {
+      maneuvers: [man(base + 3 * day + 600_000), man(base + 3 * day + 3600_000, false), { ...man(base + 3 * day + 7200_000), records: [rec()], completed: false }],
+      retests: [{ at: base + 4 * day, kind: 'morning', side: 'R', vertigo: false, latencySec: null, durationSec: null }]
+    });
+    const old = mk('e0', base - 40 * day, { endedAt: base - 39 * day, maneuvers: [man(base - 40 * day)] });
+    d.episodes = [e2, old, e1];
+    const now = base + 5 * day;
+    const eps = periodEpisodes(d, now);
+    expect(eps.map((e) => e.id)).toEqual(['e1', 'e2']);
+    // Doza sayılan manevralar (tamamlanan ya da bir pozisyona geçilen); yarım kalan ayrıca belirtilir.
+    expect(periodSummaryLine(eps)).toBe('2 atak · 4 manevra (3 tamamlandı) · son sabah testi negatif');
+    expect(reportPeriod(d, now).label).toMatch(/^Reçete dönemi \(30 Ekim 2026 – 12 Kasım 2026\)$/);
+    const t = periodReportPlainText(d, now);
+    expect(t.split('\n')[0]).toBe('DengeYol — BPPV dönem raporu');
+    expect(t).toMatch(/Sonuç: 2 atak · 4 manevra \(3 tamamlandı\) · son sabah testi negatif/);
+    expect(t.indexOf('=== 1. ATAK')).toBeLessThan(t.indexOf('=== 2. ATAK'));
+    expect(t).not.toMatch(/=== 3\. ATAK/);
+    // Ortak satırlar (tanı, onam) bir kez yazılır.
+    expect(t.match(/Önceki tanı:/g)?.length).toBe(1);
+    expect(t.match(/Onam:/g)?.length).toBe(1);
+    expect(t).not.toMatch(/\t/);
+  });
+  it('reçetesiz: son 14 gün; atak yoksa bunu söyler; yönlendirmeler sayılır', () => {
+    const d = emptyData();
+    const now = base + 20 * day;
+    expect(reportPeriod(d, now).label).toMatch(/^Son 14 gün/);
+    expect(periodSummaryLine([])).toBe('Bu dönemde kayıtlı atak yok');
+    d.episodes = [mk('a', now - 2 * day, { status: 'referred', endNote: 'POSITION_UNREACHABLE' }), mk('b', now - 30 * day, { endedAt: now - 29 * day })];
+    const eps = periodEpisodes(d, now);
+    expect(eps.map((e) => e.id)).toEqual(['a']);
+    expect(periodSummaryLine(eps)).toBe('1 atak · 0 manevra · tekrar testi yok · 1 hekime yönlendirme');
+    expect(periodReportPlainText(d, now)).toMatch(/Durulan yer: taraf testi sırasında/);
   });
 });

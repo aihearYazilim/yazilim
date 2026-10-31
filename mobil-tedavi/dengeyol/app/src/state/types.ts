@@ -127,6 +127,13 @@ export interface Episode {
    * trigger: 'turnUnsure' = yatay kanal onayında "Emin değilim".
    */
   subtype?: { at: number; trigger: 'liedown' | 'unsure' | 'turnUnsure'; duration: 'short' | 'mid' | 'unsure' };
+  /**
+   * Atak manevra dışında (taraf testi ya da tekrar testi) "pozisyona gelinemedi" ile durdurulduysa nerede durulduğu
+   * (kullanıcı turu 3, k07): "Sağ taraf testi, "Sırtüstü…" adımı: baş en çok ~8° geriye sarkabildi (hedef 15–40°)…".
+   * Test kayıtları manevra gibi saklanmadığı için rapora buradan yazılır; üretmek için unreachableStopDetail
+   * (ui/screens/patient/reportText.ts). Manevrada durulduysa gerek yok: rapor manevra kaydından çıkarır.
+   */
+  stopDetail?: string;
 }
 
 export interface ClinicPatient {

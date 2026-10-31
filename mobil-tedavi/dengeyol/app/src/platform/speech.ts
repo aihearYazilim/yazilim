@@ -22,11 +22,12 @@ export const SPEECH_SAMPLE =
  * okları ve "·" işaretini adıyla okuyabilir (k01, k03, k05):
  * - sözcükler arasındaki "/" → " ya da " ("aspirin/Coraspin" → "aspirin ya da Coraspin"); sayı/sayı (1/15) ve adresler korunur,
  * - ayraçlar virgüllü duraklamaya çevrilir ("(hangi kulağınız alttayken)" → ", hangi kulağınız alttayken,"),
- * - oklar ve köşeli ayraç işaretleri ("[←]", "→") atılır; "·" virgül olur; "~" → "yaklaşık ".
+ * - oklar ve köşeli ayraç işaretleri ("[←]", "→") atılır; "·" virgül olur; "~" → "yaklaşık ",
+ * - yaygın kısaltmalar açılır (kullanıcı turu 3, k07: ses "ör." için "ör" diyordu): bkz. expandAbbreviations.
  */
 export function speechText(text: string): string {
   return (
-    text
+    expandAbbreviations(text)
       // Ok işaretleri ve köşeli ayraçlı ok etiketleri
       .replace(/\[\s*[←→↑↓]\s*\]/g, ' ')
       .replace(/[←→↑↓⟵⟶]/g, ' ')
@@ -45,6 +46,42 @@ export function speechText(text: string): string {
       .replace(/\s{2,}/g, ' ')
       .trim()
   );
+}
+
+/** Harf olmayan (ya da metnin başı/sonu) sınır: kısaltma bir sözcüğün parçası değilse açılır. */
+const B = '(^|[^\\p{L}\\p{N}])';
+const E = '(?![\\p{L}\\p{N}])';
+
+/**
+ * Sesli okumada açılan kısaltmalar. Yalnız anlamı tek ve yanlış okunma olasılığı yüksek olanlar: noktalı kısaltmalar
+ * ("ör.", "vb.", "Dr.") her yerde; birim kısaltmaları ("dk", "sn") yalnız bir sayıdan sonra (başka bir sözcükle
+ * karışmasın). Büyük harfle başlayan kısaltma büyük harfle açılır ("Ör." → "Örneğin").
+ */
+const ABBREVIATIONS: { re: RegExp; to: string }[] = [
+  { re: new RegExp(`${B}(ö)rn?\\.${E}`, 'giu'), to: 'rneğin' },
+  { re: new RegExp(`${B}vb\\.${E}`, 'gu'), to: 've benzeri' },
+  { re: new RegExp(`${B}vs\\.${E}`, 'gu'), to: 've saire' },
+  { re: new RegExp(`${B}bkz\\.${E}`, 'giu'), to: 'bakınız' },
+  { re: new RegExp(`${B}Prof\\.\\s*`, 'gu'), to: 'Profesör ' },
+  { re: new RegExp(`${B}Doç\\.\\s*`, 'gu'), to: 'Doçent ' },
+  { re: new RegExp(`${B}Uzm\\.\\s*`, 'gu'), to: 'Uzman ' },
+  { re: new RegExp(`${B}Dr\\.\\s*`, 'gu'), to: 'Doktor ' },
+  { re: new RegExp(`(\\d)\\s*dk${E}`, 'gu'), to: ' dakika' },
+  { re: new RegExp(`(\\d)\\s*sn${E}`, 'gu'), to: ' saniye' },
+];
+
+/** Kısaltmaları sesli okunacak biçimde açar (ekrandaki metin değişmez). */
+export function expandAbbreviations(text: string): string {
+  let s = text;
+  for (const { re, to } of ABBREVIATIONS) {
+    if (to === 'rneğin') {
+      // "ör." / "örn." → "örneğin"; ilk harfin büyüklüğü korunur.
+      s = s.replace(re, (_m, pre: string, o: string) => `${pre}${o}${to}`);
+    } else {
+      s = s.replace(re, (_m, pre: string) => `${pre}${to}`);
+    }
+  }
+  return s;
 }
 
 export class Speech {

@@ -210,6 +210,10 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   await snap(page, 'karsilama');
   await page.getByTestId('role-patient').click();
   await snap(page, 'kurulum-1');
+  // Onam: yan etkiler ve seçenekler katlanabilir (kapalı gelir), acil kartı görünür (kullanıcı turu 3, k03).
+  if ((await page.locator('[data-testid="ob-risks"] details[open]').count()) !== 0) throw new Error('onamda yan etkiler kutusu açık geliyor');
+  await page.getByTestId('ob-risks-side-effects').locator('summary').click();
+  if (!(await page.getByTestId('ob-risks-side-effects').innerText()).includes('düşebilirsiniz')) throw new Error('yan etkiler açılınca görünmüyor');
   await page.getByTestId('ob-consent').click();
   await page.getByTestId('ob-next').click();
   await page.getByRole('radio', { name: 'Evet, tanı kondu' }).click();
@@ -219,6 +223,8 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   await page.getByRole('radio', { name: 'Son 2 hafta içinde' }).click();
   await snap(page, 'kurulum-tani');
   await page.getByTestId('ob-next').click();
+  // Uygunluk listesinde her maddenin başında sesteki kısa ad kalın (k05).
+  if ((await page.locator('button[role="checkbox"] strong', { hasText: 'Boyun sorunu:' }).count()) !== 1) throw new Error('uygunluk listesinde kısa ad kalın değil');
   await page.getByTestId('ob-none').click();
   await page.getByTestId('ob-next').click();
   await page.getByTestId('start-episode').waitFor();
@@ -279,6 +285,12 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   if (!/baş dönmesi|Belirti|–/.test(reportText)) throw new Error('raporda belirti işareti yok');
   if (/\b(VERTIGO_TOO_LONG|ATYPICAL_LONG|BOTH_SIDES|SIDE_CONFLICT)\b/.test(reportText)) throw new Error('raporda ham iç kod var');
   await snap(page, 'rapor');
+  // Dönem raporu: dönemdeki bütün ataklar, başta tek satır sonuç (k09).
+  await page.goto(BASE + '#/hasta/rapor/donem');
+  const periodSummary = await page.getByTestId('period-summary').innerText();
+  if (!/^\d+ atak · \d+ manevra/.test(periodSummary)) throw new Error('dönem raporu özeti hatalı: ' + periodSummary);
+  if ((await page.getByTestId('period-episode').count()) < 1) throw new Error('dönem raporunda atak yok');
+  await snap(page, 'donem-raporu');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });

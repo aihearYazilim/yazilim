@@ -25,6 +25,13 @@ export const CONSENT_OPTIONS: string[] = [
   'Uygulamayı istediğiniz an bırakabilirsiniz.'
 ];
 
+/**
+ * Katlanabilir kutuların kapalıyken de görünen tek satırlık özeti (kullanıcı turu 3, k03: onam ekranı kısalsın ama
+ * yan etkilerin ve seçeneklerin ne olduğu ilk bakışta görülsün). Metin anlamı değişmediği için onam sürümü değişmez.
+ */
+export const CONSENT_RISKS_GIST = 'Geçici baş dönmesi ve bulantı, düşme, nadiren kanal değişimi. Ayrıntı için dokunun.';
+export const CONSENT_OPTIONS_GIST = 'Muayenede manevra, beklemek ya da istediğiniz an bırakmak. Ayrıntı için dokunun.';
+
 /** Onay kutusunun metni. Yakını hasta adına kuruyorsa öznesi değişir. */
 export function consentStatement(helper: boolean): string {
   const who = helper ? 'Hasta adına, onun bilgisi ve isteğiyle okudum ve anladım' : 'Okudum ve anladım';

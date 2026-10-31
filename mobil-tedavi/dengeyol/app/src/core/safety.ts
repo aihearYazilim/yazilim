@@ -239,6 +239,11 @@ export interface Contraindication {
   label: string;
   /** Kurulum listesindeki madde (gündelik dil; tıbbi terim parantez içinde). */
   text: string;
+  /**
+   * Hasta adına yakını kuruyorsa (yardımcı modu) aynı maddenin yardımcıya göre yazılmış hâli ("Hastanın boynunda…";
+   * kullanıcı turu 3, k02). Anlamı `text` ile aynıdır; yalnız özne değişir. Yoksa `text` gösterilir.
+   */
+  helperText?: string;
   /** Bu maddeye özgü, hekime sorulacak soru. */
   ask: string;
 }
@@ -248,60 +253,70 @@ export const CONTRAINDICATIONS: Contraindication[] = [
     id: 'age',
     label: '18 yaşından küçük olmak',
     text: '18 yaşından küçüğüm.',
+    helperText: 'Hasta 18 yaşından küçük.',
     ask: 'Çocuklarda bu baş dönmesi nasıl tedavi edilir; manevrayı muayenede siz yapabilir misiniz?'
   },
   {
     id: 'neck',
     label: 'Boyun sorunu',
     text: 'Boynumda hastalık var ya da boynumu rahat çeviremiyorum: ör. boyun fıtığı nedeniyle hareket kısıtlılığı, boyun kemiklerinde gevşeklik/kayma (instabilite), ileri kireçlenme ya da yakın zamanda boyun ameliyatı.',
+    helperText: 'Hastanın boynunda hastalık var ya da hasta boynunu rahat çeviremiyor: ör. boyun fıtığı nedeniyle hareket kısıtlılığı, boyun kemiklerinde gevşeklik/kayma (instabilite), ileri kireçlenme ya da yakın zamanda boyun ameliyatı.',
     ask: 'Boynumla Epley/Semont yapabilir miyim? Başımı ne kadar çevirip geriye bırakabilirim; değiştirilmiş bir biçim gerekir mi?'
   },
   {
     id: 'spine',
     label: 'Bel/sırt (omurga) sorunu',
     text: 'Bel ya da sırt omurgamda ciddi bir sorun var: ör. omurganın sertleşip kaynaşması (ankilozan spondilit), ağır romatizma (romatoid artrit), ileri kamburluk (kifoskolyoz), omurilik yaralanması ya da yatıp kalkmamı, yan dönmemi kısıtlayan bel/sırt sorunu.',
+    helperText: 'Hastanın bel ya da sırt omurgasında ciddi bir sorun var: ör. omurganın sertleşip kaynaşması (ankilozan spondilit), ağır romatizma (romatoid artrit), ileri kamburluk (kifoskolyoz), omurilik yaralanması ya da yatıp kalkmasını, yan dönmesini kısıtlayan bel/sırt sorunu.',
     ask: 'Bel/sırt sorunumla hızlı yatıp kalkmam ve yan dönmem uygun mu?'
   },
   {
     id: 'vascular',
     label: 'Şah damarı darlığı ya da dengesiz kalp hastalığı',
     text: 'Hekimimin bildiği ciddi şah damarı (boyundaki ana damar, karotis) darlığım ya da kontrol altında olmayan (dengesiz) kalp hastalığım var.',
+    helperText: 'Hastanın, hekiminin bildiği ciddi şah damarı (boyundaki ana damar, karotis) darlığı ya da kontrol altında olmayan (dengesiz) kalp hastalığı var.',
     ask: 'Damar ya da kalp durumumla başımı çevirip geriye bırakmam güvenli mi?'
   },
   {
     id: 'stroke',
     label: 'Geçirilmiş inme ya da beyin damarı hastalığı',
     text: 'Daha önce inme (felç) geçirdim ya da beyin damarı hastalığım var.',
+    helperText: 'Hasta daha önce inme (felç) geçirdi ya da beyin damarı hastalığı var.',
     ask: 'Baş dönmemin başka bir nedeni olabilir mi; manevrayı muayenede mi yapmalıyız?'
   },
   {
     id: 'obesity',
     label: 'Kilo nedeniyle hızlı dönememe',
     text: 'Kilom nedeniyle yatakta hızla yan dönmem ve yüzüstü dönmem çok zor.',
+    helperText: 'Kilosu nedeniyle hastanın yatakta hızla yan dönmesi ve yüzüstü dönmesi çok zor.',
     ask: 'Kilom nedeniyle hangi manevra bana uygun; yardımla mı yapmalıyım?'
   },
   {
     id: 'cognition',
     label: 'Yönergeleri takip etmekte güçlük',
     text: 'Unutkanlık ya da dikkat sorunu nedeniyle adım adım verilen yönergeleri takip etmekte zorlanıyorum.',
+    helperText: 'Hasta, unutkanlık ya da dikkat sorunu nedeniyle adım adım verilen yönergeleri takip etmekte zorlanıyor.',
     ask: 'Manevrayı bir yakınımla mı, yoksa sizin yanınızda mı yapmalıyım?'
   },
   {
     id: 'eye',
     label: 'Retina sorunu ya da yakın zamanda göz ameliyatı',
     text: 'Gözümde retina yırtılması ya da ayrılması (dekolman) oldu ya da son birkaç ay içinde göz ameliyatı geçirdim.',
+    helperText: 'Hastanın gözünde retina yırtılması ya da ayrılması (dekolman) oldu ya da hasta son birkaç ay içinde göz ameliyatı geçirdi.',
     ask: 'Göz durumum hızlı baş hareketlerine engel mi?'
   },
   {
     id: 'pregnancy',
     label: 'İleri dönem gebelik',
     text: 'Hamileliğimin son aylarındayım (ileri dönem gebelik).',
+    helperText: 'Hasta hamileliğinin son aylarında (ileri dönem gebelik).',
     ask: 'Gebeliğimde manevrayı hangi biçimde ve nerede yapmalıyım?'
   },
   {
     id: 'mobility',
     label: 'Yardımsız hareket güçlüğü',
     text: 'Yatağa yatıp kalkmakta, yan dönmekte ya da başımı çevirmekte çok zorlanıyorum ve yanımda yardım edecek kimse yok.',
+    helperText: 'Hasta yatağa yatıp kalkmakta, yan dönmekte ya da başını çevirmekte sizin yardımınızla da çok zorlanıyor.',
     ask: 'Manevrayı bir yardımcıyla yapabilir miyim, yoksa muayenede mi yapmalıyız?'
   },
   {
@@ -310,6 +325,7 @@ export const CONTRAINDICATIONS: Contraindication[] = [
     id: 'hearing',
     label: 'Sesli yönergeleri duyamama (yardımcı yok)',
     text: 'Telefondan gelen sesli yönergeleri duyamıyorum; işitme cihazımla ya da kulaklıkla da duyamıyorum ve yanımda yardım edecek kimse yok.',
+    helperText: 'Telefondan gelen sesli yönergeleri ne hasta ne de siz duyabiliyorsunuz (işitme cihazı ya da kulaklıkla da).',
     ask: 'Manevrayı yanımda biri varken mi, yoksa muayenede mi yapmalıyım?'
   }
 ];
@@ -320,6 +336,15 @@ export const CONTRAINDICATIONS: Contraindication[] = [
  */
 export const CONTRA_NOT_BLOCKING_TEXT =
   'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Kan sulandırıcı kullanıyorsanız her atakta ayrıca kanama ve başınızı çarpma sorulur. Düşmemek için manevraları yatakta yapın.';
+
+/** CONTRA_NOT_BLOCKING_TEXT'in yardımcı modu (hasta adına yakını kuruyor). */
+export const CONTRA_NOT_BLOCKING_TEXT_HELPER =
+  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Hasta kan sulandırıcı kullanıyorsa her atakta ayrıca kanama ve başını çarpma sorulur. Düşmemesi için manevraları yatakta yapın.';
+
+/** Kurulum listesindeki madde metni: yardımcı modunda yardımcıya göre yazılmış hâli. */
+export function contraText(c: Contraindication, helper: boolean): string {
+  return helper && c.helperText ? c.helperText : c.text;
+}
 
 /** Her kontrendikasyonda hekime sorulabilecek genel sorular. */
 export const CONTRA_GENERAL_QUESTIONS: string[] = [

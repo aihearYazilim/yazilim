@@ -13,8 +13,19 @@ describe('konuşma metni (speechText)', () => {
     expect(speechText('Hangi yanınıza yatınca (hangi kulağınız alttayken)?')).toBe('Hangi yanınıza yatınca, hangi kulağınız alttayken?');
     expect(speechText('Bel/sırt (omurga) sorunu.')).toBe('Bel ya da sırt, omurga, sorunu.');
     expect(speechText('[←] Başı HASTANIN SOLUNA çevirin →')).toBe('Başı HASTANIN SOLUNA çevirin');
-    expect(speechText('14 soru · ~8 dk')).toBe('14 soru, yaklaşık 8 dk');
+    expect(speechText('14 soru · ~8 dk')).toBe('14 soru, yaklaşık 8 dakika');
     expect(speechText('(Veriler yalnızca bu telefonda saklanır.)')).toBe('Veriler yalnızca bu telefonda saklanır.');
+  });
+  it('kısaltmalar açılır (k07): "ör." → "örneğin", unvanlar, sayıdan sonraki "dk"/"sn"', () => {
+    expect(speechText('gelinemedi (ör. baş yeterince geriye sarkamadı)')).toBe('gelinemedi, örneğin baş yeterince geriye sarkamadı');
+    expect(speechText('Ör. aspirin, varfarin vb. ilaçlar')).toBe('Örneğin aspirin, varfarin ve benzeri ilaçlar');
+    expect(speechText('örn. boyun fıtığı')).toBe('örneğin boyun fıtığı');
+    expect(speechText('Doç. Dr. Serkan K.')).toBe('Doçent Doktor Serkan K.');
+    expect(speechText('10 dk oturun; 30 sn bekleyin.')).toBe('10 dakika oturun; 30 saniye bekleyin.');
+    expect(speechText('~8 dk.')).toBe('yaklaşık 8 dakika.');
+    // Sözcüğün parçası olan ya da sayıdan sonra gelmeyen harfler dokunulmaz.
+    expect(speechText('Gör. dk sonra snack, 5 dakika, görüş')).toBe('Gör. dk sonra snack, 5 dakika, görüş');
+    expect(speechText('Kendi isteğiniz ve görüşünüz önemli.')).toBe('Kendi isteğiniz ve görüşünüz önemli.');
   });
   it('düz metin değişmez', () => {
     const t = 'Şimdi başınızı sağa çevirin ve yavaşça sırtüstü yatın.';

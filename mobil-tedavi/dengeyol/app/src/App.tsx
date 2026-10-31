@@ -10,7 +10,7 @@ import { About } from './ui/screens/About';
 import { ClinicianHome } from './ui/screens/clinician/ClinicianHome';
 import { Exam } from './ui/screens/clinician/Exam';
 import { EpisodeFlow } from './ui/screens/patient/EpisodeFlow';
-import { EpisodeReport, History } from './ui/screens/patient/History';
+import { EpisodeReport, History, PeriodReport } from './ui/screens/patient/History';
 import { Onboarding } from './ui/screens/patient/Onboarding';
 import { PatientHome } from './ui/screens/patient/PatientHome';
 import { PrescriptionImport } from './ui/screens/patient/PrescriptionImport';
@@ -59,6 +59,7 @@ export function App() {
           <Route path="/hasta/kurulum" element={<Onboarding />} />
           <Route path="/hasta/atak/:mode" element={<EpisodeFlow />} />
           <Route path="/hasta/gecmis" element={<History />} />
+          <Route path="/hasta/rapor/donem" element={<PeriodReport />} />
           <Route path="/hasta/rapor/:id" element={<EpisodeReport />} />
           <Route path="/odyolog" element={<ClinicianHome />} />
           <Route path="/odyolog/muayene/:id" element={<Exam />} />

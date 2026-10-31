@@ -12,11 +12,18 @@ import {
   assistFallbackText,
   decisionText,
   doseSummaryText,
-  endNoteText,
+  episodeEndNoteText,
+  maneuverHeadText,
   maneuverTags,
+  PERIOD_REPORT_PATH,
+  periodDoseText,
+  periodEpisodes,
+  periodReportPlainText,
+  periodSummaryLine,
   priorDiagnosisText,
   profileRxCode,
   reportOriginText,
+  reportPeriod,
   reportPlainText,
   retestText,
   rxHeaderLine,
@@ -25,8 +32,10 @@ import {
   rxValidityText,
   sideCellText,
   STATUS_LABEL,
+  stepDefFor,
   stepSummary,
-  stopReasonText
+  stopReasonText,
+  stopWhereText
 } from './reportText';
 
 const STATUS: Record<EpisodeStatus, { label: string; cls: string }> = {
@@ -48,6 +57,10 @@ export function History() {
           <p className="muted">Henüz kayıtlı atak yok. Bir atak başlattığınızda raporu burada görünür.</p>
         </div>
       ) : (
+        <>
+        <button className="btn secondary block" onClick={() => nav(PERIOD_REPORT_PATH)} data-testid="history-period">
+          <Icon name="share" /> Dönem raporu (bütün ataklar tek raporda)
+        </button>
         <div className="list">
           {eps.map((e) => (
             <button key={e.id} className="list-item" onClick={() => nav(`/hasta/rapor/${e.id}`)}>
@@ -65,6 +78,7 @@ export function History() {
             </button>
           ))}
         </div>
+        </>
       )}
     </Screen>
   );
@@ -86,7 +100,7 @@ export function EpisodeReport() {
       title="Atak raporu"
       back={true}
     >
-      <ShareReport e={e} />
+      <ShareReport text={() => reportPlainText(e, store.get())} title="DengeYol atak raporu" />
       <ReportBody e={e} />
       <button className="btn secondary block no-print" onClick={() => window.print()}>
         <Icon name="print" /> Yazdır / PDF olarak kaydet
@@ -95,30 +109,106 @@ export function EpisodeReport() {
   );
 }
 
-function ReportBody({ e }: { e: Episode }) {
+/**
+ * Reçete dönemindeki (yoksa son 14 gün) bütün ataklar tek raporda (kullanıcı turu 3, k09): başta tek satırlık sonuç
+ * ("2 atak · 4 manevra · son sabah testi negatif"), sonra her atak sırayla. Hekime giden düz metin de aynı sırada.
+ */
+export function PeriodReport() {
+  const d = useData();
+  const p = d.patient;
+  const now = Date.now();
+  const period = reportPeriod(d, now);
+  const eps = periodEpisodes(d, now, period);
+  const head = rxHeaderLine(p?.prescription, profileRxCode(p));
+  const validity = p?.prescription ? rxValidityText(p.prescription, now) : null;
+  const consent = consentLine(p);
+  return (
+    <Screen title="Dönem raporu" back={true}>
+      <ShareReport text={() => periodReportPlainText(store.get())} title="DengeYol dönem raporu" />
+      <div className="stack" data-testid="period-report" style={{ overflowWrap: 'anywhere' }}>
+        <div className="card stack">
+          <h2>DengeYol — BPPV dönem raporu</h2>
+          {head && (
+            <p>
+              <strong>{head}</strong>
+            </p>
+          )}
+          <p className="lead" data-testid="period-summary">
+            <strong>{periodSummaryLine(eps)}</strong>
+          </p>
+          <p className="small muted">Tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}</p>
+          <dl className="kv">
+            <dt>Dönem</dt>
+            <dd>{period.label}</dd>
+            <dt>Önceki tanı</dt>
+            <dd>{priorDiagnosisText(p)}</dd>
+            <dt>Doz</dt>
+            <dd>{periodDoseText(d, now, eps)}</dd>
+            {validity && (
+              <>
+                <dt>Reçete geçerliliği</dt>
+                <dd>{validity}</dd>
+              </>
+            )}
+            {consent && (
+              <>
+                <dt>Onam</dt>
+                <dd>{consent}</dd>
+              </>
+            )}
+          </dl>
+        </div>
+        {eps.length === 0 && (
+          <div className="card soft center">
+            <p className="muted">Bu dönemde kayıtlı atak yok.</p>
+          </div>
+        )}
+        {eps.map((e, i) => (
+          <section key={e.id} className="stack" data-testid="period-episode">
+            <h3>
+              {i + 1}. atak — {formatDateTimeYear(e.startedAt)}
+            </h3>
+            <ReportBody e={e} inPeriod />
+          </section>
+        ))}
+      </div>
+      <button className="btn secondary block no-print" onClick={() => window.print()}>
+        <Icon name="print" /> Yazdır / PDF olarak kaydet
+      </button>
+    </Screen>
+  );
+}
+
+/** Atak raporunun gövdesi. Dönem raporunda (`inPeriod`) ortak satırlar (başlık, tanı, doz, onam) bir kez, üstte yazılır. */
+function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean }) {
   const d = useData();
   const p = d.patient;
   const now = Date.now();
   const head = rxHeaderLine(p?.prescription, profileRxCode(p));
   const validity = p?.prescription ? rxValidityText(p.prescription, now) : null;
-  const note = e.endNote ? endNoteText(e.endNote) : '';
+  const note = episodeEndNoteText(e);
+  const where = stopWhereText(e);
   const assistFallback = assistFallbackText(e, d.settings);
   const shortcut = rxShortcutUsed(e, p);
   const consent = consentLine(p);
   // Büyük yazıda sağdan taşmasın: tablolar yerine satır satır liste (uzun sözcükler de kırılır).
   const wrap = { overflowWrap: 'anywhere' as const };
   return (
-    <div className="stack" data-testid="episode-report" style={wrap}>
+    <div className="stack" data-testid={inPeriod ? undefined : 'episode-report'} style={wrap}>
       <div className="card stack">
-        <h2>DengeYol — BPPV atak raporu</h2>
-        {head && (
-          <p data-testid="report-head">
-            <strong>{head}</strong>
-          </p>
+        {!inPeriod && (
+          <>
+            <h2>DengeYol — BPPV atak raporu</h2>
+            {head && (
+              <p data-testid="report-head">
+                <strong>{head}</strong>
+              </p>
+            )}
+            <p className="small muted" data-testid="report-origin">
+              {reportOriginText(e)}; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}
+            </p>
+          </>
         )}
-        <p className="small muted" data-testid="report-origin">
-          {reportOriginText(e)}; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}
-        </p>
         <dl className="kv">
           <dt>Atak başlangıcı</dt>
           <dd>{formatDateTimeYear(e.startedAt)}</dd>
@@ -127,27 +217,41 @@ function ReportBody({ e }: { e: Episode }) {
             {STATUS_LABEL[e.status]}
             {note ? ` — ${note}` : ''}
           </dd>
+          {where && (
+            <>
+              <dt>Durulan yer</dt>
+              <dd data-testid="report-stop-where">{where}</dd>
+            </>
+          )}
           <dt>Tedavi edilen taraf</dt>
           <dd>{e.side ? sideName(e.side) : '—'}</dd>
           <dt>Manevra</dt>
-          <dd>{PROTOCOLS[e.protocolId].shortName}</dd>
-          <dt>Önceki tanı</dt>
-          <dd>{priorDiagnosisText(p)}</dd>
+          <dd>{maneuverHeadText(e)}</dd>
+          {!inPeriod && (
+            <>
+              <dt>Önceki tanı</dt>
+              <dd>{priorDiagnosisText(p)}</dd>
+            </>
+          )}
           {shortcut !== null && (
             <>
               <dt>Reçeteli kısa yol</dt>
               <dd data-testid="report-shortcut">{rxShortcutText(shortcut)}</dd>
             </>
           )}
-          <dt>Doz</dt>
-          <dd data-testid="report-dose">{doseSummaryText(e, d, now)}</dd>
+          {!inPeriod && (
+            <>
+              <dt>Doz</dt>
+              <dd data-testid="report-dose">{doseSummaryText(e, d, now)}</dd>
+            </>
+          )}
           {e.sideConflictNote && (
             <>
               <dt>Taraf uyuşmazlığı</dt>
               <dd data-testid="report-side-conflict">{e.sideConflictNote}</dd>
             </>
           )}
-          {validity && (
+          {validity && !inPeriod && (
             <>
               <dt>Reçete geçerliliği</dt>
               <dd>{validity}</dd>
@@ -159,7 +263,7 @@ function ReportBody({ e }: { e: Episode }) {
               <dd>{assistFallback}</dd>
             </>
           )}
-          {consent && (
+          {consent && !inPeriod && (
             <>
               <dt>Onam</dt>
               <dd data-testid="report-consent">{consent}</dd>
@@ -216,7 +320,7 @@ function ReportBody({ e }: { e: Episode }) {
               <ol className="stack small" style={{ margin: 0, paddingLeft: 22, gap: 6 }}>
                 {m.records.map((r, i) => (
                   <li key={i}>
-                    <strong>{r.title}</strong>: {stepSummary(r)}
+                    <strong>{r.title}</strong>: {stepSummary(r, stepDefFor(m.protocolId, m.side, r.stepId))}
                   </li>
                 ))}
               </ol>
@@ -241,14 +345,14 @@ function ReportBody({ e }: { e: Episode }) {
 }
 
 /** Raporu düz metin olarak paylaş (WhatsApp, e-posta vb.); paylaşma yoksa panoya kopyalar. */
-function ShareReport({ e }: { e: Episode }) {
+function ShareReport({ text: makeText, title }: { text: () => string; title: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const share = async () => {
     // Ekrandaki HTML'in innerText'i değil: satır satır okunur, tablo/sekme içermeyen ayrı özet.
-    const text = reportPlainText(e, store.get());
+    const text = makeText();
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'DengeYol atak raporu', text });
+        await navigator.share({ title, text });
         return;
       }
       await navigator.clipboard.writeText(text);
