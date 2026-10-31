@@ -1025,7 +1025,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
         const match = !!r.value.rxCode && !!exam.prescriptionToken && rxCode(exam.prescriptionToken) === r.value.rxCode;
         return (
           <div key={h.id} className="stack" style={{ gap: 4 }}>
-            <HomeReportView report={r.value} rxNote={match ? 'bu muayenede verilen reçete' : null} testId="report-home" />
+            <HomeReportView report={r.value} rxNote={match ? 'bu muayenede verilen reçete' : null} testId="report-home" printCompact />
             <button
               className="btn ghost no-print"
               onClick={() => {

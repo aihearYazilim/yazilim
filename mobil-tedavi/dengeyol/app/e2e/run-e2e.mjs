@@ -11,9 +11,11 @@ const { chromium, devices } = require('playwright');
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, 'out');
 mkdirSync(out, { recursive: true });
-const BASE = 'http://localhost:4173/';
+// E2E_PORT: önizleme sunucusunun kapısı (aynı makinede birden çok çalışma yan yana koşabilsin; varsayılan 4173).
+const PORT = String(process.env.E2E_PORT || 4173);
+const BASE = `http://localhost:${PORT}/`;
 
-const server = spawn(process.execPath, [join(here, '..', 'node_modules', 'vite', 'bin', 'vite.js'), 'preview', '--port', '4173', '--strictPort', ...(process.env.E2E_OUTDIR ? ['--outDir', process.env.E2E_OUTDIR] : [])], {
+const server = spawn(process.execPath, [join(here, '..', 'node_modules', 'vite', 'bin', 'vite.js'), 'preview', '--port', PORT, '--strictPort', ...(process.env.E2E_OUTDIR ? ['--outDir', process.env.E2E_OUTDIR] : [])], {
   cwd: join(here, '..'),
   stdio: 'pipe'
 });
@@ -28,7 +30,7 @@ process.on('exit', stopServer);
 await new Promise((res, rej) => {
   const t = setTimeout(() => rej(new Error('önizleme sunucusu açılmadı')), 20000);
   server.stdout.on('data', (b) => {
-    if (String(b).includes('4173')) {
+    if (String(b).includes(PORT)) {
       clearTimeout(t);
       res();
     }
@@ -62,8 +64,66 @@ function seed(extra = {}) {
   };
 }
 
+/**
+ * Sahte Türkçe ses motoru (tarayıcı bağlamına eklenir): her cümle `ms` sürer, kesilirse onerror gelir. Okuma kilidi gibi
+ * sese bağlı davranışlar gerçek ses olmadan, belirli sürelerle sınanır.
+ */
+function fakeSpeech(ms) {
+  let cur = null;
+  let timer = null;
+  const queue = [];
+  const voice = { lang: 'tr-TR', name: 'Sahte', localService: true, default: true, voiceURI: 'tr' };
+  const next = () => {
+    if (cur || !queue.length) return;
+    cur = queue.shift();
+    timer = setTimeout(() => {
+      const u = cur;
+      cur = null;
+      u.onend?.({});
+      next();
+    }, ms);
+  };
+  const synth = {
+    speaking: false,
+    pending: false,
+    paused: false,
+    getVoices: () => [voice],
+    addEventListener() {},
+    removeEventListener() {},
+    speak(u) {
+      if (!u.text || !u.text.trim() || u.volume === 0) {
+        setTimeout(() => u.onend?.({}), 10);
+        return;
+      }
+      queue.push(u);
+      next();
+    },
+    cancel() {
+      if (cur) {
+        clearTimeout(timer);
+        const u = cur;
+        cur = null;
+        u.onerror?.({});
+      }
+      while (queue.length) queue.shift().onerror?.({});
+    },
+    pause() {},
+    resume() {}
+  };
+  class Utt {
+    constructor(text) {
+      Object.assign(this, { text, lang: '', voice: null, rate: 1, volume: 1, pitch: 1, onend: null, onerror: null });
+    }
+    addEventListener() {}
+  }
+  Object.defineProperty(window, 'SpeechSynthesisUtterance', { value: Utt, configurable: true, writable: true });
+  Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true });
+}
+
 async function newPage(data, opts = {}) {
   const ctx = await browser.newContext({ ...devices['iPhone 13'], colorScheme: opts.dark ? 'dark' : 'light' });
+  // opts.speechMs: bağlamdaki bütün sayfalarda sahte ses motoru (her cümle bu kadar sürer).
+  if (opts.speechMs) await ctx.addInitScript(fakeSpeech, opts.speechMs);
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(String(e)));
@@ -673,6 +733,327 @@ await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı has
   // Bozuk bağlantı reddedilir.
   await page.goto(BASE + '#/odyolog/ev-raporu/' + token.replace(/\.([0-9a-f]{8})$/, '.00000000'));
   await page.getByTestId('hr-error').waitFor();
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Klinisyen: kayıtsız tarayıcıda rapor bağlantısı kopyalama yönergesi; reçete bağlantısı yapıştırılınca açık mesaj; ses kipi profilde', async () => {
+  const now = Date.now();
+  const m = (t) => Math.floor(t / 60000);
+  const token = homeReportToken({ v: 1, g: m(now), p: 'NO-77', a: m(now - 3600e3), b: m(now), e: [{ s: m(now - 3600e3), u: 'a', t: [], m: [], q: [] }] });
+  // 1) Klinisyen kaydı olmayan tarayıcı (iPhone'da QR Safari'de açılır): önce "kopyalayıp uygulamaya yapıştırın" yolu (k08).
+  const a = await newPage(seed());
+  await a.page.goto(BASE + '#/odyolog/ev-raporu/' + token);
+  await a.page.getByTestId('hr-report').waitFor();
+  const hint = await a.page.getByTestId('hr-copy-hint').innerText();
+  if (!hint.includes('ana ekrandan') || !hint.includes('Hastanın ev raporu')) throw new Error('kopyalama yönergesi yok: ' + hint);
+  await a.page.getByTestId('hr-copy-link').waitFor();
+  await a.page.getByTestId('hr-become-clinician').waitFor();
+  await snap(a.page, 'ev-raporu-kayitsiz-tarayici');
+  if (a.errors.length) throw new Error('konsol hataları: ' + a.errors.join(' | '));
+  await a.ctx.close();
+  // 2) Klinisyen ana ekranı: reçete bağlantısı rapor alanına yapıştırılınca "ev reçetesi bağlantısı" denir (k09).
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await page.goto(BASE + '#/odyolog');
+  await page.getByTestId('clin-home-report').locator('summary').click();
+  await page.getByTestId('hr-paste').fill('https://ornek.app/#/recete/AbC_d-1.0123abcd');
+  await page.getByTestId('hr-paste-open').click();
+  const rxErr = page.getByTestId('hr-paste-error');
+  if ((await rxErr.getAttribute('data-kind')) !== 'rx' || !(await rxErr.innerText()).includes('ev reçetesi bağlantısı')) {
+    throw new Error('reçete bağlantısı tanınmadı: ' + (await rxErr.innerText()));
+  }
+  await page.getByTestId('hr-paste').fill('merhaba');
+  await page.getByTestId('hr-paste-open').click();
+  if ((await page.getByTestId('hr-paste-error').getAttribute('data-kind')) !== 'other') throw new Error('serbest metin reçete sanıldı');
+  // 3) Ses kipi klinisyen profilinde: yürütücüdeki ayarın aynısı (k08).
+  await page.getByTestId('clin-edit-profile').click();
+  await page.getByTestId('clin-voice').getByRole('button', { name: 'Kapalı' }).click();
+  await page.getByTestId('clin-save-profile').click();
+  const voice = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')).settings.clinicianVoice);
+  if (voice !== 'off') throw new Error('ses kipi kaydedilmedi: ' + voice);
+  if (!(await page.locator('main').innerText()).includes('ses: kapalı')) throw new Error('profil özetinde ses kipi yok');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+// ------------------------------------------------------------------------------------------------
+// 2. ve 3. turda düzelen davranışlar (kullanıcı turu 4, k06): gerilemeye karşı uçtan uca kilit. Hızlı ve belirlenimci:
+// tohumlanmış atak (güvenlik soruları ve taraf testi yapılmış) doğrudan manevraya götürür; demo sensör, ×20 zaman.
+
+const MIN = 60000;
+
+/** `minutesAgo` dakika önce tamamlanmış sağ Epley kaydı (birkaç dakika: gece yarısına yakın koşuda gün değişmesin). */
+function maneuverAgo(id, minutesAgo, extra = {}) {
+  return {
+    id,
+    at: Date.now() - minutesAgo * MIN,
+    protocolId: 'epley',
+    side: 'R',
+    completed: true,
+    stopReason: null,
+    records: [],
+    manual: false,
+    afterSymptoms: 'none',
+    ...extra
+  };
+}
+
+/** Taraf testi bitmiş (sağ), güvenlik soruları az önce yanıtlanmış, manevrası yapılmamış aktif atak. */
+function readyEpisode(id = 'act') {
+  const t = Date.now() - 10 * MIN;
+  return { id, startedAt: t, side: 'R', protocolId: 'epley', redFlags: [{ at: t, answers: {}, stopped: false }], sideTests: [], maneuvers: [], retests: [], status: 'active' };
+}
+
+/** Ana ekran → "Ataka devam et" → hazırlık → tanıtma; ardından sağ Epley kendiliğinden başlar. */
+async function toManeuver(page) {
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('continue-episode').click();
+  await page.getByTestId('prep').waitFor();
+  await calibrate(page);
+}
+
+const storeOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')));
+
+/** Yürütücü belirtilen faza gelene (ya da ekrandan kalkana: gone) dek bekler. */
+async function waitPhase(page, phases, timeout = 15000) {
+  await page.waitForFunction(
+    (ps) => {
+      const r = document.querySelector('[data-testid="runner"]');
+      return r ? ps.includes(r.getAttribute('data-phase')) : ps.includes('gone');
+    },
+    phases,
+    { timeout }
+  );
+}
+
+await step('Tur 2–3 kilidi: "Şu an nasılsınız?" ekranında aynı yere kör dokunuşlar acil kaydı açmaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await toManeuver(page);
+  const phase = await driveRunner(page);
+  if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
+  // "Yeni belirti var" seçeneğinin ekrandaki yeri: telefonu alından alan kişi hep aynı yere dokunuyor.
+  const neuro = page.getByRole('radio', { name: /Yeni belirti var/ });
+  await neuro.waitFor();
+  const b = await neuro.boundingBox();
+  const p = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  let sawConfirm = false;
+  // Çift dokunuşlar (120 ms) ve aralı dokunuşlar: açılış kilidi, onay ekranının kilidi ve "Yanlış dokundum"un yeri.
+  for (const wait of [0, 120, 1100, 120, 1000, 120, 1100, 120]) {
+    if (wait) await page.waitForTimeout(wait);
+    await page.mouse.click(p.x, p.y);
+    if (await page.getByTestId('after-confirm').isVisible().catch(() => false)) {
+      sawConfirm = true;
+      // Başlıkta yanıt; "Evet, doğru" dokunulan yerde değil, "Yanlış dokundum" orada.
+      const title = await page.getByTestId('after-confirm-title').innerText();
+      if (!/Yeni belirti var — doğru mu\?/.test(title)) throw new Error('onay başlığında yanıt yok: ' + title);
+      const yes = await page.getByTestId('after-confirm-yes').boundingBox();
+      if (yes && p.y >= yes.y && p.y <= yes.y + yes.height) throw new Error('"Evet, doğru" kör dokunuşun yerinde');
+      const back = await page.getByTestId('after-confirm-back').boundingBox();
+      if (!back || p.y < back.y || p.y > back.y + back.height) throw new Error('"Yanlış dokundum" kör dokunuşun yerinde değil');
+    }
+    const ep = (await storeOf(page)).episodes.find((e) => e.id === 'act');
+    if (ep.status !== 'active' || ep.maneuvers.some((m) => m.afterSymptoms === 'neuro')) throw new Error('kör dokunuş acil kaydı açtı: ' + ep.status);
+    if (await page.locator('a[href="tel:112"]').count()) throw new Error('kör dokunuş 112 ekranını açtı');
+  }
+  if (!sawConfirm) throw new Error('dokunuş "Yeni belirti var"a hiç denk gelmedi (sınama geçersiz)');
+  await snap(page, 'kor-dokunus-sonrasi');
+  // Bilinçli yanıt yine çalışır: onaydaysa geri dön, "İyiyim".
+  if (await page.getByTestId('after-confirm').isVisible().catch(() => false)) {
+    await unlocked(page);
+    await page.getByTestId('after-confirm-back').click();
+  }
+  await clickChoice(page, 'İyiyim');
+  await page.getByTestId('end-maneuver-done').waitFor();
+  const ep = (await storeOf(page)).episodes.find((e) => e.id === 'act');
+  if (ep.status !== 'active' || ep.maneuvers.at(-1)?.afterSymptoms !== 'none') throw new Error('"İyiyim" kaydedilmedi');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden açılır; 1 saatlik tekrar testi korunur, adresle manevra açılmaz', async () => {
+  const now = Date.now();
+  const closed = {
+    ...readyEpisode('today'),
+    startedAt: now - 8 * MIN,
+    maneuvers: [maneuverAgo('m1', 4)],
+    status: 'closed',
+    endedAt: now - MIN,
+    endNote: 'Kullanıcı kapattı'
+  };
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [closed] } }));
+  await page.goto(BASE + '#/hasta');
+  const start = page.getByTestId('start-episode');
+  if (!(await start.innerText()).includes('Bugünkü atağınıza devam edilir')) throw new Error('ana ekran yeniden açmayı söylemiyor');
+  await start.click();
+  const plan = page.getByTestId('end-plan');
+  await plan.waitFor();
+  const t = await plan.innerText();
+  if (!t.includes('yeni atak açılmaz') || !/tekrar testi/.test(t)) throw new Error('plan ekranı beklenmedik: ' + t);
+  if (await page.getByTestId('redflag-question').count()) throw new Error('yeniden açmada güvenlik soruları soruldu');
+  let st = await storeOf(page);
+  if (st.episodes.length !== 1 || st.episodes[0].status !== 'active' || st.episodes[0].endedAt) throw new Error('aynı atak yeniden açılmadı');
+  // Ana ekran: aynı atak, tekrar testi saati (henüz hazır değil).
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('active-episode').waitFor();
+  if (await page.getByTestId('do-retest').count()) throw new Error('1 saat dolmadan tekrar testi açıldı');
+  if (!(await page.getByTestId('active-episode').innerText()).includes('Test saati')) throw new Error('tekrar testi saati yok');
+  // Adresle "treat"/"start": manevra ya da test açılmaz, sıradaki adım söylenir.
+  for (const mode of ['treat', 'start']) {
+    await page.goto(BASE + '#/hasta/atak/' + mode);
+    await page.getByTestId('end-plan').waitFor();
+    if ((await page.getByTestId('prep').count()) || (await page.getByTestId('runner').count())) throw new Error(`#/hasta/atak/${mode} manevra açtı`);
+  }
+  st = await storeOf(page);
+  if (st.episodes.length !== 1 || st.episodes[0].maneuvers.length !== 1) throw new Error('yeni atak ya da manevra kaydı açıldı');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 2–3 kilidi: günlük sınır doluyken ana ekranda sınır kartı; aktif atakta "Manevrayı tekrarla" yok', async () => {
+  const now = Date.now();
+  // a) Bugün 3 manevrayla kapatılmış atak: büyük düğme yerine sınır kartı ve sonraki izinli zaman.
+  const closed = {
+    ...readyEpisode('today'),
+    startedAt: now - 12 * MIN,
+    maneuvers: [maneuverAgo('m1', 7), maneuverAgo('m2', 5), maneuverAgo('m3', 3)],
+    status: 'closed',
+    endedAt: now - MIN,
+    endNote: 'Kullanıcı kapattı'
+  };
+  const a = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [closed] } }));
+  await a.page.goto(BASE + '#/hasta');
+  const card = await a.page.getByTestId('home-dose-limit').innerText();
+  if (!card.includes('Bugünlük manevra sınırı doldu') || !card.includes('Bir sonraki manevra en erken')) throw new Error('sınır kartı eksik: ' + card);
+  if (await a.page.getByTestId('start-episode').count()) throw new Error('sınır doluyken "Baş dönmem başladı" görünüyor');
+  await snap(a.page, 'sinir-karti');
+  // Adresle de güvenlik soruları sordurulmaz, manevra açılmaz.
+  await a.page.goto(BASE + '#/hasta/atak/start');
+  await a.page.locator('[data-testid="end-plan"], [data-testid="end-dose"]').first().waitFor();
+  if ((await a.page.getByTestId('redflag-question').count()) || (await a.page.getByTestId('prep').count())) throw new Error('sınır doluyken akış açıldı');
+  if (a.errors.length) throw new Error('konsol hataları: ' + a.errors.join(' | '));
+  await a.ctx.close();
+  // b) Aktif atak: bugün 3 manevra, tekrar testi pozitif → yeniden manevra düğmesi yerine sınır metni.
+  const active = {
+    ...readyEpisode('act'),
+    maneuvers: [maneuverAgo('m1', 7), maneuverAgo('m2', 5), maneuverAgo('m3', 3)],
+    retests: [{ at: now - MIN, kind: 'early', side: 'R', vertigo: true, latencySec: 2, durationSec: 15 }]
+  };
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [active] } }));
+  await page.goto(BASE + '#/hasta');
+  const home = await page.getByTestId('active-episode').innerText();
+  if (await page.getByTestId('do-treat').count()) throw new Error('sınır doluyken "Manevrayı tekrarla" görünüyor');
+  if (!home.includes('Bugün için önerilen en fazla manevra')) throw new Error('aktif atakta sınır metni yok');
+  await page.goto(BASE + '#/hasta/atak/treat');
+  const end = page.getByTestId('end-dose');
+  await end.waitFor();
+  if (!(await end.innerText()).includes('Bugün için önerilen en fazla manevra')) throw new Error('adresle sınır metni yok');
+  if ((await page.getByTestId('prep').count()) || (await page.getByTestId('redflag-question').count())) throw new Error('#/hasta/atak/treat sınırda akış açtı');
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 2–3 kilidi: okuma kilidi soru başına hatırlanır (ikinci atakta yanıtlanmış soruda yalnız çift dokunuş kilidi)', async () => {
+  // Sahte ses: her cümle 4 s. İlk okunuş kilidi en çok 2,5 s; çift dokunuş kilidi ~0,6 s.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', speech: true }, data: { patient: PATIENT_OK } }), { speechMs: 4000 });
+  /** Soru göründükten sonra düğmelerin kilitli kaldığı süre (ms). */
+  const lockOf = async (pg) => {
+    await pg.getByTestId('redflag-question').waitFor();
+    const t0 = Date.now();
+    await pg.locator('.yesno:not([data-locked])').waitFor({ timeout: 10000 });
+    return Date.now() - t0;
+  };
+  const answerNo = async (pg) => {
+    const id = await pg.getByTestId('redflag-question').getAttribute('data-qid');
+    await pg.getByTestId('yn-no').click();
+    await pg.waitForFunction((prev) => document.querySelector('[data-testid="redflag-question"]')?.getAttribute('data-qid') !== prev, id);
+  };
+  // 1. atak: ilk iki soru bu cihazda ilk kez soruluyor → okuma kilidi.
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  const first = [];
+  for (let i = 0; i < 2; i++) {
+    first.push(await lockOf(page));
+    await answerNo(page);
+  }
+  if (first.some((ms) => ms < 1800)) throw new Error('ilk karşılaşmada okuma kilidi yok: ' + first.join(', '));
+  const answered = Object.keys((await storeOf(page)).settings.answeredQuestions ?? {});
+  if (answered.length !== 2) throw new Error('yanıtlanan sorular hatırlanmadı: ' + answered.join(', '));
+  await page.close();
+  // 2. atak (aynı cihaz, yeni sayfa): yanıtlanmış iki soruda yalnız kısa kilit; 3. soru hâlâ ilk kez → okuma kilidi.
+  const page2 = await ctx.newPage();
+  page2.on('pageerror', (e) => errors.push(String(e)));
+  await page2.goto(BASE + '#/hasta/atak/start');
+  const second = [];
+  for (let i = 0; i < 3; i++) {
+    second.push(await lockOf(page2));
+    await answerNo(page2);
+  }
+  if (second[0] > 1500 || second[1] > 1500) throw new Error('yanıtlanmış soruda okuma kilidi sürüyor: ' + second.join(', '));
+  if (second[0] < 300 || second[1] < 300) throw new Error('çift dokunuş kilidi kalkmış: ' + second.join(', '));
+  if (second[2] < 1800) throw new Error('ilk kez sorulan 3. soruda okuma kilidi yok: ' + second.join(', '));
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 2–3 kilidi: duraklatma sayfasında kalıcı seçimler onay ister; kör ikinci dokunuş onaylamaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await toManeuver(page);
+  await page.locator('[data-testid="runner-start"], [data-testid="runner"]').first().waitFor({ timeout: 30000 });
+  if (await page.getByTestId('runner-start').isVisible().catch(() => false)) await page.getByTestId('runner-start').click();
+  await page.getByTestId('runner').waitFor();
+  // Duraklat (basılı tutulan düğme; klavyeyle hemen).
+  await page.getByTestId('runner-pause').press('Enter');
+  await waitPhase(page, ['paused']);
+  // a) "Kendimi kötü hissediyorum": ilk dokunuş yalnız kurar; aynı yere ikinci dokunuş bir şey yapmaz; "Devam et" sürdürür.
+  await page.getByTestId('runner-unwell').click();
+  await page.getByTestId('runner-armed-unwell').waitFor();
+  if ((await page.getByTestId('runner-confirm').getAttribute('data-choice')) !== 'unwell') throw new Error('onay düğmesi kurulmadı');
+  await page.getByTestId('runner-armed-unwell').click();
+  await page.waitForTimeout(200);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('tek dokunuş manevrayı durdurdu');
+  await snap(page, 'duraklatma-onay');
+  await page.getByTestId('runner-resume').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused');
+  if ((await storeOf(page)).episodes[0].maneuvers.length) throw new Error('kurulan ama onaylanmayan seçim kaydedildi');
+  // b) "Şimdilik bırak": kur ve hemen onayla (onay penceresinin uzunluğuna bağlı değil) → manevra durur.
+  await page.getByTestId('runner-pause').press('Enter');
+  await waitPhase(page, ['paused']);
+  if (await page.getByTestId('runner-confirm').count()) throw new Error('yeni duraklatmada eski onay duruyor');
+  await page.getByTestId('runner-abort').click();
+  await page.getByTestId('runner-armed-abort').waitFor();
+  await page.getByTestId('runner-confirm').click();
+  await waitPhase(page, ['aborted', 'gone']);
+  await page.waitForFunction(() => {
+    const d = JSON.parse(localStorage.getItem('dengeyol:v1'));
+    return d.episodes[0].maneuvers.some((m) => m.stopReason === 'USER_ABORT');
+  });
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Tur 2–3 kilidi: Epley 4. adımda karşı yana dönülünce "yanlış taraf" uyarısı; sırtüstünden doğru yana geçilince sürer', async () => {
+  // ×10: yanlış yanda kalma sınırı (60 s) gerçek 6 s; uyarıyı görüp düzeltmeye yeter.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 10 }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await toManeuver(page);
+  let seen = null;
+  const phase = await driveRunner(page, {
+    onStep: async (s) => {
+      if (s !== 3 || seen) return;
+      // Sağ Epley 4. adım: hedef sol yan (θ −135°). Sanal baş hastanın SAĞ yanına (θ +100°).
+      const theta = page.getByTestId('sim-panel').locator('input[type="range"]').first();
+      await theta.fill('100');
+      const banner = page.locator('[data-testid="runner-hint"][data-hint="WRONG_SIDE_LEFT"]');
+      await banner.waitFor({ timeout: 5000 });
+      seen = await banner.innerText();
+      await snap(page, 'yanlis-taraf');
+      // Önce sırtüstü (uyarı kalkar), sonra driveRunner hedefe (sol yan) götürür.
+      await theta.fill('0');
+      await page.waitForFunction(() => !/^WRONG_SIDE/.test(document.querySelector('[data-testid="runner-hint"]')?.getAttribute('data-hint') ?? ''), null, { timeout: 5000 });
+    }
+  });
+  if (!seen) throw new Error('4. adıma gelinmedi');
+  if (!seen.includes('yanlış taraf') || !seen.includes('SOL')) throw new Error('uyarı metni beklenmedik: ' + seen);
+  if (phase !== 'done') throw new Error('yanlış taraftan sonra manevra tamamlanmadı: ' + phase);
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });

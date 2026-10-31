@@ -21,8 +21,10 @@ import {
   type HomeReport,
   type HomeRetest,
   type HomeSideTest,
-  type HomeStep
+  type HomeStep,
+  REPORT_DECODE_ERROR_TEXT
 } from '../../../core/reportShare';
+import { extractRxToken } from '../../../platform/reminders';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
 import { decisionText, endNoteText, STATUS_LABEL } from '../patient/reportText';
@@ -417,9 +419,42 @@ const HOME_FLAG_LABEL: Record<HomeStep['flags'][number], string> = {
   manual: 'elle onaylandı'
 };
 
-/** "31.10.2026 – 13.11.2026" */
+/**
+ * Yapıştırılan metin bir ev reçetesi bağlantısı mı (hasta raporu değil)? Doğrudan açılan reçete bağlantısındaki açık mesaj
+ * yapıştırma alanında da verilsin (kullanıcı turu 4, k09).
+ */
+export function looksLikeRxLink(text: string): boolean {
+  const t = text.trim();
+  return /#\/recete\//.test(t) && extractRxToken(t) !== null;
+}
+
+/** Rapor yapıştırma alanının ret metni: reçete bağlantısı tanınır, diğerleri genel mesaj. */
+export function reportPasteErrorText(text: string): string {
+  return looksLikeRxLink(text)
+    ? `${REPORT_DECODE_ERROR_TEXT.KIND} Hastanın raporu, uygulamadaki rapor ekranının sonundaki "Hekime QR kodla gösterin" kartındadır.`
+    : 'Bu bir hasta raporu bağlantısına benzemiyor.';
+}
+
+/** Raporlanan dönem reçete dönemi mi (bitişi reçetenin son geçerli günü)? */
+function isRxPeriod(r: HomeReport): boolean {
+  if (!r.rx) return false;
+  const until = rxValidUntilMs({ date: r.rx.date }, RX_VALID_DAYS);
+  return until !== null && shortDate(new Date(until - 1)) === shortDate(new Date(r.period.to));
+}
+
+/**
+ * Dönem metni. Reçete döneminde bitiş reçete geçerliliğidir, ev dönemi değil (kullanıcı turu 4, k08): rapor geçerlilik
+ * bitmeden oluşturulduysa dönem rapor tarihinde biter ve geçerlilik ayrıca etiketlenir.
+ * - "31.10.2026 – 05.11.2026 (rapor tarihi) · reçete geçerliliği 13.11.2026 dahil"
+ * - süresi dolmuş reçete: "31.10.2026 – 13.11.2026 (reçete geçerliliğinin sonu)"
+ * - reçetesiz: "24.10.2026 – 07.11.2026"
+ */
 export function homePeriodText(r: HomeReport): string {
-  return `${shortDate(new Date(r.period.from))} – ${shortDate(new Date(r.period.to))}`;
+  const from = shortDate(new Date(r.period.from));
+  const to = shortDate(new Date(r.period.to));
+  if (!isRxPeriod(r)) return `${from} – ${to}`;
+  if (r.generatedAt < r.period.to) return `${from} – ${shortDate(new Date(r.generatedAt))} (rapor tarihi) · reçete geçerliliği ${to} dahil`;
+  return `${from} – ${to} (reçete geçerliliğinin sonu)`;
 }
 
 export function homeCounts(r: HomeReport): { episodes: number; maneuvers: number; completed: number } {

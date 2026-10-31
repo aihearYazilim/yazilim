@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ObservationMethod } from '../../../core/diagnosis';
+import type { ClinicianVoice } from '../../../core/runner';
 import { formatDateTime } from '../../../state/episodes';
 import { store, uid, useData } from '../../../state/store';
 import type { ClinicExam, ClinicPatient } from '../../../state/types';
@@ -8,6 +9,13 @@ import { Segmented } from '../../components/Controls';
 import { Icon, Logo } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { ReportPaste } from './ReportImport';
+
+const CLINICIAN_VOICE_NAME: Record<ClinicianVoice, string> = { short: 'kısa', full: 'açık', off: 'kapalı' };
+const CLINICIAN_VOICE_HINT: Record<ClinicianVoice, string> = {
+  short: 'Kısa: adım başına tek kısa cümle, kısa yön uyarısı ve sayım.',
+  full: 'Açık: hastaya söylenecek tam cümleler.',
+  off: 'Kapalı: testlerde hiçbir şey söylenmez, alt yazı da gösterilmez.'
+};
 
 export function ClinicianHome() {
   const d = useData();
@@ -21,6 +29,9 @@ export function ClinicianHome() {
   const [clinic, setClinic] = useState(d.clinician.clinic ?? '');
   const [sensorless, setSensorless] = useState(!!d.clinician.sensorless);
   const [method, setMethod] = useState<ObservationMethod | 'last'>(d.clinician.method ?? 'last');
+  // Testlerdeki sesli yönerge kipi: yürütücüdeki ses düğmesiyle aynı ayar (settings.clinicianVoice). Profilde seçilince ilk
+  // test de bu kiple başlar ("kapalı"da tek cümle bile okunmaz; kullanıcı turu 4, k08).
+  const [voice, setVoice] = useState<ClinicianVoice>(d.settings.clinicianVoice ?? 'short');
   const [query, setQuery] = useState('');
   const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
   const existing = code.trim() ? d.clinicPatients.find((p) => norm(p.code) === norm(code)) : undefined;
@@ -105,11 +116,28 @@ export function ClinicianHome() {
             />
             <span className="small muted">Her formda değiştirilebilir; tanıyı etkilemez.</span>
           </div>
+          <div className="field" data-testid="clin-voice">
+            <label>Testlerde sesli yönerge</label>
+            <Segmented
+              label="Testlerde sesli yönerge"
+              value={voice}
+              onChange={setVoice}
+              options={[
+                { value: 'short', label: 'Kısa' },
+                { value: 'full', label: 'Açık' },
+                { value: 'off', label: 'Kapalı' }
+              ]}
+            />
+            <span className="small muted">
+              {CLINICIAN_VOICE_HINT[voice]} Test sırasında üst çubuktaki ses düğmesiyle de değiştirilebilir.
+            </span>
+          </div>
           <button
             className="btn primary"
             onClick={() => {
               store.update((x) => ({
                 ...x,
+                settings: { ...x.settings, clinicianVoice: voice },
                 clinician: {
                   ...x.clinician,
                   name: name.trim() || undefined,
@@ -134,9 +162,18 @@ export function ClinicianHome() {
               {d.clinician.clinic}
               {d.clinician.sensorless ? ' · VNG/Frenzel (sensörsüz)' : ''}
               {d.clinician.method ? ` · gözlem: ${d.clinician.method}` : ''}
+              {` · ses: ${CLINICIAN_VOICE_NAME[d.settings.clinicianVoice ?? 'short']}`}
             </div>
           </div>
-          <button className="btn ghost" onClick={() => setEditProfile(true)}>
+          <button
+            className="btn ghost"
+            onClick={() => {
+              // Yürütücüde değiştirilmiş olabilir: form güncel kiple açılsın.
+              setVoice(d.settings.clinicianVoice ?? 'short');
+              setEditProfile(true);
+            }}
+            data-testid="clin-edit-profile"
+          >
             Düzenle
           </button>
         </div>

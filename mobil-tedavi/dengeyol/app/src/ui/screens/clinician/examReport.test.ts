@@ -16,7 +16,10 @@ import {
   manualDxLabel,
   homeManeuverFlags,
   homeManeuverText,
+  homePeriodText,
   homeReportHeadline,
+  looksLikeRxLink,
+  reportPasteErrorText,
   homeReportNoteLine,
   homeStepText,
   homeTruncationText,
@@ -404,5 +407,39 @@ describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
     expect(homeReportNoteLine(report({ rxCode: '00000000' }), rxCode(rxToken))).not.toMatch(/bu muayenenin/);
     const broken = exam({}, undefined, { homeReports: [{ id: 'y', token: token.slice(0, -1) + '0', importedAt: S }] });
     expect(examNoteText(broken, undefined, {})).not.toMatch(/Ev dönemi/);
+  });
+
+  it('reçete döneminde bitiş "reçete geçerliliği" diye etiketlenir; dönem rapor tarihinde biter (tur 4, k08)', () => {
+    const rx = { date: '2026-10-31', side: 'R' as const, maneuver: 'epley' as const, perDay: 3, days: 5 };
+    const last = new Date(rxValidUntil({ date: rx.date }, RX_VALID_DAYS)! - 1);
+    const to = new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59).getTime();
+    const lastText = shortDate(last);
+    // Geçerlilik sürerken oluşturulan rapor: dönem rapor tarihinde biter, geçerlilik ayrıca yazılır.
+    const live = report({ rx, period: { from: new Date(2026, 9, 31).getTime(), to }, generatedAt: new Date(2026, 9, 31, 18, 0).getTime() });
+    expect(homePeriodText(live)).toBe(`31.10.2026 – 31.10.2026 (rapor tarihi) · reçete geçerliliği ${lastText} dahil`);
+    expect(homeReportNoteLine(live)).toContain(`(rapor tarihi) · reçete geçerliliği ${lastText} dahil`);
+    // Süresi dolduktan sonra: dönemin sonu geçerliliğin sonudur.
+    const done = report({ rx, period: { from: new Date(2026, 9, 31).getTime(), to }, generatedAt: to + 3 * 24 * 60 * MIN });
+    expect(homePeriodText(done)).toBe(`31.10.2026 – ${lastText} (reçete geçerliliğinin sonu)`);
+    // Reçetesiz (ya da reçete dönemi dışındaki) rapor: düz aralık.
+    expect(homePeriodText(report())).toBe('31.10.2026 – 13.11.2026');
+    expect(homePeriodText(report({ rx, period: { from: S, to: S + 60 * MIN } }))).toBe('31.10.2026 – 31.10.2026');
+  });
+});
+
+describe('rapor yapıştırma alanı (tur 4, k09)', () => {
+  const rxToken = encodePrescription({ v: 2, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-31', perDay: 3, days: 5, pid: 'NO-2611' });
+
+  it('reçete bağlantısı tanınır ve açık mesaj verilir', () => {
+    const url = `https://dengeyol.example/#/recete/${rxToken}`;
+    expect(looksLikeRxLink(url)).toBe(true);
+    expect(reportPasteErrorText(url)).toMatch(/^Bu bir ev reçetesi bağlantısı, hasta raporu değil\./);
+  });
+
+  it('serbest metin ve boş giriş genel mesajı alır', () => {
+    for (const t of ['merhaba', '', 'https://dengeyol.example/#/hasta', rxToken]) {
+      expect(looksLikeRxLink(t)).toBe(false);
+      expect(reportPasteErrorText(t)).toBe('Bu bir hasta raporu bağlantısına benzemiyor.');
+    }
   });
 });
