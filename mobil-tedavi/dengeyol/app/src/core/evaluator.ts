@@ -60,6 +60,12 @@ const BODY_NOT_TURNED_MAX = 110;
 
 /** Sırtüstü bölgesi: yatarken |θ| bundan küçükse hasta sırtüstü sayılır; "yanlış taraf" kilidi burada çözülür. */
 export const SUPINE_ZONE_DEG = 30;
+/**
+ * Yanlış taraf kilidinin çözülmesi için sırtüstü sınırı (°; gecikme payı / histerezis). Karşı yana geçiş |θ| ≥ SUPINE_ZONE_DEG
+ * ile algılanır; sırtüstüne dönülmüş sayılmak için |θ| bunun altına inmeli ve orada kalınmalı (yürütücü: SUPINE_CONFIRM_SEC).
+ * Sınırın tam üstündeki tek bir sıçrama "Dur! Yanlış taraf." uyarısını "Tamam, şimdi …" ile kesmesin (k02, tur 5).
+ */
+export const SUPINE_RELEASE_DEG = 20;
 /** Karşı yan bölgesinin üst sınırı: |θ| bunun ötesi yüzüstüdür (doğru yandan biraz fazla dönen hasta da buraya gelir). */
 const WRONG_SIDE_MAX_DEG = 160;
 
@@ -143,7 +149,13 @@ export function evaluate(pose: HeadPose, target: Target, opts: EvaluateOptions =
   }
   const thetaErr = angleDiff(target.theta, pose.theta);
   // Karşı yanda en kısa açı yüzüstünden geçirir: yön verilmez, önce sırtüstüne dönülmesi söylenir (k02, tur 2).
-  if (onWrongSide(pose, target) || (opts.wrongSideLatched && sideGuarded(target) && Math.abs(pose.theta) >= SUPINE_ZONE_DEG)) {
+  // Kilit sürerken karşı yanda gecikme payı: sırtüstü sayılmak için |θ| ≤ SUPINE_RELEASE_DEG gerekir (k02, tur 5).
+  const absTheta = Math.abs(pose.theta);
+  const latchedWrong =
+    !!opts.wrongSideLatched &&
+    sideGuarded(target) &&
+    (absTheta >= SUPINE_ZONE_DEG || (absTheta > SUPINE_RELEASE_DEG && Math.sign(pose.theta) !== Math.sign(target.theta)));
+  if (onWrongSide(pose, target) || latchedWrong) {
     return {
       inRange: false,
       postureOk,

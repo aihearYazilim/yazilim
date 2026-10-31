@@ -825,6 +825,11 @@ export function RunnerView({
   const isControl = (t: EventTarget) =>
     !!(t as HTMLElement).closest('button:not(.vertigo-pad), a, input, select, label, summary, .overlay');
   const guiding = !manual && ev?.hint && (state.phase === 'seeking' || state.phase === 'settling' || state.phase === 'drifting');
+  /**
+   * Düzeltme ipucu afişi görünüyor: yerleşim sıkışır (afiş ve açı satırı küçülür, gösterge küçülür), baş göstergesi ve
+   * sayaç 390×664'te de alttaki işaret alanının üstünde kalır (k08, tur 5).
+   */
+  const showHint = !!(guiding && ev?.hint);
   /** Onayı beklenen kalıcı seçim (süresi dolmadıysa). */
   const armed = state.phase === 'paused' ? armedChoice(sheet, performance.now()) : null;
   /** Kurulan seçimin yerinde dokunulamayan not durur (aynı yere ikinci kör dokunuş onaylamaz); diğerleri düğmedir. */
@@ -840,7 +845,7 @@ export function RunnerView({
 
   return (
     <div
-      className={`runner${flipped ? ' flipped' : ''}${P ? ' press-surface' : ' clinician'}`}
+      className={`runner${flipped ? ' flipped' : ''}${P ? ' press-surface' : ' clinician'}${showHint ? ' hinting' : ''}`}
       data-testid="runner"
       data-phase={state.phase}
       data-step={state.stepIndex}
@@ -937,7 +942,7 @@ export function RunnerView({
           </p>
         )}
 
-        {guiding && ev?.hint ? (
+        {showHint && ev?.hint ? (
           <HintBanner hint={ev.hint} flipped={flipped} texts={hintTexts} />
         ) : (
           <div className="row">
@@ -949,8 +954,8 @@ export function RunnerView({
 
         {/* Klinisyen: açı sayıları göstergeden önce (küçük ekranda ve büyük yazıda da görünür kalsın). */}
         {!P && !manual && step && state.phase !== 'between' && (
-          <div className="card soft small" data-testid="runner-numbers">
-            <div className="row wrap" style={{ gap: 14 }}>
+          <div className="card soft small runner-numbers" data-testid="runner-numbers">
+            <div className="row wrap runner-numbers-row">
               {pose && step.target.kind === 'lying' && (
                 <>
                   <span>
@@ -968,7 +973,8 @@ export function RunnerView({
               )}
               {!pose && <span>Sensör verisi yok</span>}
             </div>
-            {ev?.hint && <div style={{ marginTop: 6 }}>{HINT_TEXT_CLINICIAN[ev.hint]}</div>}
+            {/* İpucu afişi görünürken aynı söz kartta yinelenmez (gösterge ilk ekranda kalsın; k08, tur 5). */}
+            {ev?.hint && !showHint && <div style={{ marginTop: 6 }}>{HINT_TEXT_CLINICIAN[ev.hint]}</div>}
           </div>
         )}
 
