@@ -158,7 +158,11 @@ export class Speech {
   }
 
   private speakInner(text: string, priority: 'high' | 'normal', onDone?: () => void): void {
-    if (!this.enabled || !Speech.supported() || !text) return;
+    // Okunmayan cümlede de "bitti" bildirilir: bekleyen akış (ör. "Şu an nasılsınız?" okuması) takılı kalmasın.
+    if (!this.enabled || !Speech.supported() || !text) {
+      onDone?.();
+      return;
+    }
     // Okunacak biçim ("/" → "ya da", ayraç → duraklama); ekrandaki metin değişmez.
     const said = speechText(text);
     if (!said) {
@@ -171,6 +175,7 @@ export class Speech {
       this.queueLen = 0;
     } else if (this.queueLen >= 2) {
       // Eski ipuçlarını biriktirme
+      onDone?.();
       return;
     }
     const u = new SpeechSynthesisUtterance(said);
