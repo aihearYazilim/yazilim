@@ -9,6 +9,9 @@ export type HintKey =
   | 'SIT_UP'
   | 'TURN_RIGHT'
   | 'TURN_LEFT'
+  /** Yüz yere hedefte gövde dönmemiş (yalnız baş çevrili): boyun zorlanmasın, bütün vücutla dönülsün. */
+  | 'TURN_BODY_RIGHT'
+  | 'TURN_BODY_LEFT'
   | 'HANG_MORE'
   | 'HANG_LESS'
   | 'CHIN_DOWN'
@@ -38,6 +41,14 @@ export const SITTING_MAX_TILT = 55;
 export const LYING_MIN_TILT = 45;
 /** Otururken yana eğilme sınırı. */
 export const SITTING_MAX_LAMBDA = 25;
+/**
+ * Pozisyon tutulurken sarkma (φ) sınırındaki histerezis payı (°). Hedefe GİRİŞ için tam aralık gerekir; yalnız tutma
+ * sırasında sınırda ölçüm gürültüsüyle "bozuldu / düzeldi" gidip gelmesin diye aralık her iki yanda bu kadar genişler
+ * (k07, k10; tur 1). Dönüş (θ) toleransı değişmez.
+ */
+export const HOLD_HYSTERESIS_DEG = 3;
+/** Baş bu dönüşün altındaysa (aynı yanda) gövde henüz dönmemiş sayılır: tek başına boyunla yüz yere bakılamaz. */
+const BODY_NOT_TURNED_MAX = 110;
 
 function rangeDistance(v: number, lo: number, hi: number): number {
   if (v < lo) return lo - v;
@@ -45,7 +56,12 @@ function rangeDistance(v: number, lo: number, hi: number): number {
   return 0;
 }
 
-export function evaluate(pose: HeadPose, target: Target): Evaluation {
+export interface EvaluateOptions {
+  /** Tutma sırasında sarkma aralığına eklenen pay (°); bkz. HOLD_HYSTERESIS_DEG. */
+  holdMarginDeg?: number;
+}
+
+export function evaluate(pose: HeadPose, target: Target, opts: EvaluateOptions = {}): Evaluation {
   if (target.kind === 'sitting') {
     // Çene göğüste oturuş (ör. Yacovino son adımı, ψ ≤ 60°) "yatıyor" sanılmasın: eşik hedefe göre genişler.
     const maxTilt = Math.max(SITTING_MAX_TILT, target.psiMax + 10);
@@ -92,13 +108,21 @@ export function evaluate(pose: HeadPose, target: Target): Evaluation {
   }
   const thetaErr = angleDiff(target.theta, pose.theta);
   const thetaExcess = Math.max(0, Math.abs(thetaErr) - target.thetaTol);
-  const phiErr = rangeDistance(pose.phi, target.phiMin, target.phiMax);
+  const margin = Math.max(0, opts.holdMarginDeg ?? 0);
+  const phiErr = rangeDistance(pose.phi, target.phiMin - margin, target.phiMax + margin);
   const inRange = thetaExcess === 0 && phiErr === 0;
   let hint: HintKey | null = null;
   if (!inRange) {
     // Önce dönüş (kritik eksen), sonra sarkıklık.
-    if (thetaExcess >= Math.abs(phiErr) * 0.75) hint = thetaErr > 0 ? 'TURN_RIGHT' : 'TURN_LEFT';
-    else hint = phiErr > 0 ? 'HANG_MORE' : 'HANG_LESS';
+    if (thetaExcess >= Math.abs(phiErr) * 0.75) {
+      hint = thetaErr > 0 ? 'TURN_RIGHT' : 'TURN_LEFT';
+      // Gövdeyle dönülen yüz yere hedefte (Epley 3) baş hedefle aynı yanda ama ≤110° (ya da hâlâ ortada):
+      // gövde dönmemiş. "Başınızı çevirin" boynu zorlar; bütün vücutla yana dönülmesi söylenir (k10, tur 1).
+      if (target.bodyTurn) {
+        const sameSide = Math.sign(pose.theta) === Math.sign(target.theta) || Math.abs(pose.theta) < 30;
+        if (sameSide && Math.abs(pose.theta) <= BODY_NOT_TURNED_MAX) hint = target.theta > 0 ? 'TURN_BODY_RIGHT' : 'TURN_BODY_LEFT';
+      }
+    } else hint = phiErr > 0 ? 'HANG_MORE' : 'HANG_LESS';
   }
   const errorDeg = Math.hypot(thetaExcess, phiErr);
   return { inRange, postureOk, thetaErr, phiErr, psiErr: null, errorDeg, closeness: closenessFrom(errorDeg), hint };
@@ -115,6 +139,8 @@ export const HINT_TEXT_PATIENT: Record<HintKey, string> = {
   SIT_UP: 'Yavaşça oturun.',
   TURN_RIGHT: 'Başınızı biraz daha sağa çevirin.',
   TURN_LEFT: 'Başınızı biraz daha sola çevirin.',
+  TURN_BODY_RIGHT: 'Yalnız başınızı değil, bütün vücudunuzla sağ yanınıza dönün; sonra burnunuz yere baksın.',
+  TURN_BODY_LEFT: 'Yalnız başınızı değil, bütün vücudunuzla sol yanınıza dönün; sonra burnunuz yere baksın.',
   HANG_MORE: 'Başınızı biraz daha geriye bırakın.',
   HANG_LESS: 'Başınızı biraz kaldırın.',
   CHIN_DOWN: 'Çenenizi biraz göğsünüze doğru indirin.',
@@ -127,9 +153,26 @@ export const HINT_TEXT_CLINICIAN: Record<HintKey, string> = {
   SIT_UP: 'Hasta oturtulmalı.',
   TURN_RIGHT: 'Başı sağa çevirin.',
   TURN_LEFT: 'Başı sola çevirin.',
+  TURN_BODY_RIGHT: 'Gövdeyi hastanın sağına çevirin (yalnız baş değil).',
+  TURN_BODY_LEFT: 'Gövdeyi hastanın soluna çevirin (yalnız baş değil).',
   HANG_MORE: 'Ekstansiyonu artırın (baş daha sarkık).',
   HANG_LESS: 'Ekstansiyonu azaltın.',
   CHIN_DOWN: 'Fleksiyonu artırın (çene aşağı).',
   CHIN_UP: 'Fleksiyonu azaltın.',
   HEAD_STRAIGHT: 'Lateral eğilmeyi düzeltin.'
+};
+
+/** Yardımcı modu (hasta ekranı görmez, başı yakını çevirir): sözler yardımcıya, yönler "hastanın sağı/solu" ile. */
+export const HINT_TEXT_HELPER: Record<HintKey, string> = {
+  LIE_DOWN: 'Hastayı şimdi yatırın.',
+  SIT_UP: 'Hastayı yavaşça oturtun.',
+  TURN_RIGHT: 'Başı hastanın sağına biraz daha çevirin.',
+  TURN_LEFT: 'Başı hastanın soluna biraz daha çevirin.',
+  TURN_BODY_RIGHT: 'Hastayı bütün vücuduyla sağ yanına çevirin; yalnız başı değil. Sonra burnu yere baksın.',
+  TURN_BODY_LEFT: 'Hastayı bütün vücuduyla sol yanına çevirin; yalnız başı değil. Sonra burnu yere baksın.',
+  HANG_MORE: 'Başı biraz daha geriye sarkıtın.',
+  HANG_LESS: 'Başı biraz kaldırın.',
+  CHIN_DOWN: 'Hastanın çenesini biraz göğsüne doğru indirin.',
+  CHIN_UP: 'Hastanın çenesini biraz kaldırın.',
+  HEAD_STRAIGHT: 'Başı yana yatırmayın, dik tutun.'
 };

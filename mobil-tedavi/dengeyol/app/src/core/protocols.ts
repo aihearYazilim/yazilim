@@ -9,6 +9,8 @@
  *   {Aya} etkilenen tarafa yön    (sağa / sola)
  *   {H}   sağlam taraf sıfatı     (sol / sağ)
  *   {Hya} sağlam tarafa yön       (sola / sağa)
+ *   {Aına} hastanın etkilenen yanına (sağına / soluna) — yardımcı metinleri
+ *   {Hına} hastanın sağlam yanına    (soluna / sağına)
  */
 import { wrapDeg } from './geometry';
 
@@ -41,6 +43,11 @@ export type Target =
       /** Ekstansiyon aralığı (+ = baş geriye sarkık). */
       phiMin: number;
       phiMax: number;
+      /**
+       * Bu hedefe gövdeyle dönülerek gelinir (Epley 3: sırtüstünden yüz yere). Baş hedefle aynı yanda kalıp gövde dönmemişse
+       * "başınızı çevirin" yerine "bütün vücudunuzla dönün" ipucu verilir (boyun zorlanmasın).
+       */
+      bodyTurn?: boolean;
     };
 
 export interface StepDef {
@@ -70,6 +77,18 @@ export interface StepDef {
   fastTransitionSec?: number;
   /** Sensörle doğrulanamayan kısım için not (ör. otururken başın sağa çevrilmesi). */
   unverifiable?: string;
+  /**
+   * Doğrulanamayan adımda pozisyon (yalnız oturuş) doğrulanınca "Tamam, böyle kalın" yerine söylenen dürüst cümle:
+   * baş çevrilmesi ölçülemez, hasta "doğru yaptım" sanmasın.
+   */
+  reachedSay?: string;
+  /** Ekranda başlığın hemen altında görünen tek satırlık eylem özeti (çevrik/uzaktan bakışta da okunsun). */
+  short?: string;
+  /** Yardımcı modu: başlık, sesli yönerge, özet ve doğrulama cümlesi yardımcıya ("hastanın sağı/solu"). */
+  helperTitle?: string;
+  helperSay?: string;
+  helperShort?: string;
+  helperReachedSay?: string;
 }
 
 export interface ProtocolDef {
@@ -106,12 +125,13 @@ export const LIMITS = {
 } as const;
 
 const sit = (psiMin: number, psiMax: number): Target => ({ kind: 'sitting', psiMin, psiMax });
-const lie = (theta: number, thetaTol: number, phiMin: number, phiMax: number): Target => ({
+const lie = (theta: number, thetaTol: number, phiMin: number, phiMax: number, bodyTurn?: boolean): Target => ({
   kind: 'lying',
   theta,
   thetaTol,
   phiMin,
-  phiMax
+  phiMax,
+  ...(bodyTurn ? { bodyTurn } : {})
 });
 
 const SIT_NEUTRAL = sit(-25, 35);
@@ -139,11 +159,20 @@ const DIX_HALLPIKE: ProtocolDef = {
       say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} 45° çevrilir.',
       target: SIT_NEUTRAL,
-      minHoldSec: 4,
+      // Baş çevirme ölçülemez: yönergeden sonra çevirmeye zaman tanınır (k01, k02; tur 1).
+      minHoldSec: 7,
+      clinicianMinHoldSec: 4,
       afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: false,
-      unverifiable: 'Otururken başın {Aya} 45° çevrilmesi sensörle doğrulanamaz; bir sonraki adımda yatınca doğrulanır.'
+      unverifiable: 'Otururken başın {Aya} 45° çevrilmesi sensörle doğrulanamaz; bir sonraki adımda yatınca doğrulanır.',
+      reachedSay: 'Başınızı {Aya} çevirdiyseniz öyle kalın; birazdan yatacağız.',
+      short: 'Oturun; baş {Aya} 45° çevrili.',
+      helperTitle: 'Oturuş, baş hastanın {Aına} 45°',
+      helperSay:
+        'Hasta yatakta otursun; yastık, yatınca omuzlarının altına gelecek yerde olsun. Başını iki elinizle tutup hastanın {Aına} çevirin: çenesi {A} omzuna doğru yarı yolda olsun.',
+      helperShort: 'Hasta oturuyor; baş hastanın {Aına} 45°.',
+      helperReachedSay: 'Başı hastanın {Aına} çevirdiyseniz öyle tutun; birazdan yatıracağız.'
     },
     {
       id: 'dh-lie',
@@ -157,7 +186,12 @@ const DIX_HALLPIKE: ProtocolDef = {
       afterVertigoSec: 10,
       maxVertigoSec: LIMITS.maxVertigoSec,
       observe: true,
-      finding: 'dhR'
+      finding: 'dhR',
+      short: 'Hızla sırtüstü yatın; baş {Aya} dönük, geriye sarkık.',
+      helperTitle: 'Sırtüstü, baş hastanın {Aına} 45° ve sarkık',
+      helperSay:
+        'Başın yönünü bozmadan hastayı hızla sırtüstü yatırın. Baş yastıktan geriye doğru hafifçe sarksın ve hastanın {Aına} çevrili kalsın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+      helperShort: 'Hızla sırtüstü yatırın; baş hastanın {Aına} dönük, geriye sarkık.'
     },
     {
       id: 'dh-up',
@@ -168,7 +202,11 @@ const DIX_HALLPIKE: ProtocolDef = {
       minHoldSec: 20,
       afterVertigoSec: 5,
       maxVertigoSec: null,
-      observe: true
+      observe: true,
+      short: 'Yavaşça oturun; baş düz.',
+      helperTitle: 'Oturuş',
+      helperSay: 'Hastayı yavaşça doğrultup oturtun; başı düz dursun. Yaklaşık 20 saniye böyle kalsın.',
+      helperShort: 'Yavaşça oturtun; baş düz.'
     }
   ],
   sources: [
@@ -283,11 +321,19 @@ const EPLEY: ProtocolDef = {
       say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} (etkilenen taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
-      minHoldSec: 5,
+      minHoldSec: 7,
+      clinicianMinHoldSec: 5,
       afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: false,
-      unverifiable: 'Otururken başın {Aya} 45° çevrilmesi sensörle doğrulanamaz; bir sonraki adımda yatınca doğrulanır.'
+      unverifiable: 'Otururken başın {Aya} 45° çevrilmesi sensörle doğrulanamaz; bir sonraki adımda yatınca doğrulanır.',
+      reachedSay: 'Başınızı {Aya} çevirdiyseniz öyle kalın; birazdan yatacağız.',
+      short: 'Oturun; baş {Aya} 45° çevrili.',
+      helperTitle: 'Oturuş, baş hastanın {Aına} 45°',
+      helperSay:
+        'Hasta yatakta otursun; yastık, yatınca omuzlarının altına gelecek yerde olsun. Başını iki elinizle tutup hastanın {Aına} çevirin: çenesi {A} omzuna doğru yarı yolda olsun.',
+      helperShort: 'Hasta oturuyor; baş hastanın {Aına} 45°.',
+      helperReachedSay: 'Başı hastanın {Aına} çevirdiyseniz öyle tutun; birazdan yatıracağız.'
     },
     {
       id: 'ep-1',
@@ -299,7 +345,12 @@ const EPLEY: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
-      observe: true
+      observe: true,
+      short: 'Hızla sırtüstü yatın; baş {Aya} dönük, geriye sarkık.',
+      helperTitle: 'Sırtüstü, baş hastanın {Aına} 45° ve sarkık',
+      helperSay:
+        'Başın yönünü bozmadan hastayı hızla sırtüstü yatırın. Baş yastıktan geriye doğru hafifçe sarksın ve hâlâ hastanın {Aına} çevrili kalsın. Baş dönmesi olabilir, bu beklenen bir durumdur. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+      helperShort: 'Hızla sırtüstü yatırın; baş hastanın {Aına} dönük, geriye sarkık.'
     },
     {
       id: 'ep-2',
@@ -311,19 +362,29 @@ const EPLEY: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
-      observe: true
+      observe: true,
+      short: 'Baş sarkık kalsın; yavaşça {Hya} 45° çevirin.',
+      helperTitle: 'Sırtüstü, baş hastanın {Hına} 45°',
+      helperSay:
+        'Başı kaldırmadan, geriye sarkık tutarak yavaşça hastanın {Hına} doğru çevirin. Şimdi baş hastanın {H} tarafına 45 derece baksın ve hafifçe sarkık kalsın.',
+      helperShort: 'Baş sarkık kalsın; yavaşça hastanın {Hına} 45° çevirin.'
     },
     {
       id: 'ep-3',
       title: '{H} yan, burun yere',
       say: 'Bütün vücudunuzla {H} yanınıza dönün. Başınızı da aynı yönde biraz daha çevirin; burnunuz yere doğru, yaklaşık 45 derece aşağı baksın.',
       clinician: 'Hasta {H} yanına döner; baş gövdeyle birlikte dönerek yüz yere 45° bakar (başlangıca göre toplam 180°).',
-      target: lie(-135, LIMITS.thetaTolFaceDown, -25, 30),
+      target: lie(-135, LIMITS.thetaTolFaceDown, -25, 30, true),
       minHoldSec: 45,
       clinicianMinHoldSec: 30,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
-      observe: true
+      observe: true,
+      short: 'Bütün vücutla {H} yanınıza dönün; burun yere.',
+      helperTitle: 'Hastanın {H} yanı, burun yere',
+      helperSay:
+        'Hastayı bütün vücuduyla {H} yanına çevirin; başı da aynı yönde biraz daha dönsün, burnu yere doğru yaklaşık 45 derece aşağı baksın. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
+      helperShort: 'Hastayı bütün vücuduyla {H} yanına çevirin; burun yere. Ekranı göremezsiniz, sesi dinleyin.'
     },
     {
       id: 'ep-4',
@@ -335,7 +396,11 @@ const EPLEY: ProtocolDef = {
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: false
+      observe: false,
+      short: 'Yavaşça oturun; çene hafif aşağı.',
+      helperTitle: 'Oturuş, çene hafif aşağı',
+      helperSay: 'Hastayı {H} tarafından yavaşça doğrultup yatağın kenarına oturtun. Çenesi hafifçe göğsüne doğru eğik olsun. Acele etmeyin.',
+      helperShort: 'Yavaşça oturtun; çene hafif aşağı.'
     }
   ],
   sources: [
@@ -370,11 +435,19 @@ const SEMONT: ProtocolDef = {
       say: 'Yatağın uzun kenarının ortasına, bacaklarınız yataktan aşağı sarkacak şekilde oturun. İki yanınızda da yatacak kadar yer olsun. Başınızı {Hya} doğru 45 derece çevirin.',
       clinician: 'Hasta yatak kenarında, iki yana yatabilecek şekilde oturur. Baş {Hya} (sağlam taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
-      minHoldSec: 5,
+      minHoldSec: 7,
+      clinicianMinHoldSec: 5,
       afterVertigoSec: 0,
       maxVertigoSec: null,
       observe: false,
-      unverifiable: 'Otururken başın {Hya} 45° çevrilmesi sensörle doğrulanamaz; bir sonraki adımda yatınca doğrulanır.'
+      unverifiable: 'Otururken başın {Hya} 45° çevrilmesi sensörle doğrulanamaz; bir sonraki adımda yatınca doğrulanır.',
+      reachedSay: 'Başınızı {Hya} çevirdiyseniz öyle kalın; birazdan yatacağız.',
+      short: 'Yatak kenarında oturun; baş {Hya} 45° çevrili.',
+      helperTitle: 'Oturuş, baş hastanın {Hına} 45°',
+      helperSay:
+        'Hasta yatağın uzun kenarının ortasına, bacakları yataktan aşağı sarkacak şekilde otursun; iki yanında da yatacak kadar yer olsun. Başını hastanın {Hına} doğru 45 derece çevirin.',
+      helperShort: 'Hasta yatak kenarında; baş hastanın {Hına} 45°.',
+      helperReachedSay: 'Başı hastanın {Hına} çevirdiyseniz öyle tutun; birazdan yatıracağız.'
     },
     {
       id: 'se-1',
@@ -385,12 +458,18 @@ const SEMONT: ProtocolDef = {
       minHoldSec: 60,
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
-      observe: true
+      observe: true,
+      short: 'Hızla {A} yanınıza yatın; burun yukarı.',
+      helperTitle: 'Hastanın {A} yanı, burun yukarı',
+      helperSay:
+        'Başın yönünü değiştirmeden hastayı hızla {A} yanına yatırın. Burnu tavana doğru, yaklaşık 45 derece yukarı baksın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+      helperShort: 'Hızla {A} yanına yatırın; burun yukarı.'
     },
     {
       id: 'se-2',
       title: '{H} yan, burun yere (tek hızlı hareket)',
-      say: 'Şimdi tek, hızlı ve kesintisiz bir hareketle oturma pozisyonundan geçerek {H} yanınıza yatın. Başınızın yönünü değiştirmeyin; burnunuz bu kez yere doğru 45 derece bakacak.',
+      // Hasta modunda yönergeden sonra "Üç, iki, bir, şimdi!" sayılır; geçiş o komutla yapılır (k10, tur 1).
+      say: 'Birazdan tek, hızlı ve kesintisiz bir hareketle oturma pozisyonundan geçerek {H} yanınıza yatacaksınız. Başınızın yönünü değiştirmeyin; burnunuz bu kez yere doğru 45 derece bakacak. Şimdilik kıpırdamayın; "şimdi" dediğimde hareket edin.',
       clinician:
         'Baş-gövde ilişkisi bozulmadan hasta tek hızlı hareketle karşı ({H}) yana geçirilir; burun yere 45° bakar.',
       target: lie(-135, LIMITS.thetaTolFaceDown, -30, 30),
@@ -398,7 +477,12 @@ const SEMONT: ProtocolDef = {
       afterVertigoSec: 30,
       maxVertigoSec: LIMITS.maxVertigoSec,
       observe: true,
-      fastTransitionSec: 2
+      fastTransitionSec: 2,
+      short: '"Şimdi" deyince tek hamlede {H} yanınıza; burun yere.',
+      helperTitle: 'Hastanın {H} yanı, burun yere (tek hızlı hareket)',
+      helperSay:
+        'Birazdan hastayı tek, hızlı ve kesintisiz bir hareketle oturma pozisyonundan geçirerek {H} yanına yatıracaksınız. Başın yönü değişmesin; burnu bu kez yere doğru 45 derece bakacak. Şimdilik bekleyin; "şimdi" dediğimde hareket ettirin. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
+      helperShort: '"Şimdi" deyince tek hamlede hastanın {H} yanına; burun yere.'
     },
     {
       id: 'se-3',
@@ -409,7 +493,11 @@ const SEMONT: ProtocolDef = {
       minHoldSec: 60,
       afterVertigoSec: 15,
       maxVertigoSec: null,
-      observe: false
+      observe: false,
+      short: 'Yavaşça oturun; baş dik.',
+      helperTitle: 'Oturuş',
+      helperSay: 'Hastayı yavaşça doğrultup oturtun. Başı dik dursun; birkaç dakika oturarak dinlensin.',
+      helperShort: 'Yavaşça oturtun; baş dik.'
     }
   ],
   sources: [
@@ -435,6 +523,7 @@ const BBQ_ROLL: ProtocolDef = {
   patient: 'no',
   summary:
     'Yatay kanal (geotropik) BPPV tedavisi. Etkilenen kulak altta başlanır; sağlam tarafa doğru 90°lik adımlarla toplam 360° dönülür.',
+  // Klinisyende adım başına 30 s (k08, tur 1): 7 adım × 45 s klinikte 6 dakikayı aşıyordu.
   steps: [
     {
       id: 'bbq-0',
@@ -443,6 +532,7 @@ const BBQ_ROLL: ProtocolDef = {
       clinician: 'Hasta sırtüstü; baş {Aya} 90° çevrili ({A} kulak altta).',
       target: lie(90, 15, -42, 20),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: true
@@ -454,6 +544,7 @@ const BBQ_ROLL: ProtocolDef = {
       clinician: 'Baş ortaya getirilir (yüz tavana).',
       target: lie(0, 15, -42, 20),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: true
@@ -465,6 +556,7 @@ const BBQ_ROLL: ProtocolDef = {
       clinician: 'Baş {Hya} 90° çevrilir ({H} kulak altta).',
       target: lie(-90, 15, -42, 20),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: true
@@ -476,6 +568,7 @@ const BBQ_ROLL: ProtocolDef = {
       clinician: 'Hasta aynı yönde dönerek yüzüstü, dirsekler üzerinde; yüz yere.',
       target: lie(180, 20, -42, 30),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: true
@@ -487,6 +580,7 @@ const BBQ_ROLL: ProtocolDef = {
       clinician: 'Aynı yönde dönülerek {A} yan pozisyona gelinir ({A} kulak altta; toplam 270°).',
       target: lie(90, 15, -42, 20),
       minHoldSec: 45,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: true
@@ -509,6 +603,7 @@ const BBQ_ROLL: ProtocolDef = {
       clinician: 'Hasta yavaşça oturtulur.',
       target: sit(-15, 35),
       minHoldSec: 60,
+      clinicianMinHoldSec: 30,
       afterVertigoSec: 15,
       maxVertigoSec: null,
       observe: false
@@ -731,11 +826,15 @@ export const PROTOCOLS: Record<ProtocolId, ProtocolDef> = {
 
 export const sideName = (s: Side): string => (s === 'R' ? 'sağ' : 'sol');
 export const sideDative = (s: Side): string => (s === 'R' ? 'sağa' : 'sola');
+/** "hastanın sağına / soluna" kalıbı için iyelikli yönelme. */
+export const sidePossDative = (s: Side): string => (s === 'R' ? 'sağına' : 'soluna');
 export const otherSide = (s: Side): Side => (s === 'R' ? 'L' : 'R');
 
 export function fillText(text: string, side: Side): string {
   const h = otherSide(side);
   return text
+    .replace(/\{Aına\}/g, sidePossDative(side))
+    .replace(/\{Hına\}/g, sidePossDative(h))
     .replace(/\{Aya\}/g, sideDative(side))
     .replace(/\{Hya\}/g, sideDative(h))
     .replace(/\{A\}/g, sideName(side))
@@ -751,6 +850,8 @@ export interface ResolvedProtocol extends Omit<ProtocolDef, 'steps'> {
   side: Side | null;
   steps: StepDef[];
 }
+
+const opt = (t: string | undefined, s: Side): string | undefined => (t ? fillText(t, s) : undefined);
 
 function mirrorTarget(t: Target): Target {
   if (t.kind === 'sitting') return t;
@@ -778,11 +879,23 @@ export function resolveProtocol(id: ProtocolId, side: Side | null): ResolvedProt
       say: fillText(st.say, s),
       clinician: fillText(st.clinician, s),
       unverifiable: st.unverifiable ? fillText(st.unverifiable, s) : undefined,
+      reachedSay: opt(st.reachedSay, s),
+      short: opt(st.short, s),
+      helperTitle: st.helperTitle ? capitalizeTr(fillText(st.helperTitle, s)) : undefined,
+      helperSay: opt(st.helperSay, s),
+      helperShort: opt(st.helperShort, s),
+      helperReachedSay: opt(st.helperReachedSay, s),
       target: left ? mirrorTarget(st.target) : st.target,
       finding: left ? mirrorFinding(st.finding) : st.finding
     };
   });
   return { ...def, side: def.sided ? s : null, steps };
+}
+
+/** Yürütme kipine göre protokol: klinisyende varsa `clinicianMinHoldSec` en az bekleme olur (hasta modu değişmez). */
+export function protocolForMode(p: ResolvedProtocol, mode: 'patient' | 'clinician'): ResolvedProtocol {
+  if (mode !== 'clinician') return p;
+  return { ...p, steps: p.steps.map((st) => (st.clinicianMinHoldSec !== undefined ? { ...st, minHoldSec: st.clinicianMinHoldSec } : st)) };
 }
 
 /** Tanıya göre önerilen manevralar (ilk eleman varsayılan). */

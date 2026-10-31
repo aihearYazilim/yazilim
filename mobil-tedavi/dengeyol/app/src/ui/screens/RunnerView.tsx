@@ -4,12 +4,14 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CALIBRATION_ERROR_TEXT, computeCalibration, residualUprightDeg, type Calibration } from '../../core/calibration';
-import { HINT_TEXT_CLINICIAN, HINT_TEXT_PATIENT, type HintKey } from '../../core/evaluator';
-import { resolveProtocol, type ProtocolId, type ResolvedProtocol, type Side, sideName } from '../../core/protocols';
+import { HINT_TEXT_CLINICIAN, HINT_TEXT_HELPER, HINT_TEXT_PATIENT, type HintKey } from '../../core/evaluator';
+import { protocolForMode, resolveProtocol, type ProtocolId, type ResolvedProtocol, type Side, sideName, type StepDef } from '../../core/protocols';
 import {
+  type Cue,
   DEFAULT_RUNNER_CONFIG,
   estimateSpeechSec,
   initialRunnerState,
+  PATIENT_FIRST_HINT_DELAY_SEC,
   type RunnerConfig,
   type RunnerEvent,
   type RunnerMode,
@@ -33,6 +35,8 @@ import { BedSetup } from './Illustrations';
 
 /** Zincirde telefonun yerinde sayılması için dik duruşta kayıtlı yerleşime göre en fazla sapma (°). */
 export const CHAIN_MOUNT_TOLERANCE_DEG = 12;
+/** Hasta modunda ekrana bu kadar basılı tutmak duraklatır / duraklatmadayken devam ettirir (ms). Sesle söylenir: "iki saniye". */
+export const LONG_PRESS_MS = 2000;
 
 export interface RunnerOutcome {
   /** Yürütücü hiç başlatılmadan kapatıldıysa false: kayıt yazılmamalı. */
@@ -83,27 +87,29 @@ export function RunnerView({
 }) {
   const { settings } = useData();
   const { source } = useMotion();
-  const protocol = useMemo(() => {
-    const p = resolveProtocol(protocolId, side);
-    if (mode !== 'clinician') return p;
-    return { ...p, steps: p.steps.map((st) => (st.clinicianMinHoldSec !== undefined ? { ...st, minHoldSec: st.clinicianMinHoldSec } : st)) };
-  }, [protocolId, side, mode]);
+  const protocol = useMemo(() => protocolForMode(resolveProtocol(protocolId, side), mode), [protocolId, side, mode]);
   const sim = useSimAuto();
   const [calibration, setCalibration] = useState<Calibration | null>(initialCalibration);
   const manual = calibration === null;
   const P = mode === 'patient';
+  /** Hasta modunda yakını yaptırıyor: ses ve başlıklar yardımcıya. */
+  const helperVoice = P && settings.assist === 'helper';
 
   const cfg: RunnerConfig = useMemo(
     () => ({
       ...DEFAULT_RUNNER_CONFIG,
       mode,
       protocol,
-      // Hasta ekranı görmez: sessizlik 10 s'yi geçmesin.
+      // Hasta ekranı görmez: sessizlik 10 s'yi geçmesin; ilk sesli düzeltme yönergeden hemen sonra gelsin.
       countEverySec: P ? 10 : DEFAULT_RUNNER_CONFIG.countEverySec,
+      firstHintDelaySec: P ? PATIENT_FIRST_HINT_DELAY_SEC : DEFAULT_RUNNER_CONFIG.firstHintDelaySec,
       introSecFor: (t: string) => (P ? (settings.speech ? estimateSpeechSec(t, settings.speechRate) : 4) : 1.5),
+      // Yönergenin gerçek bitişi beklenir (yavaş seslerde tahmin yetmez). Simülasyonda belirlenimci tahmin kullanılır.
+      awaitSpeechEnd: P && settings.speech && !settings.simulation && speech.usable(),
+      helper: helperVoice,
       sensorless: manual
     }),
-    [mode, protocol, P, settings.speech, settings.speechRate, manual]
+    [mode, protocol, P, settings.speech, settings.speechRate, settings.simulation, helperVoice, manual]
   );
 
   const [started, setStarted] = useState(false);
@@ -148,18 +154,29 @@ export function RunnerView({
     applySettings(settings);
   }, [settings]);
 
+  const dispatchRef = useRef<(ev: RunnerEvent) => void>(() => undefined);
   const dispatch = useCallback(
     (ev: RunnerEvent) => {
       const r = runnerStep(cfg, sRef.current, ev);
       sRef.current = r.state;
-      playCues(r.cues);
+      for (const c of r.cues) {
+        // Adım yönergesi: konuşma gerçekten bitince yürütücüye bildirilir (giriş, gerçek bitişi bekler).
+        if (c.kind === 'speak' && c.tag === 'stepIntro' && cfg.awaitSpeechEnd) {
+          const idx = c.stepIndex ?? sRef.current.stepIndex;
+          speech.speak(c.text, c.priority, () => {
+            if (alive.current) dispatchRef.current({ type: 'introSpoken', now: now(), stepIndex: idx });
+          });
+        } else playCues([c] as Cue[]);
+      }
       const spoken = r.cues.filter((c) => c.kind === 'speak');
       const last = spoken[spoken.length - 1];
       if (last && last.kind === 'speak') setCaption(last.text);
       setState(r.state);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [cfg]
   );
+  dispatchRef.current = dispatch;
 
   // Sensör izleyici
   useEffect(() => {
@@ -392,9 +409,15 @@ export function RunnerView({
         onPlaced?.(c);
       }
     }
-    const startText = P ? `${startNote ? `${startNote} ` : ''}${manual ? 'Başlıyoruz.' : 'Başlıyoruz. Yönergeleri dinleyin.'}` : 'Başlıyoruz.';
-    if (P && startNote && !settings.simulation) {
-      // Uzun giriş notu 3 s'lik sayımda ilk yönergeyle kesilmesin: önce sonuna kadar okunur.
+    // Yardımcı modunda yönergeler yakına; hastaya tek cümle söylenir.
+    const startCore = helperVoice
+      ? 'Başlıyoruz. Yönergeleri yakınınıza söyleyeceğim. Siz kıpırdamayın; başınızı yakınınız çevirecek.'
+      : manual
+        ? 'Başlıyoruz.'
+        : 'Başlıyoruz. Yönergeleri dinleyin.';
+    const startText = P ? `${startNote ? `${startNote} ` : ''}${startCore}` : 'Başlıyoruz.';
+    if (P && !settings.simulation) {
+      // Başlangıç cümlesi (ve varsa giriş notu) 3 s'lik sayımda ilk yönergeyle kesilmesin: önce sonuna kadar okunur.
       await speech.speakAsync(startText, estimateSpeechSec(startText, settings.speechRate) * 2000 + 2000);
       if (!alive.current) return;
     } else speech.speak(startText, 'high');
@@ -418,6 +441,35 @@ export function RunnerView({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Ekrana bakmadan duraklatma/devam: ekranın herhangi bir yerine 2 s basılı tutmak (hasta modu). Tek dokunuş baş dönmesi
+  // işaretidir; uzun basıştan sonra parmak kalkınca gelen "click" işaret sayılmaz.
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressClick = useRef(false);
+  const cancelPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  };
+  const startPress = (onLong: () => void) => {
+    cancelPress();
+    pressTimer.current = setTimeout(() => {
+      pressTimer.current = null;
+      suppressClick.current = true;
+      onLong();
+    }, LONG_PRESS_MS);
+  };
+  useEffect(() => cancelPress, []);
+  /** Uzun basıştan sonraki tek "click"i yut. */
+  const swallowClick = () => {
+    if (!suppressClick.current) return false;
+    suppressClick.current = false;
+    return true;
+  };
+
+  /** Ekrandaki başlık / yönerge / kısa özet: yardımcı modunda yardımcıya, klinisyende klinisyen metni. */
+  const titleOf = (st: StepDef) => (helperVoice && st.helperTitle ? st.helperTitle : st.title);
+  const sayOf = (st: StepDef) => (!P ? st.clinician : helperVoice && st.helperSay ? st.helperSay : st.say);
+  const shortOf = (st: StepDef) => (!P ? undefined : helperVoice && st.helperShort ? st.helperShort : st.short);
 
   // --- Başlamadan önce ---------------------------------------------------------------------
   if (!started && auto && !autoFailed) {
@@ -462,9 +514,9 @@ export function RunnerView({
             <ol className="stack small" style={{ margin: '10px 0 0', paddingLeft: 22, gap: 8 }}>
               {protocol.steps.map((st) => (
                 <li key={st.id}>
-                  <strong>{st.title}</strong>
+                  <strong>{titleOf(st)}</strong>
                   {st.minHoldSec > 0 ? ` · en az ${st.minHoldSec} sn` : ''}
-                  <div className="muted">{P ? st.say : st.clinician}</div>
+                  <div className="muted">{sayOf(st)}</div>
                 </li>
               ))}
             </ol>
@@ -487,7 +539,14 @@ export function RunnerView({
           {/* Yalnız duruma özgü notlar (hasta modunda genel anlatım sesle yapılır; tekrar yazılmaz). */}
           {(!P || manual || !haptics.supported() || !speech.usable() || !wakeLockSupported()) && (
             <div className="card soft stack small">
-              {!P && <p>Pozisyon doğruysa gösterge yeşile döner ve sayaç başlar. Nistagmus başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin.</p>}
+              {!P && (
+                <p>
+                  {manual
+                    ? 'Telefon alna konmaz; zamanlayıcı olarak kullanılır. Pozisyonu onayladığınızda sayaç başlar.'
+                    : 'Pozisyon doğruysa gösterge yeşile döner ve sayaç başlar.'}{' '}
+                  Nistagmus başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin.
+                </p>
+              )}
               {manual && (
                 <p>
                   <strong>Sensörsüz mod:</strong> açı ölçülmez.{' '}
@@ -614,29 +673,55 @@ export function RunnerView({
     idle: ''
   };
   const nextStep = protocol.steps[state.stepIndex + 1];
-  const instrText = screenText(
-    state.phase === 'between' && nextStep ? (P ? nextStep.say : nextStep.clinician) : step ? (P ? step.say : step.clinician) : ''
-  );
+  const shownStep = state.phase === 'between' && nextStep ? nextStep : step;
+  const instrText = screenText(shownStep ? sayOf(shownStep) : '');
+  const shortText = shownStep ? shortOf(shownStep) : undefined;
+  const hintTexts = !P ? HINT_TEXT_CLINICIAN : helperVoice ? HINT_TEXT_HELPER : HINT_TEXT_PATIENT;
 
   const terminal = state.phase === 'done' || state.phase === 'aborted' || state.phase === 'safetyStop';
   const canMark = step?.observe !== false && state.phase !== 'between' && state.phase !== 'paused' && !terminal;
   // Ekranın herhangi bir yerine dokunmak baş dönmesini işaretler (alındaki telefona körlemesine dokunuş için);
   // düğmeler kendi işini yapar.
   const onBodyTap = (e: React.MouseEvent) => {
+    if (swallowClick()) return;
     if (!canMark) return;
     if ((e.target as HTMLElement).closest('button, a, input, select, label, summary')) return;
     dispatch({ type: 'vertigoToggle', now: now() });
   };
+  const resumeNow = () => {
+    // Arama/arka plandan sonra ses motorları yeniden açılır (bu dokunuş iOS için gereklidir).
+    unlockAudio();
+    void keepAwake();
+    dispatch({ type: 'resume', now: now() });
+  };
+  /** Uzun basışın başlamayacağı denetimler (baş dönmesi alanı ekranın parçası sayılır). */
+  const isControl = (t: EventTarget) =>
+    !!(t as HTMLElement).closest('button:not(.vertigo-pad), a, input, select, label, summary, .overlay');
   const guiding = !manual && ev?.hint && (state.phase === 'seeking' || state.phase === 'settling' || state.phase === 'drifting');
   const observeDone = !P && step?.observe !== false && !state.vertigoActive && state.vertigoEndedAt !== null;
 
   return (
     <div
-      className={`runner${flipped ? ' flipped' : ''}`}
+      className={`runner${flipped ? ' flipped' : ''}${P ? ' press-surface' : ''}`}
       data-testid="runner"
       data-phase={state.phase}
       data-step={state.stepIndex}
       onClick={onBodyTap}
+      onPointerDownCapture={() => {
+        suppressClick.current = false;
+      }}
+      onPointerDown={(e) => {
+        if (!P || terminal || state.phase === 'paused' || isControl(e.target)) return;
+        startPress(() => {
+          if (sRef.current.phase !== 'paused') dispatch({ type: 'pause', now: now() });
+        });
+      }}
+      onPointerUp={cancelPress}
+      onPointerLeave={cancelPress}
+      onPointerCancel={cancelPress}
+      onContextMenu={(e) => {
+        if (P) e.preventDefault();
+      }}
     >
       <div className="runner-head">
         {P ? (
@@ -687,11 +772,17 @@ export function RunnerView({
 
       <div className="runner-body">
         <div className="runner-title" data-testid="runner-step-title">
-          {state.phase === 'between' && nextStep ? `Sırada: ${nextStep.title}` : step?.title}
+          {state.phase === 'between' && nextStep ? `Sırada: ${titleOf(nextStep)}` : step ? titleOf(step) : ''}
         </div>
+        {/* Kritik eylemin kısa hâli başlığın hemen altında: çevrik ekranda ya da uzaktan da görünür kalır. */}
+        {shortText && !terminal && (
+          <p className="runner-short" data-testid="runner-short">
+            {shortText}
+          </p>
+        )}
 
         {guiding && ev?.hint ? (
-          <HintBanner hint={ev.hint} flipped={flipped} patient={P} />
+          <HintBanner hint={ev.hint} flipped={flipped} texts={hintTexts} />
         ) : (
           <div className="row">
             <span className={`status-pill ${statusClass}`} aria-live="polite" data-testid="runner-status">
@@ -752,7 +843,7 @@ export function RunnerView({
         )}
         {!manual && step && state.phase !== 'between' && <HangBar target={step.target} pose={pose} />}
 
-        {caption && caption !== instrText && !(guiding && ev?.hint && caption.includes(HINT_TEXT_PATIENT[ev.hint])) && (
+        {caption && caption !== instrText && !(guiding && ev?.hint && caption.includes(hintTexts[ev.hint])) && (
           <p className="caption" aria-live="polite" data-testid="runner-caption">
             <Icon name="volume" size={18} /> {caption}
           </p>
@@ -779,7 +870,10 @@ export function RunnerView({
       {canMark && (
         <button
           className={`vertigo-pad${state.vertigoActive ? ' active' : ''}`}
-          onClick={() => dispatch({ type: 'vertigoToggle', now: now() })}
+          onClick={() => {
+            if (swallowClick()) return;
+            dispatch({ type: 'vertigoToggle', now: now() });
+          }}
           data-testid="vertigo-pad"
           aria-pressed={state.vertigoActive}
         >
@@ -794,7 +888,30 @@ export function RunnerView({
       )}
 
       {state.phase === 'paused' && (
-        <div className="overlay" role="dialog" aria-modal="true" aria-label="Duraklatıldı">
+        <div
+          className="overlay press-surface"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Duraklatıldı"
+          data-testid="runner-paused"
+          // Ekrana bakmadan: düğme dışında 2 s basılı tutmak devam ettirir; tek dokunuş baş dönmesi "geçti" işaretidir.
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            if (!P || (e.target as HTMLElement).closest('button')) return;
+            startPress(() => {
+              if (sRef.current.phase === 'paused') resumeNow();
+            });
+          }}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (swallowClick()) return;
+            if (!P || (e.target as HTMLElement).closest('button')) return;
+            if (sRef.current.vertigoActive) dispatch({ type: 'vertigoToggle', now: now() });
+          }}
+        >
           <div className="sheet">
             <h2>Duraklatıldı</h2>
             <p className="muted">
@@ -802,6 +919,12 @@ export function RunnerView({
                 ? 'Devam ettiğinizde aynı adımdan, pozisyonunuz yeniden doğrulanarak sürer.'
                 : 'Devam edildiğinde pozisyon yeniden doğrulanır.'}
             </p>
+            {P && (
+              <p className="small" data-testid="runner-paused-hint">
+                Ekrana bakmadan: devam etmek için düğmelerin dışında bir yere 2 saniye basılı tutun.
+                {state.vertigoActive ? ' Baş dönmesi geçtiyse bir kez dokunun.' : ''}
+              </p>
+            )}
             {state.vertigoActive && (
               <button
                 autoFocus
@@ -815,12 +938,7 @@ export function RunnerView({
             <button
               className="btn primary block"
               autoFocus={!state.vertigoActive}
-              onClick={() => {
-                // Arama/arka plandan sonra ses motorları yeniden açılır (bu dokunuş iOS için gereklidir).
-                unlockAudio();
-                void keepAwake();
-                dispatch({ type: 'resume', now: now() });
-              }}
+              onClick={resumeNow}
               data-testid="runner-resume"
             >
               <Icon name="play" /> Devam et
@@ -828,6 +946,16 @@ export function RunnerView({
             {P && (
               <button className="btn warn block" onClick={() => dispatch({ type: 'abort', now: now(), reason: 'USER_FEELS_UNWELL' })}>
                 Kendimi kötü hissediyorum
+              </button>
+            )}
+            {P && (
+              // Zorlamadan gelinemeyen pozisyon: yarıda bırakma değil; kaydedilir ve hekime yönlendirilir (hedef gevşetilmez).
+              <button
+                className="btn warn block"
+                onClick={() => dispatch({ type: 'abort', now: now(), reason: 'POSITION_UNREACHABLE' })}
+                data-testid="runner-unreachable"
+              >
+                {helperVoice ? 'Bu pozisyona gelemiyor / boynu ağrıyor' : 'Pozisyona gelemiyorum / boynum ağrıyor'}
               </button>
             )}
             <button className="btn secondary block" onClick={() => dispatch({ type: 'abort', now: now(), reason: 'USER_ABORT' })} data-testid="runner-abort">
@@ -851,18 +979,22 @@ export function turnText(theta: number): string {
  * Düzeltme yönü: büyük ok + tek satır. Ok, telefonun alındaki fiziksel yerine göre çizilir:
  * ekran düz dururken (karşıdan bakış) hastanın sağı ekranın solundadır; ekran çevrilince sağdadır.
  */
-function HintBanner({ hint, flipped, patient }: { hint: HintKey; flipped: boolean; patient: boolean }) {
-  const toRightOfScreen = hint === 'TURN_RIGHT' ? flipped : hint === 'TURN_LEFT' ? !flipped : null;
+function HintBanner({ hint, flipped, texts }: { hint: HintKey; flipped: boolean; texts: Record<HintKey, string> }) {
+  const right = hint === 'TURN_RIGHT' || hint === 'TURN_BODY_RIGHT';
+  const left = hint === 'TURN_LEFT' || hint === 'TURN_BODY_LEFT';
+  const toRightOfScreen = right ? flipped : left ? !flipped : null;
   const arrow = toRightOfScreen === null ? null : toRightOfScreen ? '→' : '←';
-  // Ekran yardımcıya/klinisyene bakar: yön sözü kişiye göre ("hastanın sağına") yazılır; ses hastaya kendi sözüyle söyler.
+  // Ekran yardımcıya/klinisyene bakar: yön sözü kişiye göre ("hastanın sağına") yazılır; ses kendi kipindeki sözle söyler.
   const text =
     hint === 'TURN_RIGHT'
       ? 'Başı HASTANIN SAĞINA biraz daha çevirin'
       : hint === 'TURN_LEFT'
         ? 'Başı HASTANIN SOLUNA biraz daha çevirin'
-        : patient
-          ? HINT_TEXT_PATIENT[hint]
-          : HINT_TEXT_CLINICIAN[hint];
+        : hint === 'TURN_BODY_RIGHT'
+          ? 'Gövdeyi HASTANIN SAĞINA çevirin (yalnız baş değil)'
+          : hint === 'TURN_BODY_LEFT'
+            ? 'Gövdeyi HASTANIN SOLUNA çevirin (yalnız baş değil)'
+            : texts[hint];
   return (
     <div className="hint-banner" role="status" data-testid="runner-hint" data-hint={hint}>
       {arrow && toRightOfScreen === false && <span className="hint-arrow" aria-hidden="true">{arrow}</span>}
@@ -947,6 +1079,6 @@ export function HelperCard() {
 function screenText(t: string): string {
   return t
     .split(/(?<=[.!?])\s+/)
-    .filter((x) => !/ekrana (tekrar |yeniden )?dokunun/i.test(x) && !/^Baş dönmesi olabilir, bu beklenen bir durumdur\.?$/i.test(x))
+    .filter((x) => !/ekrana (siz )?(tekrar |yeniden )?dokunun/i.test(x) &&!/^Baş dönmesi olabilir, bu beklenen bir durumdur\.?$/i.test(x))
     .join(' ');
 }
