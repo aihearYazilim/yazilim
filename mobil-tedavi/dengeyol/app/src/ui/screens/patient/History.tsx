@@ -1,3 +1,4 @@
+import { ReportQr } from './ReportQr';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
@@ -101,6 +102,8 @@ export function EpisodeReport() {
       back={true}
     >
       <ShareReport text={() => reportPlainText(e, store.get())} title="DengeYol atak raporu" />
+      {/* Muayenede hekimin telefonuna internetsiz aktarım (QR/bağlantı). */}
+      <ReportQr data={d} episodeId={e.id} />
       <ReportBody e={e} />
       <button className="btn secondary block no-print" onClick={() => window.print()}>
         <Icon name="print" /> Yazdır / PDF olarak kaydet
