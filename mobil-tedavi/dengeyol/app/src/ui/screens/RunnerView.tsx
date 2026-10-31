@@ -15,6 +15,7 @@ import {
   estimateSpeechSec,
   initialRunnerState,
   PATIENT_FIRST_HINT_DELAY_SEC,
+  pauseSpeech,
   type RunnerConfig,
   type RunnerEvent,
   type RunnerMode,
@@ -24,8 +25,9 @@ import {
 } from '../../core/runner';
 import {
   armedChoice,
+  confirmDeadline,
+  confirmPromptSpoken,
   CONFIRM_PROMPT,
-  CONFIRM_WINDOW_MS,
   initialPauseSheet,
   type PauseChoice,
   type PauseSheetState,
@@ -536,13 +538,14 @@ export function RunnerView({
     sheetRef.current = st;
     setSheetState(st);
   };
-  // Onay süresi dolunca "Evet … eminim" düğmesi kalkar.
+  // Onay süresi dolunca "Evet … eminim" düğmesi kalkar. Süre onay cümlesi bittikten sonra başlar (bitiş gelince yeniden kurulur).
   useEffect(() => {
-    if (sheet.armed === null || sheet.armedAt === null) return;
-    const t = setTimeout(() => setSheet(initialPauseSheet()), Math.max(0, sheet.armedAt + CONFIRM_WINDOW_MS - performance.now()));
+    const deadline = confirmDeadline(sheet);
+    if (deadline === null) return;
+    const t = setTimeout(() => setSheet(initialPauseSheet()), Math.max(0, deadline - performance.now()));
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheet.armed, sheet.armedAt]);
+  }, [sheet.armed, sheet.armedAt, sheet.promptDoneAt]);
   // Duraklatmadan çıkınca kurulmuş onay kalkar (bir sonraki duraklatma temiz açılır).
   useEffect(() => {
     if (state.phase !== 'paused' && sheetRef.current.armed !== null) setSheet(initialPauseSheet());
@@ -550,19 +553,34 @@ export function RunnerView({
   }, [state.phase]);
   /** Duraklatma sayfasında bir kısa dokunuşu işler (kural: core/pauseSheet). */
   const onSheetTap = (target: SheetTarget) => {
+    // Onay cümlesinin bitiş olayı gelmezse (ses kapalı ya da olay kayboldu) tahmini bitişi; ses yoksa pencere hemen başlar.
+    const speaking = settings.speech && speech.usable();
+    const promptMs = speaking ? estimateSpeechSec(CONFIRM_PROMPT, settings.speechRate) * 2000 + 2000 : 0;
     const r = pauseSheetTap(sheetRef.current, target, {
       now: performance.now(),
       vertigoActive: sRef.current.vertigoActive,
-      patient: P
+      patient: P,
+      promptMs
     });
     setSheet(r.state);
     const a = r.action;
     if (a.kind === 'vertigoEnd') dispatch({ type: 'vertigoToggle', now: now() });
     else if (a.kind === 'resume') resumeNow();
-    else if (a.kind === 'arm') {
-      // Ekrana bakmadan dokunan da bir şey olduğunu bilsin: "hazırsanız dokunun" titreşimi ve kısa söz.
+    else if (a.kind === 'replay') {
+      // Ayrıntılı duraklatma sesi (ilk okunuş yalnız eylemdi; k04, tur 4). Kurulmuş onay bozulmaz.
+      const full = pauseSpeech(cfg, sRef.current.vertigoActive, true);
+      speech.speak(full, 'high');
+      setCaption(full);
+    } else if (a.kind === 'arm') {
+      // Ekrana bakmadan dokunan da bir şey olduğunu bilsin: "hazırsanız dokunun" titreşimi ve kısa söz. Onay süresi bu söz
+      // bittikten sonra başlar (k01, tur 4); bitiş olayı bu kuruluşa bağlanır (eski kuruluşunki yok sayılır).
       haptics.play('ready');
-      speech.speak(CONFIRM_PROMPT, 'high');
+      const armedAt = r.state.armedAt;
+      speech.speak(CONFIRM_PROMPT, 'high', () => {
+        if (!alive.current || armedAt === null) return;
+        const next = confirmPromptSpoken(sheetRef.current, armedAt, performance.now());
+        if (next !== sheetRef.current) setSheet(next);
+      });
       setCaption(CONFIRM_PROMPT);
     } else if (a.kind === 'commit') {
       const reason = a.choice === 'unwell' ? 'USER_FEELS_UNWELL' : a.choice === 'unreachable' ? 'POSITION_UNREACHABLE' : 'USER_ABORT';
@@ -1081,6 +1099,12 @@ export function RunnerView({
                   ? ' Baş dönmesi geçtiyse bir kez dokunun; bu ilk dokunuş hiçbir düğmeyi seçmez.'
                   : ' Aşağıdaki kırmızı ve gri düğmeler bir onay daha ister.'}
               </p>
+            )}
+            {P && settings.speech && (
+              // İlk okunuş yalnız eylemi söyler; boyun ağrısı ve "Pozisyona gelemiyorum" yolu burada (k04, tur 4). Kalıcı sonucu yok.
+              <button className="btn ghost block sheet-replay" onClick={sheetButton('replay')} data-testid="runner-paused-replay">
+                <Icon name="volume" /> Tekrar dinle (ayrıntılı)
+              </button>
             )}
             {state.vertigoActive && (
               <button

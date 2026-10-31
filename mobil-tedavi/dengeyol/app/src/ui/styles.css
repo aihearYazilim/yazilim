@@ -1113,6 +1113,11 @@ input[type='radio'] {
   font-size: 0.95rem;
   text-align: center;
 }
+/* Duraklatma sesinin ayrıntısı (k04, tur 4): ilk okunuş kısa; düğme sessiz görünür ama bulunur. */
+.sheet-replay {
+  border: 1px solid var(--line);
+  gap: 8px;
+}
 .caption {
   margin: 0;
   padding: 10px 14px;
