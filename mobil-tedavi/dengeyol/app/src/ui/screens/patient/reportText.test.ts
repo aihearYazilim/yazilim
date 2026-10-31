@@ -3,6 +3,8 @@ import type { StepRecord } from '../../../core/runner';
 import { RED_FLAGS } from '../../../core/safety';
 import { encodePrescription, type Prescription, rxCode } from '../../../core/prescription';
 import { emptyData, type Episode } from '../../../state/types';
+import { capitalizeTr } from '../../../core/protocols';
+import { buildHomeReport, homeReportDatesText } from '../../../core/reportShare';
 import {
   doseSummaryText,
   endNoteText,
@@ -21,6 +23,7 @@ import {
   periodLastOutcomeText,
   periodReportPlainText,
   periodSummaryLine,
+  namedDatesText,
   reportPeriod,
   stepDefFor,
   stepSummary,
@@ -199,7 +202,12 @@ describe('pozisyona gelinemedi: nerede durulduğu (k07, k02)', () => {
   it('hedefe yalnız bir an değdiyse ya da yüzüstünden gelindiyse yanıltıcı açı yazılmaz (kullanıcı turu 4)', () => {
     const step = stepDefFor('epley', 'R', 'ep-1');
     const touched = rec({ stepId: 'ep-1', unreachable: true, reach: { phi: 16, theta: 44, touchedOnly: true } });
-    expect(reachText(touched, step)).toBe('hedefe yalnız bir an değdi, tutulamadı');
+    // Kullanıcı turu 6 (k07): sarkık baş adımında açı da yazılır, çelişkisiz.
+    expect(reachText(touched, step)).toBe('baş hedefin alt sınırına (~16°) kadar geldi, orada tutulamadı');
+    const deeper = rec({ stepId: 'ep-1', unreachable: true, reach: { phi: 24, theta: 44, touchedOnly: true } });
+    expect(reachText(deeper, step)).toBe('baş hedef aralığına (~24°) kadar geldi, orada tutulamadı');
+    const below = rec({ stepId: 'ep-1', unreachable: true, reach: { phi: 12, theta: 44, touchedOnly: true } });
+    expect(reachText(below, step)).toBe('baş en çok ~12° geriye sarkabildi (hedef 15–40°), hedefe yalnız bir an değdi, tutulamadı');
     const prone = rec({ stepId: 'ep-1', unreachable: true, proneArrival: true, reach: { phi: 20, theta: 160 } });
     expect(reachText(prone, step)).toBe('yüzüstünden geçilerek gelindi, kabul edilmedi');
   });
@@ -315,8 +323,14 @@ describe('dönem raporu (k09)', () => {
     expect(periodCountsLine(eps)).toBe('2 atak · 4 manevra (3 tamamlandı) · son sabah testi negatif');
     // Önce son atağın sonucu (kullanıcı turu 4, k09), sonra sayılar.
     expect(periodSummaryLine(eps)).toBe('Son atak (2 Kasım): düzeldi · 2 atak · 4 manevra (3 tamamlandı) · son sabah testi negatif');
-    expect(reportPeriod(d, now).label).toMatch(/^Reçete dönemi \(30 Ekim 2026 – 12 Kasım 2026\)$/);
+    // Adlandırılmış tarih dizisi (kullanıcı turu 6, k09): QR kartı, klinisyen ekranı ve HBYS ile aynı biçim.
+    expect(reportPeriod(d, now).label).toBe('Reçete 30.10 (geçerlilik 12.11 dahil) · ataklar 30.10–02.11 · rapor 04.11');
+    expect(reportPeriod(d, now).label).toBe(
+      capitalizeTr(homeReportDatesText(buildHomeReport(d, { now, episodes: periodEpisodes(d, now) })))
+    );
     const t = periodReportPlainText(d, now);
+    expect(t).toMatch(/\nDönem: Reçete 30\.10 \(geçerlilik 12\.11 dahil\) · ataklar 30\.10–02\.11 · rapor 04\.11\n/);
+    expect(t).not.toMatch(/Dönem: Reçete dönemi/);
     expect(t.split('\n')[0]).toBe('DengeYol — BPPV dönem raporu');
     expect(t).toMatch(/Sonuç: Son atak \(2 Kasım\): düzeldi · 2 atak · 4 manevra \(3 tamamlandı\) · son sabah testi negatif/);
     expect(t.indexOf('=== 1. ATAK')).toBeLessThan(t.indexOf('=== 2. ATAK'));
@@ -329,7 +343,7 @@ describe('dönem raporu (k09)', () => {
   it('reçetesiz: son 14 gün; atak yoksa bunu söyler; yönlendirmeler sayılır', () => {
     const d = emptyData();
     const now = base + 20 * day;
-    expect(reportPeriod(d, now).label).toMatch(/^Son 14 gün/);
+    expect(reportPeriod(d, now).label).toBe('Son 14 gün · atak yok · rapor 19.11');
     expect(periodSummaryLine([])).toBe('Bu dönemde kayıtlı atak yok');
     d.episodes = [mk('a', now - 2 * day, { status: 'referred', endNote: 'POSITION_UNREACHABLE' }), mk('b', now - 30 * day, { endedAt: now - 29 * day })];
     const eps = periodEpisodes(d, now);
@@ -387,5 +401,24 @@ describe('testte "Kendimi kötü hissediyorum" (kullanıcı turu 5, k01)', () =>
   });
   it('eski kayıtta (testStops yok) satır yazılmaz', () => {
     expect(reportPlainText({ ...e, testStops: undefined }, emptyData(), at)).not.toMatch(/Testte durdurma/);
+  });
+});
+
+describe('adlandırılmış tarih dizisi (kullanıcı turu 6, k09)', () => {
+  const t = (s: string) => new Date(s).getTime();
+  it('reçete, ataklar ve rapor kendi adlarıyla; tek atak, aynı gün ve yıl değişimi', () => {
+    const rx = { date: '2026-10-16' };
+    const g = t('2026-10-31T10:00:00');
+    expect(namedDatesText(g, rx, [t('2026-10-25T09:00:00'), t('2026-10-17T09:00:00')])).toBe(
+      'reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 17.10–25.10 · rapor 31.10'
+    );
+    expect(namedDatesText(g, rx, [t('2026-10-25T09:00:00')])).toBe('reçete 16.10 (geçerlilik 29.10 dahil) · atak 25.10 · rapor 31.10');
+    expect(namedDatesText(g, rx, [t('2026-10-25T09:00:00'), t('2026-10-25T18:00:00')])).toBe(
+      'reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 25.10 · rapor 31.10'
+    );
+    expect(namedDatesText(g, null, [])).toBe('atak yok · rapor 31.10');
+    expect(namedDatesText(t('2027-01-03T10:00:00'), { date: '2026-12-28' }, [t('2026-12-29T09:00:00')])).toBe(
+      'reçete 28.12.2026 (geçerlilik 10.01.2027 dahil) · atak 29.12.2026 · rapor 03.01.2027'
+    );
   });
 });

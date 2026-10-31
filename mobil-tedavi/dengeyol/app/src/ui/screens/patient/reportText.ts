@@ -91,8 +91,9 @@ export function reachText(r: StepRecord, step: StepDef | undefined): string | nu
   if (r.proneArrival) return PRONE_ARRIVAL_TEXT;
   const parts: string[] = [];
   const inTarget = reach.phi !== null && reach.phi >= t.phiMin && reach.phi <= t.phiMax;
-  // Hedefe yalnız bir an değildiyse hedef içindeki değer "sarktı" diye yazılmaz (k07, tur 4).
-  if (reach.touchedOnly && inTarget) return REACH_TOUCHED_ONLY_TEXT;
+  // Hedefe yalnız bir an değildiyse hedef içindeki değer "sarktı" diye yazılmaz (k07, tur 4). Sarkık baş adımında açı yine
+  // yazılır, çelişkisiz (kullanıcı turu 6, k07): "baş hedefin alt sınırına (~15°) kadar geldi, orada tutulamadı".
+  if (reach.touchedOnly && inTarget) return t.phiMin > 0 ? touchedInTargetText(reach.phi!, t.phiMin) : REACH_TOUCHED_ONLY_TEXT;
   if (reach.phi !== null) {
     const phi = Math.round(reach.phi);
     if (t.phiMin > 0) {
@@ -112,6 +113,15 @@ export function reachText(r: StepRecord, step: StepDef | undefined): string | nu
   }
   if (reach.touchedOnly) parts.push(REACH_TOUCHED_ONLY_TEXT);
   return parts.length ? parts.join(', ') : null;
+}
+
+/**
+ * Sarkık baş adımında hedefe yalnız bir an değilen ve bildirilen açısı hedef aralığında olan kaydın cümlesi (kullanıcı turu 6,
+ * k07; core/runner `reachSummary` ile aynı): alt sınırın 3° yakınında "alt sınırına", daha içerideyse "hedef aralığına".
+ */
+export function touchedInTargetText(phi: number, phiMin: number): string {
+  const p = Math.round(phi);
+  return `baş ${p <= phiMin + 3 ? 'hedefin alt sınırına' : 'hedef aralığına'} (~${p}°) kadar geldi, orada tutulamadı`;
 }
 
 /** Kaydın protokoldeki adım tanımı (taraf aynalanmış). Bulunamazsa undefined. */
@@ -513,8 +523,40 @@ export const PERIOD_REPORT_PATH = '/hasta/rapor/donem';
 
 export interface ReportPeriod {
   from: number;
-  /** "Reçete dönemi (30 Ekim 2026 – 12 Kasım 2026)" ya da "Son 14 gün (17 Ekim 2026 – 31 Ekim 2026)". */
+  /**
+   * Adlandırılmış tarih dizisi (kullanıcı turu 6, k09): "Reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 17.10–25.10 ·
+   * rapor 31.10"; reçetesizse "Son 14 gün · ataklar 17.10–25.10 · rapor 31.10". Ev raporu QR kartı, klinisyen ekranı ve
+   * HBYS satırıyla aynı biçim (core/reportShare `homeReportDatesText`).
+   */
   label: string;
+}
+
+/**
+ * Raporun tarihleri, her biri kendi adıyla: "reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 17.10–25.10 · rapor 31.10".
+ * core/reportShare `homeReportDatesText` ile birebir aynı biçim (o ev raporu nesnesi ister; burada hasta verisinden):
+ * gün.ay; tarihlerden biri rapor yılından farklı yıldaysa hepsi gün.ay.yıl. Reçetesizse reçete parçası yok. Küçük harfle başlar.
+ */
+export function namedDatesText(generatedAt: number, rx: Pick<Prescription, 'date'> | null | undefined, episodeStarts: readonly number[]): string {
+  const issued = rx ? rxIssuedAt(rx) : null;
+  const last = rx ? (rxLastValidDay(rx)?.getTime() ?? null) : null;
+  const starts = [...episodeStarts].sort((a, b) => a - b);
+  const year = new Date(generatedAt).getFullYear();
+  const all = [generatedAt, ...starts, ...(issued !== null ? [issued] : []), ...(last !== null ? [last] : [])];
+  const withYear = all.some((t) => new Date(t).getFullYear() !== year);
+  const f = (t: number) => {
+    const d = new Date(t);
+    const dm = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return withYear ? `${dm}.${d.getFullYear()}` : dm;
+  };
+  const parts: string[] = [];
+  if (issued !== null) parts.push(`reçete ${f(issued)}${last !== null ? ` (geçerlilik ${f(last)} dahil)` : ''}`);
+  const first = starts[0];
+  const lastStart = starts[starts.length - 1];
+  if (first === undefined || lastStart === undefined) parts.push('atak yok');
+  else if (starts.length === 1) parts.push(`atak ${f(first)}`);
+  else parts.push(f(first) === f(lastStart) ? `ataklar ${f(first)}` : `ataklar ${f(first)}–${f(lastStart)}`);
+  parts.push(`rapor ${f(generatedAt)}`);
+  return parts.join(' · ');
 }
 
 /**
@@ -525,19 +567,20 @@ export function reportPeriod(d: AppData, now: number): ReportPeriod {
   const rx = d.patient?.prescription;
   const rxFrom = rx ? rxIssuedAt(rx) : null;
   const rxLast = rx ? rxLastValidDay(rx) : null;
-  if (rx && rxFrom !== null && rxLast) {
-    const after = now > rxLast.getTime() + 24 * 60 * 60 * 1000 ? ` ve sonrası, ${formatDate(now)} tarihine kadar` : '';
-    return { from: rxFrom, label: `Reçete dönemi (${formatDate(rxFrom)} – ${formatDate(rxLast.getTime())}${after})` };
-  }
-  const from = now - TREATMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
-  return { from, label: `Son ${TREATMENT_WINDOW_DAYS} gün (${formatDate(from)} – ${formatDate(now)})` };
+  const useRx = !!rx && rxFrom !== null && !!rxLast;
+  const from = useRx && rxFrom !== null ? rxFrom : now - TREATMENT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+  const starts = episodesFrom(d, now, from).map((e) => e.startedAt);
+  const dates = namedDatesText(now, useRx ? rx : null, starts);
+  return { from, label: useRx ? capitalizeTr(dates) : `Son ${TREATMENT_WINDOW_DAYS} gün · ${dates}` };
+}
+
+function episodesFrom(d: AppData, now: number, from: number): Episode[] {
+  return d.episodes.filter((e) => e.startedAt >= from || (e.endedAt ?? now) >= from).sort((a, b) => a.startedAt - b.startedAt);
 }
 
 /** Dönemdeki ataklar (dönem içinde başlayan ya da dönem başında sürmekte olan), eskiden yeniye. */
 export function periodEpisodes(d: AppData, now: number, period: ReportPeriod = reportPeriod(d, now)): Episode[] {
-  return d.episodes
-    .filter((e) => e.startedAt >= period.from || (e.endedAt ?? now) >= period.from)
-    .sort((a, b) => a.startedAt - b.startedAt);
+  return episodesFrom(d, now, period.from);
 }
 
 /**

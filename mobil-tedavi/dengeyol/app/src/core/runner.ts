@@ -1832,6 +1832,9 @@ function turnWord(theta: number, approx: boolean): string {
  * Hedefe yalnız bir an değildiyse (`reach.touchedOnly`) sona "hedefe yalnız bir an değdi, tutulamadı" eklenir; bildirilen
  * açı hedef aralığındaysa yalnız bu söylenir (çelişkili "~16° sarktı … gelinemedi" olmasın; k07, tur 4). Hedef açıya
  * yüzüstünden gelindiyse (`proneArrival`) dönüş uzaklığı yerine "yüzüstünden geçilerek gelindi, kabul edilmedi" (k02, tur 4).
+ * Kullanıcı turu 6 (k07): sarkık baş adımında bildirilen açı hedef aralığındaysa açı da yazılır, çelişkisiz biçimde: alt
+ * sınırın 3° yakınında "baş hedefin alt sınırına (~15°) kadar geldi, orada tutulamadı", daha içerideyse "baş hedef aralığına
+ * (~22°) kadar geldi, orada tutulamadı".
  */
 export function reachSummary(record: StepRecord, step: StepDef): string | null {
   const reach = record.reach;
@@ -1839,7 +1842,13 @@ export function reachSummary(record: StepRecord, step: StepDef): string | null {
   if (t.kind !== 'lying') return null;
   const tail: string[] = [];
   if (record.proneArrival) tail.push(PRONE_ARRIVAL_TEXT);
-  if (reach?.touchedOnly) tail.push(REACH_TOUCHED_ONLY_TEXT);
+  if (reach?.touchedOnly) {
+    const phi = reach.phi;
+    if (!record.proneArrival && phi !== null && t.phiMin > 0 && phi >= t.phiMin && phi <= t.phiMax) {
+      const p = Math.round(phi);
+      tail.push(`baş ${p <= t.phiMin + 3 ? 'hedefin alt sınırına' : 'hedef aralığına'} (~${p}°) kadar geldi, orada tutulamadı`);
+    } else tail.push(REACH_TOUCHED_ONLY_TEXT);
+  }
   if (!reach) return tail.length ? tail.join('; ') : null;
   const parts: string[] = [];
   if (!record.proneArrival && reach.theta !== null && Math.abs(angleDiff(t.theta, reach.theta)) > t.thetaTol) {

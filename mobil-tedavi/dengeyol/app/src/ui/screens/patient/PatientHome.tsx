@@ -8,6 +8,7 @@ import {
   episodeSide,
   formatDateTime,
   formatTime,
+  lastUnwellTestStop,
   nextAction,
   nightNote,
   doseLimitsFor,
@@ -19,7 +20,8 @@ import {
   rxPeriodEpisodes,
   rxPeriodSummary,
   sameDayReopenable,
-  startDose
+  startDose,
+  UNWELL_STOP_HOME_TEXT
 } from '../../../state/episodes';
 import type { AppData, Episode } from '../../../state/types';
 import { sideName } from '../../../core/protocols';
@@ -258,6 +260,14 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           </dd>
         </dl>
       </div>
+
+      {/* Testte "kötü hissediyorum" ile durduktan sonra (kullanıcı turu 6, k01): düğme kalır, önce bu not. */}
+      {lastUnwellTestStop(ep) && (
+        <div className="notice" data-testid="home-unwell-stop">
+          <Icon name="alert" />
+          <span>{UNWELL_STOP_HOME_TEXT}</span>
+        </div>
+      )}
 
       {na.kind === 'early-retest' && (
         <div className="card stack">
