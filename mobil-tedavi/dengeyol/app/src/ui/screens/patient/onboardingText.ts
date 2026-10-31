@@ -9,7 +9,7 @@ import { formatDate } from '../../../state/episodes';
 
 const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci', 'Altıncı', 'Yedinci', 'Sekizinci', 'Dokuzuncu', 'Onuncu', 'On birinci', 'On ikinci', 'On üçüncü', 'On dördüncü'];
 
-/** Uygunluk listesinin en alttaki "hiçbiri" seçeneği. */
+/** Eski uygunluk listesinin "hiçbiri" seçeneği (yeniden tasarımda liste isteğe bağlı; seçenek yok, ad uyumluluk için). */
 export const noneLabel = (helper: boolean) => (helper ? 'Hiçbiri hastaya uymuyor' : 'Hiçbiri bana uymuyor');
 
 /** Uygunluk listesinin "Tekrar dinle" düğmesinin etiketi (kısa girişten sonra bütün maddeleri okur). */
@@ -25,7 +25,7 @@ export function contraSpeech(helper: boolean): string {
       ? 'Hasta için uygun mu? Aşağıdaki durumlardan hastaya uyan varsa işaretleyin; emin olmadığınız bir madde varsa da işaretleyin ve hastanın doktoruna sorun.'
       : 'Sizin için uygun mu? Aşağıdaki durumlardan size uyan varsa işaretleyin; emin olmadığınız bir madde varsa da işaretleyin ve doktorunuza sorun.',
     ...CONTRAINDICATIONS.map((c, i) => `${ORDINALS[i] ?? `${i + 1}.`} madde: ${c.label}.`),
-    `Hiçbiri uymuyorsa en alttaki "${noneLabel(helper)}" seçeneğini işaretleyin. Ayrıntılar ekranda yazıyor.`
+    'Hiçbiri uymuyorsa bir şey işaretlemeniz gerekmez. İşaretlemek manevrayı engellemez; yalnız uyarı gösterilir. Ayrıntılar ekranda yazıyor.'
   ].join(' ');
 }
 
@@ -38,8 +38,8 @@ export function contraSpeechShort(helper: boolean): string {
   return [
     helper ? 'Hasta için uygun mu?' : 'Sizin için uygun mu?',
     helper
-      ? 'Ekrandaki durumlardan hastaya uyan varsa işaretleyin; hiçbiri uymuyorsa en alttaki seçeneği işaretleyin.'
-      : 'Ekrandaki durumlardan size uyan varsa işaretleyin; hiçbiri uymuyorsa en alttaki seçeneği işaretleyin.',
+      ? 'Ekrandaki durumlardan hastaya uyan varsa işaretleyin; hiçbiri uymuyorsa bir şey işaretlemeniz gerekmez.'
+      : 'Ekrandaki durumlardan size uyan varsa işaretleyin; hiçbiri uymuyorsa bir şey işaretlemeniz gerekmez.',
     // Yalnız dinleyen kişi emin olmadığında ne yapacağını da duysun (kullanıcı turu 5, k05).
     helper ? 'Emin değilseniz o maddeyi işaretleyin ve hastanın doktoruna sorun.' : 'Emin değilseniz o maddeyi işaretleyin ve doktorunuza sorun.',
     'Maddelerin hepsini dinlemek için Tekrar dinle düğmesine dokunun.'

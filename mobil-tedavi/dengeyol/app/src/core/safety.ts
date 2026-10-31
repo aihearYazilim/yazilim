@@ -287,12 +287,12 @@ export function evaluateRedFlags(answers: Record<string, YesNo | undefined>): Re
 }
 
 // ---------------------------------------------------------------------------------------------
-// Kontrendikasyonlar (ilk kullanımda ve profil değiştiğinde)
+// Kontrendikasyonlar (isteğe bağlı; işaretlenen madde uyarılır, engellemez)
 // ---------------------------------------------------------------------------------------------
 
 export interface Contraindication {
   id: string;
-  /** Kısa ad: kapı ekranında "sizi engelleyen durum" olarak gösterilir. */
+  /** Kısa ad: uyarıda "dikkat edilecek durum" olarak gösterilir (engel değildir). */
   label: string;
   /** Kurulum listesindeki madde (gündelik dil; tıbbi terim parantez içinde). */
   text: string;
@@ -378,7 +378,7 @@ export const CONTRAINDICATIONS: Contraindication[] = [
   },
   {
     // İşitme kaybı tek başına engel değildir: işitme cihazı/kulaklık (Bluetooth), yardımcı, titreşim ve bip sesleri
-    // yönlendirmeyi taşır. Yalnız bunların hiçbiri yoksa kapı kapanır.
+    // yönlendirmeyi taşır. Yalnız bunların hiçbiri yoksa uyarılır.
     id: 'hearing',
     label: 'Sesli yönergeleri duyamama (yardımcı yok)',
     text: 'Telefondan gelen sesli yönergeleri duyamıyorum; işitme cihazımla ya da kulaklıkla da duyamıyorum ve yanımda yardım edecek kimse yok.',
@@ -388,16 +388,17 @@ export const CONTRAINDICATIONS: Contraindication[] = [
 ];
 
 /**
- * Tek başına engel OLMAYAN durumlar (kurulum listesinin altında ve kapı ekranında). Kan sulandırıcı kullanan hastaya her
+ * Tek başına uyarı gerektirmeyen durumlar (kurulum listesinin altında ve uyarı ekranında). Yeniden tasarımda listedeki
+ * hiçbir madde de engel değildir; yalnız uyarılır. Kan sulandırıcı kullanan hastaya her
  * atakta ayrıca kanama/baş çarpması kırmızı bayrağı sorulur (RED_FLAGS). Tansiyon ilacı kullanana (kullanıcı turu 4, k07)
  * ortostatik soru ("ayağa kalkınca göz kararması") her atakta durdurabileceği önceden söylenir; kural değişmez.
  */
 export const CONTRA_NOT_BLOCKING_TEXT =
-  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Kan sulandırıcı kullanıyorsanız her atakta ayrıca kanama ve başınızı çarpma sorulur. Tansiyon ilacı kullanıyorsanız: her atakta ayağa kalkınca göz kararması da sorulur; varsa uygulama manevrayı durdurur ve hekime yönlendirir. Bunu hekiminize önceden sorun. Düşmemek için manevraları yatakta yapın.';
+  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Kan sulandırıcı kullanıyorsanız her atakta ayrıca kanama ve başınızı çarpma sorulur. Tansiyon ilacı kullanıyorsanız: her atakta ayağa kalkınca göz kararması da sorulur; varsa uygulama uyarır ve hekime danışmanızı önerir. Bunu hekiminize önceden sorun. Düşmemek için manevraları yatakta yapın.';
 
 /** CONTRA_NOT_BLOCKING_TEXT'in yardımcı modu (hasta adına yakını kuruyor). */
 export const CONTRA_NOT_BLOCKING_TEXT_HELPER =
-  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Hasta kan sulandırıcı kullanıyorsa her atakta ayrıca kanama ve başını çarpma sorulur. Hasta tansiyon ilacı kullanıyorsa: her atakta ayağa kalkınca göz kararması da sorulur; varsa uygulama manevrayı durdurur ve hekime yönlendirir. Bunu hastanın hekimine önceden sorun. Düşmemesi için manevraları yatakta yapın.';
+  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Hasta kan sulandırıcı kullanıyorsa her atakta ayrıca kanama ve başını çarpma sorulur. Hasta tansiyon ilacı kullanıyorsa: her atakta ayağa kalkınca göz kararması da sorulur; varsa uygulama uyarır ve hekime danışmanızı önerir. Bunu hastanın hekimine önceden sorun. Düşmemesi için manevraları yatakta yapın.';
 
 /** Kurulum listesindeki madde metni: yardımcı modunda yardımcıya göre yazılmış hâli. */
 export function contraText(c: Contraindication, helper: boolean): string {
@@ -415,7 +416,7 @@ export function contraindicationsFor(ids: string[]): Contraindication[] {
   return CONTRAINDICATIONS.filter((c) => ids.includes(c.id));
 }
 
-/** Kapı ekranı için hekime sorulacak 2–3 soru: önce maddeye özgü (en çok 2), sonra genel sorular. */
+/** Kontrendikasyon uyarısı için hekime sorulacak 2–3 soru: önce maddeye özgü (en çok 2), sonra genel sorular. */
 export function contraDoctorQuestions(ids: string[]): string[] {
   const specific = contraindicationsFor(ids)
     .map((c) => c.ask)
@@ -424,7 +425,7 @@ export function contraDoctorQuestions(ids: string[]): string[] {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Tanı kapısı ve doz sınırları
+// Tanı ve kontrendikasyon uyarıları (danışmanlık; engel yok) ve önerilen doz sınırları
 // ---------------------------------------------------------------------------------------------
 
 export type CanalAnswer = 'PC' | 'HC' | 'unknown';
@@ -438,35 +439,66 @@ export interface DiagnosisGateInput {
   contraindications: string[];
 }
 
-export type GateResult =
-  | { ok: true; requireSideTest: boolean }
-  | { ok: false; reason: 'NO_DIAGNOSIS' | 'HORIZONTAL_CANAL' | 'CONTRAINDICATION' };
+/** Kurulum bilgisinden çıkan uyarı nedenleri (eskiden kapı kapatırdı; artık yalnız uyarı). */
+export type GateReason = 'NO_DIAGNOSIS' | 'HORIZONTAL_CANAL' | 'CONTRAINDICATION';
 
-export function diagnosisGate(i: DiagnosisGateInput): GateResult {
-  if (i.contraindications.length > 0) return { ok: false, reason: 'CONTRAINDICATION' };
-  if (!i.diagnosedByDoctor && !i.hasPrescription) return { ok: false, reason: 'NO_DIAGNOSIS' };
-  if (i.canal === 'HC') return { ok: false, reason: 'HORIZONTAL_CANAL' };
-  return { ok: true, requireSideTest: i.side === 'unknown' || i.canal === 'unknown' };
+/**
+ * Kapı sonucu. Yeniden tasarımda (uygulama kilitlemez) `diagnosisGate` her zaman `ok: true` döner; uyarılar `warnings`
+ * içindedir ve çağıran bunları "Yine de devam et" ile gösterir. `ok: false` biçimi artık üretilmez; tür yalnız eski
+ * çağıranlar derlensin diye duruyor.
+ */
+export type GateResult =
+  | { ok: true; requireSideTest: boolean; warnings: GateReason[] }
+  | { ok: false; reason: GateReason };
+
+/**
+ * Kurulum bilgisinden uyarılar (önem sırasıyla): kontrendikasyon, hekim tanısı yok (reçete de yok), yatay kanal. Hiçbiri
+ * engel değildir; araştırma kaydı kodu `GATE_OVERRIDE_KIND`.
+ */
+export function gateWarnings(i: DiagnosisGateInput): GateReason[] {
+  const w: GateReason[] = [];
+  if (i.contraindications.length > 0) w.push('CONTRAINDICATION');
+  if (!i.diagnosedByDoctor && !i.hasPrescription) w.push('NO_DIAGNOSIS');
+  if (i.canal === 'HC') w.push('HORIZONTAL_CANAL');
+  return w;
 }
 
-export const GATE_TEXT: Record<'NO_DIAGNOSIS' | 'HORIZONTAL_CANAL' | 'CONTRAINDICATION', string> = {
+/**
+ * Danışmanlık kapısı: hiçbir zaman engellemez. Tanı ya da taraf/kanal bilinmiyorsa önce iki taraflı test gerekir
+ * (`requireSideTest`); uyarılar `warnings`.
+ */
+export function diagnosisGate(i: DiagnosisGateInput): GateResult {
+  const warnings = gateWarnings(i);
+  const undiagnosed = !i.diagnosedByDoctor && !i.hasPrescription;
+  return { ok: true, requireSideTest: undiagnosed || i.side === 'unknown' || i.canal === 'unknown', warnings };
+}
+
+/** Uyarının aşılmasında araştırma kaydına yazılacak kod (`logOverride(kind, …)`; BRIEF §1). */
+export const GATE_OVERRIDE_KIND: Record<GateReason, string> = {
+  NO_DIAGNOSIS: 'NO_DIAGNOSIS',
+  HORIZONTAL_CANAL: 'GATE_HORIZONTAL_CANAL',
+  CONTRAINDICATION: 'CONTRAINDICATION'
+};
+
+/** Uyarı metinleri: kısa, gündelik; hiçbiri "kapalı" demez. */
+export const GATE_TEXT: Record<GateReason, string> = {
   NO_DIAGNOSIS:
-    'DengeYol, daha önce hekim ya da odyolog (işitme uzmanı) muayenesiyle kristal oynaması (BPPV) tanısı almış kişilerde, baş dönmesi yeniden başladığında kullanılır. İlk kez yaşadığınız bir baş dönmesinde önce hekim muayenesi gerekir; çünkü baş dönmesinin başka, ciddi nedenleri de olabilir.',
+    'Hekim tanısı girilmedi. Uygulama önce iki tarafı kısa bir testle dener. İlk kez yaşadığınız bir baş dönmesinde ayrıca hekime görünmeniz önerilir; baş dönmesinin başka nedenleri de olabilir.',
   HORIZONTAL_CANAL:
-    'Yatay kanal tipi kristal oynamasının (yatay kanal BPPV) evde kendi kendine tedavisi bu sürümde yok. Manevrayı hekiminizin ya da odyoloğunuzun (işitme uzmanı) yapması gerekir; isterlerse DengeYol\'un klinisyen modunu kullanabilirler.',
+    'Yatay kanal tipi kristal oynaması girildi. Bu tipte manevra farklıdır (barbekü dönüşü); düzelmezse hekiminize ya da odyoloğunuza başvurun.',
   CONTRAINDICATION:
-    'İşaretlediğiniz durum nedeniyle baş çevirme hareketlerini (manevraları) evde kendi başınıza yapmanız güvenli olmayabilir. Hekiminiz manevrayı muayenede, kendi gözetiminde ya da size uygun değiştirilmiş bir biçimde yapmayı önerebilir. Bu durumda uygulamadaki ev manevraları kapalı kalır; hekim reçetesi (bağlantı ya da QR) de bunları açmaz.'
+    'İşaretlediğiniz durum nedeniyle manevraları evde yapmanız güvenli olmayabilir; önce hekiminize danışmanız önerilir. Yine de devam ederseniz yavaş hareket edin, zorlamayın ve mümkünse yanınızda biri olsun.'
 };
 
 export interface DoseLimits {
   maxPerDay: number;
-  /** Atak başına en fazla gün (bu günden sonra manevra kilitlenir). */
+  /** Atak başına önerilen en fazla gün (sonrası uyarılır; kilit yok). */
   maxDays: number;
   /** Atak başına en fazla manevra. */
   maxTotal: number;
 }
 
-/** Varsayılan (reçetesiz) sınırlar: günde 3, 3 gün, toplam 9 manevra; sonra hekime. */
+/** Varsayılan (reçetesiz) önerilen sınırlar: günde 3, 3 gün, toplam 9 manevra; sonra uyarı ve hekime danışma önerisi. */
 export const DEFAULT_DOSE: DoseLimits = { maxPerDay: 3, maxDays: 3, maxTotal: 9 };
 /**
  * Reçeteyle verilebilecek üst sınırlar. Radtke 2004 ev Epley'ini 1 hafta uygulatmıştır; günde 3 kez dozlama
@@ -499,6 +531,10 @@ export function episodeDay(startedAt: number, now: number): number {
   return Math.floor((b0 - a0) / DAY_MS + 0.5) + 1;
 }
 
+/**
+ * Doz durumu. `allowed: false` artık "önerilen sınır doldu" demektir, engel değildir: çağıran `DOSE_TEXT` uyarısını
+ * "Yine de devam et" ile gösterir ve aşmayı `logOverride('DOSE', …)` ile kaydeder (yeniden tasarım).
+ */
 export type DoseStatus =
   | { allowed: true; remainingToday: number; remainingTotal: number; day: number }
   | { allowed: false; reason: 'DAILY_LIMIT' | 'TOTAL_LIMIT' | 'DAY_LIMIT'; day: number };
@@ -519,11 +555,18 @@ export function doseStatus(maneuverTimes: number[], episodeStart: number, now: n
 }
 
 export const DOSE_TEXT: Record<'DAILY_LIMIT' | 'TOTAL_LIMIT' | 'DAY_LIMIT', string> = {
-  DAILY_LIMIT: 'Bugün için önerilen en fazla manevra sayısına ulaştınız. Yarın sabah yeniden test edin.',
+  DAILY_LIMIT: 'Bugün için önerilen manevra sayısına ulaştınız. Yarın sabah yeniden denemeniz önerilir.',
   TOTAL_LIMIT:
-    'Son iki haftada önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.',
+    'Son iki haftada önerilen toplam manevra sayısına ulaştınız ve baş dönmeniz sürüyor. Hekiminize ya da odyoloğunuza başvurmanız önerilir; raporunuzu yanınızda götürün.',
   DAY_LIMIT:
-    'Son iki haftada evde manevra için önerilen gün sayısı doldu. Lütfen hekiminize ya da odyoloğunuza başvurun; raporunuzu yanınızda götürün.'
+    'Son iki haftada evde manevra için önerilen gün sayısı doldu. Hekiminize ya da odyoloğunuza başvurmanız önerilir; raporunuzu yanınızda götürün.'
+};
+
+/** Doz uyarısının araştırma kaydındaki kısa açıklaması (`logOverride('DOSE', …)`). */
+export const DOSE_OVERRIDE_DETAIL: Record<'DAILY_LIMIT' | 'TOTAL_LIMIT' | 'DAY_LIMIT', string> = {
+  DAILY_LIMIT: 'günlük manevra sınırı doluydu',
+  TOTAL_LIMIT: 'toplam manevra sınırı doluydu',
+  DAY_LIMIT: 'manevra günü sınırı doluydu'
 };
 
 // ---------------------------------------------------------------------------------------------

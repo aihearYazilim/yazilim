@@ -23,7 +23,10 @@ import {
   type RunnerState,
   runnerStep,
   type StepRecord,
+  SAFETY_HOLD_TEXT,
   SAFETY_STOP_TEXT,
+  safetyHoldDetail,
+  safetyHoldText,
   startSpeechText,
   stopReasonTextFor,
   stopTextFor,
@@ -42,6 +45,11 @@ interface Sim {
   s: RunnerState;
   t: number;
   cues: Cue[];
+  /**
+   * Güvenlik uyarısında (safetyHold) hemen "Durdur" seçilir: eski durdurma testleri bugünkü sonucu (safetyStop) sınar.
+   * Uyarının kendisini sınayan testler false yapar.
+   */
+  autoStop?: boolean;
 }
 
 function sim(protocolId: 'epley' | 'semont' | 'dix-hallpike', mode: 'patient' | 'clinician' = 'patient'): Sim {
@@ -51,7 +59,7 @@ function sim(protocolId: 'epley' | 'semont' | 'dix-hallpike', mode: 'patient' | 
     protocol: protocolForMode(resolveProtocol(protocolId, 'R'), mode),
     introSecFor: () => 3
   };
-  return { cfg, s: initialRunnerState(), t: 0, cues: [] };
+  return { cfg, s: initialRunnerState(), t: 0, cues: [], autoStop: true };
 }
 
 type EventInput = RunnerEvent extends infer E ? (E extends RunnerEvent ? Omit<E, 'now'> & { now?: number } : never) : never;
@@ -60,6 +68,7 @@ function send(x: Sim, ev: EventInput) {
   const r = runnerStep(x.cfg, x.s, { ...ev, now: ev.now ?? x.t } as RunnerEvent);
   x.s = r.state;
   x.cues.push(...r.cues);
+  if (x.autoStop && x.s.phase === 'safetyHold') send(x, { type: 'safetyChoice', choice: 'stop' });
 }
 
 /** Hasta modeli: her adım başladıktan `reactSec` sonra hedef poza geçer. */
@@ -989,7 +998,7 @@ describe('tur 2 E1-6: baş dönmesi hatırlatmaları 60 s eşiğiyle tutarlı', 
     expect(texts).toHaveLength(4);
     expect(texts[0]).toBe('Baş dönmesi geçince ekrana dokunun; sürüyorsa böyle kalın.');
     expect(texts[1]).toBe('Baş dönmesi geçtiyse şimdi ekrana dokunun. Bir dakikayı geçerse hekime danışmak gerekir.');
-    expect(texts[2]).toMatch(/^Baş dönmesi bir dakikayı geçti; bunu hekiminize söyleyeceğiz\..* 45 saniye içinde dokunulmazsa manevrayı durduracağım\.$/);
+    expect(texts[2]).toMatch(/^Baş dönmesi bir dakikayı geçti; bunu hekiminize söyleyeceğiz\..* 45 saniye içinde dokunulmazsa manevrayı duraklatıp soracağım\.$/);
     expect(texts[3]).toMatch(/15 saniye içinde/);
     // İlk ikisi "durdurup hekime yönlendireceğim" diye korkutmaz.
     expect(texts.slice(0, 2).some((t) => /yönlendir|durdur/.test(t))).toBe(false);
@@ -1467,7 +1476,7 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
       }
       expect(x.s.stopReason).toBe('VERTIGO_TOO_LONG');
       const last = reminders[reminders.length - 1]!;
-      expect(last.text).toMatch(/^Baş dönmesi geçtiyse hemen ekrana dokunun\. \d+ saniye içinde dokunulmazsa manevrayı durduracağım\.$/);
+      expect(last.text).toMatch(/^Baş dönmesi geçtiyse hemen ekrana dokunun\. \d+ saniye içinde dokunulmazsa manevrayı duraklatıp soracağım\.$/);
       expect(last.t + x.cfg.introSecFor(last.text)).toBeLessThanOrEqual(120 - 1.9);
       const left = Number(/(\d+) saniye/.exec(last.text)![1]);
       expect(Math.abs(last.t + left - 120)).toBeLessThanOrEqual(1);
@@ -2002,5 +2011,190 @@ describe('tur 5 H1-3: klinisyen kısa seste yanlış taraf yönergesi de seyrekl
       expect(ts.length, c.mode).toBeGreaterThanOrEqual(5);
       ts.slice(1).forEach((t, i) => expect(t - ts[i]!).toBeLessThan(SAME_HINT_THIN_EVERY_SEC));
     }
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Yeniden tasarım: güvenlik durdurmaları uyarıya dönüştü ("Devam et" / "Durdur"; kendiliğinden devam yok)
+// ---------------------------------------------------------------------------------------------
+describe('güvenlik uyarısı (safetyHold): 2 dk baş dönmesi ve 60 s pozisyon', () => {
+  /** Epley 2. adımda baş dönmesi işaretlenir ve hiç "geçti" denmez; uyarıya dek ideal pozda. */
+  function vertigoUntilHold(): Sim {
+    const x = sim('epley');
+    x.autoStop = false;
+    send(x, { type: 'start' });
+    let marked = false;
+    while (x.t < 400000 && x.s.phase !== 'safetyHold') {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+      if (x.s.stepIndex === 1 && !marked && x.s.phase === 'holding') {
+        send(x, { type: 'vertigoToggle' });
+        marked = true;
+      }
+    }
+    return x;
+  }
+
+  it('2 dk baş dönmesinde durmaz: uyarıyla bekler, sesle söyler; saat ilerlese de kendiliğinden geçmez', () => {
+    const x = vertigoUntilHold();
+    expect(x.s.phase).toBe('safetyHold');
+    expect(x.s.safetyHold?.reason).toBe('VERTIGO_TOO_LONG');
+    expect(x.s.stopReason).toBeNull();
+    expect(safetyHoldText(x.s)).toBe(SAFETY_HOLD_TEXT.VERTIGO_TOO_LONG);
+    expect(SAFETY_HOLD_TEXT.VERTIGO_TOO_LONG).toMatch(/112/);
+    expect(spoken(x)[spoken(x).length - 1]).toMatch(/2 dakikadan uzun.*devam ya da durdur/);
+    expect(hapticsOf(x.cues)).toContain('alarm');
+    const frozen = { step: x.s.stepIndex, hold: x.s.holdSec, records: x.s.records };
+    // 10 dakika saat, dokunuş ve duraklatma: hiçbir şey değişmez.
+    for (let i = 0; i < 6000; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    }
+    send(x, { type: 'vertigoToggle' });
+    send(x, { type: 'pause' });
+    send(x, { type: 'resume' });
+    expect(x.s.phase).toBe('safetyHold');
+    expect(x.s.stepIndex).toBe(frozen.step);
+    expect(x.s.holdSec).toBe(frozen.hold);
+    expect(x.s.records).toBe(frozen.records);
+  });
+
+  it('"Durdur": bugünkü durdurma sonucu (safetyStop, VERTIGO_TOO_LONG), kayıt uyarı anında biter', () => {
+    const x = vertigoUntilHold();
+    const at = x.s.safetyHold!.at;
+    x.t += 30000;
+    send(x, { type: 'safetyChoice', choice: 'stop' });
+    expect(x.s.phase).toBe('safetyStop');
+    expect(x.s.stopReason).toBe('VERTIGO_TOO_LONG');
+    expect(x.s.records[1]!.endedAt).toBe(at);
+    expect(spoken(x)[spoken(x).length - 1]).toMatch(/burada bırakıyoruz/);
+  });
+
+  it('"Devam et": aynı adımdan sürer; bekleme süresi sayılmaz; sonraki uyarı ancak bir tam sınır sonra', () => {
+    const x = vertigoUntilHold();
+    const holdAt = x.s.safetyHold!.at;
+    const vSecAtHold = (holdAt - x.s.vertigoSince!) / 1000;
+    x.t += 20000;
+    send(x, { type: 'safetyChoice', choice: 'continue' });
+    expect(x.s.phase).not.toBe('safetyHold');
+    expect(x.s.safetyHold).toBeNull();
+    expect(x.s.stepIndex).toBe(1);
+    expect(x.s.vertigoActive).toBe(true);
+    expect(spoken(x)[spoken(x).length - 1]).toBe('Devam ediyoruz. Baş dönmesi geçince ekrana dokunun.');
+    // Beklenen 20 s baş dönmesi süresine eklenmez.
+    expect((x.t - x.s.vertigoSince!) / 1000).toBeCloseTo(vSecAtHold, 0);
+    const resumedAt = x.t;
+    while (x.t < resumedAt + 400000 && x.s.phase !== 'safetyHold') {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    }
+    expect(x.s.phase).toBe('safetyHold');
+    const gap = (x.t - resumedAt) / 1000;
+    expect(gap).toBeGreaterThan(110);
+    expect(gap).toBeLessThan(130);
+    // "Geçti" denirse adım olağan biçimde biter.
+    send(x, { type: 'safetyChoice', choice: 'continue' });
+    x.t += 1500;
+    send(x, { type: 'vertigoToggle' });
+    const until = x.t + 120000;
+    while (x.t < until && x.s.stepIndex === 1) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    }
+    expect(x.s.stepIndex).toBe(2);
+    expect(x.s.records[1]!.vertigoMarks[0]!.end).not.toBeNull();
+  });
+
+  it('uyarıdayken uygulamadan çıkış (abort) bugünkü durdurma sonucunu verir', () => {
+    const x = vertigoUntilHold();
+    send(x, { type: 'abort', reason: 'INTERRUPTED' });
+    expect(x.s.phase).toBe('safetyStop');
+    expect(x.s.stopReason).toBe('VERTIGO_TOO_LONG');
+  });
+
+  it('uyarı yokken seçim yok sayılır', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    const before = x.s;
+    send(x, { type: 'safetyChoice', choice: 'continue' });
+    expect(x.s).toBe(before);
+  });
+
+  it('60 s pozisyona gelinemedi: uyarı; "Durdur" bugünkü sonucu yazar (unreachable, uyarı anı)', () => {
+    const x = sim('epley');
+    x.autoStop = false;
+    epleyStuck(x, poseFromUp(upFromLying(45, 8)), 200);
+    expect(x.s.phase).toBe('safetyHold');
+    expect(x.s.safetyHold?.reason).toBe('POSITION_UNREACHABLE');
+    expect(safetyHoldText(x.s)).toBe(SAFETY_HOLD_TEXT.POSITION_UNREACHABLE);
+    expect(x.s.records[1]!.unreachable).toBeUndefined();
+    const at = x.s.safetyHold!.at;
+    x.t += 15000;
+    send(x, { type: 'safetyChoice', choice: 'stop' });
+    expect(x.s.phase).toBe('safetyStop');
+    expect(x.s.stopReason).toBe('POSITION_UNREACHABLE');
+    expect(x.s.records[1]!.unreachable).toBe(true);
+    expect(x.s.records[1]!.endedAt).toBe(at);
+    expect(stopTextFor('POSITION_UNREACHABLE', x.s.records)).toBe(SAFETY_STOP_TEXT.POSITION_UNREACHABLE);
+  });
+
+  it('60 s pozisyon uyarısında "Devam et": 60 s baştan sayılır; pozisyona gelinirse manevra tamamlanır', () => {
+    const x = sim('epley');
+    x.autoStop = false;
+    const s0 = x.cfg.protocol.steps[0]!.target;
+    const stuck = poseFromUp(upFromLying(45, 8));
+    send(x, { type: 'start' });
+    let reachable = false;
+    let continuedAt = 0;
+    while (x.t < 900000 && x.s.phase !== 'done') {
+      x.t += 100;
+      const inStep = (x.t - x.s.stepStartedAt) / 1000;
+      const st = x.cfg.protocol.steps[x.s.stepIndex]!;
+      const pose =
+        x.s.stepIndex === 0 ? ideal(s0) : x.s.stepIndex === 1 && !reachable ? (inStep <= 1 ? ideal(s0) : stuck) : ideal(st.target);
+      send(x, { type: 'tick', pose });
+      if (x.s.phase === 'safetyHold') {
+        if (continuedAt === 0) {
+          continuedAt = x.t;
+          send(x, { type: 'safetyChoice', choice: 'continue' });
+          expect(spoken(x)[spoken(x).length - 1]).toMatch(/^Devam ediyoruz\. Zorlamayın/);
+        } else {
+          // İkinci uyarı en erken 60 s sonra.
+          expect((x.t - continuedAt) / 1000).toBeGreaterThanOrEqual(60);
+          send(x, { type: 'safetyChoice', choice: 'continue' });
+          reachable = true;
+        }
+      }
+    }
+    expect(continuedAt).toBeGreaterThan(0);
+    expect(x.s.phase).toBe('done');
+    expect(x.s.stopReason).toBeNull();
+    expect(x.s.records[1]!.unreachable).toBeUndefined();
+  });
+
+  it('elle "Pozisyona gelemiyorum" uyarı sormadan durdurur (kullanıcının kendi seçimi)', () => {
+    const x = sim('epley');
+    x.autoStop = false;
+    send(x, { type: 'start' });
+    while (x.s.stepIndex < 1) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+    }
+    send(x, { type: 'pause' });
+    send(x, { type: 'abort', reason: 'POSITION_UNREACHABLE' });
+    expect(x.s.phase).toBe('safetyStop');
+  });
+});
+
+describe('güvenlik uyarısının araştırma kaydı açıklaması', () => {
+  it('test/manevra, taraf, adım ve neden; uyarı yoksa null', () => {
+    const x = sim('epley');
+    const st = initialRunnerState();
+    expect(safetyHoldDetail(x.cfg.protocol, st)).toBeNull();
+    const title = x.cfg.protocol.steps[1]!.title;
+    const v = safetyHoldDetail(x.cfg.protocol, { stepIndex: 1, safetyHold: { reason: 'VERTIGO_TOO_LONG', from: 'holding', at: 0, wrongSide: false } });
+    expect(v).toBe(`Epley · sağ, adım 2/${x.cfg.protocol.steps.length} (${title}): baş dönmesi 2 dakikayı aştı`);
+    const u = safetyHoldDetail(x.cfg.protocol, { stepIndex: 1, safetyHold: { reason: 'POSITION_UNREACHABLE', from: 'seeking', at: 0, wrongSide: true } });
+    expect(u).toMatch(/yanlış taraftan doğru yana 1 dakikada gelinemedi$/);
   });
 });

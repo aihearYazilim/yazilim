@@ -3,6 +3,9 @@ import {
   clampDose,
   DEFAULT_DOSE,
   diagnosisGate,
+  GATE_OVERRIDE_KIND,
+  GATE_TEXT,
+  gateWarnings,
   doseStatus,
   episodeDay,
   evaluateRedFlags,
@@ -152,25 +155,37 @@ describe('kırmızı bayrak dili (kullanıcı turu 2)', () => {
   });
 });
 
-describe('tanı kapısı', () => {
+describe('tanı kapısı (yeniden tasarım: yalnız uyarı, kilit yok)', () => {
   const base = { diagnosedByDoctor: true, canal: 'PC' as const, side: 'R' as const, hasPrescription: false, contraindications: [] };
-  it('tanılı arka kanal → izin, taraf testi gerekmez', () => {
-    expect(diagnosisGate(base)).toEqual({ ok: true, requireSideTest: false });
+  it('tanılı arka kanal → uyarı yok, taraf testi gerekmez', () => {
+    expect(diagnosisGate(base)).toEqual({ ok: true, requireSideTest: false, warnings: [] });
   });
-  it('tanı yok → kilit', () => {
-    expect(diagnosisGate({ ...base, diagnosedByDoctor: false })).toEqual({ ok: false, reason: 'NO_DIAGNOSIS' });
+  it('tanı yok → kilit değil: uyarı ve iki taraflı test', () => {
+    expect(diagnosisGate({ ...base, diagnosedByDoctor: false })).toEqual({ ok: true, requireSideTest: true, warnings: ['NO_DIAGNOSIS'] });
   });
   it('reçete tanı yerine geçer', () => {
-    expect(diagnosisGate({ ...base, diagnosedByDoctor: false, hasPrescription: true }).ok).toBe(true);
+    expect(diagnosisGate({ ...base, diagnosedByDoctor: false, hasPrescription: true })).toEqual({ ok: true, requireSideTest: false, warnings: [] });
   });
-  it('yatay kanal → kilit', () => {
-    expect(diagnosisGate({ ...base, canal: 'HC' })).toEqual({ ok: false, reason: 'HORIZONTAL_CANAL' });
+  it('yatay kanal → uyarı', () => {
+    expect(diagnosisGate({ ...base, canal: 'HC' })).toEqual({ ok: true, requireSideTest: false, warnings: ['HORIZONTAL_CANAL'] });
   });
-  it('kontrendikasyon → kilit', () => {
-    expect(diagnosisGate({ ...base, contraindications: ['neck'] })).toEqual({ ok: false, reason: 'CONTRAINDICATION' });
+  it('kontrendikasyon → uyarı (önce gelir)', () => {
+    expect(gateWarnings({ ...base, diagnosedByDoctor: false, contraindications: ['neck'] })).toEqual(['CONTRAINDICATION', 'NO_DIAGNOSIS']);
+    expect(gateWarnings({ ...base, contraindications: ['neck'] })).toEqual(['CONTRAINDICATION']);
   });
   it('taraf bilinmiyorsa semptom testi zorunlu', () => {
-    expect(diagnosisGate({ ...base, side: 'unknown' })).toEqual({ ok: true, requireSideTest: true });
+    expect(diagnosisGate({ ...base, side: 'unknown' })).toEqual({ ok: true, requireSideTest: true, warnings: [] });
+  });
+  it('hiçbir girdi engellemez; uyarı metinleri "kapalı" demez ve kayıt kodu var', () => {
+    for (const dx of [true, false])
+      for (const canal of ['PC', 'HC', 'unknown'] as const)
+        for (const contraindications of [[], ['neck', 'age']])
+          expect(diagnosisGate({ ...base, diagnosedByDoctor: dx, canal, contraindications }).ok).toBe(true);
+    for (const r of ['NO_DIAGNOSIS', 'HORIZONTAL_CANAL', 'CONTRAINDICATION'] as const) {
+      expect(GATE_TEXT[r]).not.toMatch(/kapalı|açmaz|açılır/);
+      expect(GATE_OVERRIDE_KIND[r]).toMatch(/^[A-Z_]+$/);
+    }
+    expect(GATE_OVERRIDE_KIND.HORIZONTAL_CANAL).toBe('GATE_HORIZONTAL_CANAL');
   });
 });
 

@@ -88,7 +88,7 @@ describe('kurulum (kullanıcı turu 4)', () => {
     d.patient = { consentAt: '2026-01-01T00:00:00.000Z', consentBy: 'helper', contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R' };
     store.update(() => d);
     mount('/hasta/kurulum?adim=uygunluk');
-    expect(host!.querySelector('h1')!.textContent).toBe('Hasta için uygun mu?');
+    expect(byTestId('ob-contra-title')!.textContent).toBe('Hasta için uygun mu?');
     expect(byTestId('ob-contra-hearing')!.textContent).toMatch(/^Hastanın işitme kaybı varsa/);
     expect(byTestId('ob-contra-hearing')!.textContent).not.toMatch(/yakınınızla/);
     expect(byTestId('ob-not-blocking')!.textContent).toMatch(/Hasta tansiyon ilacı kullanıyorsa/);
@@ -205,5 +205,83 @@ describe('ana ekran (kullanıcı turu 6, k01)', () => {
     // Not, düğmeden önce.
     const order = [...host!.querySelectorAll('[data-testid]')].map((e) => e.getAttribute('data-testid'));
     expect(order.indexOf('home-unwell-stop')).toBeLessThan(order.indexOf('do-retest'));
+  });
+});
+
+describe('yeniden tasarım: kilit yok (kurulum tek ekran, ana ekranda her zaman "Başım dönüyor")', () => {
+  it('tanısız yeni kullanıcı: tek ekranda onay + Başla → ana ekran; düğme açık, tanı yalnız bilgi satırı', () => {
+    const d = emptyData();
+    d.settings = { ...d.settings, role: 'patient', speech: false };
+    store.update(() => d);
+    mount('/hasta/kurulum');
+    // Tanı, kanal, taraf, sağlık durumu ve ses ayarı sorulmaz.
+    expect(byTestId('ob-dx')).toBeNull();
+    expect(byTestId('ob-contra')).toBeNull();
+    expect(byTestId('ob-speech')).toBeNull();
+    // Onaysız "Başla" ilerlemez.
+    click(byTestId('ob-start'));
+    expect(store.get().patient?.consentAt).toBeUndefined();
+    click(byTestId('ob-consent'));
+    click(byTestId('ob-start'));
+    const p = store.get().patient!;
+    expect(p.consentAt).toBeTruthy();
+    expect(p.diagnosedByDoctor).toBe(false);
+    expect(p.canal).toBe('unknown');
+    expect(p.contraindications).toEqual([]);
+    expect(byTestId('start-episode')!.textContent).toMatch(/Başım dönüyor/);
+    expect(byTestId('home-no-dx')).not.toBeNull();
+    expect(byTestId('practice')).not.toBeNull();
+    expect(byTestId('home-gate-blocked')).toBeNull();
+    expect(byTestId('home-112')).not.toBeNull();
+  });
+
+  it('kontrendikasyon, hekime yönlendirme ve dolu doz: yalnız bilgi satırları; "Başım dönüyor" yönlendirmeyi aşma olarak kaydeder', () => {
+    const now = Date.now();
+    const d = emptyData();
+    d.settings = { ...d.settings, role: 'patient', speech: false };
+    d.patient = { consentAt: '2026-01-01T00:00:00.000Z', contraindications: ['neck'], diagnosedByDoctor: true, canal: 'PC', side: 'R' };
+    const man = (i: number) => ({ id: 'm' + i, at: now - 3600_000 * (i + 1), protocolId: 'epley' as const, side: 'R' as const, completed: true, stopReason: null, records: [], manual: false });
+    d.episodes = [
+      {
+        id: 'r',
+        startedAt: now - 5 * 3600_000,
+        endedAt: now - 1800_000,
+        endNote: 'Baş dönmesi bir dakikadan uzun sürdü',
+        side: 'R',
+        protocolId: 'epley',
+        redFlags: [],
+        sideTests: [],
+        maneuvers: [man(0), man(1), man(2)],
+        retests: [],
+        status: 'referred'
+      }
+    ];
+    store.update(() => d);
+    mount('/hasta');
+    expect(byTestId('home-gate-items')!.textContent).toMatch(/Boyun sorunu/);
+    expect(byTestId('home-referral-line')).not.toBeNull();
+    expect(byTestId('home-dose-limit')).not.toBeNull();
+    const btn = byTestId('start-episode')!;
+    expect(btn.textContent).toMatch(/Başım dönüyor/);
+    click(btn);
+    const ov = store.get().episodes[0]!.overrides!;
+    expect(ov).toHaveLength(1);
+    expect(ov[0]!.kind).toBe('REFERRAL');
+    expect(ov[0]!.detail).toMatch(/Yönlendirmeden sonra yeni atak başlatıldı/);
+  });
+
+  it('"Bilgilerim": hepsi isteğe bağlı; işaretlenen durum uyarı gösterir ama kaydı engellemez', () => {
+    const d = emptyData();
+    d.settings = { ...d.settings, role: 'patient', speech: false };
+    d.patient = { consentAt: '2026-01-01T00:00:00.000Z', contraindications: [], diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' };
+    store.update(() => d);
+    mount('/hasta/kurulum?adim=uygunluk');
+    expect(byTestId('ob-contra-warning')).toBeNull();
+    const neck = [...host!.querySelectorAll<HTMLElement>('[role="checkbox"]')].find((b) => /Boyun sorunu/.test(b.textContent ?? ''))!;
+    click(neck);
+    expect(byTestId('ob-contra-warning')!.textContent).toMatch(/hekiminize danışmanız önerilir/);
+    click(byTestId('ob-save'));
+    expect(store.get().patient!.contraindications).toEqual(['neck']);
+    expect(store.get().patient!.diagnosedByDoctor).toBe(false);
   });
 });

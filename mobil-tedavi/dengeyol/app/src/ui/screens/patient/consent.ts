@@ -4,17 +4,19 @@
  *   1  ilk metin ("kullanımı kendi sorumluluğumdadır").
  *   2  olası yan etkiler (geçici baş dönmesi/bulantı, düşme, kanal değişimi) ve seçenekler (muayenede manevra, bekleme)
  *      eklendi; "hasta adına yakını" kurulumu.
+ *   3  yeniden tasarım: "yalnız hekim tanısıyla kullanılabilir" kalktı (tanısız kişi de kullanır); uyarıların aşılmasının
+ *      araştırma için kaydedildiği eklendi.
  */
 import { formatDate } from '../../../state/episodes';
 import type { PatientProfile } from '../../../state/types';
 
-export const CONSENT_VERSION = '2';
+export const CONSENT_VERSION = '3';
 
 /** Olası yan etkiler ve riskler (gündelik dil; KBB danışmanı geri bildirimi k09). */
 export const CONSENT_RISKS: string[] = [
   'Manevra sırasında ve sonrasında birkaç saat geçici baş dönmesi, dengesizlik ve bulantı olabilir; nadiren kusma olur.',
   'Baş dönmesi sırasında düşebilirsiniz: manevrayı yatakta yapın, kalkarken önce oturun ve bir yere tutunun; mümkünse yanınızda biri olsun.',
-  'Kristaller nadiren başka bir kanala geçebilir (kanal değişimi): baş dönmesi farklılaşırsa ya da geçmezse uygulama sizi hekime yönlendirir.',
+  'Kristaller nadiren başka bir kanala geçebilir (kanal değişimi): baş dönmesi farklılaşırsa ya da geçmezse uygulama hekime danışmanızı önerir.',
   'Boynunuzu zorlamayın; ağrı olursa durun.'
 ];
 
@@ -35,7 +37,7 @@ export const CONSENT_OPTIONS_GIST = 'Muayenede manevra, beklemek ya da istediği
 /** Onay kutusunun metni. Yakını hasta adına kuruyorsa öznesi değişir. */
 export function consentStatement(helper: boolean): string {
   const who = helper ? 'Hasta adına, onun bilgisi ve isteğiyle okudum ve anladım' : 'Okudum ve anladım';
-  return `${who}: DengeYol tanı koymaz, doktorun yerine geçmez ve yalnız hekim tanısıyla kullanılabilir. Tıbbi cihaz onayı olmayan, deneme aşamasındaki bir araştırma uygulamasıdır. Olası yan etkileri ve diğer seçenekleri okudum; ev manevrasını hekimin önerdiği biçimde, isteğe bağlı olarak yapmayı kabul ediyorum. (Veriler yalnızca bu telefonda saklanır.)`;
+  return `${who}: DengeYol tanı koymaz ve doktorun yerine geçmez. Tıbbi cihaz onayı olmayan, deneme aşamasındaki bir araştırma uygulamasıdır; uyarılara rağmen devam ettiğim durumlar araştırma için kaydedilir. Olası yan etkileri ve diğer seçenekleri okudum; ev manevrasını isteğe bağlı olarak yapmayı kabul ediyorum. (Veriler yalnızca bu telefonda saklanır.)`;
 }
 
 /** Rapor satırı: "31 Ekim 2026 · metin sürümü 2 · hasta adına yakını". Onam yoksa null. */

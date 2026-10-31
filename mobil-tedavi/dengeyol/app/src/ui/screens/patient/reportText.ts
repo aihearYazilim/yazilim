@@ -32,6 +32,42 @@ const CODE_TEXT: Record<string, string> = {
   POSITION_UNREACHABLE: 'manevranın bir pozisyonuna gelinemedi (baş yeterince sarkamadı ya da çevrilemedi); zorlamadan hekime yönlendirildi'
 };
 
+/**
+ * Araştırma kaydı kodlarının (Episode.overrides; yeniden tasarım BRIEF §1) rapordaki Türkçe karşılığı. Önekli kodlar
+ * (GATE_…, REFER_…, RX_…) `overrideKindText` içinde nedenle birlikte çevrilir.
+ */
+export const OVERRIDE_KIND_TEXT: Record<string, string> = {
+  NO_DIAGNOSIS: 'hekim tanısı girilmeden kullanıldı',
+  CONTRAINDICATION: 'işaretlenen sağlık durumuna rağmen devam edildi',
+  RED_FLAG: 'güvenlik sorusu uyarısına rağmen devam edildi',
+  REFERRAL: 'hekime yönlendirmeden sonra yeni atak başlatıldı',
+  DOSE: 'önerilen manevra sınırına rağmen devam edildi',
+  SIDE_CONFLICT: 'taraf çelişkisinde seçilen tarafa devam edildi',
+  SUBTYPE: 'alt tip uyarısına rağmen devam edildi',
+  VERTIGO_TOO_LONG: 'baş dönmesi 2 dakikayı aşınca manevraya devam edildi',
+  POSITION_UNREACHABLE: 'pozisyona 1 dakikada gelinemeyince manevraya devam edildi',
+  GATE_HORIZONTAL_CANAL: 'yatay kanal uyarısına rağmen devam edildi'
+};
+
+/** Araştırma kaydı kodunun Türkçesi; bilinmeyen kod ham yazılmaz ("bir uyarıya rağmen devam edildi"). */
+export function overrideKindText(kind: string): string {
+  const known = OVERRIDE_KIND_TEXT[kind];
+  if (known) return known;
+  const m = /^(GATE|REFER|RX)_(.+)$/.exec(kind);
+  const why = m ? CODE_TEXT[m[2]!] : undefined;
+  if (m?.[1] === 'REFER') return `hekime yönlendirme önerisine rağmen devam edildi${why ? ` (${why})` : ''}`;
+  if (m?.[1] === 'RX') return `reçete uyarısına rağmen reçete yazıldı${why ? ` (${why})` : ''}`;
+  if (m) return `uyarıya rağmen devam edildi${why ? ` (${why})` : ''}`;
+  return 'bir uyarıya rağmen devam edildi';
+}
+
+/** Araştırma kaydının satırları (eskiden yeniye): "31 Ekim 2026 14:05 — … : açıklama". */
+export function overrideLines(e: Pick<Episode, 'overrides'>): string[] {
+  return [...(e.overrides ?? [])]
+    .sort((a, b) => a.at - b.at)
+    .map((o) => `${formatDateTimeYear(o.at)} — ${overrideKindText(o.kind)}${o.detail ? `: ${o.detail}` : ''}`);
+}
+
 /** Atağın kapanış notunu (endNote) Türkçe cümleye çevirir. */
 export function endNoteText(note: string): string {
   const n = note.trim();
@@ -492,6 +528,11 @@ function episodeSectionLines(e: Episode): string[] {
   if (e.retests.length > 0) {
     L.push('', 'TEKRAR TESTLERİ');
     for (const r of e.retests) L.push(`- ${retestText(r)}`);
+  }
+  const ov = overrideLines(e);
+  if (ov.length > 0) {
+    L.push('', 'ARAŞTIRMA KAYDI (uyarıya rağmen devam edilenler)');
+    for (const x of ov) L.push(`- ${x}`);
   }
   return L;
 }

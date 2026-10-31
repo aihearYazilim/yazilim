@@ -32,7 +32,8 @@ export function rxCardSpeech(p: Prescription, o: { expired: boolean; future: boo
   if (o.future) parts.push('Reçetenin tarihi ileride görünüyor; telefonunuzun tarihini kontrol edin ya da hekiminize sorun.');
   else if (o.expired) parts.push('Bu reçetenin süresi doldu; kabul ederseniz yalnız tanı bilgisi olarak kullanılır.');
   else if (label) parts.push(`Geçerlilik: ${label.replace(' (dahil)', ', o gün dahil')}.`);
-  if (o.contraLabels.length) parts.push(`Kurulumda işaretlediğiniz durum nedeniyle bu reçete ev manevralarını açmaz: ${o.contraLabels.join(', ')}.`);
+  if (o.contraLabels.length)
+    parts.push(`Dikkat: işaretlediğiniz durum var: ${o.contraLabels.join(', ')}. Manevrayı evde yapmadan önce hekiminize danışmanız önerilir.`);
   parts.push(RX_TRUST_TEXT);
   return parts.join(' ');
 }
@@ -169,13 +170,13 @@ export function PrescriptionImport() {
           </span>
         </div>
       )}
+      {/* Kontrendikasyon engel değildir (yeniden tasarım): yalnız uyarı; reçete yine kabul edilebilir. */}
       {contraItems.length > 0 && (
         <div className="notice small" data-testid="rx-contra">
           <Icon name="alert" />
           <span>
-            Kurulumda işaretlediğiniz durum nedeniyle (<strong>{contraItems.map((c) => c.label).join(', ')}</strong>) bu reçete ev manevralarını açmaz.
-            Kabul ederseniz yalnız tanı bilgisi olarak kaydedilir; manevrayı hekiminiz muayenede yapabilir. Bir maddeyi yanlışlıkla işaretlediyseniz
-            "Bilgilerimi düzenle"den düzeltebilirsiniz.
+            <strong>Dikkat: {contraItems.map((c) => c.label).join(', ')}.</strong> Manevrayı evde yapmadan önce hekiminize danışmanız önerilir.
+            Reçeteyi yine de kabul edebilirsiniz. Yanlış işaretlediyseniz Ayarlar'dan düzeltebilirsiniz.
           </span>
         </div>
       )}

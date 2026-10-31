@@ -8,9 +8,11 @@
  *   intro (yönerge okunur) → seeking (hedef aranır) → settling (hedefte 1 s doğrulama) → holding (sayaç)
  *   → [hedef dışına çıkılırsa: drifting, sayaç durur] → stepDone → sonraki adımın introsu … → done
  *
- * Hasta modunda hedefe ~60 s gelinemezse (boyun kısıtlı vb.) adım durur, kayda "pozisyona gelinemedi" yazılır ve
- * hekime yönlendirilir (safetyStop / POSITION_UNREACHABLE). Bu süre hedefe tek an değmekle değil, yalnız pozisyon
- * doğrulanınca sıfırlanır. Hedef ASLA gevşetilmez; yalnız tutma sırasında sarkma sınırında birkaç derecelik histerezis
+ * Hasta modunda hedefe ~60 s gelinemezse (boyun kısıtlı vb.) ya da baş dönmesi 2 dakikayı aşarsa yürütücü kendiliğinden
+ * durmaz: güvenlik uyarısıyla bekler (safetyHold) ve kullanıcı ekrandan "Devam et" ya da "Durdur" seçer (yeniden tasarım:
+ * uygulama kilitlemez). "Durdur" bugünkü durdurma sonucunu verir (safetyStop / POSITION_UNREACHABLE ya da VERTIGO_TOO_LONG);
+ * "Devam et" aynı adımdan sürdürür, arayüz bunu araştırma kaydına yazar. Kendiliğinden devam edilmez. Bu süre hedefe tek an
+ * değmekle değil, yalnız pozisyon doğrulanınca sıfırlanır. Hedef ASLA gevşetilmez; yalnız tutma sırasında sarkma sınırında birkaç derecelik histerezis
  * vardır (bkz. HOLD_HYSTERESIS_DEG). Yan yatış hedefinde karşı yana geçen hastaya "önce sırtüstüne" denir; hedefe
  * yüzüstü üzerinden gelinmesi kabul edilmez (bkz. evaluator `sideGuarded`).
  */
@@ -31,7 +33,7 @@ import {
   SUPINE_ZONE_DEG
 } from './evaluator';
 import { angleDiff, wrapDeg } from './geometry';
-import { LIMITS, type ResolvedProtocol, type StepDef, type Target } from './protocols';
+import { LIMITS, type ResolvedProtocol, sideName, type StepDef, type Target } from './protocols';
 
 export type RunnerMode = 'patient' | 'clinician';
 
@@ -203,7 +205,12 @@ export type Phase =
   | 'paused'
   | 'done'
   | 'aborted'
-  | 'safetyStop';
+  | 'safetyStop'
+  /** Güvenlik uyarısı: yürütücü bekler; "Devam et" ya da "Durdur" seçilene dek hiçbir şey sayılmaz (kendiliğinden geçmez). */
+  | 'safetyHold';
+
+/** Güvenlik uyarısıyla bekletilen durumlar (eskiden kendiliğinden durduruyordu). */
+export type SafetyHoldReason = 'VERTIGO_TOO_LONG' | 'POSITION_UNREACHABLE';
 
 export type StopReason = 'VERTIGO_TOO_LONG' | 'POSITION_UNREACHABLE' | 'USER_ABORT' | 'USER_FEELS_UNWELL' | 'INTERRUPTED';
 
@@ -233,6 +240,43 @@ export const SAFETY_STOP_TEXT: Record<'VERTIGO_TOO_LONG' | 'POSITION_UNREACHABLE
   WRONG_SIDE:
     'Manevrada yanlış tarafa dönüldü ve doğru yana gelinemedi (örneğin yüzüstünden geçilmeye çalışıldı). Bu, boyun ya da bel sorunu olduğu anlamına gelmez. Önce sırtüstüne dönün, sonra yavaşça oturun. Bugün yeniden denemeden önce hekiminize ya da odyoloğunuza danışın; manevrayı birlikte gözden geçirsinler.'
 };
+
+/**
+ * Güvenlik uyarısı ekranının metni (safetyHold; ekranda "Devam et" / "Durdur" ile birlikte). Kısa ve gündelik; 112 bilgisi
+ * baş dönmesinde her zaman görünür. WRONG_SIDE: pozisyona yanlış tarafta kalındığı için gelinemedi.
+ */
+export const SAFETY_HOLD_TEXT: Record<SafetyHoldReason | 'WRONG_SIDE', string> = {
+  VERTIGO_TOO_LONG:
+    'Baş dönmesi 2 dakikadan uzun sürdü ya da geçtiği işaretlenmedi. Bu, tipik kristal oynamasına uymuyor; durdurup hekime danışmanız önerilir. Konuşma bozukluğu, güçsüzlük ya da çift görme varsa hemen 112\'yi arayın.',
+  POSITION_UNREACHABLE:
+    'Bu pozisyona 1 dakikadır gelinemedi. Zorlamayın. Boyun ya da bel ağrısı varsa durdurun; yoksa devam edip yeniden deneyebilirsiniz.',
+  WRONG_SIDE: 'Yanlış tarafa dönüldü ve doğru yana gelinemedi. Devam ederseniz önce sırtüstüne, sonra doğru yana dönün.'
+};
+
+/** Güvenlik uyarısının ekran metni (uyarı yoksa null): pozisyon uyarısı yanlış tarafta kalındığı için olduysa ayrı metin. */
+export function safetyHoldText(s: Pick<RunnerState, 'safetyHold'>): string | null {
+  const h = s.safetyHold;
+  if (!h) return null;
+  return h.wrongSide ? SAFETY_HOLD_TEXT.WRONG_SIDE : SAFETY_HOLD_TEXT[h.reason];
+}
+
+/**
+ * Uyarıda "Devam et" seçildiğinde araştırma kaydına yazılan kısa açıklama: hangi test/manevra, adım ve neden.
+ * Ör. "Epley · sağ, adım 2/5 (Sırtüstü…): baş dönmesi 2 dakikayı aştı". Uyarı yoksa null.
+ */
+export function safetyHoldDetail(protocol: ResolvedProtocol, s: Pick<RunnerState, 'safetyHold' | 'stepIndex'>): string | null {
+  const h = s.safetyHold;
+  if (!h) return null;
+  const step = protocol.steps[s.stepIndex];
+  const where = `${protocol.shortName}${protocol.side ? ` · ${sideName(protocol.side)}` : ''}, adım ${s.stepIndex + 1}/${protocol.steps.length}${step ? ` (${step.title})` : ''}`;
+  const why =
+    h.reason === 'VERTIGO_TOO_LONG'
+      ? 'baş dönmesi 2 dakikayı aştı'
+      : h.wrongSide
+        ? 'yanlış taraftan doğru yana 1 dakikada gelinemedi'
+        : 'pozisyona 1 dakikada gelinemedi';
+  return `${where}: ${why}`;
+}
 
 /** Durdurulan adım yanlış tarafta kalındığı için mi durdu (otomatik "gelinemedi" + kayıtta yanlış taraf)? */
 function stoppedOnWrongSide(records: readonly StepRecord[]): boolean {
@@ -421,6 +465,16 @@ export interface RunnerState {
   /** Son söylenen düzeltme ipucunun anahtarı ve art arda kaç kez söylendiği (klinisyen kısa seste seyrekleşme). */
   lastHintKey: HintKey | null;
   sameHintRun: number;
+  /**
+   * Güvenlik uyarısıyla bekleme (phase 'safetyHold'): neden, uyarıdan önceki faz, uyarı anı (ms) ve pozisyon uyarısı yanlış
+   * tarafta kalındığı için mi. Seçim yapılınca null.
+   */
+  safetyHold: { reason: SafetyHoldReason; from: Phase; at: number; wrongSide: boolean } | null;
+  /**
+   * "Devam et" ile aşılan baş dönmesi süre sınırları (s): sınır bu kadar uzar; bir sonraki uyarı yeniden tam sınır sonra gelir.
+   * Adım başında ve yeni baş dönmesi işaretinde sıfırlanır.
+   */
+  vertigoGraceSec: number;
 }
 
 export type RunnerEvent =
@@ -433,6 +487,8 @@ export type RunnerEvent =
   | { type: 'resume'; now: number }
   | { type: 'abort'; now: number; reason: StopReason }
   | { type: 'shock'; now: number }
+  /** Güvenlik uyarısında kullanıcının seçimi: "Devam et" (aynı adımdan sürer) ya da "Durdur" (bugünkü durdurma sonucu). */
+  | { type: 'safetyChoice'; now: number; choice: 'continue' | 'stop' }
   /** Adım yönergesinin konuşması gerçekten bitti (arayüz, `speech.speak` bitiş geri çağrısından). */
   | { type: 'introSpoken'; now: number; stepIndex: number }
   /** `utterId` taşıyan cümlenin konuşması bitti ya da kesildi (arayüz, `speech.speak` bitiş geri çağrısından). */
@@ -525,6 +581,8 @@ export function initialRunnerState(): RunnerState {
     wrongSideAlertAt: null,
     hintUtter: null,
     utterSeq: 0,
+    safetyHold: null,
+    vertigoGraceSec: 0,
     ...stepScratch()
   };
 }
@@ -620,9 +678,9 @@ const TXT = {
   },
   strain: {
     patient:
-      'Daha fazla zorlamayın. Boynunuz ağrıyorsa ya da daha fazla gidemiyorsanız öyle kalın; bu pozisyona gelinemezse birazdan durduracağım. Duraklatmak için ekrana iki saniye basılı tutun.',
+      'Daha fazla zorlamayın. Boynunuz ağrıyorsa ya da daha fazla gidemiyorsanız öyle kalın; bu pozisyona gelinemezse birazdan duraklatıp soracağım. Duraklatmak için ekrana iki saniye basılı tutun.',
     helper:
-      'Daha fazla zorlamayın. Hastanın boynu ağrıyorsa ya da baş daha fazla gitmiyorsa öyle tutun; bu pozisyona gelinemezse birazdan durduracağım. Duraklatmak için ekrana iki saniye basılı tutun.',
+      'Daha fazla zorlamayın. Hastanın boynu ağrıyorsa ya da baş daha fazla gitmiyorsa öyle tutun; bu pozisyona gelinemezse birazdan duraklatıp soracağım. Duraklatmak için ekrana iki saniye basılı tutun.',
     clinician: ''
   },
   /** Zorlama uyarısından sonra eski "biraz daha" ipucu yerine (çelişmesin: "öyle kalın" denildi; k07, tur 2). */
@@ -658,6 +716,37 @@ const TXT = {
     patient: 'Yanlış taraftan doğru yana gelinemedi; burada bırakıyoruz. Önce sırtüstüne dönün, sonra yavaşça oturun. Tekrar denemeden önce hekiminize danışın.',
     helper: 'Hasta yanlış taraftan doğru yana getirilemedi; burada bırakıyoruz. Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun. Tekrar denemeden önce hekime danışın.',
     clinician: 'Yanlış taraf; doğru yana gelinemedi, durduruldu.'
+  },
+  /**
+   * Güvenlik uyarısı (safetyHold) başlarken: ne olduğu ve telefona bakılması gerektiği. Seçim ekrandan yapılır; yürütücü
+   * kendiliğinden devam etmez.
+   */
+  vertigoHold: {
+    patient: 'Baş dönmesi 2 dakikadan uzun sürdü. Manevrayı duraklattım. Telefonu alıp ekrandan seçin: devam ya da durdur.',
+    helper: 'Baş dönmesi 2 dakikadan uzun sürdü. Manevrayı duraklattım. Ekrandan seçin: devam ya da durdur.',
+    clinician: ''
+  },
+  unreachableHold: {
+    patient: 'Bu pozisyona gelinemedi. Zorlamayın. Manevrayı duraklattım. Telefonu alıp ekrandan seçin: devam ya da durdur.',
+    helper: 'Hasta bu pozisyona gelemedi. Zorlamayın. Manevrayı duraklattım. Ekrandan seçin: devam ya da durdur.',
+    clinician: ''
+  },
+  unreachableWrongSideHold: {
+    patient:
+      'Yanlış taraftan doğru yana gelinemedi. Önce sırtüstüne dönün. Manevrayı duraklattım. Telefonu alıp ekrandan seçin: devam ya da durdur.',
+    helper: 'Hasta yanlış taraftan doğru yana gelemedi. Önce sırtüstüne getirin. Manevrayı duraklattım. Ekrandan seçin: devam ya da durdur.',
+    clinician: ''
+  },
+  /** Uyarıdan sonra "Devam et" seçildi. */
+  continueVertigo: {
+    patient: 'Devam ediyoruz. Baş dönmesi geçince ekrana dokunun.',
+    helper: 'Devam ediyoruz. Hasta "geçti" deyince ekrana dokunun.',
+    clinician: 'Devam.'
+  },
+  continueUnreachable: {
+    patient: 'Devam ediyoruz. Zorlamayın; ağrı olursa durun.',
+    helper: 'Devam ediyoruz. Zorlamayın; hastanın ağrısı olursa durun.',
+    clinician: 'Devam.'
   },
   /** Yanlış taraf algılanır algılanmaz (k02, tur 3): kısa, ayrı titreşim ve tonla; ardından tam yönerge. */
   wrongSideAlert: { patient: 'Dur! Yanlış taraf.', helper: 'Dur! Yanlış taraf.', clinician: 'Dur! Yanlış taraf.' }
@@ -899,6 +988,8 @@ function startStep(cfg: RunnerConfig, s: RunnerState, index: number, now: number
     wrongSideAlerted: false,
     wrongSideAlertAt: null,
     hintUtter: null,
+    safetyHold: null,
+    vertigoGraceSec: 0,
     ...stepScratch(),
     records: [...s.records, newRecord(step, now)]
   };
@@ -977,6 +1068,88 @@ function unreachableStop(cfg: RunnerConfig, s: RunnerState, now: number, cues: C
   };
 }
 
+/**
+ * Güvenlik uyarısı başlar (otomatik 60 s pozisyon ya da 2 dk baş dönmesi kuralı): yürütücü bekler, kayıt değişmez. "Durdur"
+ * seçilirse `holdStop` bugünkü durdurmayı uyarı anıyla yazar; "Devam et" seçilirse `holdContinue` aynı adımdan sürdürür.
+ */
+function enterSafetyHold(cfg: RunnerConfig, s: RunnerState, reason: SafetyHoldReason, now: number, cues: Cue[]): StepResult {
+  const rec = s.records[s.records.length - 1];
+  // Otomatik "gelinemedi" kuralıyla aynı yanlış taraf ölçütü (unreachableStop, auto).
+  const wrongSide = reason === 'POSITION_UNREACHABLE' && !!rec?.wrongSide;
+  cues.push({ kind: 'haptic', pattern: 'alarm' });
+  cues.push({ kind: 'tone', pattern: 'alarm' });
+  const text = reason === 'VERTIGO_TOO_LONG' ? TXT.vertigoHold : wrongSide ? TXT.unreachableWrongSideHold : TXT.unreachableHold;
+  cues.push({ kind: 'speak', text: pick(cfg, text), priority: 'high' });
+  return {
+    state: {
+      ...s,
+      phase: 'safetyHold',
+      phaseSince: now,
+      safetyHold: { reason, from: s.phase, at: now, wrongSide },
+      notice: null
+    },
+    cues
+  };
+}
+
+/** Uyarıda "Durdur" (ya da bekleme sırasında çıkış): bugünkü durdurma sonucu, uyarı anıyla. */
+function holdStop(cfg: RunnerConfig, s: RunnerState, cues: Cue[]): StepResult {
+  const h = s.safetyHold!;
+  const base: RunnerState = { ...s, phase: h.from, safetyHold: null };
+  if (h.reason === 'POSITION_UNREACHABLE') return unreachableStop(cfg, base, h.at, cues, true);
+  cues.push({ kind: 'haptic', pattern: 'alarm' });
+  cues.push({ kind: 'tone', pattern: 'alarm' });
+  cues.push({ kind: 'speak', text: pick(cfg, TXT.vertigoTooLong), priority: 'high' });
+  const st = updateRecord(base, (r) => ({ ...r, endedAt: h.at, holdSec: s.holdSec }));
+  return { state: { ...st, phase: 'safetyStop', phaseSince: h.at, stopReason: 'VERTIGO_TOO_LONG' }, cues };
+}
+
+/**
+ * Duraklatmadan (ya da güvenlik uyarısından) dönüş: beklenen süre baş dönmesi sınırına, adım saatine ve "gelinemedi"
+ * ölçümüne sayılmaz. Bekleme sırasında duraklatıldıysa sensörle yeniden doğrulamak için arama fazına dönülür; elle
+ * onaylanmış adımda sensör doğrulaması yoktur, doğrudan beklemeye dönülür.
+ */
+function resumedState(s: RunnerState, from: Phase, now: number, pausedMs: number): RunnerState {
+  const wasHolding = from === 'holding' || from === 'drifting' || from === 'settling';
+  const phase: Phase = wasHolding ? (s.manualStep ? 'holding' : 'seeking') : from;
+  return {
+    ...s,
+    phase,
+    pausedFrom: null,
+    phaseSince: now,
+    settlingSince: null,
+    outOfRangeSince: null,
+    lastTickAt: now,
+    vertigoSince: s.vertigoActive && s.vertigoSince !== null ? s.vertigoSince + pausedMs : s.vertigoSince,
+    // Adım saati de kaydırılır: baş dönmesi işaretlerinin süresi (kayıt ve ≥1 dk kuralı) duraklatmayı içermesin.
+    stepStartedAt: s.stepStartedAt + pausedMs,
+    introSpokenAt: s.introSpokenAt !== null ? s.introSpokenAt + pausedMs : null,
+    earlyMoveAt: s.earlyMoveAt !== null ? s.earlyMoveAt + pausedMs : null,
+    // "Pozisyona gelinemedi" süresi ve ilerleme ölçümü duraklatmadan sonra baştan.
+    unreachSince: null,
+    bestErrDeg: null,
+    progressAt: null,
+    hintQuietUntil: null,
+    hintUtter: null,
+    // Duraklatma boşluğu ortalamaya ve sırtüstü bekleme süresine girmez.
+    reachBuf: [],
+    reachRunStart: null,
+    supineSince: null,
+    lastLyingTheta: null
+  };
+}
+
+/** Uyarıda "Devam et": aynı adımdan sürer; baş dönmesi sınırı bir tam sınır uzar, "gelinemedi" süresi baştan sayılır. */
+function holdContinue(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[]): StepResult {
+  const h = s.safetyHold!;
+  const step = currentStep(cfg, s);
+  const limit = step ? vertigoLimitFor(cfg, step) : null;
+  const grace = h.reason === 'VERTIGO_TOO_LONG' && limit !== null ? s.vertigoGraceSec + limit : s.vertigoGraceSec;
+  cues.push({ kind: 'speak', text: pick(cfg, h.reason === 'VERTIGO_TOO_LONG' ? TXT.continueVertigo : TXT.continueUnreachable), priority: 'high' });
+  const st = resumedState({ ...s, safetyHold: null, vertigoGraceSec: grace }, h.from, now, Math.max(0, now - h.at));
+  return { state: st, cues };
+}
+
 /** Hasta yeni hedefin yanında yatıyor mu (Semont erken hareket): yatıyor, karşı yanda değil, hedef dönüşe ≤60° yakın. */
 function arrivedOnTargetSide(pose: HeadPose, target: Target, ev: Evaluation): boolean {
   if (target.kind !== 'lying' || !ev.postureOk || ev.wrongSide) return false;
@@ -1014,7 +1187,20 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
     return { state: s, cues };
   }
 
+  // Güvenlik uyarısı: yalnız seçim ve çıkış işlenir (çıkış = "Durdur": bugünkü durdurma sonucu). Saat, dokunuş ve
+  // duraklatma bekler; kendiliğinden devam edilmez. Konuşma bitiş olayları olağan biçimde işlenir.
+  if (s.phase === 'safetyHold' && s.safetyHold) {
+    if (ev.type === 'safetyChoice') return ev.choice === 'continue' ? holdContinue(cfg, s, now, cues) : holdStop(cfg, s, cues);
+    if (ev.type === 'abort') return holdStop(cfg, s, cues);
+    if (ev.type === 'tick') return { state: { ...s, lastTickAt: now, lastPoseAt: ev.pose ? now : s.lastPoseAt }, cues };
+    if (ev.type !== 'introSpoken' && ev.type !== 'cueSpoken') return { state: s, cues };
+  }
+
   switch (ev.type) {
+    case 'safetyChoice':
+      // Uyarı yokken seçim yok sayılır.
+      return { state: s, cues };
+
     case 'start': {
       if (s.phase !== 'idle') return { state: s, cues };
       return { state: startStep(cfg, { ...s }, 0, now, cues), cues };
@@ -1059,46 +1245,9 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
 
     case 'resume': {
       if (s.phase !== 'paused') return { state: s, cues };
-      const back = s.pausedFrom ?? 'seeking';
-      // Bekleme sırasında duraklatıldıysa, sensörle tekrar doğrulamak için arama fazına dön.
-      // Elle onaylanmış adımda sensör doğrulaması yoktur → doğrudan beklemeye dön.
-      const wasHolding = back === 'holding' || back === 'drifting' || back === 'settling';
-      const phase: Phase = wasHolding ? (s.manualStep ? 'holding' : 'seeking') : back;
       cues.push({ kind: 'speak', text: 'Devam ediyoruz.', priority: 'high' });
-      // Duraklatmada geçen süre baş dönmesi süre sınırına sayılmaz (devamda yanlış güvenlik durdurması olmasın).
-      const pausedMs = Math.max(0, now - s.phaseSince);
-      const vertigoSince = s.vertigoActive && s.vertigoSince !== null ? s.vertigoSince + pausedMs : s.vertigoSince;
-      // Adım saati de kaydırılır: baş dönmesi işaretlerinin süresi (kayıt ve ≥1 dk kuralı) duraklatmayı içermesin.
-      const stepStartedAt = s.stepStartedAt + pausedMs;
-      const introSpokenAt = s.introSpokenAt !== null ? s.introSpokenAt + pausedMs : null;
-      const earlyMoveAt = s.earlyMoveAt !== null ? s.earlyMoveAt + pausedMs : null;
-      return {
-        state: {
-          ...s,
-          phase,
-          pausedFrom: null,
-          phaseSince: now,
-          settlingSince: null,
-          outOfRangeSince: null,
-          lastTickAt: now,
-          vertigoSince,
-          stepStartedAt,
-          introSpokenAt,
-          earlyMoveAt,
-          // "Pozisyona gelinemedi" süresi ve ilerleme ölçümü duraklatmadan sonra baştan.
-          unreachSince: null,
-          bestErrDeg: null,
-          progressAt: null,
-          hintQuietUntil: null,
-          hintUtter: null,
-          // Duraklatma boşluğu ortalamaya ve sırtüstü bekleme süresine girmez.
-          reachBuf: [],
-          reachRunStart: null,
-          supineSince: null,
-          lastLyingTheta: null
-        },
-        cues
-      };
+      // Duraklatmada geçen süre baş dönmesi süre sınırına sayılmaz (devamda yanlış güvenlik uyarısı olmasın).
+      return { state: resumedState(s, s.pausedFrom ?? 'seeking', now, Math.max(0, now - s.phaseSince)), cues };
     }
 
     case 'skipStep': {
@@ -1160,7 +1309,7 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
         cues.push({ kind: 'tone', pattern: 'markOn' });
         cues.push({ kind: 'speak', text: pick(cfg, TXT.markOn), priority: 'normal' });
         const st = updateRecord(s, (r) => ({ ...r, vertigoMarks: [...r.vertigoMarks, { start: rel, end: null }] }));
-        return { state: { ...st, vertigoActive: true, vertigoSince: now, vertigoLongWarned: false, vertigoRemindMark: 0 }, cues };
+        return { state: { ...st, vertigoActive: true, vertigoSince: now, vertigoLongWarned: false, vertigoRemindMark: 0, vertigoGraceSec: 0 }, cues };
       }
       cues.push({ kind: 'haptic', pattern: 'markOff' });
       cues.push({ kind: 'tone', pattern: 'markOff' });
@@ -1196,12 +1345,12 @@ export const VERTIGO_ATYPICAL_SEC = 60;
  * Baş dönmesi hatırlatması (k01, tur 2): korkutmadan ve 60 s eşiğiyle tutarlı.
  *   eşikten önce, ilk  — yalnız "geçince dokunun" (hekim sözü yok)
  *   eşikten önceki son — "geçtiyse şimdi dokunun; bir dakikayı geçerse hekime danışmak gerekir"
- *   eşikten sonra      — dürüst: bir dakikayı geçti; dokunulmazsa ne zaman durdurulacağı (2 dk kuralı aynen)
+ *   eşikten sonra      — dürüst: bir dakikayı geçti; dokunulmazsa ne zaman duraklatılıp sorulacağı (2 dk kuralı uyarıya dönüştü)
  */
 function vertigoReminderText(cfg: RunnerConfig, atSec: number, leftSec: number | null): string {
   const h = !!cfg.helper;
   if (atSec >= VERTIGO_ATYPICAL_SEC) {
-    const stop = leftSec !== null ? ` ${leftSec} saniye içinde dokunulmazsa manevrayı durduracağım.` : '';
+    const stop = leftSec !== null ? ` ${leftSec} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.` : '';
     return h
       ? `Baş dönmesi bir dakikayı geçti; bunu hekime söyleyeceğiz. Hasta "geçti" deyince ekrana dokunun.${stop}`
       : `Baş dönmesi bir dakikayı geçti; bunu hekiminize söyleyeceğiz. Geçince ekrana dokunun.${stop}`;
@@ -1232,8 +1381,8 @@ export function vertigoReminderPlan(
   }
   const finalText = (left: number) =>
     cfg.helper
-      ? `Hasta "geçti" dediyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı durduracağım.`
-      : `Baş dönmesi geçtiyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı durduracağım.`;
+      ? `Hasta "geçti" dediyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.`
+      : `Baş dönmesi geçtiyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.`;
   const est = cfg.introSecFor(finalText(Math.round(limit - next)));
   const atSec = Math.max(prevMark + 1, Math.min(next, Math.floor(limit - est - 2)));
   return { atSec, text: finalText(Math.round(limit - atSec)) };
@@ -1276,17 +1425,13 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
 
   // Baş dönmesi süresi güvenlik kontrolü. Hasta modunda sınırı tanımlanmamış gözlem adımlarına da (ör. Dix-Hallpike
   // sonrası oturma) aynı üst sınır uygulanır: "geçti" işareti unutulursa akış sonsuza dek beklemesin.
-  const vertigoLimit = vertigoLimitFor(cfg, step);
+  // Hasta modunda sınır aşılınca güvenlik uyarısı (safetyHold); "Devam et" ile sınır bir tam sınır uzar (vertigoGraceSec).
+  const baseLimit = vertigoLimitFor(cfg, step);
+  const vertigoLimit = baseLimit !== null ? baseLimit + s.vertigoGraceSec : null;
   if (s.vertigoActive && s.vertigoSince !== null) {
     const vSec = sec(now - s.vertigoSince);
     if (vertigoLimit !== null && vSec > vertigoLimit) {
-      if (cfg.mode === 'patient') {
-        cues.push({ kind: 'haptic', pattern: 'alarm' });
-        cues.push({ kind: 'tone', pattern: 'alarm' });
-        cues.push({ kind: 'speak', text: pick(cfg, TXT.vertigoTooLong), priority: 'high' });
-        const st = updateRecord(s, (r) => ({ ...r, endedAt: now, holdSec: s.holdSec }));
-        return { state: { ...st, phase: 'safetyStop', phaseSince: now, stopReason: 'VERTIGO_TOO_LONG' }, cues };
-      }
+      if (cfg.mode === 'patient') return enterSafetyHold(cfg, s, 'VERTIGO_TOO_LONG', now, cues);
       if (!s.vertigoLongWarned) {
         cues.push({ kind: 'speak', text: TXT.vertigoTooLong.clinician, priority: 'high' });
         s.vertigoLongWarned = true;
@@ -1294,7 +1439,7 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
       }
     }
     // Hasta "geçti" dokunuşunu unutmasın: ilk kez 15 s'de, sonra 30 s arayla, işaretin kendi titreşimiyle (kısa-kısa-uzun)
-    // hatırlat ve sonucu söyle. Durdurma kuralı aynen kalır.
+    // hatırlat ve sonucu söyle. 2 dk sınırında güvenlik uyarısı (safetyHold).
     if (cfg.mode === 'patient') {
       const next = s.vertigoRemindMark === 0 ? VERTIGO_FIRST_REMIND_SEC : s.vertigoRemindMark + VERTIGO_REMIND_EVERY_SEC;
       const plan = vertigoLimit === null || next < vertigoLimit ? vertigoReminderPlan(cfg, next, s.vertigoRemindMark, vertigoLimit) : null;
@@ -1587,8 +1732,8 @@ function outOfTarget(
   const anglesOff = !!ev && ev.postureOk && !ev.inRange && step.target.kind === 'lying';
   if (patient && !cfg.sensorless && ready && anglesOff && !s.vertigoActive) {
     if (s.unreachSince === null) s.unreachSince = now;
-    // Hedef gevşetilmez: süre dolunca durdurulur ve hekime yönlendirilir.
-    if (sec(now - s.unreachSince) >= UNREACHABLE_SEC) return unreachableStop(cfg, s, now, cues, true);
+    // Hedef gevşetilmez: süre dolunca güvenlik uyarısı ("Devam et" / "Durdur"; durdurulursa hekime yönlendirilir).
+    if (sec(now - s.unreachSince) >= UNREACHABLE_SEC) return enterSafetyHold(cfg, s, 'POSITION_UNREACHABLE', now, cues);
   } else if ((ev && !anglesOff) || s.vertigoActive) {
     // Oturdu ya da baş dönmesi işaretli: süre baştan. Hedefe tek an değmek (k07, tur 2) ve kısa sensör kesintisi sıfırlamaz.
     s.unreachSince = null;

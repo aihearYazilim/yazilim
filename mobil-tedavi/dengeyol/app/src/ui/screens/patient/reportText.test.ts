@@ -9,6 +9,8 @@ import {
   doseSummaryText,
   endNoteText,
   maneuverPauses,
+  overrideKindText,
+  overrideLines,
   profileRxCode,
   reachText,
   reportPlainText,
@@ -420,5 +422,45 @@ describe('adlandırılmış tarih dizisi (kullanıcı turu 6, k09)', () => {
     expect(namedDatesText(t('2027-01-03T10:00:00'), { date: '2026-12-28' }, [t('2026-12-29T09:00:00')])).toBe(
       'reçete 28.12.2026 (geçerlilik 10.01.2027 dahil) · atak 29.12.2026 · rapor 03.01.2027'
     );
+  });
+});
+
+describe('araştırma kaydı (yeniden tasarım: aşılan uyarılar)', () => {
+  const at = (s: string) => new Date(s).getTime();
+  const e: Episode = {
+    id: 'o1',
+    startedAt: at('2026-10-31T09:00:00'),
+    side: 'R',
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'active',
+    overrides: [
+      { at: at('2026-10-31T09:20:00'), kind: 'VERTIGO_TOO_LONG', detail: 'Epley · sağ, adım 2/5 (Sırtüstü): baş dönmesi 2 dakikayı aştı' },
+      { at: at('2026-10-31T09:05:00'), kind: 'DOSE', detail: 'günlük manevra sınırı doluydu (2. gün)' },
+      { at: at('2026-10-31T09:06:00'), kind: 'REFER_BOTH_SIDES' },
+      { at: at('2026-10-31T09:07:00'), kind: 'XYZ_BILINMEYEN' }
+    ]
+  };
+  it('kodlar Türkçeye çevrilir; ham kod yazılmaz; satırlar zamana göre', () => {
+    expect(overrideKindText('POSITION_UNREACHABLE')).toBe('pozisyona 1 dakikada gelinemeyince manevraya devam edildi');
+    expect(overrideKindText('GATE_HORIZONTAL_CANAL')).toBe('yatay kanal uyarısına rağmen devam edildi');
+    expect(overrideKindText('REFER_BOTH_SIDES')).toMatch(/^hekime yönlendirme önerisine rağmen devam edildi \(iki tarafa yatınca/);
+    expect(overrideKindText('XYZ_BILINMEYEN')).toBe('bir uyarıya rağmen devam edildi');
+    const lines = overrideLines(e);
+    expect(lines).toHaveLength(4);
+    expect(lines[0]).toMatch(/09:05 — önerilen manevra sınırına rağmen devam edildi: günlük manevra sınırı doluydu \(2\. gün\)$/);
+    expect(lines[3]).toMatch(/09:20 — baş dönmesi 2 dakikayı aşınca manevraya devam edildi: Epley · sağ, adım 2\/5/);
+    for (const l of lines) expect(l).not.toMatch(/[A-Z]{3,}_[A-Z]/);
+  });
+  it('düz metin raporda "ARAŞTIRMA KAYDI" bölümü; kayıt yoksa bölüm de yok', () => {
+    const d = emptyData();
+    d.episodes = [e];
+    const t = reportPlainText(e, d, at('2026-10-31T12:00:00'));
+    expect(t).toMatch(/\nARAŞTIRMA KAYDI \(uyarıya rağmen devam edilenler\)\n- 31 Ekim 2026 09:05 — önerilen manevra sınırına/);
+    const none = { ...e, overrides: undefined };
+    expect(reportPlainText(none, { ...d, episodes: [none] }, at('2026-10-31T12:00:00'))).not.toMatch(/ARAŞTIRMA KAYDI/);
   });
 });

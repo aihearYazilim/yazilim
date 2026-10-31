@@ -1,9 +1,24 @@
 /**
  * Atak (episode) iş kuralları — saf fonksiyonlar.
+ *
+ * Yeniden tasarım (BRIEF §1): doz/gün sınırı, hekime yönlendirme ve taraf çelişkisi artık engel değildir. Buradaki işlevler
+ * durumu yine bildirir (uyarı metni için); çağıran "Yine de devam et" sunar ve aşmayı `logOverride` ile kaydeder
+ * (state/overrides.ts). Kayıt açıklamaları: `doseOverrideDetail`, `sideConflictOverrideDetail`, `referralOverrideDetail`.
  */
 import { dxIsRecent } from './dxTiming';
 import type { Side } from '../core/protocols';
-import { clampDose, DEFAULT_DOSE, DOSE_TEXT, type DoseLimits, doseStatus, localDayKey, type DoseStatus, RED_FLAGS, type RedFlagQuestion } from '../core/safety';
+import {
+  clampDose,
+  DEFAULT_DOSE,
+  DOSE_OVERRIDE_DETAIL,
+  DOSE_TEXT,
+  type DoseLimits,
+  doseStatus,
+  localDayKey,
+  type DoseStatus,
+  RED_FLAGS,
+  type RedFlagQuestion
+} from '../core/safety';
 import type { StepRecord } from '../core/runner';
 import type { AppData, Episode, EpisodeStatus, PatientProfile, Settings } from './types';
 
@@ -46,7 +61,12 @@ export function recentKnownSide(profile: PatientProfile | undefined, now: number
  */
 export const DX_SIDE_RECENT_DAYS = 14;
 
-export type DxSideCheck = { kind: 'ok' } | { kind: 'refer'; note: string } | { kind: 'warn'; dxSide: Side; note: string };
+/**
+ * Taraf çelişkisi. 'refer': yakın tarihli (ya da tarihi bilinmeyen) tanıyla çelişki — güçlü uyarı, hekime danışma önerilir;
+ * 'warn': eski tanıyla çelişki — kısa uyarı. İkisi de engel değildir: kullanıcı "Test tarafına devam" ya da "Hekimin
+ * dediği tarafa devam" seçer (aşma `logOverride('SIDE_CONFLICT', sideConflictOverrideDetail(…))`).
+ */
+export type DxSideCheck = { kind: 'ok' } | { kind: 'refer'; dxSide: Side; note: string } | { kind: 'warn'; dxSide: Side; note: string };
 
 /**
  * Taraf testinin bulduğu taraf, hastanın beyan ettiği hekim tanısındaki tarafla çelişiyor mu? Geçerli reçete varsa bu
@@ -72,13 +92,23 @@ export function dxSideCheck(profile: PatientProfile | undefined, testedSide: Sid
         : ' (tarih girilmemiş)';
   if (recent) {
     const why = dated || profile.dxWhen === 'recent' ? 'Yakın tarihli tanıyla' : 'Tanı tarihi bilinmediği için yakın tarihli sayılan tanıyla';
-    return { kind: 'refer', note: `Hekim tanısı${when}: ${name(dxSide)}; taraf testi: ${name(testedSide)}. ${why} çeliştiği için manevra yapılmadı, hekime yönlendirildi.` };
+    return {
+      kind: 'refer',
+      dxSide,
+      note: `Hekim tanısı${when}: ${name(dxSide)}; taraf testi: ${name(testedSide)}. ${why} çelişiyor; hastaya hekime danışması önerildi.`
+    };
   }
   return {
     kind: 'warn',
     dxSide,
     note: `Hekim tanısı${when}: ${name(dxSide)}; bu atakta taraf testi: ${name(testedSide)}. Tanı ${DX_SIDE_RECENT_DAYS} günden eski olduğu için hasta uyarıldı; manevra test tarafı için önerildi.`
   };
+}
+
+/** Taraf çelişkisinde kullanıcının seçimi için araştırma kaydı açıklaması ("Hekim: sağ, test: sol; test tarafına devam"). */
+export function sideConflictOverrideDetail(dxSide: Side, testedSide: Side, chosen: Side): string {
+  const name = (s: Side) => (s === 'R' ? 'sağ' : 'sol');
+  return `Hekim: ${name(dxSide)}, test: ${name(testedSide)}; ${chosen === testedSide ? 'test tarafına' : 'hekimin dediği tarafa'} (${name(chosen)}) devam`;
 }
 
 /** Eski tanıyla taraf çelişkisinde geçiş ekranının kısa uyarısı (ayrıntı rapora yazılır). */
@@ -189,10 +219,18 @@ export function doseNextAllowedAt(d: AppData, now: number): number | null {
   return null;
 }
 
-/** Doz sınırı metni: neden, günlük sınırda bir sonraki izinli zaman ve acil uyarısı. */
+/**
+ * Doz uyarısı metni: neden, günlük sınırda önerilen sonraki zaman ve acil uyarısı. Engel değildir: yanında "Yine de devam
+ * et" sunulur.
+ */
 export function doseLimitText(ds: Extract<DoseStatus, { allowed: false }>, d: AppData, now: number): string {
   const next = ds.reason === 'DAILY_LIMIT' ? doseNextAllowedAt(d, now) : null;
-  return `${DOSE_TEXT[ds.reason]}${next ? ` Bir sonraki manevra en erken ${formatDateTime(next)}.` : ''} Acil belirtilerde 112'yi arayın.`;
+  return `${DOSE_TEXT[ds.reason]}${next ? ` Önerilen sonraki manevra: ${formatDateTime(next)}.` : ''} Acil belirtilerde 112'yi arayın.`;
+}
+
+/** Doz uyarısı aşıldığında araştırma kaydı açıklaması ("günlük manevra sınırı doluydu (2. gün)"). */
+export function doseOverrideDetail(ds: Extract<DoseStatus, { allowed: false }>): string {
+  return `${DOSE_OVERRIDE_DETAIL[ds.reason]} (${ds.day}. gün)`;
 }
 
 /**
@@ -242,8 +280,8 @@ export const PRACTICE_PER_DAY = 2;
 
 /**
  * Bu kadar süre hiçbir işlem yapılmamış aktif atak eski sayılır ve kendiliğinden kapanır: haftalar sonra gelen yeni bir
- * baş dönmesi eski atağın tekrar testine/gün sınırına takılmasın. Doz sınırları ataktan bağımsız sayıldığı için güvenlik
- * gevşemez; hekime yönlendirme kilidi de etkilenmez (yalnız "active" ataklar kapanır).
+ * baş dönmesi eski atağın tekrar testine/gün sınırı uyarısına takılmasın. Doz sayımı ataktan bağımsızdır; hekime
+ * yönlendirme bilgisi de etkilenmez (yalnız "active" ataklar kapanır).
  */
 export const STALE_EPISODE_MS = 72 * 60 * 60 * 1000;
 
@@ -276,8 +314,8 @@ export function practiceAllowed(d: AppData, now: number): boolean {
 }
 
 /**
- * Son kapanan atak hekime/acile yönlendirmeyle bittiyse ve hasta sonrasında "hekimimle görüştüm" onayı vermediyse,
- * yeni atak başlatılamaz.
+ * Son kapanan atak hekime/acile yönlendirmeyle bittiyse ve hasta sonrasında ne "hekimimle görüştüm" dedi ne de "Yine de
+ * başlat" ile devam etti: ana ekranda bilgi satırı gösterilir. Kilit değildir; yeni atak her zaman başlatılabilir.
  */
 export function pendingReferral(d: AppData): Episode | null {
   const ended = d.episodes.filter((e) => e.status !== 'active' && e.endedAt).sort((a, b) => (b.endedAt ?? 0) - (a.endedAt ?? 0));
@@ -285,11 +323,27 @@ export function pendingReferral(d: AppData): Episode | null {
   if (!last || (last.status !== 'referred' && last.status !== 'emergency')) return null;
   const cleared = d.patient?.doctorClearedAt;
   if (cleared && cleared > (last.endedAt ?? 0)) return null;
+  if (referralOverridden(last)) return null;
   return last;
 }
 
+/** Araştırma kaydı kodu: hekime yönlendirmeden sonra yeni atak başlatıldı (kayıt yönlendirilen atağa yazılır). */
+export const REFERRAL_OVERRIDE_KIND = 'REFERRAL';
+
+/** Yönlendirilen atağın kaydında, kapandıktan sonra "yine de başlat" (REFERRAL) var mı? */
+export function referralOverridden(e: Episode): boolean {
+  return (e.overrides ?? []).some((o) => o.kind === REFERRAL_OVERRIDE_KIND && o.at >= (e.endedAt ?? 0));
+}
+
+/** Yönlendirmeden sonra yeni atak başlatılmasının kayıt açıklaması (durdurma nedeni varsa onunla). */
+export function referralOverrideDetail(e: Episode): string {
+  const flags = referralFlags(e);
+  const why = flags.length ? `güvenlik sorusu: ${flags.map((q) => q.label).join(', ')}` : (e.endNote ?? (e.status === 'emergency' ? 'acile yönlendirme' : 'hekime yönlendirme'));
+  return `Yönlendirmeden sonra yeni atak başlatıldı (${why})`;
+}
+
 /**
- * Atağı hekime/acile yönlendiren güvenlik soruları (son kırmızı bayrak kaydında durduran yanıtlar). Kilit kartı hangi
+ * Atağı hekime/acile yönlendiren güvenlik soruları (son kırmızı bayrak kaydında durduran yanıtlar). Bilgi satırı hangi
  * yanıtla durdurulduğunu ve hekime sorulacak cümleyi bundan yazar. Başka nedenle (ör. uzun baş dönmesi) yönlendirildiyse boş.
  */
 export function referralFlags(e: Episode): RedFlagQuestion[] {

@@ -31,11 +31,11 @@ describe('kontrendikasyon kapısı metinleri', () => {
     expect(many[2]).toBe(CONTRA_GENERAL_QUESTIONS[0]);
     expect(contraDoctorQuestions([])).toHaveLength(2);
   });
-  it('kontrendikasyon metni reçetenin kilidi açtığını vaat etmez; reçete de kapıyı açmaz', () => {
-    expect(GATE_TEXT.CONTRAINDICATION).toMatch(/açmaz/);
-    expect(
-      diagnosisGate({ diagnosedByDoctor: true, canal: 'PC', side: 'R', hasPrescription: true, contraindications: ['neck'] }).ok
-    ).toBe(false);
+  it('kontrendikasyon uyarıdır (reçeteyle de): hekime danışma önerisi ve dikkat cümlesi; kilit yok', () => {
+    expect(GATE_TEXT.CONTRAINDICATION).toMatch(/hekiminize danışmanız önerilir/);
+    expect(GATE_TEXT.CONTRAINDICATION).toMatch(/Yine de devam ederseniz/);
+    const g = diagnosisGate({ diagnosedByDoctor: true, canal: 'PC', side: 'R', hasPrescription: true, contraindications: ['neck'] });
+    expect(g).toEqual({ ok: true, requireSideTest: false, warnings: ['CONTRAINDICATION'] });
   });
   it('kan sulandırıcı, tansiyon ilacı ve protez notu', () => {
     expect(CONTRA_NOT_BLOCKING_TEXT).toMatch(/Kan sulandırıcı/);

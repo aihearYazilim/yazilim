@@ -21,6 +21,8 @@ import {
   type RunnerMode,
   type RunnerState,
   runnerStep,
+  safetyHoldDetail,
+  safetyHoldText,
   startSpeechText
 } from '../../core/runner';
 import {
@@ -41,6 +43,7 @@ import { speech } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
 import { keepAwake, releaseAwake, wakeLockSupported } from '../../platform/wakeLock';
+import { logOverride } from '../../state/overrides';
 import { store, useData } from '../../state/store';
 import { Segmented, StepDots } from '../components/Controls';
 import { HangBar, HeadGauge, HoldRing } from '../components/Gauges';
@@ -797,6 +800,7 @@ export function RunnerView({
     done: 'Tamamlandı',
     aborted: 'Durduruldu',
     safetyStop: 'Güvenlik için durduruldu',
+    safetyHold: 'Güvenlik uyarısı: seçim bekleniyor',
     idle: ''
   };
   const nextStep = protocol.steps[state.stepIndex + 1];
@@ -806,7 +810,8 @@ export function RunnerView({
   const hintTexts = !P ? HINT_TEXT_CLINICIAN : helperVoice ? HINT_TEXT_HELPER : HINT_TEXT_PATIENT;
 
   const terminal = state.phase === 'done' || state.phase === 'aborted' || state.phase === 'safetyStop';
-  const canMark = step?.observe !== false && state.phase !== 'between' && state.phase !== 'paused' && !terminal;
+  const holding = state.phase === 'safetyHold';
+  const canMark = step?.observe !== false && state.phase !== 'between' && state.phase !== 'paused' && !holding && !terminal;
   // Ekranın herhangi bir yerine dokunmak baş dönmesini işaretler (alındaki telefona körlemesine dokunuş için);
   // düğmeler kendi işini yapar.
   const onBodyTap = (e: React.MouseEvent) => {
@@ -814,6 +819,20 @@ export function RunnerView({
     if (!canMark) return;
     if ((e.target as HTMLElement).closest('button, a, input, select, label, summary')) return;
     dispatch({ type: 'vertigoToggle', now: now() });
+  };
+  /**
+   * Güvenlik uyarısında seçim (yeniden tasarım: kilit yok). "Devam et" araştırma kaydına yazılır (Episode.overrides);
+   * "Durdur" bugünkü durdurma sonucunu verir. Kendiliğinden hiçbir seçim yapılmaz.
+   */
+  const chooseSafety = (choice: 'continue' | 'stop') => {
+    const cur = sRef.current;
+    if (cur.phase !== 'safetyHold' || !cur.safetyHold) return;
+    if (choice === 'continue') {
+      unlockAudio();
+      void keepAwake();
+      logOverride(cur.safetyHold.reason, safetyHoldDetail(protocol, cur) ?? undefined);
+    }
+    dispatch({ type: 'safetyChoice', now: now(), choice });
   };
   const resumeNow = () => {
     // Arama/arka plandan sonra ses motorları yeniden açılır (bu dokunuş iOS için gereklidir).
@@ -854,7 +873,7 @@ export function RunnerView({
         suppressClick.current = false;
       }}
       onPointerDown={(e) => {
-        if (!P || terminal || state.phase === 'paused' || isControl(e.target)) return;
+        if (!P || terminal || state.phase === 'paused' || holding || isControl(e.target)) return;
         startPress(() => {
           if (sRef.current.phase !== 'paused') dispatch({ type: 'pause', now: now() });
         });
@@ -1047,6 +1066,70 @@ export function RunnerView({
               ? 'Nistagmus / belirti BİTTİ (ekrana dokunun)'
               : 'Nistagmus / belirti BAŞLADI (ekrana dokunun)'}
         </button>
+      )}
+
+      {holding && state.safetyHold && (
+        <div
+          className="overlay"
+          role="alertdialog"
+          aria-modal="true"
+          aria-label="Güvenlik uyarısı"
+          data-testid="runner-safety-hold"
+          data-reason={state.safetyHold.reason}
+          // Kör dokunuş ve uzun basış hiçbir seçimi yapmaz (yalnız kısa dokunuş; duraklatma sayfasıyla aynı kural).
+          onPointerDownCapture={() => {
+            sheetDownAt.current = performance.now();
+          }}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="sheet">
+            <h2>{state.safetyHold.reason === 'VERTIGO_TOO_LONG' ? 'Baş dönmesi uzun sürdü' : 'Pozisyona gelinemedi'}</h2>
+            <p data-testid="runner-safety-hold-text">{safetyHoldText(state)}</p>
+            <p className="small muted">Manevra bekliyor; siz seçmeden devam etmez.</p>
+            {P && settings.speech && (
+              <button
+                className="btn ghost block sheet-replay"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const t = safetyHoldText(sRef.current);
+                  if (t) {
+                    speech.speak(t, 'high');
+                    setCaption(t);
+                  }
+                }}
+                data-testid="runner-safety-hold-replay"
+              >
+                <Icon name="volume" /> Tekrar dinle
+              </button>
+            )}
+            <button
+              className="btn warn block xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (sheetTap(e)) chooseSafety('stop');
+              }}
+              data-testid="runner-hold-stop"
+            >
+              <Icon name="stop" /> Durdur
+            </button>
+            <button
+              className="btn secondary block xl"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (sheetTap(e)) chooseSafety('continue');
+              }}
+              data-testid="runner-hold-continue"
+            >
+              <Icon name="play" /> Devam et
+            </button>
+            {state.safetyHold.reason === 'VERTIGO_TOO_LONG' && (
+              <a className="btn danger block" href="tel:112" onClick={(e) => e.stopPropagation()} data-testid="runner-hold-112">
+                <Icon name="phone" /> 112'yi ara
+              </a>
+            )}
+          </div>
+        </div>
       )}
 
       {state.phase === 'paused' && (

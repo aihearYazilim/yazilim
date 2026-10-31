@@ -16,6 +16,7 @@ import {
   episodeEndNoteText,
   maneuverHeadText,
   maneuverTags,
+  overrideLines,
   PERIOD_REPORT_PATH,
   periodDoseText,
   periodCountsLine,
@@ -358,6 +359,19 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
           {e.retests.map((r, i) => (
             <div key={i} className="small">
               {retestText(r)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Araştırma kaydı: kullanıcının "Yine de devam et" ile aştığı uyarılar (Episode.overrides). */}
+      {(e.overrides ?? []).length > 0 && (
+        <div className="card stack" data-testid="report-overrides">
+          <h3>Araştırma kaydı</h3>
+          <p className="small muted">Uyarıya rağmen devam edilen durumlar.</p>
+          {overrideLines(e).map((t, i) => (
+            <div key={i} className="small" data-testid="report-override">
+              {t}
             </div>
           ))}
         </div>
