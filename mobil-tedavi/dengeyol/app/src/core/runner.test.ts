@@ -2,14 +2,23 @@ import { describe, expect, it } from 'vitest';
 import { poseFromUp, upFromLying, upFromSitting, type HeadPose } from './geometry';
 import { protocolForMode, resolveProtocol, type Target } from './protocols';
 import {
+  clinicianSilent,
   type Cue,
   DEFAULT_RUNNER_CONFIG,
+  HANG_MORE_MAX_HINTS,
   initialRunnerState,
+  reachSummary,
   type RunnerConfig,
   type RunnerEvent,
   type RunnerState,
   runnerStep,
-  vertigoSummary
+  SAFETY_STOP_TEXT,
+  startSpeechText,
+  stopReasonTextFor,
+  stopTextFor,
+  STOP_REASON_TEXT,
+  vertigoSummary,
+  WRONG_SIDE_STOP_REASON_TEXT
 } from './runner';
 
 function ideal(t: Target): HeadPose {
@@ -805,9 +814,7 @@ describe('tur 2 E1-1: gövdeyle dönülen adımda yanlış taraf', () => {
     // Yüzüstünden gelinen 16–30 s arasında doğrulanmadı; sırtüstünden geçtikten sonra doğrulandı.
     expect((rec.reachedAt! - rec.startedAt) / 1000).toBeGreaterThanOrEqual(32);
     const s3 = said.filter((w) => w.idx === 3);
-    const wrong = s3.filter((w) =>
-      w.text.startsWith('Durun, yanlış taraftasınız. Önce sırtüstüne dönün, sonra bütün vücudunuzla sol yanınıza')
-    );
+    const wrong = s3.filter((w) => w.text.startsWith('Önce sırtüstüne dönün, sonra bütün vücudunuzla sol yanınıza'));
     expect(wrong.length).toBeGreaterThanOrEqual(3);
     expect(wrong.every((w) => w.priority === 'high')).toBe(true);
     // En kısa açı (yüzüstüne doğru "sağa") hiç söylenmez.
@@ -819,7 +826,8 @@ describe('tur 2 E1-1: gövdeyle dönülen adımda yanlış taraf', () => {
     x.cfg = { ...x.cfg, helper: true };
     const steps = x.cfg.protocol.steps;
     const said = timedRun(x, normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : lying(100, 0))), 260);
-    expect(said.some((w) => w.text.startsWith('Durun, yanlış taraf. Hastayı önce sırtüstüne getirin'))).toBe(true);
+    expect(said.some((w) => w.text === 'Dur! Yanlış taraf.')).toBe(true);
+    expect(said.some((w) => w.text.startsWith('Hastayı önce sırtüstüne getirin'))).toBe(true);
   });
 });
 
@@ -1108,5 +1116,350 @@ describe('tur 2 E1-11: hedefin kıyısında tutulan adım', () => {
     const y = sim('epley');
     run(y);
     expect(y.s.records.some((r) => r.borderline)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Kullanıcı turu 3 — F1 (yürütücü)
+// ---------------------------------------------------------------------------------------------
+/** Gerçek hıza yakın konuşma süresi modeli (~13 karakter/s; k02'nin ölçtüğü uygulama tahmini). */
+const realSpeech = (t: string) => t.length / 13;
+
+/** Zamanlı koşu: bütün ipuçlarını (söz, titreşim, ton) adım içi saniyesiyle toplar. */
+function cueRun(x: Sim, poseAt: (idx: number, t: number) => HeadPose | null, maxSec: number, onTick?: (x: Sim) => void) {
+  const got: { idx: number; t: number; cue: Cue }[] = [];
+  send(x, { type: 'start' });
+  while (x.t < maxSec * 1000) {
+    x.t += 100;
+    const n = x.cues.length;
+    const inStep = (x.t - x.s.stepStartedAt) / 1000;
+    send(x, { type: 'tick', pose: poseAt(x.s.stepIndex, inStep) });
+    onTick?.(x);
+    for (const c of x.cues.slice(n)) got.push({ idx: x.s.stepIndex, t: (x.t - x.s.stepStartedAt) / 1000, cue: c });
+    if (x.s.phase === 'done' || x.s.phase === 'aborted' || x.s.phase === 'safetyStop') break;
+  }
+  return got;
+}
+const speechOf = (got: { t: number; idx: number; cue: Cue }[]) =>
+  got.filter((g) => g.cue.kind === 'speak').map((g) => ({ ...g, cue: g.cue as Extract<Cue, { kind: 'speak' }> }));
+
+describe('tur 3 F1-2: yanlış taraf hemen ve kendini kesmeden söylenir', () => {
+  /** Sağ Epley 4. adım (gövdeyle sol yan): 2. saniyede yanlış (sağ) yana yuvarlanır, 30. saniyede sırtüstüne döner. */
+  const wrongThenOk = (x: Sim) => {
+    const steps = x.cfg.protocol.steps;
+    return normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 30 ? lying(90, 0) : t < 32 ? lying(0, 0) : ideal(steps[3]!.target)));
+  };
+
+  it('≤1 s içinde kısa "Dur! Yanlış taraf." + kendi titreşimi ve tonu; ardından tam yönerge; yönerge bitmeden yinelenmez', () => {
+    const x = sim('epley');
+    x.cfg = { ...x.cfg, introSecFor: realSpeech };
+    const got = cueRun(x, wrongThenOk(x), 900).filter((g) => g.idx === 3);
+    expect(x.s.phase).toBe('done');
+    const alertAt = got.find((g) => g.cue.kind === 'speak' && g.cue.text === 'Dur! Yanlış taraf.');
+    expect(alertAt).toBeDefined();
+    expect(alertAt!.t).toBeLessThanOrEqual(3); // yanlış yana 2. saniyede geçti
+    expect(alertAt!.cue).toMatchObject({ priority: 'high', tag: 'alert' });
+    // Aynı anda ayrı titreşim ve ton.
+    const same = got.filter((g) => g.t === alertAt!.t).map((g) => g.cue);
+    expect(same).toContainEqual({ kind: 'haptic', pattern: 'wrongSide' });
+    expect(same).toContainEqual({ kind: 'tone', pattern: 'wrongSide' });
+    // Kısa uyarı bu geçişte bir kez.
+    expect(speechOf(got).filter((g) => g.cue.text === 'Dur! Yanlış taraf.')).toHaveLength(1);
+    // Tam yönerge: kısa uyarı bitince (≤1 s gecikmeyle).
+    const full = speechOf(got).filter((g) => g.cue.text.startsWith('Önce sırtüstüne dönün, sonra bütün vücudunuzla sol yanınıza'));
+    expect(full.length).toBeGreaterThanOrEqual(2);
+    const alertEnd = alertAt!.t + realSpeech('Dur! Yanlış taraf.');
+    expect(full[0]!.t).toBeGreaterThanOrEqual(alertEnd);
+    expect(full[0]!.t).toBeLessThanOrEqual(alertEnd + 1);
+    // Kendini kesmez: her yineleme bir öncekinin bitişinden en az 2 s sonra.
+    for (let i = 1; i < full.length; i++) {
+      expect(full[i]!.t - full[i - 1]!.t).toBeGreaterThanOrEqual(realSpeech(full[i - 1]!.cue.text) + 2 - 0.01);
+    }
+    // Kayıt: önce yanlış tarafa dönüldü; sonra doğru yandan tamamlandı.
+    expect(x.s.records[3]!.wrongSide).toBe(true);
+    expect(x.s.records[3]!.wrongSideStop).toBeUndefined();
+  });
+
+  it('gerçek konuşma bitişi beklenir: bitiş olayı gelmeden tam yönerge başlamaz', () => {
+    const x = sim('epley');
+    x.cfg = { ...x.cfg, awaitSpeechEnd: true };
+    const steps = x.cfg.protocol.steps;
+    let alertId: number | null = null;
+    let spokeAt: number | null = null;
+    const got = cueRun(
+      x,
+      normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : lying(90, 0))),
+      400,
+      (y) => {
+        if (alertId === null) {
+          const a = y.cues.find((c) => c.kind === 'speak' && c.tag === 'alert');
+          if (a && a.kind === 'speak') alertId = a.utterId ?? null;
+        }
+        // Kısa uyarı ~4 s sonra gerçekten bitti (tahmin 3 s; üst sınır 3×2+3 = 9 s).
+        if (alertId !== null && spokeAt === null && y.s.stepIndex === 3 && (y.t - y.s.stepStartedAt) / 1000 >= 6.05) {
+          send(y, { type: 'cueSpoken', utterId: alertId });
+          spokeAt = (y.t - y.s.stepStartedAt) / 1000;
+        }
+      }
+    );
+    const full = speechOf(got).filter((g) => g.idx === 3 && g.cue.text.startsWith('Önce sırtüstüne'));
+    expect(alertId).not.toBeNull();
+    expect(full.length).toBeGreaterThan(0);
+    expect(full[0]!.t).toBeGreaterThanOrEqual(spokeAt!);
+    expect(full[0]!.t).toBeLessThanOrEqual(spokeAt! + 0.5);
+    expect(full[0]!.cue.utterId).toBeDefined();
+  });
+
+  it("yanlış tarafta kalınca ~60 s'de durur; gerekçe \"yanlış taraf\" (boyun değil), kilit aynı", () => {
+    const x = sim('epley');
+    const steps = x.cfg.protocol.steps;
+    run(x, { maxSec: 600, poseOverride: normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : lying(90, 0))) });
+    expect(x.s.phase).toBe('safetyStop');
+    expect(x.s.stopReason).toBe('POSITION_UNREACHABLE');
+    const rec = x.s.records[3]!;
+    expect(rec.unreachable).toBe(true);
+    expect(rec.wrongSide).toBe(true);
+    expect(rec.wrongSideStop).toBe(true);
+    expect(stopTextFor('POSITION_UNREACHABLE', x.s.records)).toBe(SAFETY_STOP_TEXT.WRONG_SIDE);
+    expect(SAFETY_STOP_TEXT.WRONG_SIDE).toMatch(/yanlış tarafa dönüldü/);
+    expect(SAFETY_STOP_TEXT.WRONG_SIDE).not.toMatch(/ör\./);
+    expect(stopReasonTextFor('POSITION_UNREACHABLE', x.s.records)).toBe(WRONG_SIDE_STOP_REASON_TEXT);
+    expect(spoken(x).pop()).toMatch(/^Yanlış taraftan doğru yana gelinemedi/);
+    expect(x.s.notice).toMatch(/Yanlış taraftan/);
+  });
+
+  it('boyun kısıtında gerekçe aynen kalır; duraklatma düğmesinde yanlış taraf yalnız hasta o an yanlış yandaysa', () => {
+    const x = sim('epley');
+    epleyStuck(x, poseFromUp(upFromLying(45, 8)), 400);
+    expect(stopTextFor('POSITION_UNREACHABLE', x.s.records)).toBe(SAFETY_STOP_TEXT.POSITION_UNREACHABLE);
+    expect(stopReasonTextFor('POSITION_UNREACHABLE', x.s.records)).toBe(STOP_REASON_TEXT.POSITION_UNREACHABLE);
+    expect(stopTextFor('VERTIGO_TOO_LONG', x.s.records)).toBe(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG);
+    expect(SAFETY_STOP_TEXT.POSITION_UNREACHABLE).not.toMatch(/ör\./);
+
+    // Yanlış yandayken "Pozisyona gelemiyorum": yanlış taraf gerekçesi.
+    const y = sim('epley');
+    const steps = y.cfg.protocol.steps;
+    cueRun(y, normalExcept(y, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : lying(90, 0))), 400, (z) => {
+      if (z.s.stepIndex === 3 && z.s.phase !== 'paused' && (z.t - z.s.stepStartedAt) / 1000 >= 8) {
+        send(z, { type: 'pause' });
+        send(z, { type: 'abort', reason: 'POSITION_UNREACHABLE' });
+      }
+    });
+    expect(y.s.records[3]!.wrongSideStop).toBe(true);
+
+    // Sırtüstüne döndükten sonra düğme: boyun gerekçesi (hasta yanlış yanda değil).
+    const z = sim('epley');
+    const st = z.cfg.protocol.steps;
+    cueRun(z, normalExcept(z, 3, (t) => (t < 2 ? ideal(st[2]!.target) : t < 6 ? lying(90, 0) : lying(0, 0))), 400, (w) => {
+      if (w.s.stepIndex === 3 && w.s.phase !== 'paused' && (w.t - w.s.stepStartedAt) / 1000 >= 10) {
+        send(w, { type: 'pause' });
+        send(w, { type: 'abort', reason: 'POSITION_UNREACHABLE' });
+      }
+    });
+    expect(z.s.records[3]!.wrongSide).toBe(true);
+    expect(z.s.records[3]!.wrongSideStop).toBeUndefined();
+    expect(stopTextFor('POSITION_UNREACHABLE', z.s.records)).toBe(SAFETY_STOP_TEXT.POSITION_UNREACHABLE);
+  });
+
+  it("Semont'ta önceki yanda kalmak yanlış taraf uyarısı değildir", () => {
+    const x = sim('semont');
+    const got = cueRun(x, (idx, t) => ideal(x.cfg.protocol.steps[idx === 2 && t < 8 ? 1 : idx]!.target), 600);
+    expect(got.some((g) => g.cue.kind === 'haptic' && g.cue.pattern === 'wrongSide')).toBe(false);
+    expect(speechOf(got).some((g) => g.cue.text === 'Dur! Yanlış taraf.')).toBe(false);
+  });
+});
+
+describe('tur 3 F1-3: aramada ulaşılan en iyi açı ve "biraz daha geriye" sınırı', () => {
+  it('sarkamayan hastada kayıtta en iyi sarkma; özet "baş en çok ~8° sarktı (hedef 15–40°)"', () => {
+    const x = sim('epley');
+    epleyStuck(x, poseFromUp(upFromLying(45, 8)), 400);
+    const rec = x.s.records[1]!;
+    expect(rec.unreachable).toBe(true);
+    expect(rec.reach?.phi).toBeCloseTo(8, 0);
+    expect(rec.reach?.theta).toBeCloseTo(45, 0);
+    expect(reachSummary(rec, x.cfg.protocol.steps[1]!)).toBe('baş en çok ~8° sarktı (hedef 15–40°)');
+  });
+
+  it('dönemeyen hastada dönüş özeti; en iyi değer ilerlemeyle güncellenir', () => {
+    const x = sim('epley');
+    const s0 = x.cfg.protocol.steps[0]!.target;
+    run(x, { maxSec: 400, poseOverride: (idx, t) => (idx === 0 || t <= 1 ? ideal(s0) : lying(Math.min(20, 5 + t), 25)) });
+    expect(x.s.stopReason).toBe('POSITION_UNREACHABLE');
+    const rec = x.s.records[1]!;
+    expect(rec.reach?.theta).toBeCloseTo(20, 0);
+    expect(reachSummary(rec, x.cfg.protocol.steps[1]!)).toBe('baş en çok sağa ~20° döndü (hedef sağa 45° ±10°)');
+  });
+
+  it('hedefe gelinen adımda özet yok; oturuş hedefinde de yok', () => {
+    const x = sim('epley');
+    run(x);
+    x.cfg.protocol.steps.forEach((st, i) => expect(reachSummary(x.s.records[i]!, st)).toBeNull());
+  });
+
+  it('ilerleyen hastaya da "biraz daha geriye" en çok 3 kez, sonra "zorlamayın" (k07)', () => {
+    const x = sim('epley');
+    const s0 = x.cfg.protocol.steps[0]!.target;
+    // 5,5°'den 3 s'de 1° ilerleyerek 14,5°'ye (hedef 15°) gelir ve orada kalır: her ~9 s'de 3° ilerleme (eski kuralda 4+ ipucu).
+    const said = timedRun(
+      x,
+      (idx, t) => (idx === 0 || t <= 1 ? ideal(s0) : idx === 1 ? lying(45, Math.min(14.5, 5.5 + (t - 1) / 3)) : ideal(s0)),
+      400
+    );
+    const texts = said.filter((w) => w.idx === 1).map((w) => w.text);
+    const strainAt = texts.findIndex((t) => t.startsWith('Daha fazla zorlamayın'));
+    expect(strainAt).toBeGreaterThan(-1);
+    const before = texts.slice(0, strainAt).filter((t) => t === 'Başınızı biraz daha geriye bırakın.');
+    expect(before.length).toBe(HANG_MORE_MAX_HINTS);
+    expect(texts.slice(strainAt + 1).some((t) => /biraz daha geriye/.test(t))).toBe(false);
+    expect(x.s.records[1]!.reach?.phi).toBeCloseTo(14.5, 0);
+  });
+});
+
+describe('tur 3 F1-4: klinisyen sesi', () => {
+  const offPose = (x: Sim) => (idx: number, t: number) =>
+    idx === 1 && t < 20
+      ? lying(10, 25)
+      : idx === 2 && t > 25 && t < 32
+        ? lying(-45, 5)
+        : t > 1 || idx === 0
+          ? ideal(x.cfg.protocol.steps[idx]!.target)
+          : ideal(x.cfg.protocol.steps[Math.max(0, idx - 1)]!.target);
+
+  it('kısa seste 2–3 kelimelik yön ipuçları ("Hastanın sağına.", "Pozisyon bozuldu. Daha sarkık."); uzun cümle yok', () => {
+    const x = sim('epley', 'clinician');
+    run(x, { maxSec: 600, poseOverride: offPose(x) });
+    const texts = spoken(x);
+    expect(texts).toContain('Hastanın sağına.');
+    expect(texts).toContain('Pozisyon bozuldu. Daha sarkık.');
+    expect(texts.some((t) => /çevirin|Ekstansiyon/.test(t))).toBe(false);
+    const hints = speakCues(x.cues).filter((c) => c.tag === 'hint');
+    expect(hints.length).toBeGreaterThan(0);
+    for (const h of hints) {
+      expect(h.text.split(/\s+/).length, h.text).toBeLessThanOrEqual(3);
+    }
+  });
+
+  it('kısa seste yanlış taraf: kısa uyarı ve "Sırtüstünden hastanın soluna."; kapalıda hiç söz yok, titreşim sürer', () => {
+    const x = sim('epley', 'clinician');
+    const steps = x.cfg.protocol.steps;
+    const pose = (y: Sim) =>
+      normalExcept(y, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 20 ? lying(90, 0) : t < 22 ? lying(0, 0) : ideal(steps[3]!.target)));
+    const said = timedRun(x, pose(x), 900).map((w) => w.text);
+    expect(said).toContain('Dur! Yanlış taraf.');
+    expect(said).toContain('Sırtüstünden hastanın soluna.');
+    const off = sim('epley', 'clinician');
+    off.cfg = { ...off.cfg, clinicianVoice: 'off' };
+    const got = cueRun(off, pose(off), 900);
+    expect(speechOf(got)).toHaveLength(0);
+    expect(got.some((g) => g.cue.kind === 'haptic' && g.cue.pattern === 'wrongSide')).toBe(true);
+  });
+
+  it('kapalı: "Başlıyoruz" da söylenmez, alt yazı gizlenir; kısa/açık ve hasta başlangıç cümleleri', () => {
+    const base = sim('epley', 'clinician').cfg;
+    expect(startSpeechText({ ...base, clinicianVoice: 'off' })).toBeNull();
+    expect(clinicianSilent({ ...base, clinicianVoice: 'off' })).toBe(true);
+    expect(startSpeechText({ ...base, clinicianVoice: 'short' })).toBe('Başlıyoruz.');
+    expect(clinicianSilent({ ...base, clinicianVoice: 'short' })).toBe(false);
+    expect(startSpeechText(base)).toBe('Başlıyoruz.');
+    const p = sim('epley').cfg;
+    expect(clinicianSilent(p)).toBe(false);
+    expect(startSpeechText(p)).toBe('Başlıyoruz. Yönergeleri dinleyin.');
+    expect(startSpeechText({ ...p, sensorless: true }, 'Önce sol tarafı test ediyoruz.')).toBe('Önce sol tarafı test ediyoruz. Başlıyoruz.');
+    expect(startSpeechText({ ...p, helper: true })).toMatch(/^Başlıyoruz\. Yönergeleri yakınınıza/);
+  });
+});
+
+describe('tur 3 F1-5: sesli yönerge sırası', () => {
+  it('duraklatma sesi önce eylemi söyler: "Devam için ekrana iki saniye basılı tutun."', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    send(x, { type: 'pause' });
+    const t = speakCues(x.cues).pop()!.text;
+    expect(t.startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.')).toBe(true);
+    expect(t).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın\.$/);
+    // Baş dönmesi işaretliyken "bir kez dokunun" hemen eylemin ardından.
+    const y = sim('epley');
+    send(y, { type: 'start' });
+    y.t += 500;
+    send(y, { type: 'vertigoToggle' });
+    send(y, { type: 'pause' });
+    expect(speakCues(y.cues).pop()!.text).toMatch(
+      /^Duraklatıldı\. Devam için ekrana iki saniye basılı tutun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Boynunuz/
+    );
+  });
+
+  it('Semont: komuttan önce yatan ve yavaş geçen hastaya TEK cümle ("Zaten yattınız" kesilmez)', () => {
+    const x = sim('semont');
+    const steps = x.cfg.protocol.steps;
+    const said = timedRun(
+      x,
+      normalExcept(x, 2, (t) => (t < 0.3 ? ideal(steps[1]!.target) : t < 3.4 ? poseFromUp(upFromSitting(0)) : ideal(steps[2]!.target))),
+      600
+    );
+    expect(x.s.phase).toBe('done');
+    const rec = x.s.records[2]!;
+    expect(rec.movedBeforeCommand).toBe(true);
+    expect(rec.slowTransition).toBe(true);
+    const s2 = said.filter((w) => w.idx === 2);
+    const zaten = s2.filter((w) => /Zaten yattınız/.test(w.text));
+    expect(zaten).toHaveLength(1);
+    expect(zaten[0]!.text).toMatch(
+      /^Zaten yattınız; sayımı bırakıyoruz\. Geçiş 3 saniye sürdü; bir dahaki sefere "şimdi"yi bekleyip tek hamlede geçin\. Böyle kalın, kıpırdamayın\.$/
+    );
+    expect(zaten[0]!.priority).toBe('high');
+    // Ardından başka bir cümle onu kesmez.
+    const after = s2.filter((w) => w.t > zaten[0]!.t && w.t < zaten[0]!.t + 3);
+    expect(after.some((w) => w.priority === 'high')).toBe(false);
+  });
+
+  it('Semont: komuttan önce yatıp hemen doğrulanmayan hastaya "Zaten yattınız" tek başına; doğrulama onu kesmez', () => {
+    const x = sim('semont');
+    const steps = x.cfg.protocol.steps;
+    const tgt = steps[2]!.target;
+    // Hedef yanda ama 25° eksik dönük (geniş "yanına yattı" bölgesinde, hedef aralığın dışında).
+    const near = tgt.kind === 'lying' ? lying(tgt.theta + (tgt.theta > 0 ? -25 : 25), 0) : ideal(tgt);
+    const said = timedRun(
+      x,
+      normalExcept(x, 2, (t) => (t < 0.3 ? ideal(steps[1]!.target) : t < 1 ? poseFromUp(upFromSitting(0)) : t < 6 ? near : ideal(tgt))),
+      600
+    );
+    expect(x.s.phase).toBe('done');
+    const s2 = said.filter((w) => w.idx === 2);
+    const early = s2.find((w) => w.text.startsWith('Zaten yattınız'));
+    expect(early?.priority).toBe('high');
+    const ok = s2.find((w) => w.t > early!.t && (w.text === 'Tamam, böyle kalın.' || /Geçiş|Oturuştan/.test(w.text)));
+    expect(ok?.priority).toBe('normal');
+    expect(ok?.text).not.toMatch(/Zaten/);
+  });
+
+  it('son baş dönmesi hatırlatması kısa ve yavaş seste de 2 dk durdurma cümlesinden önce biter', () => {
+    for (const rate of [1, 0.8, 0.65]) {
+      const x = sim('epley');
+      x.cfg = { ...x.cfg, introSecFor: (t: string) => t.length / (13 * rate) };
+      send(x, { type: 'start' });
+      while (x.s.stepIndex < 1 || x.s.phase !== 'holding') {
+        x.t += 100;
+        send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+      }
+      send(x, { type: 'vertigoToggle' });
+      const v0 = x.t;
+      const reminders: { t: number; text: string }[] = [];
+      while (x.s.stopReason === null && x.t < 600000) {
+        x.t += 100;
+        const n = x.cues.length;
+        send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[1]!.target) });
+        const fresh = x.cues.slice(n);
+        if (fresh.some((c) => c.kind === 'haptic' && c.pattern === 'markOn')) {
+          const sp = speakCues(fresh)[0];
+          if (sp && !sp.text.startsWith('Süre doldu')) reminders.push({ t: (x.t - v0) / 1000, text: sp.text });
+        }
+      }
+      expect(x.s.stopReason).toBe('VERTIGO_TOO_LONG');
+      const last = reminders[reminders.length - 1]!;
+      expect(last.text).toMatch(/^Baş dönmesi geçtiyse hemen ekrana dokunun\. \d+ saniye içinde dokunulmazsa manevrayı durduracağım\.$/);
+      expect(last.t + x.cfg.introSecFor(last.text)).toBeLessThanOrEqual(120 - 1.9);
+      const left = Number(/(\d+) saniye/.exec(last.text)![1]);
+      expect(Math.abs(last.t + left - 120)).toBeLessThanOrEqual(1);
+    }
   });
 });

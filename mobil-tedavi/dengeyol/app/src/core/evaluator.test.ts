@@ -77,7 +77,8 @@ describe('tur 2 (E1-1): yan yatış hedefinde yanlış taraf (yüzüstünden ge�
     expect(at(10, 0, true).wrongSide).toBeUndefined();
   });
   it('metinler: hasta, yardımcı ve klinisyen ("hastanın sağına")', () => {
-    expect(HINT_TEXT_PATIENT.WRONG_SIDE_RIGHT).toMatch(/yanlış taraf.*sırtüstüne.*sağ yanınıza/);
+    // "Dur! Yanlış taraf." kısa uyarısını yürütücü ayrıca verir (tur 3); tam yönerge yönü söyler.
+    expect(HINT_TEXT_PATIENT.WRONG_SIDE_RIGHT).toMatch(/^Önce sırtüstüne.*sağ yanınıza/);
     expect(HINT_TEXT_HELPER.WRONG_SIDE_LEFT).toMatch(/sırtüstüne getirin.*sol yanına/);
     expect(HINT_TEXT_CLINICIAN.WRONG_SIDE_RIGHT).toMatch(/hastanın sağına/);
     expect(HINT_TEXT_CLINICIAN.TURN_RIGHT).toMatch(/hastanın sağına/);

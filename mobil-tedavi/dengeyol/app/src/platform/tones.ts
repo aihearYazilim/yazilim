@@ -13,7 +13,8 @@ export type ToneName =
   | 'drift'
   | 'markOn'
   | 'markOff'
-  | 'pause';
+  | 'pause'
+  | 'wrongSide';
 
 class Tones {
   enabled = true;
@@ -93,6 +94,13 @@ class Tones {
       case 'pause':
         this.beep(392, 350);
         this.beep(330, 350, 0.45);
+        break;
+      case 'wrongSide':
+        // "Dur, yanlış taraf": hızlı inen-çıkan üç çift (alarmın tek perdeli uzun biplerinden ayrı; k02, tur 3).
+        [0, 0.3, 0.6].forEach((w) => {
+          this.beep(698, 120, w, 0.4);
+          this.beep(466, 120, w + 0.13, 0.4);
+        });
         break;
     }
   }

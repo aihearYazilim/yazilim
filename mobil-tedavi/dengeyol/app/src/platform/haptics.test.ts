@@ -42,6 +42,15 @@ describe('tur 1 (D1): titreşim desenleri ayırt edilebilir', () => {
     expect(shape('ready').count).not.toBe(shape('stepDone').count);
   });
 
+  it('tur 3 (F1-2): "dur, yanlış taraf" kendi desenine sahip ve tanıtılır; başka hiçbir desenle aynı sayıda vuruşu yok', () => {
+    const ps = HAPTIC_LEGEND.map((x) => x.pattern);
+    expect(ps).toContain('wrongSide');
+    expect(HAPTIC_LEGEND.find((x) => x.pattern === 'wrongSide')!.label).toMatch(/yanlış taraf/);
+    for (const p of ps.filter((p) => p !== 'wrongSide')) expect(shape(p).count, p).not.toBe(shape('wrongSide').count);
+    // "Bozuldu" vızıltısından seyrek ve uzun vuruşlu.
+    expect(shape('wrongSide').min).toBeGreaterThanOrEqual(3 * shape('drift').max);
+  });
+
   it('adım bitti ile manevra bitti farklı; bozuldu sürekli vızıltıdır (~1,5 s)', () => {
     expect(shape('stepDone').count).not.toBe(shape('done').count);
     expect(shape('drift').count).toBeGreaterThanOrEqual(10);

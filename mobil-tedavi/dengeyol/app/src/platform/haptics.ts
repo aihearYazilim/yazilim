@@ -10,7 +10,8 @@ export type HapticPattern =
   | 'markOn'
   | 'markOff'
   | 'pause'
-  | 'ready';
+  | 'ready'
+  | 'wrongSide';
 
 /**
  * Sesi duyamayan kullanıcı için "ne zaman / ne oldu" bilgisi (yön bilgisi taşımaz). Her anlam SAYI ve SÜREYLE ayrılır;
@@ -24,6 +25,7 @@ export type HapticPattern =
  *   stepDone  3 kısa                             120·120·120                 adım bitti
  *   done      3 kısa + 1 çok uzun                120·120·120·900             manevra/test bitti
  *   alarm     3 çok uzun                         1000·1000·1000              dur (güvenlik)
+ *   wrongSide 6 orta, kesik kesik                220 × 6                     dur, yanlış taraf (önce sırtüstüne)
  *   markOn    kısa-kısa-UZUN                     100·100·700                 baş dönmesi işaretli (başladı; hatırlatma da bu)
  *   markOff   UZUN-kısa-kısa                     700·100·100                 baş dönmesi geçti
  *   drift     sürekli hızlı vızıltı (~1,5 s)     15 × 60                     pozisyon bozuldu
@@ -38,6 +40,8 @@ const PATTERNS: Record<HapticPattern, number[]> = {
   stepDone: [120, 120, 120, 120, 120],
   done: [120, 120, 120, 120, 120, 300, 900],
   alarm: [1000, 300, 1000, 300, 1000],
+  // "Dur, yanlış taraf": başka hiçbir desende 6 vuruş yok; "bozuldu" vızıltısından uzun ve seyrek (k02, tur 3).
+  wrongSide: [220, 110, 220, 110, 220, 110, 220, 110, 220, 110, 220],
   markOn: [100, 120, 100, 120, 700],
   markOff: [700, 120, 100, 120, 100],
   drift: Array.from({ length: 29 }, (_, i) => (i % 2 === 0 ? 60 : 40)),
@@ -63,6 +67,7 @@ export const HAPTIC_LEGEND: { pattern: HapticPattern; label: string }[] = [
   { pattern: 'markOn', label: 'Kısa-kısa-uzun: baş dönmesi işaretli (geçince ekrana dokunun)' },
   { pattern: 'markOff', label: 'Uzun-kısa-kısa: baş dönmesi geçti olarak işaretlendi' },
   { pattern: 'pause', label: 'Bir çok uzun: duraklatıldı' },
+  { pattern: 'wrongSide', label: 'Altı kesik vuruş: durun, yanlış taraf (önce sırtüstüne dönün)' },
   { pattern: 'alarm', label: 'Üç çok uzun: durun, güvenlik için durduruldu' }
 ];
 
