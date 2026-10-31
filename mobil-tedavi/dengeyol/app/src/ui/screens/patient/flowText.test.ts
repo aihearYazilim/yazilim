@@ -9,25 +9,35 @@ import {
   CONFIRM_GAP_PX,
   confirmBackPad,
   confirmPlacement,
-  LONG_IN_MANEUVER_SPOKEN,
+  LONG_IN_MANEUVER_NOTE,
   PREP_HELPER_ITEMS,
   prepHearingText,
   prepItems,
   prepSpokenFull,
   prepSpokenShort,
   redFlagConfirmHeadline,
-  REFER_SPOKEN,
+  RETEST_LONG_SPOKEN,
+  RETEST_LONG_TEXT,
   SAFETY_STOP_TEXT_HELPER,
   safetyStopSpoken,
   safetyStopTextFor,
-  SUBTYPE_HC_SPOKEN,
-  SUBTYPE_LONG_SPOKEN,
   unreachableStopSpoken,
   UNWELL_END_TITLE,
   unwellEndSpoken,
   unwellEndText,
   verticalOverlap,
-  withoutBppv
+  withoutBppv,
+  chainGateText,
+  contraWarnText,
+  decisionScreen,
+  nextSideGateText,
+  planWarn,
+  RED_FLAG_CHECK_TEXT,
+  redFlagAnswers,
+  redFlagCheckText,
+  RED_FLAGS_SPOKEN,
+  redFlagsSpokenFull,
+  redFlagWarnSpoken
 } from './flowText';
 
 describe('seçenekli ekranın sesli biçimi (kullanıcı turu 3, k01, k04, k05)', () => {
@@ -226,10 +236,7 @@ describe('kullanıcı turu 5–6 (k01, k02, k05)', () => {
 describe('kullanıcı turu 6: durdurma ekranlarının sesi önce kısa (k05, k07)', () => {
   const kinds = Object.keys(SAFETY_STOP_TEXT) as (keyof typeof SAFETY_STOP_TEXT)[];
   const shorts = [
-    ...Object.values(REFER_SPOKEN).filter((x): x is string => !!x),
-    LONG_IN_MANEUVER_SPOKEN,
-    SUBTYPE_LONG_SPOKEN,
-    SUBTYPE_HC_SPOKEN,
+    RETEST_LONG_SPOKEN,
     ...kinds.flatMap((k) => [safetyStopSpoken(k, false), safetyStopSpoken(k, true)]),
     unwellEndSpoken('maneuver'),
     unwellEndSpoken('test')
@@ -241,14 +248,11 @@ describe('kullanıcı turu 6: durdurma ekranlarının sesi önce kısa (k05, k07
       expect(t).not.toMatch(/BPPV/);
     }
     // Kısa biçim tam metinden kısa; tam metin "Ayrıntıyı dinle"de.
-    for (const k of Object.keys(REFER_SPOKEN) as (keyof typeof REFER_TEXT)[]) {
-      const sp = REFER_SPOKEN[k];
-      if (sp) expect(sp.length).toBeLessThan(REFER_TEXT[k].length);
-    }
+    expect(RETEST_LONG_SPOKEN.length).toBeLessThan(RETEST_LONG_TEXT.length);
     for (const k of kinds) expect(safetyStopSpoken(k, false).length).toBeLessThan(SAFETY_STOP_TEXT[k].length);
     expect(unwellEndSpoken('test').length).toBeLessThan(unwellEndText('test').length);
     // Uzun baş dönmesinde acil belirtiler seste kalır.
-    for (const t of [REFER_SPOKEN.ATYPICAL_LONG!, LONG_IN_MANEUVER_SPOKEN, SUBTYPE_LONG_SPOKEN, safetyStopSpoken('VERTIGO_TOO_LONG', false)]) {
+    for (const t of [RETEST_LONG_TEXT, LONG_IN_MANEUVER_NOTE, safetyStopSpoken('VERTIGO_TOO_LONG', false)]) {
       expect(t).toMatch(/Konuşma bozukluğu, güçsüzlük ya da çift görme olursa 112'yi arayın\.$/);
     }
   });
@@ -271,5 +275,102 @@ describe('kullanıcı turu 6: durdurma ekranlarının sesi önce kısa (k05, k07
     for (const q of RED_FLAGS) expect(withoutBppv(q.why)).not.toMatch(/BPPV/);
     for (const k of Object.keys(REFER_TEXT) as (keyof typeof REFER_TEXT)[]) expect(withoutBppv(REFER_TEXT[k])).not.toMatch(/BPPV/);
     expect(withoutBppv(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG)).not.toMatch(/BPPV/);
+  });
+});
+
+describe('yeniden tasarım: tek ekran güvenlik listesi', () => {
+  it('her güvenlik sorusunun kısa madde metni var; "Listeyi dinle" bütün maddeleri okur ve "BPPV" demez', () => {
+    for (const q of RED_FLAGS) expect(RED_FLAG_CHECK_TEXT[q.id], q.id).toBeTruthy();
+    const full = redFlagsSpokenFull(RED_FLAGS);
+    for (const q of RED_FLAGS) expect(full).toContain(redFlagCheckText(q).replace(/"/g, ''));
+    expect(full).not.toMatch(/BPPV/);
+    expect(redFlagCheckText({ id: 'yeni', label: 'yeni bir belirti' })).toBe('Yeni bir belirti');
+    // Kısa açılış sesi gerçekten kısa.
+    expect(RED_FLAGS_SPOKEN.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+  });
+
+  it('işaret listesinden yanıt kaydı: işaretli = durduran yanıt, diğerleri güvenli yanıt', () => {
+    const a = redFlagAnswers(RED_FLAGS, ['neuro', 'same']);
+    expect(a.neuro).toBe('yes');
+    expect(a.same).toBe('yes');
+    expect(a.continuous).toBe('no');
+    expect(Object.keys(a)).toHaveLength(RED_FLAGS.length);
+  });
+
+  it('kırmızı bayrak uyarısının sesi kısa; acilde 112, hekimde kısa neden', () => {
+    const neuro = RED_FLAGS.find((q) => q.id === 'neuro')!;
+    const ear = RED_FLAGS.find((q) => q.id === 'ear')!;
+    const em = redFlagWarnSpoken('emergency', [neuro]);
+    expect(em).toMatch(/112/);
+    expect(em.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+    expect(redFlagWarnSpoken('doctor', [ear])).toMatch(/KBB/);
+    expect(redFlagWarnSpoken('emergency', [], 'Yeni belirti.')).toMatch(/Yeni belirti\. Hemen 112/);
+    for (const q of RED_FLAGS) expect(redFlagWarnSpoken(q.action, [q])).not.toMatch(/BPPV/);
+  });
+});
+
+describe('yeniden tasarım: uyarı ekranları kilitlemez', () => {
+  const base = { canal: 'PC' as const, reason: 'Gerekçe.' };
+  const values = (d: Parameters<typeof decisionScreen>[0]) => decisionScreen(d).options.map((o) => o.value);
+  const ids = (d: Parameters<typeof decisionScreen>[0]) => decisionScreen(d).options.map((o) => o.testid);
+
+  it('her karar ekranında ilk seçenek devam (manevra), sonuncusu Durdur; "yalnız geri dön" yok', () => {
+    const all = [
+      { ...base, side: 'R' as const, warn: 'ATYPICAL_LONG' as const },
+      { ...base, side: 'L' as const, warn: 'BOTH_SIDES' as const },
+      { ...base, side: 'R' as const, both: true, warn: 'BOTH_SIDES' as const },
+      { ...base, side: 'R' as const, doctorSide: 'L' as const, warn: 'SIDE_CONFLICT' as const },
+      { ...base, side: 'R' as const, warn: 'NOT_TRIGGERED' as const },
+      { ...base, side: null, warn: 'NOT_TRIGGERED' as const },
+      { ...base, canal: 'HC' as const, side: null, warn: 'BOTH_SIDES' as const },
+      { ...base, side: 'R' as const, warn: null }
+    ];
+    for (const d of all) {
+      const v = values(d);
+      expect(v[0] === 'go:R' || v[0] === 'go:L' || v[0] === 'both', JSON.stringify(d)).toBe(true);
+      expect(v[v.length - 1]).toBe('end');
+    }
+  });
+
+  it('taraf çelişkisi: "Test tarafına devam" / "Hekimin dediği tarafa devam"', () => {
+    const d = { ...base, side: 'R' as const, doctorSide: 'L' as const, warn: 'SIDE_CONFLICT' as const };
+    const sc = decisionScreen(d);
+    expect(ids(d)).toEqual(['decision-test-side', 'decision-doctor-side', 'decision-stop']);
+    expect(sc.options[0]!.label).toBe('Test tarafına devam (sağ)');
+    expect(sc.options[1]!.label).toBe('Hekimin dediği tarafa devam (sol)');
+  });
+
+  it('tetiklenmedi: bilinen tarafa "Yine de manevra yap"; yoksa taraf seçimi; iki tarafa sırayla ve öbür kanalın testi', () => {
+    expect(ids({ ...base, side: 'L', warn: 'NOT_TRIGGERED' })).toEqual(['decision-continue', 'decision-other', 'decision-both', 'decision-test-hc', 'decision-stop']);
+    expect(decisionScreen({ ...base, side: 'L', warn: 'NOT_TRIGGERED' }).options[0]!.label).toBe('Yine de manevra yap: sol taraf');
+    expect(ids({ ...base, side: null, warn: 'NOT_TRIGGERED' })).toEqual(['decision-R', 'decision-L', 'decision-both', 'decision-test-hc', 'decision-stop']);
+    // Yatay kanalda iki yöne BBQ önerilmez; öbür test arka kanal testi.
+    expect(values({ ...base, canal: 'HC', side: null, warn: 'NOT_TRIGGERED' })).toEqual(['go:R', 'go:L', 'test:PC', 'end']);
+  });
+
+  it('atipik süre: "Yine de devam et" uygulamanın tarafına; ekranda 112 bilgisi', () => {
+    const sc = decisionScreen({ ...base, side: 'R', warn: 'ATYPICAL_LONG' });
+    expect(sc.options[0]).toMatchObject({ value: 'go:R', testid: 'decision-continue', label: 'Yine de devam et: sağ taraf manevrası' });
+    expect(sc.lead).toMatch(/112/);
+  });
+
+  it('yatay kanal geçişi varsayımı söyler; arka kanalda eski tanı uyarısı geçişte okunur', () => {
+    expect(chainGateText({ canal: 'HC', side: 'L' }).text).toMatch(/Yatay kanal, sol taraf kabul ediyoruz; en sık biçim/);
+    expect(chainGateText({ canal: 'PC', side: 'R' }, 'Hekiminiz sol demişti.').text).toMatch(/^Hekiminiz sol demişti\. Şimdi sağ taraf/);
+    expect(nextSideGateText('L').text).toMatch(/sol taraf için manevrayı/);
+  });
+
+  it('erken tekrar ve kontrendikasyon uyarıları devam etmeyi söyler', () => {
+    expect(planWarn('early-retest', false, '15:03').text).toMatch(/15:03.*yine de yapabilirsiniz/);
+    expect(planWarn('early-retest', true, null).retestReady).toBe(true);
+    expect(planWarn('resolved-suggest', false, null).title).toBe('Düzelmiş görünüyor');
+    expect(contraWarnText(['Boyun sorunu'])).toMatch(/Boyun sorunu.*Devam ederseniz/);
+  });
+
+  it('yatay kanal hazırlığı: yastık başın altında; iki yana ve yüzüstü dönecek yer', () => {
+    const items = prepItems({ helper: false, semontOnly: false, semontAfterTests: false, hc: true });
+    expect(items[0]).toMatch(/başınızın altına/);
+    expect(items[0]).toMatch(/yüzüstü/);
+    expect(prepSpokenShort({ helper: true, semontOnly: false, semontAfterTests: false, hc: true })).toMatch(/Hastayı yatağın ortasına/);
   });
 });

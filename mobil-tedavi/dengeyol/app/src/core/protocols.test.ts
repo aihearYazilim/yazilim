@@ -49,8 +49,8 @@ describe('protokol bütünlüğü', () => {
 
 describe('tur 1 (D1): hasta modundaki protokollerde yardımcı ve kısa metinler', () => {
   const patientIds = ids.filter((id) => PROTOCOLS[id].patient !== 'no');
-  it('hasta modu protokolleri: Dix-Hallpike, Epley, Semont', () => {
-    expect(patientIds.sort()).toEqual(['dix-hallpike', 'epley', 'semont']);
+  it('hasta modu protokolleri: Dix-Hallpike, Epley, Semont; yatay kanal için sırtüstü baş çevirme ve BBQ roll (yeniden tasarım)', () => {
+    expect(patientIds.sort()).toEqual(['bbq-roll', 'dix-hallpike', 'epley', 'semont', 'supine-roll']);
   });
   it.each(patientIds)('%s: her adımda yardımcı başlığı/yönergesi/özeti ve hasta özeti var', (id) => {
     for (const side of ['R', 'L'] as const) {
