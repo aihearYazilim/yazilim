@@ -1390,7 +1390,7 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
     send(y, { type: 'vertigoToggle' });
     send(y, { type: 'pause' });
     expect(speakCues(y.cues).pop()!.text).toBe(
-      'Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Baş dönmesi geçtiyse ekrana bir kez dokunun.'
+      'Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Baş dönmesi geçtiyse ekrana bir kez dokunun. Boynunuz ağrıyorsa yavaşça oturun.'
     );
     expect(pauseSpeech(y.cfg, true, true)).toMatch(
       /^Duraklatıldı\. Devam için ekrana iki saniye basılı tutun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Boynunuz/
@@ -1652,12 +1652,14 @@ describe('tur 4 G1-4: sesli metin, duraklatma sesi, kısa seste seyrekleşme, y�
     for (const t of texts) expect(t, t).not.toMatch(/\d\s*(s|sn)(?![\p{L}\p{N}])/u);
   });
 
-  it('duraklatma sesi varsayılan kısa (eylem + varsa "bir kez dokunun"); ayrıntı yalnız tam biçimde', () => {
+  it('duraklatma sesi varsayılan kısa (eylem + varsa "bir kez dokunun" + boyun cümlesi); ayrıntı yalnız tam biçimde', () => {
     const x = sim('epley');
     send(x, { type: 'start' });
     send(x, { type: 'pause' });
-    expect(speakCues(x.cues).pop()!.text).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.');
-    expect(pauseSpeech(x.cfg, false, false)).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.');
+    expect(speakCues(x.cues).pop()!.text).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz ağrıyorsa yavaşça oturun.');
+    expect(pauseSpeech(x.cfg, false, false)).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz ağrıyorsa yavaşça oturun.');
+    // Telefon alındayken "Tekrar dinle" görülemez: boyun güvenlik cümlesi kısa seste de kalır (k07, tur 5).
+    expect(pauseSpeech({ ...x.cfg, helper: true }, false, false)).toMatch(/Hastanın boynu ağrıyorsa onu yavaşça oturtun\.$/);
     expect(pauseSpeech(x.cfg, false, true).startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz')).toBe(true);
     expect(pauseSpeech({ ...x.cfg, helper: true }, false, true)).toMatch(/"Bu pozisyona gelemiyor" düğmesine dokunun ve onaylayın\.$/);
     const c = sim('epley', 'clinician');

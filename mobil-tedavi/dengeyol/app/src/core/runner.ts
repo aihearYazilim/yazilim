@@ -751,7 +751,10 @@ export function startSpeechText(cfg: RunnerConfig, startNote?: string): string |
 export function pauseSpeech(cfg: RunnerConfig, vertigoActive: boolean, full: boolean): string {
   const vNote = vertigoActive ? ' Baş dönmesi geçtiyse ekrana bir kez dokunun.' : '';
   const head = `Duraklatıldı. Devam için ekrana iki saniye basılı tutun.${vNote}`;
-  if (!full) return pick(cfg, { patient: head, helper: head, clinician: 'Duraklatıldı.' });
+  // Kısa seste de güvenlik cümlesi kalır: telefon alındayken "Tekrar dinle" görülemez (k07, tur 5).
+  const neckP = ' Boynunuz ağrıyorsa yavaşça oturun.';
+  const neckH = ' Hastanın boynu ağrıyorsa onu yavaşça oturtun.';
+  if (!full) return pick(cfg, { patient: head + neckP, helper: head + neckH, clinician: 'Duraklatıldı.' });
   return pick(cfg, {
     patient: `${head} Boynunuz ağrıyorsa yavaşça oturabilirsiniz. Bu pozisyona gelemiyorsanız telefonu alıp "Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın.`,
     helper: `${head} Hastanın boynu ağrıyorsa onu yavaşça oturtabilirsiniz. Hasta bu pozisyona gelemiyorsa "Bu pozisyona gelemiyor" düğmesine dokunun ve onaylayın.`,
