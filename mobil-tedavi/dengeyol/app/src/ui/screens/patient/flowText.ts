@@ -3,6 +3,7 @@
  * Kullanıcı turu 3 (F2): sesli okuma kısalır (ayrıntı ekranda ve "Tekrar dinle"de), "Doğru mu?" onayında yanıt en üstte,
  * hazırlık maddeleri yakını modunda yardımcıya göre.
  */
+import { SAFETY_STOP_TEXT } from '../../../core/runner';
 import type { RedFlagQuestion } from '../../../core/safety';
 
 // ---- Seçenekli sorular: varsayılan sesli biçim kısa, "Tekrar dinle" tam -----------------------------------------------
@@ -133,6 +134,16 @@ export function prepSpokenShort({ helper, semontOnly }: PrepTextInput): string {
   return `Hazırlık. ${bed} Sesi açın. ${PREP_READY}`;
 }
 
+/**
+ * Hazırlıktaki işitme cihazı notu. Yakını modunda (kullanıcı turu 4, k02) yardımcıya göre: yönergeler zaten yardımcıya
+ * söylenir; "bir yakınınızla yapın" yakını olan kişiye söylenmez.
+ */
+export function prepHearingText(helper: boolean): string {
+  return helper
+    ? 'Hastanın işitme cihazı varsa: yönergeler size söylenir, hastanın duyması gerekmez. Cihaz yatarken kayabilir; sabitleyin. Sesi kaçırırsanız titreşim ve bip sesleri hastayı ne zaman hareket ettireceğinizi bildirir.'
+    : 'İşitme cihazı kullanıyorsanız: telefonla Bluetooth bağlantısını kontrol edin ve sesi deneyin. Cihaz yatarken kayabilir; sabitleyin ya da bir yakınınızla yapın. Sesi kaçırırsanız titreşim ve bip sesleri ne zaman hareket edeceğinizi bildirir.';
+}
+
 /** "Tekrar dinle": bütün maddeler. */
 export function prepSpokenFull(input: PrepTextInput): string {
   return `Hazırlık. ${prepItems(input).join(' ')} ${PREP_READY}`;
@@ -157,3 +168,29 @@ export function afterManeuverSpoken(sev: 'none' | 'mild', time: string, night: b
 /** Kusma/şiddetli bulantı yanıtından sonraki kısa sesli metin (112 uyarısı kalır). */
 export const AFTER_SEVERE_SPOKEN =
   "Bugün manevrayı tekrarlamayın. Oturun, küçük yudumlarla su için. Konuşma bozukluğu, güçsüzlük, çift görme ya da şiddetli baş ağrısı olursa 112'yi arayın.";
+
+// ---- Güvenlik durdurması bitiş ekranı, yakını modu -------------------------------------------------------------------
+
+/**
+ * Güvenlik durdurması bitiş metinlerinin (core/runner `SAFETY_STOP_TEXT`) yakını modundaki karşılıkları (kullanıcı turu 4,
+ * k02): durdurma sesi yardımcıya konuşuyordu ("Hastayı… oturtun"), ekran metni hastaya ("dönün… oturun"). Yalnız hitap
+ * değişir; durdurma kuralı, yönlendirme ve kilit aynıdır.
+ */
+export const SAFETY_STOP_TEXT_HELPER: Record<keyof typeof SAFETY_STOP_TEXT, string> = {
+  VERTIGO_TOO_LONG:
+    "Hastanın baş dönmesi 2 dakikadan uzun sürdü ya da geçtiği işaretlenmedi. Bu, tipik arka kanal BPPV'ye uymuyor. Hastanın hekimine ya da odyoloğuna başvurun. Konuşma bozukluğu, güçsüzlük ya da çift görme olursa hemen 112'yi arayın.",
+  POSITION_UNREACHABLE:
+    'Manevranın bir pozisyonuna gelinemedi (örneğin hastanın başı yeterince geriye sarkamadı ya da çevrilemedi). Zorlayarak yeniden denemeyin. Hastanın hekimine ya da odyoloğuna başvurun; boyun ya da bel hareketi kısıtlıysa manevranın değiştirilmiş biçimini ya da kendi gözetiminde yapılmasını önerebilir.',
+  WRONG_SIDE:
+    'Manevrada hasta yanlış tarafa döndü (döndürüldü) ve doğru yana getirilemedi (örneğin yüzüstünden geçilmeye çalışıldı). Bu, hastanın boyun ya da bel sorunu olduğu anlamına gelmez. Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun. Bugün yeniden denemeden önce hastanın hekimine ya da odyoloğuna danışın; manevrayı birlikte gözden geçirsinler.'
+};
+
+/**
+ * Bitiş ekranında gösterilecek güvenlik durdurması metni: yakını modunda `SAFETY_STOP_TEXT` metninin yardımcıya göre
+ * yazılmış karşılığı, değilse metnin kendisi. Metin `SAFETY_STOP_TEXT` değerlerinden biri değilse olduğu gibi döner.
+ */
+export function safetyStopTextFor(text: string, helper: boolean): string {
+  if (!helper) return text;
+  const key = (Object.keys(SAFETY_STOP_TEXT) as (keyof typeof SAFETY_STOP_TEXT)[]).find((k) => SAFETY_STOP_TEXT[k] === text);
+  return key ? SAFETY_STOP_TEXT_HELPER[key] : text;
+}

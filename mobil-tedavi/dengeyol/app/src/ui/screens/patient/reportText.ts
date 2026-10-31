@@ -7,7 +7,7 @@ import { wrapDeg } from '../../../core/geometry';
 import { capitalizeTr, type ProtocolId, PROTOCOLS, resolveProtocol, type Side, sideName, type StepDef } from '../../../core/protocols';
 import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
 import { clampDose, DEFAULT_DOSE, type DoseLimits, localDayKey, RED_FLAGS, type SideDecision } from '../../../core/safety';
-import { formatDate, formatDateTimeYear, TREATMENT_WINDOW_DAYS } from '../../../state/episodes';
+import { formatDate, formatDateTimeYear, lastEpisodeOutcome, TREATMENT_WINDOW_DAYS } from '../../../state/episodes';
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from '../../../state/types';
 import { consentLine } from './consent';
 
@@ -80,6 +80,8 @@ function readReach(r: StepRecord): Reach | null {
 /**
  * Gelinemeyen adımda ulaşılan en iyi açının kısa metni: "baş en çok ~8° geriye sarkabildi (hedef 15–40°)",
  * "dönüş hedefe ~25° uzak kaldı (izin ±10°)". Kayıtta açı yoksa ya da adım bilinmiyorsa null.
+ * Yanlış tarafta kalınarak durdurulan adımda (`wrongSideStop`) dönüş uzaklığı yazılmaz (kullanıcı turu 4, k02): yanlış
+ * taraftan (örneğin yüzüstünden geçilerek) gelinen açı kabul edilmediği için "~90° uzak kaldı" yanıltıcıdır.
  */
 export function reachText(r: StepRecord, step: StepDef | undefined): string | null {
   const reach = readReach(r);
@@ -99,7 +101,7 @@ export function reachText(r: StepRecord, step: StepDef | undefined): string | nu
       parts.push(`baş eğimi ~${phi}° (hedef ${t.phiMin}–${t.phiMax}°)`);
     }
   }
-  if (reach.theta !== null) {
+  if (reach.theta !== null && !r.wrongSideStop) {
     const err = Math.round(Math.abs(wrapDeg(reach.theta - t.theta)));
     if (err > t.thetaTol) parts.push(`dönüş hedefe en yakın ~${err}° uzak kaldı (izin ±${t.thetaTol}°)`);
   }
@@ -145,6 +147,7 @@ export function unreachableStopDetail(
   const parts = [`${where}, ${kind === 'maneuver' && idx >= 0 ? `${idx + 1}. adım ` : ''}"${r.title}"${kind === 'maneuver' ? '' : ' adımı'}`];
   const details: string[] = [];
   if (r.wrongSide) details.push('önce yanlış tarafa dönüldü, doğru yana gelinemedi');
+  if (r.wrongSideStop) details.push('yanlış taraftan geçilerek gelinen açı kabul edilmez');
   const reach = reachText(r, step);
   if (reach) details.push(reach);
   else if (!r.wrongSide) details.push('ulaşılan açı kaydedilmedi');
@@ -517,8 +520,32 @@ export function periodEpisodes(d: AppData, now: number, period: ReportPeriod = r
     .sort((a, b) => a.startedAt - b.startedAt);
 }
 
-/** Dönemin tek satırlık sonucu: "2 atak · 4 manevra · son sabah testi negatif" (+ yönlendirme sayısı). */
-export function periodSummaryLine(eps: Episode[]): string {
+/**
+ * Dönemin son atağının sonucu, satırın başı (kullanıcı turu 4, k09): "Son atak (25 Ekim): hekime yönlendirildi — <neden>".
+ * Yönlendirmede neden de yazılır (hekim bir bakışta görsün). Atak yoksa null.
+ */
+export function periodLastOutcomeText(eps: readonly Episode[]): string | null {
+  const lead = lastEpisodeOutcome(eps);
+  if (!lead) return null;
+  const last = [...eps].sort((a, b) => a.startedAt - b.startedAt)[eps.length - 1]!;
+  const note = last.status === 'referred' || last.status === 'emergency' ? endNoteShortText(last) : '';
+  return capitalizeTr(`${lead}${note ? ` — ${note}` : ''}`);
+}
+
+/**
+ * Kapanış nedeninin kısa hâli (satır başında): güvenlik sorusunda sorunun kısa adı, diğerlerinde cümlenin ilk bölümü
+ * (";" sonrası, örneğin "zorlamadan hekime yönlendirildi", zaten sonuçta yazılı).
+ */
+function endNoteShortText(e: Episode): string {
+  const n = e.endNote?.trim() ?? '';
+  const ids = n.split(/\s*,\s*/);
+  const flags = ids.map((id) => RED_FLAGS.find((q) => q.id === id));
+  if (n && flags.every((q) => q)) return `güvenlik sorusu: ${flags.map((q) => q!.label).join(', ')}`;
+  return episodeEndNoteText(e).split(';')[0]!.trim();
+}
+
+/** Dönemin sayıları: "2 atak · 4 manevra · son sabah testi negatif" (+ yönlendirme sayısı). */
+export function periodCountsLine(eps: readonly Episode[]): string {
   if (eps.length === 0) return 'Bu dönemde kayıtlı atak yok';
   const parts: string[] = [`${eps.length} atak`];
   const mans = eps.flatMap((e) => e.maneuvers.filter(counted));
@@ -536,6 +563,14 @@ export function periodSummaryLine(eps: Episode[]): string {
   const referred = eps.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
   if (referred > 0) parts.push(`${referred} hekime yönlendirme`);
   return parts.join(' · ');
+}
+
+/**
+ * Dönemin tek satırlık sonucu: önce son atağın sonucu, sonra sayılar (kullanıcı turu 4, k09): "Son atak (25 Ekim): hekime
+ * yönlendirildi — … · 2 atak · 4 manevra · son sabah testi negatif · 1 hekime yönlendirme".
+ */
+export function periodSummaryLine(eps: readonly Episode[]): string {
+  return [periodLastOutcomeText(eps), periodCountsLine(eps)].filter(Boolean).join(' · ');
 }
 
 /** Dönem raporunun doz satırı: dönemin son atağının (yoksa bugünün) dozu. */

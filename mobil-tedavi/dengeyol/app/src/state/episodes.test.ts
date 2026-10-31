@@ -13,6 +13,7 @@ import {
   rememberAnswered,
   rxPeriodEpisodes,
   rxPeriodSummary,
+  lastEpisodeOutcome,
   isNightTime,
   nextAction,
   nextMorning,
@@ -433,10 +434,18 @@ describe('reçete dönemi raporu (kullanıcı turu 3, k09)', () => {
       maneuvers: [man(t2), man(t2 + 1000, false)],
       retests: [{ at: t2 + 20 * 3600_000, kind: 'morning', side: 'L', vertigo: false, latencySec: null, durationSec: null }]
     });
-    expect(rxPeriodSummary([e1, e2])).toBe('2 atak · 3 manevra (+1 yarım) · son sabah testi negatif');
-    expect(rxPeriodSummary([e1])).toBe('1 atak · 2 manevra · son tekrar testi pozitif (baş dönmesi başladı)');
-    expect(rxPeriodSummary([ep({ status: 'referred', maneuvers: [man(t1)] })])).toBe(
-      '1 atak · 1 manevra · tekrar testi yapılmadı · 1 atak hekime ya da acile yönlendirildi'
+    // Önce son atağın sonucu (kullanıcı turu 4, k09), sonra sayılar.
+    expect(rxPeriodSummary([e1, e2])).toBe('son atak (8 Ekim): düzeldi · 2 atak · 3 manevra (+1 yarım) · son sabah testi negatif');
+    expect(rxPeriodSummary([e1])).toBe('son atak (2 Ekim): düzeldi · 1 atak · 2 manevra · son tekrar testi pozitif (baş dönmesi başladı)');
+    expect(rxPeriodSummary([ep({ status: 'referred', startedAt: t1, maneuvers: [man(t1)] })])).toBe(
+      'son atak (2 Ekim): hekime yönlendirildi · 1 atak · 1 manevra · tekrar testi yapılmadı · 1 atak hekime ya da acile yönlendirildi'
     );
+    // Son sabah testi negatif olsa da dönemin son durumu yönlendirmeyse satır onunla başlar.
+    const e3 = ep({ id: 'c', status: 'referred', startedAt: at('2026-10-10T10:00:00') });
+    const line = rxPeriodSummary([e1, e2, e3]);
+    expect(line.startsWith('son atak (10 Ekim): hekime yönlendirildi')).toBe(true);
+    expect(line.indexOf('hekime yönlendirildi')).toBeLessThan(line.indexOf('son sabah testi negatif'));
+    expect(lastEpisodeOutcome([])).toBeNull();
+    expect(lastEpisodeOutcome([e3, e1])).toBe('son atak (10 Ekim): hekime yönlendirildi');
   });
 });

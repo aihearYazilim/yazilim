@@ -1,5 +1,5 @@
 import { ReportQr } from './ReportQr';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
 import { RED_FLAGS } from '../../../core/safety';
@@ -18,9 +18,10 @@ import {
   maneuverTags,
   PERIOD_REPORT_PATH,
   periodDoseText,
+  periodCountsLine,
   periodEpisodes,
+  periodLastOutcomeText,
   periodReportPlainText,
-  periodSummaryLine,
   priorDiagnosisText,
   profileRxCode,
   reportOriginText,
@@ -114,14 +115,17 @@ export function EpisodeReport() {
 
 /**
  * Reçete dönemindeki (yoksa son 14 gün) bütün ataklar tek raporda (kullanıcı turu 3, k09): başta tek satırlık sonuç
- * ("2 atak · 4 manevra · son sabah testi negatif"), sonra her atak sırayla. Hekime giden düz metin de aynı sırada.
+ * (kullanıcı turu 4: önce son atağın sonucu, sonra "2 atak · 4 manevra · son sabah testi negatif"), muayenede hekime
+ * gösterilecek QR kartı (dönemin atakları), sonra her atak sırayla. Hekime giden düz metin de aynı sırada.
  */
 export function PeriodReport() {
   const d = useData();
   const p = d.patient;
-  const now = Date.now();
-  const period = reportPeriod(d, now);
-  const eps = periodEpisodes(d, now, period);
+  // Sayfa açıkken sabit: QR kodu her çizimde yeniden üretilmesin (ReportQr `episodes`/`now` değişince yeniden kodlar).
+  const [now] = useState(() => Date.now());
+  const period = useMemo(() => reportPeriod(d, now), [d, now]);
+  const eps = useMemo(() => periodEpisodes(d, now, period), [d, now, period]);
+  const lastOutcome = periodLastOutcomeText(eps);
   const head = rxHeaderLine(p?.prescription, profileRxCode(p));
   const validity = p?.prescription ? rxValidityText(p.prescription, now) : null;
   const consent = consentLine(p);
@@ -136,8 +140,14 @@ export function PeriodReport() {
               <strong>{head}</strong>
             </p>
           )}
-          <p className="lead" data-testid="period-summary">
-            <strong>{periodSummaryLine(eps)}</strong>
+          {/* Önce son atağın sonucu (kullanıcı turu 4, k09), sonra sayılar; düz metindeki "Sonuç:" satırıyla aynı sıra. */}
+          {lastOutcome && (
+            <p className="lead" data-testid="period-last">
+              <strong>{lastOutcome}</strong>
+            </p>
+          )}
+          <p className={lastOutcome ? undefined : 'lead'} data-testid="period-summary">
+            <strong>{periodCountsLine(eps)}</strong>
           </p>
           <p className="small muted">Tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}</p>
           <dl className="kv">
@@ -161,6 +171,8 @@ export function PeriodReport() {
             )}
           </dl>
         </div>
+        {/* Muayenede hekimin telefonuna internetsiz aktarım: dönem raporundan gelen hasta da QR'ı burada bulsun (k09). */}
+        <ReportQr data={d} episodes={eps} now={now} />
         {eps.length === 0 && (
           <div className="card soft center">
             <p className="muted">Bu dönemde kayıtlı atak yok.</p>

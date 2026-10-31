@@ -29,28 +29,20 @@ import { HapticLegend } from '../../components/HapticLegend';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { CONSENT_OPTIONS, CONSENT_OPTIONS_GIST, CONSENT_RISKS, CONSENT_RISKS_GIST, CONSENT_VERSION, consentStatement } from './consent';
+import {
+  CONTRA_LISTEN_LABEL,
+  contraHearingText,
+  contraSpeech,
+  contraSpeechShort,
+  dxRecentAnsweredText,
+  noneLabel
+} from './onboardingText';
 import { RxPaste, UrgencyLadder } from './PatientHome';
 
 type Stage = 'info' | 'dx' | 'contra' | 'gate';
 type DxWhen = NonNullable<PatientProfile['dxWhen']>;
 
-const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci', 'Altıncı', 'Yedinci', 'Sekizinci', 'Dokuzuncu', 'Onuncu', 'On birinci', 'On ikinci', 'On üçüncü', 'On dördüncü'];
-
-const noneLabel = (helper: boolean) => (helper ? 'Hiçbiri hastaya uymuyor' : 'Hiçbiri bana uymuyor');
-
-/**
- * Uygunluk listesinin sesli metni: kısa başlıklar madde madde ("uyuyorsa işaretleyin"); ayrıntılar ekranda (k05).
- * Ekrandaki her maddenin başında da aynı kısa ad kalın yazılır. Yardımcı modunda metin yardımcıya göredir (k02).
- */
-export function contraSpeech(helper: boolean): string {
-  return [
-    helper
-      ? 'Hasta için uygun mu? Aşağıdaki durumlardan hastaya uyan varsa işaretleyin; emin olmadığınız bir madde varsa da işaretleyin ve hastanın doktoruna sorun.'
-      : 'Sizin için uygun mu? Aşağıdaki durumlardan size uyan varsa işaretleyin; emin olmadığınız bir madde varsa da işaretleyin ve doktorunuza sorun.',
-    ...CONTRAINDICATIONS.map((c, i) => `${ORDINALS[i] ?? `${i + 1}.`} madde: ${c.label}.`),
-    `Hiçbiri uymuyorsa en alttaki "${noneLabel(helper)}" seçeneğini işaretleyin. Ayrıntılar ekranda yazıyor.`
-  ].join(' ');
-}
+export { contraSpeech, contraSpeechShort } from './onboardingText';
 export const CONTRA_SPEECH = contraSpeech(false);
 
 /** Seçili hızla örnek yönerge okur (kullanıcı dokunuşu içinde çağrılır: iOS ses kilidi). */
@@ -106,6 +98,9 @@ export function Onboarding() {
   const [dxWhen, setDxWhen] = useState<DxWhen | null>(
     rx ? 'date' : recentExpired ? 'older' : (d.patient?.dxWhen ?? (d.patient?.dxDate ? 'date' : null))
   );
+  // "Son 2 hafta içinde" seçiliyse kaydedilecek yanıt tarihi (save ile aynı kural): süresi dolmamış önceki yanıtın tarihi,
+  // yoksa bugün.
+  const recentAt = dxWhen === 'recent' ? (recentAnsweredAt !== null && !recentExpired ? recentAnsweredAt : Date.now()) : null;
   const today = localDayKey(Date.now());
   const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(dxDate) && dxDate <= today;
   const dxWhenOk = dxWhen === 'recent' || dxWhen === 'older' || (dxWhen === 'date' && dateOk);
@@ -122,10 +117,11 @@ export function Onboarding() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [stage]);
-  // Uygunluk listesi açılınca bir kez sesli okunur (k05); adımdan çıkınca okuma kesilir.
+  // Uygunluk adımı açılınca kısa giriş bir kez sesli okunur (k05; kullanıcı turu 4, k01: tam liste "Yavaş" seste ~90 s
+  // sürüyordu); tam liste "Tekrar dinle (bütün maddeler)"de. Adımdan çıkınca okuma kesilir.
   useEffect(() => {
     if (stage !== 'contra') return;
-    speech.speak(contraSpeech(helperWording), 'high');
+    speech.speak(contraSpeechShort(helperWording), 'high');
     return () => speech.cancel();
     // Yalnız adım açılınca bir kez okunur (yardımcı seçimi bu adımda değişmez).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -241,7 +237,9 @@ export function Onboarding() {
             Devam
           </button>
           {contra.length === 0 && !none && (
-            <p className="small muted center">Size uyanları işaretleyin; hiçbiri uymuyorsa en alttaki "Hiçbiri bana uymuyor"u seçin.</p>
+            <p className="small muted center">
+              {helperWording ? 'Hastaya uyanları' : 'Size uyanları'} işaretleyin; hiçbiri uymuyorsa en alttaki "{noneLabel(helperWording)}" seçeneğini seçin.
+            </p>
           )}
           </>
         ) : (
@@ -368,7 +366,8 @@ export function Onboarding() {
               const v = !helperSetup;
               setHelperSetup(v);
               // Manevra ekranları da yardımcıya göre konuşsun (sonra hazırlık ekranında ya da Ayarlar'da değiştirilebilir).
-              store.update((x) => ({ ...x, settings: { ...x.settings, assist: v ? 'helper' : 'self' } }));
+              // Yakını seçimi kaldırılınca bu adımda sunulan "ekranı çevir" de kalkar.
+              store.update((x) => ({ ...x, settings: { ...x.settings, assist: v ? 'helper' : 'self', ...(v ? {} : { screenFlip: false }) } }));
             }}
             data-testid="ob-helper"
           >
@@ -378,6 +377,23 @@ export function Onboarding() {
               <span className="sub">Manevrada yönergeler size (yardımcıya) söylenir; hastaya yalnız kıpırdamaması söylenir.</span>
             </span>
           </button>
+          {/* Kullanıcı turu 4 (k02): başucunda durma seçimi yakını seçilince burada da sorulur (hazırlık ekranındakiyle aynı ayar). */}
+          {helperSetup && (
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={!!d.settings.screenFlip}
+              className="choice check"
+              onClick={() => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: !x.settings.screenFlip } }))}
+              data-testid="ob-flip"
+            >
+              <span className="dot" />
+              <span>
+                Hastanın başucunda duracağım (ekranı bana göre çevir)
+                <span className="sub">Manevrada ekran size göre ters döner. Sonra hazırlık ekranında da değiştirebilirsiniz.</span>
+              </span>
+            </button>
+          )}
           <button
             type="button"
             role="checkbox"
@@ -453,11 +469,18 @@ export function Onboarding() {
                     {
                       value: 'recent',
                       label: 'Son 2 hafta içinde',
-                      // Düzenlemede yanıtın verildiği gün (k03); ilk kurulumda sınırdaki gün için ipucu (k01).
-                      sub:
-                        recentAnsweredAt !== null && !recentExpired
-                          ? `${formatDate(recentAnsweredAt)} tarihinde seçildi`
-                          : 'Hekiminiz "2 hafta önce" dediyse de bunu seçin.'
+                      // Sınırdaki gün için ipucu (k01). Seçiliyse yanıtın verildiği gün ve yakın sayıldığı son gün, süre
+                      // dolmadan da (kullanıcı turu 4, k03); bu oturumda seçildiyse bugün.
+                      sub: (
+                        <>
+                          Hekiminiz "2 hafta önce" dediyse de bunu seçin.
+                          {recentAt !== null && (
+                            <span style={{ display: 'block' }} data-testid="ob-dx-recent-at">
+                              {dxRecentAnsweredText(recentAt, Date.now())}
+                            </span>
+                          )}
+                        </>
+                      )
                     },
                     { value: 'older', label: 'Daha önce', sub: '2 haftadan uzun süre önce' },
                     { value: 'date', label: 'Tarihi biliyorum' }
@@ -502,13 +525,10 @@ export function Onboarding() {
               ? 'Aşağıdakilerden hastaya uyanları işaretleyin. Emin olmadığınız bir madde varsa işaretleyin ve hastanın doktoruna sorun.'
               : 'Aşağıdakilerden size uyanları işaretleyin. Emin olmadığınız bir madde varsa işaretleyin ve doktorunuza sorun.'}
           </p>
-          <ListenAgain text={contraSpeech(helperWording)} testid="ob-contra-listen" />
-          <div className="notice info small">
+          <ListenAgain text={contraSpeech(helperWording)} testid="ob-contra-listen" label={CONTRA_LISTEN_LABEL} />
+          <div className="notice info small" data-testid="ob-contra-hearing">
             <Icon name="info" />
-            <span>
-              İşitme kaybınız varsa da kullanabilirsiniz: işitme cihazınızı ya da kulaklığınızı Bluetooth ile telefona bağlayın, sesi en yükseğe alın ya da bir
-              yakınınızla yapın. Yazılar ekranda da görünür; titreşim ve bip sesleri ne zaman hareket edeceğinizi bildirir.
-            </span>
+            <span>{contraHearingText(helperWording)}</span>
           </div>
           <details className="card soft small" data-testid="ob-haptics">
             <summary>Titreşimleri tanı</summary>

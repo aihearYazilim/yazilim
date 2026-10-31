@@ -334,14 +334,15 @@ export const CONTRAINDICATIONS: Contraindication[] = [
 
 /**
  * Tek başına engel OLMAYAN durumlar (kurulum listesinin altında ve kapı ekranında). Kan sulandırıcı kullanan hastaya her
- * atakta ayrıca kanama/baş çarpması kırmızı bayrağı sorulur (RED_FLAGS).
+ * atakta ayrıca kanama/baş çarpması kırmızı bayrağı sorulur (RED_FLAGS). Tansiyon ilacı kullanana (kullanıcı turu 4, k07)
+ * ortostatik soru ("ayağa kalkınca göz kararması") her atakta durdurabileceği önceden söylenir; kural değişmez.
  */
 export const CONTRA_NOT_BLOCKING_TEXT =
-  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Kan sulandırıcı kullanıyorsanız her atakta ayrıca kanama ve başınızı çarpma sorulur. Düşmemek için manevraları yatakta yapın.';
+  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Kan sulandırıcı kullanıyorsanız her atakta ayrıca kanama ve başınızı çarpma sorulur. Tansiyon ilacı kullanıyorsanız: her atakta ayağa kalkınca göz kararması da sorulur; varsa uygulama manevrayı durdurur ve hekime yönlendirir. Bunu hekiminize önceden sorun. Düşmemek için manevraları yatakta yapın.';
 
 /** CONTRA_NOT_BLOCKING_TEXT'in yardımcı modu (hasta adına yakını kuruyor). */
 export const CONTRA_NOT_BLOCKING_TEXT_HELPER =
-  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Hasta kan sulandırıcı kullanıyorsa her atakta ayrıca kanama ve başını çarpma sorulur. Düşmemesi için manevraları yatakta yapın.';
+  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Hasta kan sulandırıcı kullanıyorsa her atakta ayrıca kanama ve başını çarpma sorulur. Hasta tansiyon ilacı kullanıyorsa: her atakta ayağa kalkınca göz kararması da sorulur; varsa uygulama manevrayı durdurur ve hekime yönlendirir. Bunu hastanın hekimine önceden sorun. Düşmemesi için manevraları yatakta yapın.';
 
 /** Kurulum listesindeki madde metni: yardımcı modunda yardımcıya göre yazılmış hâli. */
 export function contraText(c: Contraindication, helper: boolean): string {

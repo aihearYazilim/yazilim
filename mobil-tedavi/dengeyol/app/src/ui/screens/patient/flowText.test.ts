@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SAFETY_STOP_TEXT, type StepRecord, stopTextFor } from '../../../core/runner';
 import { RED_FLAGS } from '../../../core/safety';
 import {
   AFTER_SEVERE_SPOKEN,
@@ -8,10 +9,13 @@ import {
   CONFIRM_GAP_PX,
   confirmBackPad,
   confirmPlacement,
+  prepHearingText,
   prepItems,
   prepSpokenFull,
   prepSpokenShort,
   redFlagConfirmHeadline,
+  SAFETY_STOP_TEXT_HELPER,
+  safetyStopTextFor,
   verticalOverlap
 } from './flowText';
 
@@ -132,5 +136,33 @@ describe('manevra sonu sesli metni ≤ ~10 s (kullanıcı turu 3, k01, k05)', ()
   it('kusma yanıtında 112 uyarısı seste kalır', () => {
     expect(AFTER_SEVERE_SPOKEN).toMatch(/112/);
     expect(AFTER_SEVERE_SPOKEN).toMatch(/tekrarlamayın/);
+  });
+});
+
+describe('yakını modunda hazırlık işitme notu ve durdurma bitiş ekranı (kullanıcı turu 4, k02)', () => {
+  it('işitme cihazı notu yardımcıya göre; "bir yakınınızla yapın" denmez', () => {
+    expect(prepHearingText(true)).toMatch(/^Hastanın işitme cihazı varsa/);
+    expect(prepHearingText(true)).not.toMatch(/yakınınızla|kullanıyorsanız/);
+    expect(prepHearingText(false)).toMatch(/^İşitme cihazı kullanıyorsanız.*bir yakınınızla yapın/);
+  });
+  it('yanlış taraf bitiş ekranı yakını modunda "Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun"', () => {
+    const recs = [{ unreachable: true, wrongSideStop: true } as unknown as StepRecord];
+    const base = stopTextFor('POSITION_UNREACHABLE', recs);
+    expect(base).toBe(SAFETY_STOP_TEXT.WRONG_SIDE);
+    const helper = safetyStopTextFor(base, true);
+    expect(helper).toBe(SAFETY_STOP_TEXT_HELPER.WRONG_SIDE);
+    expect(helper).toMatch(/Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun/);
+    expect(helper).toMatch(/boyun ya da bel sorunu olduğu anlamına gelmez/);
+    expect(helper).not.toMatch(/dönün|oturun\b/);
+    // Hasta modunda metin değişmez.
+    expect(safetyStopTextFor(base, false)).toBe(base);
+  });
+  it('diğer güvenlik durdurmaları da yakını modunda hastaya göre; bilinmeyen metin aynen döner', () => {
+    for (const k of Object.keys(SAFETY_STOP_TEXT) as (keyof typeof SAFETY_STOP_TEXT)[]) {
+      expect(safetyStopTextFor(SAFETY_STOP_TEXT[k], true)).toBe(SAFETY_STOP_TEXT_HELPER[k]);
+      expect(SAFETY_STOP_TEXT_HELPER[k]).toMatch(/[Hh]asta/);
+    }
+    expect(SAFETY_STOP_TEXT_HELPER.VERTIGO_TOO_LONG).toMatch(/112/);
+    expect(safetyStopTextFor('başka metin', true)).toBe('başka metin');
   });
 });

@@ -16,11 +16,16 @@ import { Screen } from '../../components/Screen';
 const RX_TRUST_TEXT =
   'Bu reçeteyi yalnız hekiminiz ya da odyoloğunuz size ya da yakınınıza kendisi verdiyse (QR kod ya da bağlantı) kabul edin. Uygulama reçeteyi kimin hazırladığını denetleyemez; başka yerden gelen bir reçeteyi kabul etmeyin.';
 
+/** Reçete kartındaki tanı satırı; sesli metinle aynı sözcükler ("kristal oynaması"), taraf büyük harfle. */
+export function rxDiagnosisText(p: Pick<Prescription, 'side'>): string {
+  return `${sideName(p.side).toLocaleUpperCase('tr-TR')} kulak — arka kanal kristal oynaması (BPPV)`;
+}
+
 /** Reçete kartının sesli metni (açılınca bir kez okunur; "Tekrar dinle" ile yeniden). */
 export function rxCardSpeech(p: Prescription, o: { expired: boolean; future: boolean; contraLabels: string[] }): string {
   const parts = [
     'Ev manevrası reçetesi.',
-    `Tanı: ${sideName(p.side)} arka kanal kristal oynaması.`,
+    `Tanı: ${sideName(p.side)} kulak, arka kanal kristal oynaması.`,
     `Manevra: ${p.maneuver === 'epley' ? 'Epley' : 'Semont'}. Günde en çok ${p.perDay} kez, en çok ${p.days} gün.`
   ];
   const label = rxValidityLabel(p);
@@ -108,7 +113,8 @@ export function PrescriptionImport() {
             </>
           )}
           <dt>Tanı</dt>
-          <dd>{sideName(p.side).toLocaleUpperCase('tr-TR')} arka kanal BPPV</dd>
+          {/* Ekran da sesle aynı sözcükleri kullanır (kullanıcı turu 4, k05): "SAĞ kulak — arka kanal kristal oynaması (BPPV)". */}
+          <dd data-testid="rx-dx">{rxDiagnosisText(p)}</dd>
           <dt>Manevra</dt>
           <dd>{p.maneuver === 'epley' ? 'Epley' : 'Semont'}</dd>
           <dt>Doz</dt>

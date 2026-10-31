@@ -128,6 +128,9 @@ describe('hasta akışı duman testi (kullanıcı turu 3, F2)', () => {
     expect(prep.textContent).not.toMatch(/alnınıza/);
     expect(byTestId('prep-haptic-legend')!.querySelector('[data-testid="haptic-legend"]')).not.toBeNull();
     expect(byTestId('helper-card')).not.toBeNull();
+    // İşitme cihazı notu da yardımcıya göre (kullanıcı turu 4, k02).
+    expect(byTestId('prep-hearing')!.textContent).toMatch(/Hastanın işitme cihazı varsa/);
+    expect(byTestId('prep-hearing')!.textContent).not.toMatch(/bir yakınınızla/);
     expect(byTestId('prep-ready')).not.toBeNull();
   });
 

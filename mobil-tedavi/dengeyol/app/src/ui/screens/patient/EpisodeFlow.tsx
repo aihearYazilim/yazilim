@@ -70,6 +70,7 @@ import { BedSetup } from '../Illustrations';
 import { speech } from '../../../platform/speech';
 import { unlockAudio } from '../../../platform/feedback';
 import { useMotion } from '../../../platform/MotionContext';
+import { PhoneLiftDetector } from './phoneLift';
 import { keepAwake, releaseAwake } from '../../../platform/wakeLock';
 import { DoctorClearance, ReferralReason, UrgencyLadder } from './PatientHome';
 import { haptics } from '../../../platform/haptics';
@@ -83,10 +84,12 @@ import {
   CONFIRM_GAP_PX,
   confirmBackPad,
   confirmPlacement,
+  prepHearingText,
   prepItems,
   prepSpokenFull,
   prepSpokenShort,
   redFlagConfirmHeadline,
+  safetyStopTextFor,
   type SpokenOption
 } from './flowText';
 
@@ -625,7 +628,7 @@ export function EpisodeFlow() {
       }));
     } else updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: now, endNote: 'POSITION_UNREACHABLE', unreachableAt: where, stopDetail }));
     // Gerekçe kayda göre (boyun/bel kısıtı ya da yanlış tarafta kalma) ve nerede durulduğu (ulaşılan açı).
-    setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: `${stopTextFor('POSITION_UNREACHABLE', recs)} Durulan yer: ${stopDetail}.`, testid: 'end-unreachable' });
+    setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: `${safetyStopTextFor(stopTextFor('POSITION_UNREACHABLE', recs), store.get().settings.assist === 'helper')} Durulan yer: ${stopDetail}.`, testid: 'end-unreachable' });
   };
 
   const onSideRunExit = (o: RunnerOutcome, order: Side[], results: SideTestResult[]) => {
@@ -731,7 +734,7 @@ export function EpisodeFlow() {
     } else if (o.phase === 'safetyStop') {
       const ep = activeEpisode(store.get());
       if (ep && mode !== 'practice') updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'VERTIGO_TOO_LONG' }));
-      setStage({ k: 'end', tone: 'warn', title: 'Manevra durduruldu', text: SAFETY_STOP_TEXT.VERTIGO_TOO_LONG, testid: 'end-safety' });
+      setStage({ k: 'end', tone: 'warn', title: 'Manevra durduruldu', text: safetyStopTextFor(SAFETY_STOP_TEXT.VERTIGO_TOO_LONG, store.get().settings.assist === 'helper'), testid: 'end-safety' });
     } else if (o.state.stopReason === 'USER_FEELS_UNWELL') {
       setStage({
         k: 'end',
@@ -1760,17 +1763,22 @@ function RedFlagConfirm({ q, onConfirm, onBack }: { q: RedFlagQuestion; onConfir
   );
 }
 
-/** "Telefonu alın" cümlesi bittikten bu kadar sonra soru kendiliğinden okunur (dokunulmadıysa). */
-const DEFER_READ_AFTER_MS = 6000;
+/**
+ * "Telefonu alın" cümlesi bittikten bu kadar sonra soru kendiliğinden okunur (dokunulmadıysa, telefonun alındığı
+ * sezilmediyse). Kullanıcı turu 4 (k01): 6 s'de, telefonu alıp hemen yanıtlayan kişi soruyu hiç duymuyordu.
+ */
+const DEFER_READ_AFTER_MS = 3500;
 /** "Telefonu alın" cümlesinin bitişi hiç gelmezse (ses motoru olayı) en geç bu sürede okunur. */
 const DEFER_READ_MAX_MS = 15000;
 
 /**
  * Ekranın sesli okunuşu. prompt yoksa metin hemen okunur. prompt varsa (telefon hâlâ alında): önce yalnız prompt; tam
- * metin (soru ve seçenekler) kullanıcı ekrana dokununca ya da prompt bittikten kısa süre sonra okunur. Yanıt düğmesine
- * (kilit açıkken) ya da "Tekrar dinle"ye dokunuşta okunmaz: yanıt ya da düğme kendisi konuşur.
+ * metin (soru ve seçenekler) bir kez okunur: telefon alından inince (hareket sensörü, `PhoneLiftDetector`), kullanıcı
+ * ekrana ilk dokununca ya da prompt bittikten kısa süre sonra; hangisi önce olursa (kullanıcı turu 4, k01). Yanıt
+ * düğmesine (kilit açıkken) ya da "Tekrar dinle"ye dokunuşta okunmaz: yanıt ya da düğme kendisi konuşur.
  */
 function useDeferredRead(prompt: string | undefined, full: string, priority: 'high' | 'normal') {
+  const { source } = useMotion();
   useEffect(() => {
     if (!prompt) {
       speech.speak(full, priority);
@@ -1778,9 +1786,15 @@ function useDeferredRead(prompt: string | undefined, full: string, priority: 'hi
     }
     let read = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    // Telefon alından inince soru okunur. Prompt sürerken sezilirse de okunur (kullanıcı zaten ekrana bakıyor).
+    const lift = new PhoneLiftDetector();
+    const offMotion = source.subscribe((s) => {
+      if (lift.push(s.gravity, s.t)) readNow();
+    });
     const stop = () => {
       read = true;
       document.removeEventListener('pointerdown', onTouch, true);
+      offMotion();
       timers.forEach(clearTimeout);
     };
     const readNow = () => {
@@ -1802,7 +1816,7 @@ function useDeferredRead(prompt: string | undefined, full: string, priority: 'hi
     });
     timers.push(setTimeout(readNow, DEFER_READ_MAX_MS));
     return stop;
-  }, [prompt, full, priority]);
+  }, [prompt, full, priority, source]);
 }
 
 /**
@@ -1810,7 +1824,8 @@ function useDeferredRead(prompt: string | undefined, full: string, priority: 'hi
  * kilidi. Kullanıcı turu 3 (k01, k04, k05): açıklama satırı (lead) ve seçeneklerin alt açıklamaları yalnız "Tekrar dinle"de
  * okunur (ekranda hep yazılı); `spokenTitle`/`spokenLead` varsayılan okunuşun kısa biçimi, `subAlways` güvenlik için
  * gerekli alt açıklama. priority "high": önceki sorunun yarım kalan okunuşunu keser; yürütücüden hemen sonra "normal" (son
- * cümlesi kesilmesin). deferPrompt: telefon alındayken yalnız bu kısa cümle söylenir, soru dokununca okunur. Seçim
+ * cümlesi kesilmesin). deferPrompt: telefon alındayken yalnız bu kısa cümle söylenir; soru telefon alından inince, ilk
+ * dokunuşta ya da kısa süre sonra bir kez okunur (useDeferredRead). Seçim
  * yapılınca okuma kesilir (kalan seçenekler yanıttan sonra duyulmasın; kullanıcı turu 2, k05).
  */
 function ChoiceQuestion<T extends string>({
@@ -1993,8 +2008,8 @@ function PrepScreen({ mode, maneuverId, sideTest, onReady }: { mode: Mode; maneu
       <ListenAgain text={spoken} />
       <div className="stack" data-testid="prep-hearing">
         <p className="small muted" style={{ margin: 0 }}>
-          İşitme cihazı kullanıyorsanız: telefonla Bluetooth bağlantısını kontrol edin ve sesi deneyin. Cihaz yatarken kayabilir;
-          sabitleyin ya da bir yakınınızla yapın. Sesi kaçırırsanız titreşim ve bip sesleri ne zaman hareket edeceğinizi bildirir.
+          {/* Yakını modunda yardımcıya göre (kullanıcı turu 4, k02). */}
+          {prepHearingText(helper)}
         </p>
         {/* "Titreşimleri tanı" burada açılır (k04): Ayarlar'a gitmek akışı (taraf sırası, hazırlık) sıfırlardı. Aynı
             tanıtım Ayarlar > "Titreşimleri tanı"da da var (/ayarlar, #titresimler). */}

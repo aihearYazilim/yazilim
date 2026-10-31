@@ -5,7 +5,7 @@ import { dxIsRecent } from './dxTiming';
 import type { Side } from '../core/protocols';
 import { clampDose, DEFAULT_DOSE, DOSE_TEXT, type DoseLimits, doseStatus, localDayKey, type DoseStatus, RED_FLAGS, type RedFlagQuestion } from '../core/safety';
 import type { StepRecord } from '../core/runner';
-import type { AppData, Episode, PatientProfile, Settings } from './types';
+import type { AppData, Episode, EpisodeStatus, PatientProfile, Settings } from './types';
 
 /**
  * Erken tekrar testi için manevradan sonra beklenecek süre (ms): 1 saat. Yayımlanmış manevra çalışmalarında erken
@@ -455,11 +455,36 @@ export function rxPeriodEpisodes(d: AppData): Episode[] {
   return d.episodes.filter((e) => e.startedAt >= from && e.startedAt < until && e.status !== 'active').sort((a, b) => a.startedAt - b.startedAt);
 }
 
+/** Atağın sonucunun kısa adı (dönem özetinin başı). */
+export const EPISODE_OUTCOME: Record<EpisodeStatus, string> = {
+  active: 'sürüyor',
+  resolved: 'düzeldi',
+  referred: 'hekime yönlendirildi',
+  emergency: 'acile yönlendirildi',
+  closed: 'kapatıldı'
+};
+
+/** Gün ve ay ("25 Ekim"): dönem içindeki tarih (yıl başlıkta). */
+export function formatDayMonth(t: number): string {
+  return new Date(t).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+}
+
 /**
- * Dönem raporunun başındaki tek satırlık sonuç: "2 atak · 4 manevra · son sabah testi negatif". Hekim bir bakışta görsün;
- * ayrıntı raporda. Yönlendirmeyle biten atak varsa ayrıca söylenir.
+ * Dönemin son atağının sonucu: "son atak (25 Ekim): hekime yönlendirildi" (kullanıcı turu 4, k09). Dönem özeti bununla
+ * başlar: dönemin son durumu yönlendirmeyse önce "son sabah testi negatif" okunup yanlış izlenim edinilmesin. Atak yoksa null.
+ */
+export function lastEpisodeOutcome(episodes: readonly Episode[]): string | null {
+  const last = [...episodes].sort((a, b) => a.startedAt - b.startedAt)[episodes.length - 1];
+  return last ? `son atak (${formatDayMonth(last.startedAt)}): ${EPISODE_OUTCOME[last.status]}` : null;
+}
+
+/**
+ * Dönem raporunun başındaki tek satırlık sonuç: "son atak (25 Ekim): hekime yönlendirildi · 2 atak · 4 manevra · son
+ * sabah testi negatif". Hekim bir bakışta görsün; ayrıntı raporda. Önce son atağın sonucu (kullanıcı turu 4, k09), sonra
+ * sayılar; yönlendirmeyle biten atak varsa ayrıca söylenir.
  */
 export function rxPeriodSummary(episodes: Episode[]): string {
+  const lead = lastEpisodeOutcome(episodes);
   const maneuvers = episodes.reduce((n, e) => n + e.maneuvers.filter((m) => m.completed).length, 0);
   const halfDone = episodes.reduce((n, e) => n + e.maneuvers.filter((m) => !m.completed).length, 0);
   const parts = [`${episodes.length} atak`, `${maneuvers} manevra${halfDone ? ` (+${halfDone} yarım)` : ''}`];
@@ -473,5 +498,6 @@ export function rxPeriodSummary(episodes: Episode[]): string {
   }
   const referred = episodes.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
   if (referred) parts.push(`${referred} atak hekime ya da acile yönlendirildi`);
+  if (lead) parts.unshift(lead);
   return parts.join(' · ');
 }

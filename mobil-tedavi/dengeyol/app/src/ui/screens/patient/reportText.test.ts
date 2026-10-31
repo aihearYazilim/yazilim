@@ -15,7 +15,9 @@ import {
   symptomText,
   episodeEndNoteText,
   maneuverHeadText,
+  periodCountsLine,
   periodEpisodes,
+  periodLastOutcomeText,
   periodReportPlainText,
   periodSummaryLine,
   reportPeriod,
@@ -224,6 +226,13 @@ describe('pozisyona gelinemedi: nerede durulduğu (k07, k02)', () => {
     expect(episodeEndNoteText(e)).toMatch(/yanlış tarafa döndü .* doğru yana getirilemedi/);
     expect(stopWhereText(e)).toMatch(/önce yanlış tarafa dönüldü, doğru yana gelinemedi/);
     expect(episodeEndNoteText(ep({ endNote: 'VERTIGO_TOO_LONG' }))).toMatch(/2 dakikadan uzun/);
+    // Yanlış taraftan (yüzüstünden) gelinen açının "dönüş hedefe ~90° uzak kaldı" diye yazılmaması (kullanıcı turu 4, k02).
+    const rr = { ...r, reach: { phi: 0, theta: 0 } };
+    const detail = unreachableStopDetail('maneuver', 'epley', 'R', [rr]);
+    expect(detail).not.toMatch(/dönüş hedefe/);
+    expect(detail).toMatch(/yanlış taraftan geçilerek gelinen açı kabul edilmez/);
+    // Yanlış tarafta kalınmadıysa dönüş uzaklığı yine yazılır.
+    expect(unreachableStopDetail('maneuver', 'epley', 'R', [{ ...rr, wrongSideStop: false, wrongSide: false }])).toMatch(/dönüş hedefe en yakın/);
   });
   it('önce yanlış tarafa dönüp sonra doğru yanda gelinemediyse gerekçe yanlış taraf değildir', () => {
     const r = rec({ stepId: 'ep-3', title: 'Yan', unreachable: true, wrongSide: true });
@@ -283,11 +292,13 @@ describe('dönem raporu (k09)', () => {
     const eps = periodEpisodes(d, now);
     expect(eps.map((e) => e.id)).toEqual(['e1', 'e2']);
     // Doza sayılan manevralar (tamamlanan ya da bir pozisyona geçilen); yarım kalan ayrıca belirtilir.
-    expect(periodSummaryLine(eps)).toBe('2 atak · 4 manevra (3 tamamlandı) · son sabah testi negatif');
+    expect(periodCountsLine(eps)).toBe('2 atak · 4 manevra (3 tamamlandı) · son sabah testi negatif');
+    // Önce son atağın sonucu (kullanıcı turu 4, k09), sonra sayılar.
+    expect(periodSummaryLine(eps)).toBe('Son atak (2 Kasım): düzeldi · 2 atak · 4 manevra (3 tamamlandı) · son sabah testi negatif');
     expect(reportPeriod(d, now).label).toMatch(/^Reçete dönemi \(30 Ekim 2026 – 12 Kasım 2026\)$/);
     const t = periodReportPlainText(d, now);
     expect(t.split('\n')[0]).toBe('DengeYol — BPPV dönem raporu');
-    expect(t).toMatch(/Sonuç: 2 atak · 4 manevra \(3 tamamlandı\) · son sabah testi negatif/);
+    expect(t).toMatch(/Sonuç: Son atak \(2 Kasım\): düzeldi · 2 atak · 4 manevra \(3 tamamlandı\) · son sabah testi negatif/);
     expect(t.indexOf('=== 1. ATAK')).toBeLessThan(t.indexOf('=== 2. ATAK'));
     expect(t).not.toMatch(/=== 3\. ATAK/);
     // Ortak satırlar (tanı, onam) bir kez yazılır.
@@ -303,7 +314,26 @@ describe('dönem raporu (k09)', () => {
     d.episodes = [mk('a', now - 2 * day, { status: 'referred', endNote: 'POSITION_UNREACHABLE' }), mk('b', now - 30 * day, { endedAt: now - 29 * day })];
     const eps = periodEpisodes(d, now);
     expect(eps.map((e) => e.id)).toEqual(['a']);
-    expect(periodSummaryLine(eps)).toBe('1 atak · 0 manevra · tekrar testi yok · 1 hekime yönlendirme');
+    expect(periodCountsLine(eps)).toBe('1 atak · 0 manevra · tekrar testi yok · 1 hekime yönlendirme');
+    // Yönlendirmede nedenin kısa hâli (";" sonrası "zorlamadan hekime yönlendirildi" yinelenmez).
+    expect(periodLastOutcomeText(eps)).toBe('Son atak (17 Kasım): hekime yönlendirildi — manevranın bir pozisyonuna gelinemedi (baş yeterince sarkamadı ya da çevrilemedi)');
+    expect(periodSummaryLine(eps)).toMatch(/^Son atak \(17 Kasım\): hekime yönlendirildi — .* · 1 atak · 0 manevra/);
+    expect(periodLastOutcomeText([])).toBeNull();
     expect(periodReportPlainText(d, now)).toMatch(/Durulan yer: taraf testi sırasında/);
+  });
+  it('son atak yönlendirmeyse "son sabah testi negatif"ten önce yazılır; güvenlik sorusunda kısa ad (k09)', () => {
+    const d = emptyData();
+    const now = base + 20 * day;
+    const flag = RED_FLAGS.find((q) => q.id === 'orthostatic')!;
+    d.episodes = [
+      mk('a', now - 5 * day, {
+        maneuvers: [man(now - 5 * day)],
+        retests: [{ at: now - 4 * day, kind: 'morning', side: 'R', vertigo: false, latencySec: null, durationSec: null }]
+      }),
+      mk('b', now - 1 * day, { status: 'referred', endNote: 'orthostatic' })
+    ];
+    const line = periodSummaryLine(periodEpisodes(d, now));
+    expect(line.indexOf('hekime yönlendirildi')).toBeLessThan(line.indexOf('son sabah testi negatif'));
+    expect(line).toMatch(new RegExp(`^Son atak \\(18 Kasım\\): hekime yönlendirildi — güvenlik sorusu: ${flag.label}`));
   });
 });
