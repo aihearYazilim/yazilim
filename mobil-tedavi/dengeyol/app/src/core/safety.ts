@@ -177,8 +177,10 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     id: 'same',
     // Soru "farklı mı" diye sorulur: böylece her soruda güvenli yanıt "Hayır" olur (alışkanlıkla yanlış basmayı önler).
     text: 'Bu baş dönmesi, hekiminizin daha önce "kristal oynaması (BPPV)" dediği baş dönmesinden FARKLI mı? Kristal oynamasında dönme hissi yatarken, yataktan kalkarken, yatakta yana dönerken ya da yukarı bakarken başlar ve kısa sürer.',
-    // Kısa biçim (k05, k09): açıklama ekranda kalır.
-    spoken: 'Bu baş dönmesi, hekiminizin daha önce kristal oynaması dediği baş dönmesinden farklı mı?',
+    // Kısa biçim (k05, k09): ayrıntılı açıklama ekranda kalır. Kullanıcı turu 3 (k09): santral nedeni yakalamanın son
+    // süzgeci; karşılaştırma ölçütü ("yatarken ya da kalkarken başlayan, saniyeler süren") seste de kalır.
+    spoken:
+      'Bu baş dönmesi, hekiminizin daha önce kristal oynaması dediği, yatarken ya da kalkarken başlayan ve saniyeler süren baş dönmesinden farklı mı?',
     label: 'öncekinden farklı baş dönmesi',
     stopsOn: 'yes',
     action: 'doctor',

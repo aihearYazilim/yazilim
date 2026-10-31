@@ -5,7 +5,7 @@ import { dxIsRecent } from './dxTiming';
 import type { Side } from '../core/protocols';
 import { clampDose, DEFAULT_DOSE, DOSE_TEXT, type DoseLimits, doseStatus, localDayKey, type DoseStatus, RED_FLAGS, type RedFlagQuestion } from '../core/safety';
 import type { StepRecord } from '../core/runner';
-import type { AppData, Episode, PatientProfile } from './types';
+import type { AppData, Episode, PatientProfile, Settings } from './types';
 
 /**
  * Erken tekrar testi için manevradan sonra beklenecek süre (ms): 1 saat. Yayımlanmış manevra çalışmalarında erken
@@ -19,7 +19,7 @@ export const MORNING_HOUR = 6;
 
 // Reçete geçerliliğinin tek tanımı core/prescription.ts'tedir (RX_VALID_DAYS, rxValidAt, rxValidityLabel): D tarihli
 // reçete D+13 gününün sonuna kadar (dahil) geçerlidir. Sabit buradan da dışa aktarılır (eski içe aktarmalar bozulmasın).
-import { rxValidAt } from '../core/prescription';
+import { fnv1a, rxIssuedAt, rxValidAt, rxValidUntil } from '../core/prescription';
 export { RX_VALID_DAYS } from '../core/prescription';
 
 /**
@@ -413,4 +413,65 @@ export function formatDateTimeYear(t: number): string {
 
 export function formatDate(t: number): string {
   return new Date(t).toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+// ---- Güvenlik sorularının ilk okunuş kilidi (kullanıcı turu 3, k06) ------------------------------------------------------
+
+/**
+ * Soru metninin sürümü: ekrandaki metin, sesli biçim, açıklama ve yanıt etiketlerinin özeti. Metin değişince sürüm de
+ * değişir ve soru bu cihazda "ilk kez soruluyor" sayılır.
+ */
+export function redFlagVersion(q: Pick<RedFlagQuestion, 'text' | 'spoken' | 'hint' | 'yesLabel' | 'noLabel'>): string {
+  return fnv1a([q.text, q.spoken ?? '', q.hint ?? '', q.yesLabel ?? '', q.noLabel ?? ''].join('\u241e'));
+}
+
+/**
+ * Soru okunurken uzun ilk okunuş kilidi gerekli mi? Yalnız bu cihazda hiç yanıtlanmamış ya da metni o günden beri değişmiş
+ * soruda. Daha önce aynı metni yanıtlayan kişide yalnız kısa çift dokunuş kilidi kalır (o kilit her zaman uygulanır).
+ */
+export function firstReadLockNeeded(settings: Pick<Settings, 'answeredQuestions'>, q: RedFlagQuestion): boolean {
+  return settings.answeredQuestions?.[q.id] !== redFlagVersion(q);
+}
+
+/** Yanıtlanan sorunun sürümünü cihaz ayarlarına yazar (yanıt ne olursa olsun). */
+export function rememberAnswered(d: AppData, q: RedFlagQuestion): AppData {
+  const v = redFlagVersion(q);
+  if (d.settings.answeredQuestions?.[q.id] === v) return d;
+  return { ...d, settings: { ...d.settings, answeredQuestions: { ...(d.settings.answeredQuestions ?? {}), [q.id]: v } } };
+}
+
+// ---- Reçete dönemi (kullanıcı turu 3, k09) ------------------------------------------------------------------------------
+
+/**
+ * Reçete döneminin (verildiği gün 00:00 ≤ başlangıç < geçerliliğin bittiği an) kapanmış atakları, eskiden yeniye. Reçete
+ * yoksa ya da tarihi okunamıyorsa boş.
+ */
+export function rxPeriodEpisodes(d: AppData): Episode[] {
+  const rx = d.patient?.prescription;
+  if (!rx) return [];
+  const from = rxIssuedAt(rx);
+  const until = rxValidUntil(rx);
+  if (from === null || until === null) return [];
+  return d.episodes.filter((e) => e.startedAt >= from && e.startedAt < until && e.status !== 'active').sort((a, b) => a.startedAt - b.startedAt);
+}
+
+/**
+ * Dönem raporunun başındaki tek satırlık sonuç: "2 atak · 4 manevra · son sabah testi negatif". Hekim bir bakışta görsün;
+ * ayrıntı raporda. Yönlendirmeyle biten atak varsa ayrıca söylenir.
+ */
+export function rxPeriodSummary(episodes: Episode[]): string {
+  const maneuvers = episodes.reduce((n, e) => n + e.maneuvers.filter((m) => m.completed).length, 0);
+  const halfDone = episodes.reduce((n, e) => n + e.maneuvers.filter((m) => !m.completed).length, 0);
+  const parts = [`${episodes.length} atak`, `${maneuvers} manevra${halfDone ? ` (+${halfDone} yarım)` : ''}`];
+  const retests = episodes.flatMap((e) => e.retests).sort((a, b) => a.at - b.at);
+  const last = retests[retests.length - 1];
+  if (last) {
+    const name = last.kind === 'morning' ? 'sabah testi' : 'tekrar testi';
+    parts.push(`son ${name} ${last.vertigo ? 'pozitif (baş dönmesi başladı)' : 'negatif'}`);
+  } else if (maneuvers > 0) {
+    parts.push('tekrar testi yapılmadı');
+  }
+  const referred = episodes.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
+  if (referred) parts.push(`${referred} atak hekime ya da acile yönlendirildi`);
+  return parts.join(' · ');
 }

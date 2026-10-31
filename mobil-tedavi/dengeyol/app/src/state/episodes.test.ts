@@ -8,6 +8,11 @@ import {
   dxWarnText,
   EARLY_RETEST_MS,
   episodeDose,
+  firstReadLockNeeded,
+  redFlagVersion,
+  rememberAnswered,
+  rxPeriodEpisodes,
+  rxPeriodSummary,
   isNightTime,
   nextAction,
   nextMorning,
@@ -27,6 +32,7 @@ import {
   totalPauses
 } from './episodes';
 import type { StepRecord } from '../core/runner';
+import { RED_FLAGS } from '../core/safety';
 import { emptyData } from './types';
 import type { Episode, ManeuverLog } from './types';
 
@@ -357,5 +363,80 @@ describe('kullanıcı turu 2: hasta akışı', () => {
     const e = ep({ status: 'referred', redFlags: [{ at: base, answers, stopped: true }] });
     expect(referralFlags(e).map((q) => q.id)).toEqual(['ear']);
     expect(referralFlags(ep({ status: 'referred', endNote: 'ATYPICAL_LONG' }))).toEqual([]);
+  });
+});
+
+describe('güvenlik sorusu ilk okunuş kilidi yalnız ilk kez ya da metin değişince (kullanıcı turu 3, k06)', () => {
+  const q = RED_FLAGS[0]!;
+  it('hiç yanıtlanmamış soruda kilit gerekir; yanıtlandıktan sonra gerekmez', () => {
+    const d = emptyData();
+    expect(firstReadLockNeeded(d.settings, q)).toBe(true);
+    const d2 = rememberAnswered(d, q);
+    expect(firstReadLockNeeded(d2.settings, q)).toBe(false);
+    // Başka soru etkilenmez.
+    expect(firstReadLockNeeded(d2.settings, RED_FLAGS[1]!)).toBe(true);
+    // Aynı sürüm yeniden yazılmaz (aynı nesne döner: gereksiz kayıt yok).
+    expect(rememberAnswered(d2, q)).toBe(d2);
+  });
+  it('soru metni (ya da sesli biçim, açıklama, yanıt etiketi) değişince yeniden ilk kez sayılır', () => {
+    const d = rememberAnswered(emptyData(), q);
+    for (const change of [{ text: q.text + ' (yeni)' }, { spoken: 'başka' }, { hint: 'yeni açıklama' }, { yesLabel: 'Evet' }, { noLabel: 'Hayır' }]) {
+      expect(firstReadLockNeeded(d.settings, { ...q, ...change })).toBe(true);
+    }
+  });
+  it('sürüm kararlıdır ve her soru için farklıdır', () => {
+    expect(redFlagVersion(q)).toBe(redFlagVersion({ ...q }));
+    expect(new Set(RED_FLAGS.map(redFlagVersion)).size).toBe(RED_FLAGS.length);
+  });
+});
+
+describe('reçete dönemi raporu (kullanıcı turu 3, k09)', () => {
+  const rxDate = '2026-10-01';
+  const at = (s: string) => new Date(s).getTime();
+  const data = (episodes: Episode[]) => {
+    const d = emptyData();
+    d.patient = {
+      contraindications: [],
+      diagnosedByDoctor: true,
+      canal: 'PC',
+      side: 'L',
+      prescription: { v: 1, side: 'L', canal: 'PC', maneuver: 'epley', date: rxDate, perDay: 3, days: 7 }
+    };
+    d.episodes = episodes;
+    return d;
+  };
+  it('dönemdeki bütün kapanmış ataklar (eskiden yeniye); dönem öncesi, sonrası ve aktif atak hariç', () => {
+    const d = data([
+      ep({ id: 'b', status: 'resolved', startedAt: at('2026-10-08T10:00:00') }),
+      ep({ id: 'a', status: 'resolved', startedAt: at('2026-10-02T10:00:00') }),
+      ep({ id: 'once', status: 'resolved', startedAt: at('2026-09-20T10:00:00') }),
+      ep({ id: 'sonra', status: 'resolved', startedAt: at('2026-10-15T10:00:00') }),
+      ep({ id: 'aktif', status: 'active', startedAt: at('2026-10-10T10:00:00') })
+    ]);
+    expect(rxPeriodEpisodes(d).map((e) => e.id)).toEqual(['a', 'b']);
+    expect(rxPeriodEpisodes({ ...d, patient: { ...d.patient!, prescription: undefined } })).toEqual([]);
+  });
+  it('tek satır sonuç: atak, manevra, son test ve yönlendirme', () => {
+    const t1 = at('2026-10-02T10:00:00');
+    const t2 = at('2026-10-08T10:00:00');
+    const e1 = ep({
+      id: 'a',
+      status: 'resolved',
+      startedAt: t1,
+      maneuvers: [man(t1), man(t1 + 1000)],
+      retests: [{ at: t1 + EARLY_RETEST_MS, kind: 'early', side: 'L', vertigo: true, latencySec: 3, durationSec: 10 }]
+    });
+    const e2 = ep({
+      id: 'b',
+      status: 'resolved',
+      startedAt: t2,
+      maneuvers: [man(t2), man(t2 + 1000, false)],
+      retests: [{ at: t2 + 20 * 3600_000, kind: 'morning', side: 'L', vertigo: false, latencySec: null, durationSec: null }]
+    });
+    expect(rxPeriodSummary([e1, e2])).toBe('2 atak · 3 manevra (+1 yarım) · son sabah testi negatif');
+    expect(rxPeriodSummary([e1])).toBe('1 atak · 2 manevra · son tekrar testi pozitif (baş dönmesi başladı)');
+    expect(rxPeriodSummary([ep({ status: 'referred', maneuvers: [man(t1)] })])).toBe(
+      '1 atak · 1 manevra · tekrar testi yapılmadı · 1 atak hekime ya da acile yönlendirildi'
+    );
   });
 });
