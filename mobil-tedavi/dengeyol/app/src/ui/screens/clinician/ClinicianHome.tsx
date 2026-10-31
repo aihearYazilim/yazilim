@@ -7,6 +7,7 @@ import type { ClinicExam, ClinicPatient } from '../../../state/types';
 import { Segmented } from '../../components/Controls';
 import { Icon, Logo } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
+import { ReportPaste } from './ReportImport';
 
 export function ClinicianHome() {
   const d = useData();
@@ -193,6 +194,18 @@ export function ClinicianHome() {
         </div>
       )}
 
+      <details className="card" data-testid="clin-home-report">
+        <summary>
+          <strong>Hastanın ev raporu</strong>
+          <span className="small muted" style={{ display: 'block' }}>
+            Hasta raporundaki QR kodu telefonunuzun kamerasıyla okutun ya da gelen bağlantıyı yapıştırın; internet gerekmez.
+          </span>
+        </summary>
+        <div style={{ marginTop: 12 }}>
+          <ReportPaste />
+        </div>
+      </details>
+
       <h3>Son muayeneler</h3>
       {allExams.length > 3 && (
         <input
@@ -219,6 +232,7 @@ export function ClinicianHome() {
                     {formatDateTime(e.at)} · {e.diagnosis?.label ?? 'tanı girilmedi'} · {e.maneuvers.filter((m) => m.completed).length} manevra
                   </div>
                 </div>
+                {e.homeReports?.length ? <span className="chip">ev dönemi</span> : null}
                 {e.prescriptionToken && <span className="chip primary">reçete</span>}
                 <Icon name="chevron" />
               </button>

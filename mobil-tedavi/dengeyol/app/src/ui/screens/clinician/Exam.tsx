@@ -3,10 +3,11 @@
  */
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
 import { type Finding, type Findings, keyLabel, rxFindingLock, suggestDiagnosis } from '../../../core/diagnosis';
 import { decodePrescription, encodePrescription, type Prescription } from '../../../core/prescription';
+import { decodeHomeReport } from '../../../core/reportShare';
 import {
   type Canal,
   type FindingKey,
@@ -44,6 +45,7 @@ import {
   stepLines
 } from './examReport';
 import { emptyFinding, FindingForm } from './FindingForm';
+import { HomeReportView } from './HomeReportView';
 
 type Tab = 'tests' | 'dx' | 'treat' | 'rx' | 'report';
 type RunPurpose = 'test' | 'retest' | 'maneuver';
@@ -96,7 +98,9 @@ export function Exam() {
   const d = useData();
   const exam = d.clinicExams.find((e) => e.id === id);
   const patient = exam ? d.clinicPatients.find((p) => p.id === exam.patientId) : undefined;
-  const [tab, setTab] = useState<Tab>('tests');
+  // Ev raporu içe aktarıldıktan sonra muayene Rapor sekmesinde açılır (ReportImport → state.tab).
+  const initialTab = (useLocation().state as { tab?: Tab } | null)?.tab;
+  const [tab, setTab] = useState<Tab>(initialTab ?? 'tests');
   const [cal, setCal] = useState<Calibration | null>(null);
   const [sensorless, setSensorless] = useState(!!d.clinician.sensorless);
   const [pendingRun, setPendingRun] = useState<RunReq | null>(null);
@@ -294,6 +298,11 @@ export function Exam() {
         <span>{formatDateTime(exam.at)}</span>
         {patient?.birthYear && <span>· d. {patient.birthYear}</span>}
         {patient?.sex && patient.sex !== '-' && <span>· {patient.sex}</span>}
+        {exam.homeReports?.length ? (
+          <span className="chip primary" data-testid="exam-home-chip">
+            ev dönemi raporu
+          </span>
+        ) : null}
       </div>
       {exam.diagnosis && !dxValid(exam) && (
         <div className="notice danger" role="alert" data-testid="dx-stale">
@@ -969,8 +978,15 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
                   </thead>
                   <tbody>
                     {lines.map((l, i) => (
-                      <tr key={i} className={l.early ? 'early' : undefined}>
-                        <td>{l.title}</td>
+                      <tr key={i} className={l.early || l.flags.length ? 'early' : undefined}>
+                        <td>
+                          {l.title}
+                          {l.flags.length > 0 && (
+                            <span className="small" style={{ display: 'block' }} data-testid="report-step-flags">
+                              <strong>{l.flags.join(' · ')}</strong>
+                            </span>
+                          )}
+                        </td>
                         <td>
                           {l.holdSec}
                           {l.targetSec !== null ? ` / ${l.targetSec}` : ''} s{l.early ? <strong> · erken bitirildi</strong> : null}
@@ -996,6 +1012,33 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
         </div>
       )}
       {fx('Tekrar test', exam.retestFindings)}
+      {(exam.homeReports ?? []).map((h) => {
+        const r = decodeHomeReport(h.token);
+        if (!r.ok) {
+          return (
+            <div key={h.id} className="notice" data-testid="report-home-broken">
+              <Icon name="alert" />
+              <span>Eklenen ev dönemi raporu okunamadı.</span>
+            </div>
+          );
+        }
+        const match = !!r.value.rxCode && !!exam.prescriptionToken && rxCode(exam.prescriptionToken) === r.value.rxCode;
+        return (
+          <div key={h.id} className="stack" style={{ gap: 4 }}>
+            <HomeReportView report={r.value} rxNote={match ? 'bu muayenede verilen reçete' : null} testId="report-home" />
+            <button
+              className="btn ghost no-print"
+              onClick={() => {
+                if (!window.confirm('Ev dönemi raporu bu muayeneden kaldırılsın mı?')) return;
+                updateExam(exam.id, (e) => ({ ...e, homeReports: (e.homeReports ?? []).filter((x) => x.id !== h.id) }));
+              }}
+              data-testid="report-home-remove"
+            >
+              <Icon name="trash" /> Ev dönemi raporunu kaldır
+            </button>
+          </div>
+        );
+      })}
       <div className="card stack no-print">
         <label htmlFor="examnote">Muayene notu (isteğe bağlı; rapora ve HBYS notuna yazılır)</label>
         <textarea

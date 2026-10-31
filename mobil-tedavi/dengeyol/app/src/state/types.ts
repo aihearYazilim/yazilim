@@ -166,6 +166,19 @@ export interface ClinicExam {
   /** Reçetenin dayandığı tanının bulgu imzası: tanı değişirse eski QR gösterilmez. */
   prescriptionFindingsKey?: string;
   notes?: string;
+  /**
+   * Hastanın QR/bağlantıyla getirdiği ev dönemi raporları (core/reportShare.ts; kullanıcı turu 3, F4). Veri bağlantının
+   * içindedir; bağlantı (token) aynen saklanır, ekranda ve HBYS notunda her seferinde çözülür. Eski kayıtlarda yok.
+   */
+  homeReports?: HomeReportRecord[];
+}
+
+/** Muayeneye eklenmiş ev dönemi raporu. */
+export interface HomeReportRecord {
+  /** Raporun kimliği (bağlantının sağlama toplamı): aynı rapor iki kez eklenmez. */
+  id: string;
+  token: string;
+  importedAt: number;
 }
 
 export interface AppData {
