@@ -153,6 +153,12 @@ export interface Episode {
    * Eski kayıtlarda yok.
    */
   testStops?: { at: number; test: 'side' | 'retest'; side: Side; reason: 'USER_FEELS_UNWELL' }[];
+  /**
+   * Araştırma kaydı: kullanıcının "Yine de devam et" ile aştığı uyarılar (klinik çalışmada hangi uyarının ne sıklıkla
+   * aşıldığı ölçülür). kind: aşılan uyarının kodu (ör. 'NO_DIAGNOSIS', 'RED_FLAG', 'DOSE', 'REFERRAL', 'SIDE_CONFLICT',
+   * 'CONTRAINDICATION', 'VERTIGO_TOO_LONG', 'POSITION_UNREACHABLE'); detail: kısa açıklama.
+   */
+  overrides?: { at: number; kind: string; detail?: string }[];
 }
 
 export interface ClinicPatient {
