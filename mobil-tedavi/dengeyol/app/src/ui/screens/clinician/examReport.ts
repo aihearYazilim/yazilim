@@ -22,8 +22,10 @@ import {
   type HomeRetest,
   type HomeSideTest,
   type HomeStep,
+  homeReportDatesText,
   REPORT_DECODE_ERROR_TEXT
 } from '../../../core/reportShare';
+import { RED_FLAGS } from '../../../core/safety';
 import { extractRxToken } from '../../../platform/reminders';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
@@ -223,12 +225,25 @@ export const STEP_FLAG_LABEL = {
   borderline: 'hedef sınırında'
 } as const;
 
+/**
+ * Hedef açıya yüzüstünden geçilerek gelindi ve kabul edilmedi (yürütücü kaydında `proneArrival`). Klinisyen tablosunda ve HBYS
+ * notunda düz "önce yanlış taraf" yerine bu yazılır (kullanıcı turu 5, k10 #4). Ev raporu bağlantısında bu bayrak yoktur
+ * (bağlantı biçimi değişmesin diye); orada "önce yanlış taraf" görünür.
+ */
+export const PRONE_ARRIVAL_LABEL = 'yüzüstünden gelme reddedildi';
+
 export type StepFlagKey = keyof typeof STEP_FLAG_LABEL;
 const STEP_FLAG_ORDER: StepFlagKey[] = ['movedBeforeCommand', 'noSitThrough', 'wrongSide', 'borderline'];
 
-/** Adım kaydındaki işaretlerin etiketleri (sabit sırada). */
-export function stepFlagLabels(r: Partial<Record<StepFlagKey, boolean | undefined>>): string[] {
-  return STEP_FLAG_ORDER.filter((k) => !!r[k]).map((k) => STEP_FLAG_LABEL[k]);
+/**
+ * Adım kaydındaki işaretlerin etiketleri (sabit sırada). Yüzüstünden gelme yanlış taraf kilidi sürerken olur; o adımda
+ * "önce yanlış taraf" yerine (aynı sırada) "yüzüstünden gelme reddedildi" yazılır.
+ */
+export function stepFlagLabels(r: Partial<Record<StepFlagKey | 'proneArrival', boolean | undefined>>): string[] {
+  return STEP_FLAG_ORDER.flatMap((k) => {
+    if (k === 'wrongSide' && r.proneArrival) return [PRONE_ARRIVAL_LABEL];
+    return r[k] ? [STEP_FLAG_LABEL[k]] : [];
+  });
 }
 
 /** Erken bitirme eşiği (s): pozisyona gelindikten sonra bu kadar ya da daha az beklenip adım geçildiyse. */
@@ -294,7 +309,7 @@ export function maneuverLineText(m: ManeuverLog, lines: StepLine[] = stepLines(m
   const flags = m.records.flatMap((r, i) => [
     ...(r.movedBeforeCommand ? [`${i + 1}. adımda komuttan önce hareket`] : []),
     ...(r.noSitThrough ? [`${i + 1}. adımda oturuştan geçilmedi`] : []),
-    ...(r.wrongSide ? [`${i + 1}. adımda önce yanlış taraf`] : []),
+    ...(r.proneArrival ? [`${i + 1}. adımda ${PRONE_ARRIVAL_LABEL}`] : r.wrongSide ? [`${i + 1}. adımda önce yanlış taraf`] : []),
     ...(r.borderline ? [`${i + 1}. adım hedef sınırında`] : [])
   ]);
   if (flags.length) parts.push(flags.join('; '));
@@ -435,26 +450,12 @@ export function reportPasteErrorText(text: string): string {
     : 'Bu bir hasta raporu bağlantısına benzemiyor.';
 }
 
-/** Raporlanan dönem reçete dönemi mi (bitişi reçetenin son geçerli günü)? */
-function isRxPeriod(r: HomeReport): boolean {
-  if (!r.rx) return false;
-  const until = rxValidUntilMs({ date: r.rx.date }, RX_VALID_DAYS);
-  return until !== null && shortDate(new Date(until - 1)) === shortDate(new Date(r.period.to));
-}
-
 /**
- * Dönem metni. Reçete döneminde bitiş reçete geçerliliğidir, ev dönemi değil (kullanıcı turu 4, k08): rapor geçerlilik
- * bitmeden oluşturulduysa dönem rapor tarihinde biter ve geçerlilik ayrıca etiketlenir.
- * - "31.10.2026 – 05.11.2026 (rapor tarihi) · reçete geçerliliği 13.11.2026 dahil"
- * - süresi dolmuş reçete: "31.10.2026 – 13.11.2026 (reçete geçerliliğinin sonu)"
- * - reçetesiz: "24.10.2026 – 07.11.2026"
+ * Ev dönemi başlığının tarihleri, her biri kendi adıyla (kullanıcı turu 5, k09 #6): "Reçete 16.10 (geçerlilik 29.10 dahil) ·
+ * ataklar 17.10–25.10 · rapor 31.10". Hasta tarafındaki QR kartıyla aynı metin (core/reportShare.ts `homeReportDatesText`).
  */
 export function homePeriodText(r: HomeReport): string {
-  const from = shortDate(new Date(r.period.from));
-  const to = shortDate(new Date(r.period.to));
-  if (!isRxPeriod(r)) return `${from} – ${to}`;
-  if (r.generatedAt < r.period.to) return `${from} – ${shortDate(new Date(r.generatedAt))} (rapor tarihi) · reçete geçerliliği ${to} dahil`;
-  return `${from} – ${to} (reçete geçerliliğinin sonu)`;
+  return cap(homeReportDatesText(r));
 }
 
 export function homeCounts(r: HomeReport): { episodes: number; maneuvers: number; completed: number } {
@@ -518,8 +519,12 @@ export function homeManeuverFlags(m: HomeManeuver): string[] {
   );
 }
 
-/** "Atak 31.10.2026 09:12 — Düzeldi" (+ kapanış notu). */
+/**
+ * "Atak 31.10.2026 09:12 — Düzeldi" (+ kapanış notu). Açık atakta "sürüyor" yalnız belirti sürüyorsa; 1. saat tekrar testi
+ * negatifse "Atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor" (kullanıcı turu 5, k08 #6).
+ */
 export function homeEpisodeTitle(e: HomeEpisode): string {
+  if (e.status === 'active') return `Atak ${dateTime(e.startedAt)} — ${cap(homeOpenEpisodeText(e))}`;
   const note = e.endNote ? endNoteText(e.endNote) : '';
   return `Atak ${dateTime(e.startedAt)} — ${STATUS_LABEL[e.status]}${note ? ` (${note})` : ''}`;
 }
@@ -529,10 +534,59 @@ function lastRetest(r: HomeReport): HomeRetest | null {
   return all[all.length - 1] ?? null;
 }
 
-/** Kısa sonuç satırı: "2 atak · 4 manevra (3 tamamlandı) · son tekrar test (02.11, sabah, sağ): baş dönmesi gelmedi". */
+/** Kapanmış atağın sonucunun kısa adı (hasta tarafındaki dönem özetiyle aynı sözcükler). */
+const HOME_OUTCOME: Record<Exclude<HomeEpisode['status'], 'active'>, string> = {
+  resolved: 'düzeldi',
+  referred: 'hekime yönlendirildi',
+  emergency: 'acile yönlendirildi',
+  closed: 'kapatıldı'
+};
+
+const RETEST_NAME: Record<HomeRetest['kind'], string> = { early: '1. saat tekrar testi', morning: 'sabah testi', other: 'tekrar testi' };
+
+/**
+ * Açık (kapatılmamış) atağın durumu. "Sürüyor" yalnız belirti sürüyorsa (son tekrar testi pozitif ya da hiç test/manevra
+ * yok) yazılır: 1. saat tekrar testi negatifken atak yalnız sabah testi beklendiği için açıktır (kullanıcı turu 5, k08 #6).
+ */
+export function homeOpenEpisodeText(e: HomeEpisode): string {
+  const rt = [...e.retests].sort((a, b) => a.at - b.at)[e.retests.length - 1];
+  if (rt?.vertigo) return `sürüyor: ${RETEST_NAME[rt.kind]} pozitif (baş dönmesi var)`;
+  if (rt?.kind === 'early') return 'atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor';
+  if (rt) return `atak açık: ${RETEST_NAME[rt.kind]} negatif`;
+  if (e.maneuvers.length) return 'atak açık: manevra sonrası tekrar testi yapılmadı';
+  return 'sürüyor';
+}
+
+/** Yönlendirme nedeninin kısa hâli: güvenlik sorusunda sorunun kısa adı, diğerlerinde cümlenin ilk bölümü. */
+function homeEndNoteShort(note: string): string {
+  const ids = note.split(/\s*,\s*/);
+  const flags = ids.map((id) => RED_FLAGS.find((q) => q.id === id));
+  if (flags.every((q) => q)) return `güvenlik sorusu: ${flags.map((q) => q!.label).join(', ')}`;
+  return endNoteText(note).split(';')[0]!.trim();
+}
+
+/**
+ * Son atağın sonucu, ev dönemi özetinin ve HBYS satırının başı (kullanıcı turu 5, k09 #5; hasta tarafındaki dönem özetiyle
+ * aynı sıra): "son atak (25.10): hekime yönlendirildi — baş dönmesi bir dakikadan uzun sürdü…"; açık atakta
+ * "son atak (31.10) — atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor". Atak yoksa null.
+ */
+export function homeLastOutcomeText(r: HomeReport): string | null {
+  const last = [...r.episodes].sort((a, b) => a.startedAt - b.startedAt)[r.episodes.length - 1];
+  if (!last) return null;
+  const head = `son atak (${dayMonth(last.startedAt)})`;
+  if (last.status === 'active') return `${head} — ${homeOpenEpisodeText(last)}`;
+  const note = (last.status === 'referred' || last.status === 'emergency') && last.endNote ? homeEndNoteShort(last.endNote) : '';
+  return `${head}: ${HOME_OUTCOME[last.status]}${note ? ` — ${note}` : ''}`;
+}
+
+/**
+ * Kısa sonuç satırı, önce son atağın sonucu: "Son atak (02.11): düzeldi · 2 atak · 4 manevra (3 tamamlandı) · son tekrar test
+ * (02.11) sabah, sağ: baş dönmesi gelmedi".
+ */
 export function homeReportHeadline(r: HomeReport): string {
   const c = homeCounts(r);
-  const parts = [`${c.episodes} atak`, `${c.maneuvers} manevra (${c.completed} tamamlandı)`];
+  const lead = homeLastOutcomeText(r);
+  const parts = [...(lead ? [cap(lead)] : []), `${c.episodes} atak`, `${c.maneuvers} manevra (${c.completed} tamamlandı)`];
   const referred = r.episodes.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
   if (referred) parts.push(`${referred} atakta hekime/acile yönlendirildi`);
   const rt = lastRetest(r);
@@ -553,11 +607,10 @@ export function homeTruncationText(r: HomeReport): string | null {
  * HBYS notunun ev dönemi satırı. `examRxCode`: bu muayenede verilen reçetenin kodu (eşleşirse belirtilir).
  */
 export function homeReportNoteLine(r: HomeReport, examRxCode: string | null = null): string {
-  const parts = [`Ev dönemi (hastanın DengeYol raporu, QR ile aktarıldı): ${homePeriodText(r)}`];
+  // Önce son atağın sonucu ve sayılar (karar bilgisi), sonra adlandırılmış tarihler ve kodlar (kullanıcı turu 5, k09 #5–6).
+  const parts = [`Ev dönemi (hastanın DengeYol raporu, QR ile aktarıldı): ${homeReportHeadline(r)}`];
+  parts.push(homeReportDatesText(r));
   if (r.rxCode) parts.push(`reçete kodu ${r.rxCode}${examRxCode && examRxCode === r.rxCode ? ' (bu muayenenin reçetesi)' : ''}`);
-  parts.push(homeReportHeadline(r));
-  const last = r.episodes[r.episodes.length - 1];
-  if (last) parts.push(`son atak: ${STATUS_LABEL[last.status].toLocaleLowerCase('tr-TR')}${last.endNote ? ` (${endNoteText(last.endNote)})` : ''}`);
   const flags = r.episodes.flatMap((e) => e.maneuvers.flatMap(homeManeuverFlags));
   if (flags.length) parts.push(`adım işaretleri: ${[...new Set(flags.map((f) => f.replace(/^\d+\. adımda /, '')))].join(', ')}`);
   const trunc = homeTruncationText(r);

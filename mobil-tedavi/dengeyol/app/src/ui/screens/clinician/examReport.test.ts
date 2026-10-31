@@ -14,8 +14,11 @@ import {
   maneuverLineText,
   maneuverStatus,
   manualDxLabel,
+  homeEpisodeTitle,
+  homeLastOutcomeText,
   homeManeuverFlags,
   homeManeuverText,
+  homeOpenEpisodeText,
   homePeriodText,
   homeReportHeadline,
   looksLikeRxLink,
@@ -186,6 +189,15 @@ describe('manevra adımları', () => {
     );
     expect(lines.map((l) => l.flags)).toEqual([[], ['komuttan önce hareket', 'hedef sınırında'], ['oturuştan geçilmedi'], ['önce yanlış taraf']]);
     expect(stepFlagLabels({})).toEqual([]);
+  });
+
+  it('yüzüstünden gelinen adımda "önce yanlış taraf" yerine "yüzüstünden gelme reddedildi" (tur 5, k10)', () => {
+    const recs = [rec({ stepId: 'ep-sit' }), rec({ stepId: 'ep-1' }), rec({ stepId: 'ep-2', wrongSide: true }), rec({ stepId: 'ep-3', wrongSide: true, proneArrival: true, borderline: true })];
+    const lines = stepLines(m(recs));
+    expect(lines.map((l) => l.flags)).toEqual([[], [], ['önce yanlış taraf'], ['yüzüstünden gelme reddedildi', 'hedef sınırında']]);
+    const text = maneuverLineText(m(recs));
+    expect(text).toContain('3. adımda önce yanlış taraf; 4. adımda yüzüstünden gelme reddedildi; 4. adım hedef sınırında');
+    expect(text).not.toContain('4. adımda önce yanlış taraf');
   });
 
   it('Semont geçiş süresi ve manevra sırasındaki nistagmus işaretleri', () => {
@@ -386,7 +398,7 @@ describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
     expect(homeManeuverText(r.episodes[0]!.maneuvers[1]!)).toMatch(/^Epley sağ: yarıda bırakıldı \(2\/5 adım\) · sensörsüz$/);
     expect(homeStepText(r.episodes[0]!.maneuvers[0]!.steps![1]!)).toBe('60 s · yavaş geçiş 4.1 s · komuttan önce hareket · baş dönmesi: gecikme 2 s, süre 15 s');
     expect(homeManeuverFlags(r.episodes[0]!.maneuvers[0]!)).toEqual(['2. adımda yavaş geçiş 4.1 s', '2. adımda komuttan önce hareket', '3. adımda oturuştan geçilmedi']);
-    expect(homeReportHeadline(r)).toMatch(/^1 atak · 2 manevra \(1 tamamlandı\) · son tekrar test \(01\.11\) sabah, sağ: baş dönmesi gelmedi$/);
+    expect(homeReportHeadline(r)).toMatch(/^Son atak \(31\.10\): düzeldi · 1 atak · 2 manevra \(1 tamamlandı\) · son tekrar test \(01\.11\) sabah, sağ: baş dönmesi gelmedi$/);
     expect(homeTruncationText(r)).toBeNull();
     expect(homeTruncationText(report({ stepsDropped: true, episodesOmitted: 2 }))).toMatch(/adım ayrıntısı çıkarıldı, en eski 2 atak çıkarıldı/);
   });
@@ -399,9 +411,10 @@ describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
     const home = lines.filter((l) => l.startsWith('Ev dönemi'));
     expect(home).toHaveLength(1);
     expect(home[0]).toContain(`reçete kodu ${rxCode(rxToken)} (bu muayenenin reçetesi)`);
-    expect(home[0]).toMatch(/31\.10\.2026 – 13\.11\.2026/);
-    expect(home[0]).toMatch(/1 atak · 2 manevra \(1 tamamlandı\)/);
-    expect(home[0]).toMatch(/son atak: düzeldi/);
+    // Önce son atağın sonucu, sonra sayılar, sonra adlandırılmış tarihler (tur 5, k09).
+    expect(home[0]).toMatch(/^Ev dönemi \(hastanın DengeYol raporu, QR ile aktarıldı\): Son atak \(31\.10\): düzeldi · 1 atak · 2 manevra \(1 tamamlandı\)/);
+    expect(home[0]).toContain('· atak 31.10 · rapor 05.11 ·');
+    expect(home[0]).not.toMatch(/son atak: /);
     expect(home[0]).toMatch(/adım işaretleri: yavaş geçiş 4\.1 s, komuttan önce hareket, oturuştan geçilmedi\.$/);
     // Başka reçetenin raporu: eşleşme yazılmaz; bozuk kayıt nota girmez.
     expect(homeReportNoteLine(report({ rxCode: '00000000' }), rxCode(rxToken))).not.toMatch(/bu muayenenin/);
@@ -409,21 +422,41 @@ describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
     expect(examNoteText(broken, undefined, {})).not.toMatch(/Ev dönemi/);
   });
 
-  it('reçete döneminde bitiş "reçete geçerliliği" diye etiketlenir; dönem rapor tarihinde biter (tur 4, k08)', () => {
-    const rx = { date: '2026-10-31', side: 'R' as const, maneuver: 'epley' as const, perDay: 3, days: 5 };
-    const last = new Date(rxValidUntil({ date: rx.date }, RX_VALID_DAYS)! - 1);
-    const to = new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59).getTime();
-    const lastText = shortDate(last);
-    // Geçerlilik sürerken oluşturulan rapor: dönem rapor tarihinde biter, geçerlilik ayrıca yazılır.
-    const live = report({ rx, period: { from: new Date(2026, 9, 31).getTime(), to }, generatedAt: new Date(2026, 9, 31, 18, 0).getTime() });
-    expect(homePeriodText(live)).toBe(`31.10.2026 – 31.10.2026 (rapor tarihi) · reçete geçerliliği ${lastText} dahil`);
-    expect(homeReportNoteLine(live)).toContain(`(rapor tarihi) · reçete geçerliliği ${lastText} dahil`);
-    // Süresi dolduktan sonra: dönemin sonu geçerliliğin sonudur.
-    const done = report({ rx, period: { from: new Date(2026, 9, 31).getTime(), to }, generatedAt: to + 3 * 24 * 60 * MIN });
-    expect(homePeriodText(done)).toBe(`31.10.2026 – ${lastText} (reçete geçerliliğinin sonu)`);
-    // Reçetesiz (ya da reçete dönemi dışındaki) rapor: düz aralık.
-    expect(homePeriodText(report())).toBe('31.10.2026 – 13.11.2026');
-    expect(homePeriodText(report({ rx, period: { from: S, to: S + 60 * MIN } }))).toBe('31.10.2026 – 31.10.2026');
+  it('tarihler her yerde ayrı adlarla: reçete (geçerlilik … dahil) · ataklar · rapor (tur 5, k09)', () => {
+    const rx = { date: '2026-10-16', side: 'R' as const, maneuver: 'epley' as const, perDay: 3, days: 5 };
+    const ep = report().episodes[0]!;
+    const two = report({
+      rx,
+      generatedAt: new Date(2026, 9, 31, 18, 0).getTime(),
+      episodes: [
+        { ...ep, startedAt: new Date(2026, 9, 17, 8, 0).getTime() },
+        { ...ep, startedAt: new Date(2026, 9, 25, 7, 30).getTime(), status: 'referred', endNote: 'ATYPICAL_LONG', retests: [] }
+      ]
+    });
+    expect(homePeriodText(two)).toBe('Reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 17.10–25.10 · rapor 31.10');
+    const line = homeReportNoteLine(two);
+    expect(line).toContain('reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 17.10–25.10 · rapor 31.10');
+    // Son atak yönlendirmeyle bittiyse satır bununla (ve nedeniyle) başlar; "gelmedi" son okunan bilgi olmaz.
+    expect(line).toMatch(/: Son atak \(25\.10\): hekime yönlendirildi — baş dönmesi bir dakikadan uzun sürdü/);
+    expect(homeReportHeadline(two)).toMatch(/^Son atak \(25\.10\): hekime yönlendirildi — .* · 2 atak · /);
+    // Reçetesiz rapor: reçete parçası yok.
+    expect(homePeriodText(report())).toBe('Atak 31.10 · rapor 05.11');
+  });
+
+  it('açık atakta 1. saat tekrar testi negatifse "sürüyor" değil "sabah testi bekleniyor" (tur 5, k08)', () => {
+    const ep = report().episodes[0]!;
+    const early = { at: S + 70 * MIN, kind: 'early' as const, side: 'R' as const, vertigo: false, latencySec: null, durationSec: null };
+    const open = report({ episodes: [{ ...ep, status: 'active', retests: [early] }] });
+    expect(homeLastOutcomeText(open)).toBe('son atak (31.10) — atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor');
+    expect(homeReportNoteLine(open)).toContain('atak açık: 1. saat tekrar testi negatif, sabah testi bekleniyor');
+    expect(homeReportNoteLine(open)).not.toMatch(/sürüyor/);
+    expect(homeEpisodeTitle(open.episodes[0]!)).toMatch(/— Atak açık: 1\. saat tekrar testi negatif, sabah testi bekleniyor$/);
+    // "Sürüyor" yalnız belirti sürüyorsa: tekrar testi pozitif ya da hiç test/manevra yok.
+    expect(homeOpenEpisodeText({ ...ep, status: 'active', retests: [{ ...early, vertigo: true, latencySec: 3, durationSec: 20 }] })).toBe(
+      'sürüyor: 1. saat tekrar testi pozitif (baş dönmesi var)'
+    );
+    expect(homeOpenEpisodeText({ ...ep, status: 'active', retests: [] })).toBe('atak açık: manevra sonrası tekrar testi yapılmadı');
+    expect(homeOpenEpisodeText({ ...ep, status: 'active', retests: [], maneuvers: [], sideTests: [] })).toBe('sürüyor');
   });
 });
 

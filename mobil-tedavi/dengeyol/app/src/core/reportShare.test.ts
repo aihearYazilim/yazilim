@@ -8,6 +8,7 @@ import {
   encodeHomeReport,
   encodeHomeReportRaw,
   extractReportToken,
+  homeReportDatesText,
   homeReportId,
   homeReportUrl,
   REPORT_TOKEN_BUDGET,
@@ -402,3 +403,23 @@ describe('adım başlıkları (kullanıcı turu 4, k10)', () => {
   });
 });
 
+
+describe('rapor tarihleri ayrı adlarla (kullanıcı turu 5, k09)', () => {
+  const ep = (y: number, mo: number, d: number) => ({ startedAt: new Date(y, mo, d, 9, 0).getTime() }) as never;
+  const rx = { date: '2026-10-16', side: 'R' as const, maneuver: 'epley' as const, perDay: 3, days: 5 };
+
+  it('reçete tarihi + son geçerli gün (dahil), atakların başlangıç tarihleri, rapor günü', () => {
+    const g = new Date(2026, 9, 31, 18, 0).getTime();
+    expect(homeReportDatesText({ generatedAt: g, rx, episodes: [ep(2026, 9, 17), ep(2026, 9, 25)] })).toBe(
+      'reçete 16.10 (geçerlilik 29.10 dahil) · ataklar 17.10–25.10 · rapor 31.10'
+    );
+    expect(homeReportDatesText({ generatedAt: g, rx, episodes: [ep(2026, 9, 25)] })).toBe('reçete 16.10 (geçerlilik 29.10 dahil) · atak 25.10 · rapor 31.10');
+    expect(homeReportDatesText({ generatedAt: g, episodes: [ep(2026, 9, 25), ep(2026, 9, 25)] })).toBe('ataklar 25.10 · rapor 31.10');
+    expect(homeReportDatesText({ generatedAt: g, episodes: [] })).toBe('atak yok · rapor 31.10');
+  });
+
+  it('yıl değişiyorsa bütün tarihler yıllı yazılır', () => {
+    const r = { generatedAt: new Date(2027, 0, 3, 10, 0).getTime(), rx: { ...rx, date: '2026-12-28' }, episodes: [ep(2026, 11, 30), ep(2027, 0, 2)] };
+    expect(homeReportDatesText(r)).toBe('reçete 28.12.2026 (geçerlilik 10.01.2027 dahil) · ataklar 30.12.2026–02.01.2027 · rapor 03.01.2027');
+  });
+});

@@ -9,8 +9,8 @@
  */
 import QRCode from 'qrcode';
 import { useEffect, useMemo, useState } from 'react';
-import { buildHomeReport, encodeHomeReport, homeReportUrl } from '../../../core/reportShare';
-import { formatDate } from '../../../state/episodes';
+import { capitalizeTr } from '../../../core/protocols';
+import { buildHomeReport, encodeHomeReport, homeReportDatesText, homeReportUrl } from '../../../core/reportShare';
 import type { AppData, Episode } from '../../../state/types';
 import { Icon } from '../../components/Icon';
 
@@ -52,7 +52,8 @@ export function ReportQr({ data, episodeId, episodes, now }: ReportQrProps) {
   const r = enc.report;
   const n = r.episodes.length;
   const ms = r.episodes.reduce((k, e) => k + e.maneuvers.length, 0);
-  const period = data.patient?.prescription && r.rx ? 'Reçete dönemi' : 'Dönem';
+  // Tarihler ayrı adlarla: reçete (+ geçerlilik), ataklar, rapor; klinisyen ekranı ve HBYS satırıyla aynı (kullanıcı turu 5, k09).
+  const dates = capitalizeTr(homeReportDatesText(r));
   const cut: string[] = [];
   if (r.stepsDropped) cut.push('adım ayrıntıları');
   if (r.episodesOmitted) cut.push(`en eski ${r.episodesOmitted} atak`);
@@ -69,7 +70,7 @@ export function ReportQr({ data, episodeId, episodes, now }: ReportQrProps) {
         yere gönderilmez.
       </p>
       <p className="small muted" data-testid="report-qr-summary">
-        {period} {formatDate(r.period.from)} – {formatDate(r.period.to)}: {n} atak, {ms} manevra
+        {dates}: {n} atak, {ms} manevra
         {r.pid ? ` · hasta kodu ${r.pid}` : ''}
       </p>
       {svg ? (

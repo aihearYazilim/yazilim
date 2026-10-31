@@ -14,7 +14,7 @@
  * Sürümler: v1 ilk biçim. Yeni alanlar isteğe bağlı eklenir (v1 çözücü tanımadığı alanı yok sayar); anlamı değişen bir
  * değişiklik sürümü artırır. Uygulamanın tanımadığı (daha yeni) sürüm "uygulamayı güncelleyin" hatasıyla reddedilir.
  */
-import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxValidUntil } from './prescription';
+import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
 import { type StepRecord, type StopReason, vertigoSummary } from './runner';
 import type { SideDecision, SideTestResult } from './safety';
@@ -262,6 +262,40 @@ export function buildHomeReport(d: AppData, opts: { now?: number; focusEpisodeId
     out.rx = { date: rx.date, side: rx.side, maneuver: rx.maneuver, perDay: rx.perDay, days: rx.days };
   }
   return out;
+}
+
+// ---- Tarih aralıkları (okunur) ------------------------------------------------------------------------------
+
+/**
+ * Raporun tarihleri, her biri kendi adıyla (kullanıcı turu 5, k09 #6): "reçete 16.10 (geçerlilik 29.10 dahil) · ataklar
+ * 17.10–25.10 · rapor 31.10". Aynı dönemin farklı aralıklarla ama hep "Reçete dönemi"/"Ev dönemi" diye etiketlenmesi hekimi
+ * düşündürüyordu; artık reçete tarihi + son geçerli gün, atakların başlangıç tarihleri ve raporun oluşturulduğu gün ayrı
+ * yazılır. Hasta tarafındaki QR kartı, klinisyenin içe aktarma ekranı ve HBYS satırı bu tek metni kullanır.
+ *
+ * Gün.ay yazılır; tarihlerden biri rapor yılından farklı yıldaysa hepsi gün.ay.yıl. Reçetesiz raporda reçete parçası yoktur.
+ * Küçük harfle başlar (satır içinde kullanılır); satır başında büyütülür.
+ */
+export function homeReportDatesText(r: Pick<HomeReport, 'generatedAt' | 'rx' | 'episodes'>): string {
+  const issued = r.rx ? rxIssuedAt(r.rx.date) : null;
+  const last = r.rx ? (rxLastValidDay(r.rx.date)?.getTime() ?? null) : null;
+  const starts = r.episodes.map((e) => e.startedAt).sort((a, b) => a - b);
+  const year = new Date(r.generatedAt).getFullYear();
+  const all = [r.generatedAt, ...starts, ...(issued !== null ? [issued] : []), ...(last !== null ? [last] : [])];
+  const withYear = all.some((t) => new Date(t).getFullYear() !== year);
+  const f = (t: number) => {
+    const d = new Date(t);
+    const dm = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return withYear ? `${dm}.${d.getFullYear()}` : dm;
+  };
+  const parts: string[] = [];
+  if (issued !== null) parts.push(`reçete ${f(issued)}${last !== null ? ` (geçerlilik ${f(last)} dahil)` : ''}`);
+  const first = starts[0];
+  const lastStart = starts[starts.length - 1];
+  if (first === undefined || lastStart === undefined) parts.push('atak yok');
+  else if (starts.length === 1) parts.push(`atak ${f(first)}`);
+  else parts.push(f(first) === f(lastStart) ? `ataklar ${f(first)}` : `ataklar ${f(first)}–${f(lastStart)}`);
+  parts.push(`rapor ${f(r.generatedAt)}`);
+  return parts.join(' · ');
 }
 
 // ---- Kodlama ---------------------------------------------------------------------------------------------
