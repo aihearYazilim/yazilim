@@ -1,21 +1,46 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { contraindicationsFor } from '../../core/safety';
 import { speech, Speech, SPEECH_RATES, SPEECH_SAMPLE } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
 import { applySettings, unlockAudio } from '../../platform/feedback';
 import { store, useData } from '../../state/store';
-import type { Settings as S } from '../../state/types';
+import type { PatientProfile, Settings as S } from '../../state/types';
 import { Segmented } from '../components/Controls';
 import { HapticLegend } from '../components/HapticLegend';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { CONSENT_VERSION, consentLine } from './patient/consent';
 
+/**
+ * Tanı bilgisinin tek satırlık özeti (Ayarlar): kurulum artık tanı sormaz; bilgi isteğe bağlı olarak buradan girilir.
+ */
+export function patientInfoSummary(p: PatientProfile | undefined): { dx: string; contra: string } {
+  const rx = p?.prescription;
+  const sideTxt = (s: string | undefined) => (s === 'R' ? 'sağ kulak' : s === 'L' ? 'sol kulak' : 'kulak bilinmiyor');
+  const canalTxt = (c: string | undefined) => (c === 'PC' ? 'arka kanal' : c === 'HC' ? 'yatay kanal' : 'kanal bilinmiyor');
+  const dx = rx
+    ? `Reçete: ${sideTxt(rx.side)}, arka kanal`
+    : p?.diagnosedByDoctor
+      ? `Hekim tanısı: ${canalTxt(p.canal)}, ${sideTxt(p.side)}`
+      : 'Girilmedi (her atakta iki taraf test edilir)';
+  const items = contraindicationsFor(p?.contraindications ?? []);
+  return { dx, contra: items.length ? items.map((c) => c.label).join(', ') : 'İşaretlenmedi' };
+}
+
 export function Settings() {
   const d = useData();
   const s = d.settings;
   const nav = useNavigate();
+  const { hash } = useLocation();
+  // "#tani" ile gelindiyse (ana ekrandaki "Tanımı gir") tanı bölümü görünür olsun.
+  useEffect(() => {
+    if (hash !== '#tani') return;
+    const el = document.getElementById('tani');
+    if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start' });
+  }, [hash]);
+  const info = patientInfoSummary(d.patient);
   const [confirmWipe, setConfirmWipe] = useState(false);
   const set = (p: Partial<S>) => store.update((x) => ({ ...x, settings: { ...x.settings, ...p } }));
 
@@ -47,6 +72,22 @@ export function Settings() {
 
   return (
     <Screen title="Ayarlar" back={true}>
+      {s.role === 'patient' && d.patient?.consentAt && (
+        <section className="card stack" id="tani" data-testid="settings-patient-info">
+          <h3>Tanı ve sağlık bilgilerim</h3>
+          <p className="small muted">İsteğe bağlı. Girerseniz uygulama hekiminizin söylediğini dikkate alır; girmezseniz her atakta iki tarafı test eder.</p>
+          <dl className="kv small">
+            <dt>Tanı</dt>
+            <dd data-testid="settings-dx">{info.dx}</dd>
+            <dt>Dikkat edilecek durum</dt>
+            <dd data-testid="settings-contra">{info.contra}</dd>
+          </dl>
+          <button className="btn secondary" onClick={() => nav('/hasta/kurulum?adim=tani')} data-testid="settings-edit-info">
+            Bilgilerimi düzenle
+          </button>
+        </section>
+      )}
+
       <section className="card stack">
         <h3>Ses ve geri bildirim</h3>
         <label className="row">

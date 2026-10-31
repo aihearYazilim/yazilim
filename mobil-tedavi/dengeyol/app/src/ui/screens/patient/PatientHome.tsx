@@ -1,7 +1,7 @@
 import { rxValidityLabel } from '../../../core/prescription';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { contraDoctorQuestions, contraindicationsFor, diagnosisGate, GATE_TEXT, RED_FLAGS, redFlagDoctorAsk } from '../../../core/safety';
+import { contraDoctorQuestions, contraindicationsFor, gateWarnings, GATE_TEXT, redFlagDoctorAsk } from '../../../core/safety';
 import {
   doseFor,
   doseLimitText,
@@ -14,9 +14,10 @@ import {
   doseLimitsFor,
   pendingReferral,
   recurrenceWarning,
+  REFERRAL_OVERRIDE_KIND,
   referralFlags,
+  referralOverrideDetail,
   rxActive,
-  rxFirstEpisode,
   rxPeriodEpisodes,
   rxPeriodSummary,
   sameDayReopenable,
@@ -26,6 +27,7 @@ import {
 import type { AppData, Episode } from '../../../state/types';
 import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
+import { logOverride } from '../../../state/overrides';
 import { activeEpisode, store, useData } from '../../../state/store';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
@@ -39,13 +41,27 @@ function useNow(ms = 15000) {
   return now;
 }
 
+/** Ana ekrandaki kısa bilgi satırı (kilit kartlarının yerine; yeniden tasarım). */
+function InfoLine({ testid, tone = 'info', children }: { testid: string; tone?: 'info' | 'warn'; children: React.ReactNode }) {
+  return (
+    <div className={`notice small${tone === 'info' ? ' info' : ''}`} data-testid={testid}>
+      <Icon name={tone === 'info' ? 'info' : 'alert'} />
+      <span>{children}</span>
+    </div>
+  );
+}
+
+/**
+ * Hasta ana ekranı (yeniden tasarım: hiçbir şey kilitlemez). En üstte her zaman tek büyük "Başım dönüyor" düğmesi
+ * (tanısız kişi, hekime yönlendirmeden sonra ve sınır dolmuşken de); eski kilit kartları altında kısa bilgi satırıdır.
+ */
 export function PatientHome() {
   const d = useData();
   const nav = useNavigate();
   const now = useNow();
   const p = d.patient;
   const ep = activeEpisode(d);
-  // Ana ekran her açılışta en üstten (kurulumdan gelince "Baş dönmem başladı" görünür olsun).
+  // Ana ekran her açılışta en üstten (kurulumdan gelince "Başım dönüyor" görünür olsun).
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -61,17 +77,17 @@ export function PatientHome() {
     </>
   );
 
-  // Kurulum yapılmamışsa doğrudan kuruluma (reçete bağlantısı da orada yapıştırılabilir).
+  // Onay verilmemişse tek ekranlık kuruluma (reçete bağlantısı da orada yapıştırılabilir).
   if (!p?.consentAt) return <Navigate to="/hasta/kurulum" replace />;
 
-  const gate = diagnosisGate({
+  const warnings = gateWarnings({
     diagnosedByDoctor: p.diagnosedByDoctor,
     canal: p.canal,
     side: p.side,
     hasPrescription: !!p.prescription,
     contraindications: p.contraindications
   });
-  const referral = !ep && !!pendingReferral(d);
+  const referralEp = !ep ? pendingReferral(d) : null;
   // Son 24 saatte kapatılan atak: raporu hekime göndermek bir dokunuş uzakta olsun.
   const recentlyClosed = ep
     ? null
@@ -80,88 +96,75 @@ export function PatientHome() {
     d.episodes.map((e) => e.startedAt),
     now
   );
-  // Yeni atak için doz: sınır doluyken büyük düğme yerine sınır ve bir sonraki izinli zaman (14 soru sordurulmaz).
-  // Bugün manevrayla kapatılmış atak yeniden açılacaksa sınır o atağa göre hesaplanır (kullanıcı turu 2, k06: sınır doluyken
-  // "Bugünkü atağınıza devam edilir" düğmesi çıkmasın).
+  // Önerilen doz sınırı doluysa yalnız bilgi satırı; düğme yine çalışır (uyarı ve kayıt akışta).
   const reopenable = !ep ? sameDayReopenable(d, now) : null;
   const startDs = !ep ? startDose(d, now) : null;
-  const startBlocked = startDs && !startDs.allowed ? startDs : null;
-  const referralEp = !ep ? pendingReferral(d) : null;
-  // Reçeteli kısa yolda taraf testi yapılmaz (kullanıcı turu 2, k02).
-  const rxShort = !reopenable && rxFirstEpisode(d, now);
+  const overDose = startDs && !startDs.allowed ? startDs : null;
   const rxReport = !ep ? rxEndReport(d, now) : null;
+  const na = ep ? nextAction(ep, now) : null;
+
+  /** "Başım dönüyor": hekime yönlendirmeden sonraysa bu aşma, yönlendirilen atağa araştırma kaydı olarak yazılır. */
+  const start = () => {
+    if (referralEp) logOverride(REFERRAL_OVERRIDE_KIND, referralOverrideDetail(referralEp), referralEp.id);
+    nav('/hasta/atak/start');
+  };
 
   return (
     <Screen title="DengeYol" right={right}>
-      {!gate.ok && (
-        <div className="card tint-warn stack" data-testid="home-gate-blocked">
-          <div className="card-title">
-            <Icon name="alert" />
-            <h3>Manevralar şu an kapalı</h3>
-          </div>
-          <p>{GATE_TEXT[gate.reason]}</p>
-          {gate.reason === 'CONTRAINDICATION' && <ContraSummary ids={p.contraindications} />}
-          <button className="btn secondary" onClick={() => nav('/hasta/kurulum')}>
-            Bilgilerimi düzenle
-          </button>
-        </div>
+      <button className="big-action" onClick={start} data-testid="start-episode">
+        <Icon name="sparkle" size={34} />
+        Başım dönüyor
+        <span className="sub">
+          {reopenable
+            ? 'Bugünkü atağınıza devam edilir'
+            : ep
+              ? na?.kind === 'retry-side-test'
+                ? 'Atağa kaldığınız yerden devam edilir'
+                : 'Atağınızın sıradaki adımı gösterilir'
+              : 'Kısa sorular, test ve manevra. Telefon alnınızda, sesle yönlendirilirsiniz.'}
+        </span>
+      </button>
+
+      {/* Eski kilitler: kısa bilgi satırları (düğmeyi engellemez). */}
+      {warnings.includes('CONTRAINDICATION') && <ContraSummary ids={p.contraindications} />}
+      {warnings.includes('HORIZONTAL_CANAL') && (
+        <InfoLine testid="home-gate-hc" tone="warn">
+          {GATE_TEXT.HORIZONTAL_CANAL}
+        </InfoLine>
       )}
-      {!gate.ok && gate.reason === 'NO_DIAGNOSIS' && <UrgencyLadder />}
-
-      {gate.ok && ep && <ActiveEpisodeCard now={now} />}
-
-      {gate.ok && !ep && referral && (
-        <div className="card tint-warn stack" data-testid="home-referral">
-          <div className="card-title">
-            <Icon name="alert" />
-            <h3>Önce hekiminizle görüşün</h3>
-          </div>
-          <p>Son atağınız hekime yönlendirmeyle sonlandı. Yeni bir manevradan önce hekiminiz ya da odyoloğunuzla görüşmeniz gerekir.</p>
-          {referralEp && <ReferralReason episode={referralEp} />}
+      {warnings.includes('NO_DIAGNOSIS') && !ep && (
+        <InfoLine testid="home-no-dx">
+          Hekim tanısı girilmedi; uygulama önce iki tarafı kısa bir testle dener. İlk kez yaşıyorsanız hekime görünmeniz önerilir.{' '}
+          <Link to="/ayarlar#tani">Tanımı gir</Link>
+        </InfoLine>
+      )}
+      {referralEp && (
+        <div className="stack" style={{ gap: 8 }} data-testid="home-referral">
+          <InfoLine testid="home-referral-line" tone="warn">
+            Son atağınız hekime yönlendirmeyle bitti. Hekiminizle görüşmeniz önerilir; yine de başlayabilirsiniz.
+          </InfoLine>
+          <ReferralReason episode={referralEp} />
           <DoctorClearance testid="home-doctor-cleared" />
         </div>
       )}
+      {overDose && (
+        <InfoLine testid="home-dose-limit" tone="warn">
+          {doseLimitText(overDose, d, now)}
+        </InfoLine>
+      )}
 
-      {gate.ok && !ep && !referral && recentlyClosed && (
+      {ep && <ActiveEpisodeCard now={now} />}
+
+      {!ep && recentlyClosed && (
         <div className="card tint-ok stack" data-testid="home-closed">
           <div className="card-title">
             <Icon name="check" />
             <h3>Atak kapatıldı</h3>
           </div>
-          <p className="small">Raporu hekiminize ya da odyoloğunuza gönderebilirsiniz.</p>
           <button className="btn secondary block" onClick={() => nav(`/hasta/rapor/${recentlyClosed.id}`)} data-testid="home-closed-report">
             <Icon name="print" /> Raporu hekime gönder
           </button>
         </div>
-      )}
-
-      {gate.ok && !ep && !referral && startBlocked && (
-        <div className="card tint-warn stack" data-testid="home-dose-limit">
-          <div className="card-title">
-            <Icon name="timer" />
-            <h3>{startBlocked.reason === 'DAILY_LIMIT' ? 'Bugünlük manevra sınırı doldu' : 'Evde manevra sınırı doldu'}</h3>
-          </div>
-          <p>{doseLimitText(startBlocked, d, now)}</p>
-        </div>
-      )}
-
-      {gate.ok && !ep && !referral && !startBlocked && (
-        <>
-          <button className="big-action" onClick={() => nav('/hasta/atak/start')} data-testid="start-episode">
-            <Icon name="sparkle" size={34} />
-            Baş dönmem başladı
-            <span className="sub">
-              {reopenable
-                ? 'Bugünkü atağınıza devam edilir'
-                : rxShort
-                  ? `${RED_FLAGS.length} güvenlik sorusu ve manevra · ~8 dk (gerekirse kısa test)`
-                  : `${RED_FLAGS.length} güvenlik sorusu, iki kısa test ve manevra · ~15 dk`}
-            </span>
-          </button>
-          <button className="btn secondary block" onClick={() => nav('/hasta/atak/practice')} data-testid="practice">
-            <Icon name="play" /> Deneme manevrası (baş dönmesi yokken)
-          </button>
-        </>
       )}
 
       {rxReport && <RxEndReportCard report={rxReport} />}
@@ -173,26 +176,17 @@ export function PatientHome() {
         </div>
       )}
 
-      {/* Atak sürerken yalnız atak kartı; kapı kapalıyken kilit kartı yeterli. */}
-      {gate.ok && !ep && (
-        <div className="card stack">
-          {p.prescription && rxActive(p, now) ? (
-            <p className="small" data-testid="home-rx">
-              <strong>Reçete:</strong> {sideName(p.prescription.side)} taraf, {p.prescription.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla{' '}
-              {p.prescription.perDay}
-              {p.prescription.by ? ` · ${p.prescription.by}` : ''}. {rxValidityLabel(p.prescription)} geçerli.
-            </p>
-          ) : (
-            <p className="small muted">
-              {p.prescription ? 'Reçetenin süresi doldu. ' : ''}Her atakta önce iki tarafı kısa bir testle deneyip baş dönmesinin hangi tarafta olduğunu
-              buluruz.
-            </p>
-          )}
-          <Link to="/hasta/kurulum" className="btn ghost">
-            Bilgilerimi düzenle
-          </Link>
-        </div>
+      {!ep && p.prescription && rxActive(p, now) && (
+        <p className="small" data-testid="home-rx">
+          <strong>Reçete:</strong> {sideName(p.prescription.side)} taraf, {p.prescription.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla{' '}
+          {p.prescription.perDay}
+          {p.prescription.by ? ` · ${p.prescription.by}` : ''}. {rxValidityLabel(p.prescription)} geçerli.
+        </p>
       )}
+
+      <button className="btn secondary block" onClick={() => nav('/hasta/atak/practice')} data-testid="practice">
+        <Icon name="play" /> Deneme manevrası (baş dönmesi yokken)
+      </button>
 
       {!ep && <InstallCard />}
 
@@ -219,7 +213,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
   const dose = doseFor(d, ep, now);
   const side = episodeSide(ep, d.patient);
   const limits = doseLimitsFor(d.patient);
-  // Doz sınırıyla aynı sayım (yarıda kalan manevralar ve diğer ataklar dahil).
+  // Doz sayımı (yarıda kalan manevralar ve diğer ataklar dahil).
   const today = dose.allowed ? limits.maxPerDay - dose.remainingToday : dose.reason === 'DAILY_LIMIT' ? limits.maxPerDay : null;
   const [confirmClose, setConfirmClose] = useState(false);
 
@@ -249,14 +243,12 @@ function ActiveEpisodeCard({ now }: { now: number }) {
           <dt>Bugün</dt>
           <dd>
             {today === null
-              ? dose.allowed === false && dose.reason !== 'DAILY_LIMIT'
-                ? 'atak için manevra süresi/sayısı doldu'
-                : 'sınıra ulaşıldı'
-              : `${today} / ${limits.maxPerDay} manevra`}
+              ? 'önerilen manevra süresi/sayısı doldu'
+              : `${today} / ${limits.maxPerDay} manevra${dose.allowed ? '' : ' (önerilen sınır doldu)'}`}
           </dd>
           <dt>Gün</dt>
           <dd>
-            {dose.day}. gün (en fazla {limits.maxDays})
+            {dose.day}. gün (önerilen en fazla {limits.maxDays})
           </dd>
         </dl>
       </div>
@@ -318,37 +310,30 @@ function ActiveEpisodeCard({ now }: { now: number }) {
         </div>
       )}
 
+      {/* Sınır doluysa da düğme kalır; uyarı satırı altında (akış "Yine de devam et" sorar ve kaydeder). */}
       {na.kind === 'treat-again' && (
         <div className="card stack">
           <h2>Baş dönmesi sürüyor</h2>
-          {dose.allowed ? (
-            <>
-              <p>Tekrar testinde baş dönmesi başladı. Manevrayı yeniden yapabilirsiniz (bugün {dose.remainingToday} hakkınız kaldı).</p>
-              <button className="btn primary block xl" onClick={() => nav('/hasta/atak/treat')} data-testid="do-treat">
-                Manevrayı tekrarla
-              </button>
-            </>
-          ) : (
-            <div className="notice danger">
-              <Icon name="alert" />
-              <span>{doseLimitText(dose, d, now)}</span>
-            </div>
+          <p>
+            Tekrar testinde baş dönmesi başladı. Manevrayı yeniden yapabilirsiniz
+            {dose.allowed ? ` (bugün önerilen ${dose.remainingToday} manevra kaldı).` : '.'}
+          </p>
+          <button className="btn primary block xl" onClick={() => nav('/hasta/atak/treat')} data-testid="do-treat">
+            Manevrayı tekrarla
+          </button>
+          {!dose.allowed && (
+            <InfoLine testid="home-dose-limit" tone="warn">
+              {doseLimitText(dose, d, now)}
+            </InfoLine>
           )}
         </div>
       )}
 
-      {/* Sınır doluyken "Ataka devam et" aynı sınır ekranına götüren çıkmaz bir döngüdür: yerine sınır ve sonraki zaman. */}
-      {na.kind === 'retry-side-test' &&
-        (dose.allowed ? (
-          <button className="btn primary block xl" onClick={() => nav('/hasta/atak/start')} data-testid="continue-episode">
-            Ataka devam et
-          </button>
-        ) : (
-          <div className="notice danger" data-testid="home-dose-limit">
-            <Icon name="alert" />
-            <span>{doseLimitText(dose, d, now)}</span>
-          </div>
-        ))}
+      {na.kind === 'retry-side-test' && !dose.allowed && (
+        <InfoLine testid="home-dose-limit" tone="warn">
+          {doseLimitText(dose, d, now)}
+        </InfoLine>
+      )}
 
       {na.kind === 'resolved-suggest' && (
         <div className="card tint-ok stack">
@@ -373,9 +358,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
       </div>
       {confirmClose && (
         <div className="card tint-warn stack" data-testid="close-confirm">
-          <p>
-            Atağı kapatırsanız kalan tekrar testleri yapılmaz. Tekrar testleri, kristallerin yerinde kalıp kalmadığını gösterir. Yine de kapatılsın mı?
-          </p>
+          <p>Kapatırsanız kalan tekrar testleri yapılmaz. Yine de kapatılsın mı?</p>
           <div className="row wrap">
             <button className="btn warn grow" onClick={() => close('closed', 'Kullanıcı kapattı')} data-testid="close-confirm-yes">
               Evet, kapat
@@ -480,7 +463,7 @@ export function RxPaste() {
 }
 
 /**
- * Tanısız (ilk) baş dönmesi: kilit kalır; ama kişi korkutulup yalnız bırakılmaz. İki sakinleştirici cümle ve belirtiye göre
+ * Tanısız (ilk) baş dönmesi: kilit yoktur (uygulama iki taraflı testle başlar); kişi korkutulup yalnız bırakılmaz. İki sakinleştirici cümle ve belirtiye göre
  * nereye, ne kadar acil gidileceği (112 / bugün acil / bugün KBB / birkaç gün içinde KBB). Belirti listesi kırmızı bayrak
  * sorularıyla aynı belirtileri kapsar.
  */
@@ -490,7 +473,7 @@ export function UrgencyLadder() {
       <h3>İlk kez baş dönmesi: ne yapmalı?</h3>
       <p>
         Baş hareketiyle başlayıp saniyeler süren dönme hissinin en sık nedeni iyi huylu kristal oynamasıdır (BPPV); tehlikeli değildir ve
-        muayenede yapılan birkaç dakikalık bir manevrayla çoğunlukla düzelir. Yine de ilk atakta tanının muayeneyle konması gerekir;
+        muayenede yapılan birkaç dakikalık bir manevrayla çoğunlukla düzelir. Yine de ilk atakta hekime görünmeniz önerilir;
         aşağıdan size uyan ilk satıra göre davranın.
       </p>
       <ol className="stack small" style={{ margin: 0, paddingLeft: 22 }}>
@@ -513,7 +496,7 @@ export function UrgencyLadder() {
         </li>
       </ol>
       <DoctorNotes />
-      <p className="small muted">Tanı aldıktan sonra "Bilgilerimi düzenle" ile hekiminizin söylediğini girin; size uygunsa manevralar açılır.</p>
+      <p className="small muted">Tanı aldıysanız hekiminizin söylediğini Ayarlar'dan girebilirsiniz (isteğe bağlı).</p>
     </div>
   );
 }
@@ -561,31 +544,37 @@ function DoctorNotes() {
   );
 }
 
-/** Kapalı kartta engelleyen maddeler ve hekime sorulacaklar (kullanıcı turu 2, k07). */
+/**
+ * Kontrendikasyon bilgi satırı: madde adlarıyla kısa uyarı (engel değil); hekime sorulacaklar katlanır (kullanıcı turu 2,
+ * k07). Maddeler Ayarlar'dan değiştirilir.
+ */
 function ContraSummary({ ids }: { ids: string[] }) {
   const items = contraindicationsFor(ids);
   if (items.length === 0) return null;
   const questions = contraDoctorQuestions(ids);
   return (
-    <div className="stack small" style={{ gap: 4 }} data-testid="home-gate-items">
-      <strong>{items.length > 1 ? 'Sizi engelleyen durumlar:' : 'Sizi engelleyen durum:'}</strong>
-      <ul style={{ margin: 0, paddingLeft: 22 }}>
-        {items.map((c) => (
-          <li key={c.id}>{c.label}</li>
-        ))}
-      </ul>
-      <strong>Hekiminize sorun:</strong>
-      <ol style={{ margin: 0, paddingLeft: 22 }}>
-        {questions.map((q) => (
-          <li key={q}>{q}</li>
-        ))}
-      </ol>
+    <div className="notice small" data-testid="home-gate-items">
+      <Icon name="alert" />
+      <div className="stack" style={{ gap: 4 }}>
+        <span>
+          <strong>Dikkat:</strong> {items.map((c) => c.label).join(', ')}. Manevrayı yavaş yapın, zorlamayın; önce hekiminize danışmanız önerilir.{' '}
+          <Link to="/ayarlar#tani">Değiştir</Link>
+        </span>
+        <details>
+          <summary>Hekiminize sorun</summary>
+          <ol style={{ margin: '6px 0 0', paddingLeft: 22 }}>
+            {questions.map((q) => (
+              <li key={q}>{q}</li>
+            ))}
+          </ol>
+        </details>
+      </div>
     </div>
   );
 }
 
 /**
- * Hekime yönlendirme kilidinde: hangi güvenlik sorusuna verilen yanıtla durdurulduğu ve hekime sorulacak cümle; sorunun
+ * Hekime yönlendirme bilgisinde: hangi güvenlik sorusuna verilen yanıtla durdurulduğu ve hekime sorulacak cümle; sorunun
  * açıklaması varsa (kulak: KBB değerlendirmesinden sonra nasıl yanıtlanır) o da (kullanıcı turu 2, k03).
  */
 export function ReferralReason({ episode }: { episode: Episode }) {
@@ -672,8 +661,8 @@ function RxEndReportCard({ report }: { report: { summary: string; by?: string; k
 }
 
 /**
- * Hekime yönlendirme kilidini açma: iki adımlı (düşünmeden dokunulmasın). Kilit beyana dayanır; bu yüzden soru açık ve
- * tek anlamlı sorulur. onCleared: kilit açıldıktan sonra yapılacak iş.
+ * "Hekimimle görüştüm" (iki adımlı; düşünmeden dokunulmasın): yönlendirme bilgisini kaldırır. Kilit değildir; yalnız
+ * hekim onayının kaydıdır (rapora yansır). onCleared: onaydan sonra yapılacak iş.
  */
 export function DoctorClearance({ testid, onCleared }: { testid: string; onCleared?: () => void }) {
   const [ask, setAsk] = useState(false);

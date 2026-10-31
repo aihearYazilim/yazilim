@@ -19,8 +19,13 @@ import {
   nextAction,
   nextMorning,
   nightNote,
+  doseLimitText,
+  doseOverrideDetail,
   pendingReferral,
+  REFERRAL_OVERRIDE_KIND,
   referralFlags,
+  referralOverrideDetail,
+  sideConflictOverrideDetail,
   recentKnownSide,
   recurrenceWarning,
   reopenEpisode,
@@ -132,13 +137,41 @@ describe('doz atak kapatılarak sıfırlanamaz', () => {
   });
 });
 
-describe('hekime yönlendirme kilidi', () => {
-  it('yönlendirmeyle biten ataktan sonra onay olmadan kilit', () => {
+describe('hekime yönlendirme bilgisi (yeniden tasarım: kilit yok)', () => {
+  it('yönlendirmeyle biten ataktan sonra bilgi; "hekimimle görüştüm" ya da "yine de başlat" kaydıyla kalkar', () => {
     const d = emptyData();
-    d.episodes = [ep({ status: 'referred', endedAt: base + 1000 })];
+    d.episodes = [ep({ status: 'referred', endedAt: base + 1000, endNote: 'Baş dönmesi bir dakikadan uzun sürdü' })];
+    expect(pendingReferral(d)).not.toBeNull();
+    // "Yine de başlat": kayıt yönlendirilen atağa yazılır; bilgi satırı kalkar.
+    const detail = referralOverrideDetail(d.episodes[0]!);
+    expect(detail).toBe('Yönlendirmeden sonra yeni atak başlatıldı (Baş dönmesi bir dakikadan uzun sürdü)');
+    d.episodes = [{ ...d.episodes[0]!, overrides: [{ at: base + 1500, kind: REFERRAL_OVERRIDE_KIND, detail }] }];
+    expect(pendingReferral(d)).toBeNull();
+    // Kapanıştan önceki (başka) bir aşma kaydı bilgi satırını kaldırmaz.
+    d.episodes = [{ ...d.episodes[0]!, overrides: [{ at: base + 500, kind: REFERRAL_OVERRIDE_KIND }] }];
     expect(pendingReferral(d)).not.toBeNull();
     d.patient = { contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R', doctorClearedAt: base + 2000 };
     expect(pendingReferral(d)).toBeNull();
+  });
+  it('güvenlik sorusuyla yönlendirmede kayıt açıklaması sorunun adını anar', () => {
+    const flag = RED_FLAGS.find((q) => q.stopsOn === 'yes')!;
+    const e = ep({ status: 'referred', endedAt: base + 1000, redFlags: [{ at: base, answers: { [flag.id]: 'yes' }, stopped: true }] });
+    expect(referralOverrideDetail(e)).toContain(`güvenlik sorusu: ${flag.label}`);
+  });
+});
+
+describe('uyarıya dönüşen sınırlar: kayıt açıklamaları', () => {
+  it('doz uyarısı metni engel dili kullanmaz; kayıt açıklaması nedeni ve günü yazar', () => {
+    const d = emptyData();
+    const txt = doseLimitText({ allowed: false, reason: 'TOTAL_LIMIT', day: 3 }, d, base);
+    expect(txt).toMatch(/önerilir/);
+    expect(txt).not.toMatch(/kilit|yapılamaz|en erken/);
+    expect(txt).toMatch(/112/);
+    expect(doseOverrideDetail({ allowed: false, reason: 'DAILY_LIMIT', day: 2 })).toBe('günlük manevra sınırı doluydu (2. gün)');
+  });
+  it('taraf çelişkisinde seçim kaydı', () => {
+    expect(sideConflictOverrideDetail('R', 'L', 'L')).toBe('Hekim: sağ, test: sol; test tarafına (sol) devam');
+    expect(sideConflictOverrideDetail('R', 'L', 'R')).toBe('Hekim: sağ, test: sol; hekimin dediği tarafa (sağ) devam');
   });
 });
 
@@ -249,8 +282,13 @@ describe('hekim tanısındaki tarafla çelişki (kullanıcı turu 1)', () => {
     expect(dxSideCheck(prof({ side: 'unknown' }), 'L', now).kind).toBe('ok');
     expect(dxSideCheck(prof({ diagnosedByDoctor: false }), 'L', now).kind).toBe('ok');
   });
-  it('14 gün içindeki tanıyla çelişki → yönlendir', () => {
-    expect(dxSideCheck(prof({ dxDate: '2026-10-10' }), 'L', now)).toMatchObject({ kind: 'refer' });
+  it('14 gün içindeki tanıyla çelişki → güçlü uyarı (engel değil; not "manevra yapılmadı" demez)', () => {
+    const r = dxSideCheck(prof({ dxDate: '2026-10-10' }), 'L', now);
+    expect(r).toMatchObject({ kind: 'refer', dxSide: 'R' });
+    if (r.kind === 'refer') {
+      expect(r.note).toMatch(/hekime danışması önerildi/);
+      expect(r.note).not.toMatch(/manevra yapılmadı/);
+    }
   });
   it('eski tanıyla çelişki → uyarı ve not', () => {
     const old = dxSideCheck(prof({ dxDate: '2026-07-01' }), 'L', now);

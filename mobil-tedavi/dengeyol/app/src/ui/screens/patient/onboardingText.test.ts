@@ -7,7 +7,7 @@ describe('uygunluk listesinin sesli okunuşu (kullanıcı turu 4, k01, k05)', ()
   it('açılışta kısa giriş: madde okunmaz, "hiçbiri" ve "Tekrar dinle" söylenir', () => {
     for (const helper of [false, true]) {
       const s = contraSpeechShort(helper);
-      expect(s).toMatch(/en alttaki seçeneği işaretleyin/);
+      expect(s).toMatch(/hiçbiri uymuyorsa bir şey işaretlemeniz gerekmez/);
       expect(s).toMatch(/Tekrar dinle/);
       for (const c of CONTRAINDICATIONS) expect(s).not.toContain(`madde: ${c.label}`);
       // Tam listenin küçük bir parçası (normal hızda ~20 s).
@@ -21,11 +21,12 @@ describe('uygunluk listesinin sesli okunuşu (kullanıcı turu 4, k01, k05)', ()
     expect(contraSpeechShort(false)).toContain('Emin değilseniz o maddeyi işaretleyin ve doktorunuza sorun.');
     expect(contraSpeechShort(true)).toContain('Emin değilseniz o maddeyi işaretleyin ve hastanın doktoruna sorun.');
   });
-  it('"Tekrar dinle"de bütün maddeler ve "hiçbiri" seçeneğinin adı', () => {
+  it('"Tekrar dinle"de bütün maddeler; liste isteğe bağlı ve engellemez (yeniden tasarım)', () => {
     const s = contraSpeech(false);
     for (const c of CONTRAINDICATIONS) expect(s).toContain(c.label);
-    expect(s).toContain(noneLabel(false));
-    expect(contraSpeech(true)).toContain(noneLabel(true));
+    expect(s).not.toContain(noneLabel(false));
+    expect(s).toMatch(/İşaretlemek manevrayı engellemez/);
+    expect(contraSpeech(true)).toMatch(/^Hasta için uygun mu\?/);
   });
 });
 
@@ -53,10 +54,10 @@ describe('"Son 2 hafta içinde" seçiminin tarihi (kullanıcı turu 4, k03)', ()
 });
 
 describe('tansiyon ilacı notu (kullanıcı turu 4, k07)', () => {
-  it('ayağa kalkınca göz kararmasında uygulamanın durduracağı ve hekime önceden sorulması söylenir', () => {
-    expect(CONTRA_NOT_BLOCKING_TEXT).toMatch(/Tansiyon ilacı kullanıyorsanız.*ayağa kalkınca göz kararması.*durdurur.*hekiminize önceden sorun/);
+  it('ayağa kalkınca göz kararmasında uygulamanın uyaracağı ve hekime önceden sorulması söylenir', () => {
+    expect(CONTRA_NOT_BLOCKING_TEXT).toMatch(/Tansiyon ilacı kullanıyorsanız.*ayağa kalkınca göz kararması.*uyarır.*hekiminize önceden sorun/);
     expect(CONTRA_NOT_BLOCKING_TEXT_HELPER).toMatch(
-      /Hasta tansiyon ilacı kullanıyorsa.*ayağa kalkınca göz kararması.*durdurur.*hastanın hekimine önceden sorun/
+      /Hasta tansiyon ilacı kullanıyorsa.*ayağa kalkınca göz kararması.*uyarır.*hastanın hekimine önceden sorun/
     );
   });
 });
