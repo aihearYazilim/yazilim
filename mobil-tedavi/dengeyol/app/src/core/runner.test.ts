@@ -7,7 +7,16 @@ import {
   DEFAULT_RUNNER_CONFIG,
   HANG_MORE_MAX_HINTS,
   initialRunnerState,
+  pauseSpeech,
+  PRONE_ARRIVAL_NOTICE,
+  PRONE_ARRIVAL_TEXT,
+  REACH_TOUCHED_ONLY_TEXT,
   reachSummary,
+  SAFETY_STOP_TEXT_WRONG_SIDE_HELPER,
+  SAME_HINT_THIN_AFTER,
+  SAME_HINT_THIN_EVERY_SEC,
+  speakableSeconds,
+  spokenDuration,
   type RunnerConfig,
   type RunnerEvent,
   type RunnerState,
@@ -1054,19 +1063,16 @@ describe('tur 2 E1-7: konuşma kuyruğu', () => {
 
 describe('tur 2 E1-8: duraklatma sesi', () => {
   it('"olduğunuz yerde kalın" değil; boyun ağrısında oturma ve "Pozisyona gelemiyorum" yolu söylenir', () => {
+    // Ayrıntı tur 4'ten beri "Tekrar dinle"de (pauseSpeech tam biçimi); ilk okunuş kısa (bkz. G1-4).
     const x = sim('epley');
-    send(x, { type: 'start' });
-    send(x, { type: 'pause' });
-    const t = speakCues(x.cues).pop()!.text;
+    const t = pauseSpeech(x.cfg, false, true);
     expect(t).toMatch(/Boynunuz ağrıyorsa yavaşça oturabilirsiniz/);
     expect(t).toMatch(/"Pozisyona gelemiyorum"/);
     expect(t).toMatch(/iki saniye basılı tutun/);
     expect(t).not.toMatch(/Olduğunuz yerde/);
     const y = sim('epley');
     y.cfg = { ...y.cfg, helper: true };
-    send(y, { type: 'start' });
-    send(y, { type: 'pause' });
-    expect(speakCues(y.cues).pop()!.text).toMatch(/Hastanın boynu ağrıyorsa.*"Bu pozisyona gelemiyor"/);
+    expect(pauseSpeech(y.cfg, false, true)).toMatch(/Hastanın boynu ağrıyorsa.*"Bu pozisyona gelemiyor"/);
   });
 });
 
@@ -1376,14 +1382,17 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
     send(x, { type: 'pause' });
     const t = speakCues(x.cues).pop()!.text;
     expect(t.startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.')).toBe(true);
-    expect(t).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın\.$/);
+    expect(pauseSpeech(x.cfg, false, true)).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın\.$/);
     // Baş dönmesi işaretliyken "bir kez dokunun" hemen eylemin ardından.
     const y = sim('epley');
     send(y, { type: 'start' });
     y.t += 500;
     send(y, { type: 'vertigoToggle' });
     send(y, { type: 'pause' });
-    expect(speakCues(y.cues).pop()!.text).toMatch(
+    expect(speakCues(y.cues).pop()!.text).toBe(
+      'Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Baş dönmesi geçtiyse ekrana bir kez dokunun.'
+    );
+    expect(pauseSpeech(y.cfg, true, true)).toMatch(
       /^Duraklatıldı\. Devam için ekrana iki saniye basılı tutun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Boynunuz/
     );
   });
@@ -1461,5 +1470,292 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
       const left = Number(/(\d+) saniye/.exec(last.text)![1]);
       expect(Math.abs(last.t + left - 120)).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Kullanıcı turu 4 — G1 (yürütücü)
+// ---------------------------------------------------------------------------------------------
+describe('tur 4 G1-2: yanlış yandan sırtüstüne gelince "şimdi doğru yana" (k04)', () => {
+  /** Sağ Epley 4. adım (gövdeyle sol yan): 2–12 s yanlış (sağ) yanda, 12–16 s sırtüstü, sonra hedefte. */
+  const viaSupine = (x: Sim) => {
+    const steps = x.cfg.protocol.steps;
+    return normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 12 ? lying(90, 0) : t < 16 ? lying(0, 0) : ideal(steps[3]!.target)));
+  };
+
+  it('sırtüstüne gelince "2 uzun" titreşim ve tonla kısa "Tamam, şimdi sol yanınıza."; sonra doğru yanda tamamlanır', () => {
+    const x = sim('epley');
+    const got = cueRun(x, viaSupine(x), 900);
+    expect(x.s.phase).toBe('done');
+    const s3 = got.filter((g) => g.idx === 3);
+    const said = speechOf(s3).filter((g) => g.cue.text.startsWith('Tamam, şimdi'));
+    expect(said.map((g) => g.cue.text)).toEqual(['Tamam, şimdi sol yanınıza.']);
+    const cue = said[0]!;
+    expect(cue.t).toBeGreaterThanOrEqual(12);
+    expect(cue.t).toBeLessThanOrEqual(12.5);
+    // O an okunan "önce sırtüstüne" yönergesini keser (hasta zaten sırtüstünde).
+    expect(cue.cue.priority).toBe('high');
+    const same = s3.filter((g) => g.t === cue.t).map((g) => g.cue);
+    expect(same).toContainEqual({ kind: 'haptic', pattern: 'move' });
+    expect(same).toContainEqual({ kind: 'tone', pattern: 'move' });
+    expect(x.s.records[3]!.wrongSide).toBe(true);
+  });
+
+  it('yakını ve klinisyen biçimi; oturuşa dönen ya da hiç yanlış yana geçmeyen hastaya söylenmez', () => {
+    const h = sim('epley');
+    h.cfg = { ...h.cfg, helper: true };
+    expect(timedRun(h, viaSupine(h), 900).map((w) => w.text)).toContain('Tamam, şimdi hastanın sol yanına.');
+    const c = sim('epley', 'clinician');
+    expect(timedRun(c, viaSupine(c), 900).map((w) => w.text)).toContain('Şimdi hastanın soluna.');
+    const sitUp = sim('epley');
+    const st = sitUp.cfg.protocol.steps;
+    const sat = cueRun(
+      sitUp,
+      normalExcept(sitUp, 3, (t) => (t < 2 ? ideal(st[2]!.target) : t < 12 ? lying(90, 0) : t < 16 ? poseFromUp(upFromSitting(0)) : ideal(st[3]!.target))),
+      900
+    );
+    expect(speechOf(sat).some((g) => g.cue.text.startsWith('Tamam, şimdi'))).toBe(false);
+    const ok = sim('epley');
+    const all = cueRun(ok, (idx, t) => ideal(ok.cfg.protocol.steps[t > 1 || idx === 0 ? idx : idx - 1]!.target), 900);
+    expect(speechOf(all).some((g) => g.cue.text.startsWith('Tamam, şimdi'))).toBe(false);
+  });
+
+  it("sırtüstü sınırında gidip gelen hastaya en sık 5 s'de bir", () => {
+    const x = sim('epley');
+    const steps = x.cfg.protocol.steps;
+    const got = cueRun(
+      x,
+      normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 20 ? lying(Math.floor(t * 2) % 2 ? 35 : 25, 0) : ideal(steps[3]!.target))),
+      900
+    );
+    const times = speechOf(got)
+      .filter((g) => g.idx === 3 && g.cue.text === 'Tamam, şimdi sol yanınıza.')
+      .map((g) => g.t);
+    expect(times.length).toBeGreaterThan(0);
+    for (let i = 1; i < times.length; i++) expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(5 - 0.01);
+  });
+});
+
+describe('tur 4 G1-3: en iyi açı tek ölçümden değil; hedefe bir an değmek "tutulamadı" (k07)', () => {
+  it('başın bir an hedefe savrulması en iyi açı sayılmaz: "~8° … hedefe yalnız bir an değdi, tutulamadı"', () => {
+    const x = sim('epley');
+    const s0 = x.cfg.protocol.steps[0]!.target;
+    // Hızla yatarken baş 0,3 s 16°'ye (hedefte) savrulur, sonra 8°'de kalır (k07'nin ilk denemesi).
+    run(x, { maxSec: 400, poseOverride: (idx, t) => (idx === 0 || t <= 1 ? ideal(s0) : t <= 1.3 ? lying(45, 16) : lying(45, 8)) });
+    expect(x.s.stopReason).toBe('POSITION_UNREACHABLE');
+    const rec = x.s.records[1]!;
+    expect(rec.firstInRangeAt).not.toBeNull();
+    expect(rec.reach?.phi).toBeCloseTo(8, 0);
+    expect(rec.reach?.touchedOnly).toBe(true);
+    expect(reachSummary(rec, x.cfg.protocol.steps[1]!)).toBe(`baş en çok ~8° sarktı (hedef 15–40°); ${REACH_TOUCHED_ONLY_TEXT}`);
+    expect(REACH_TOUCHED_ONLY_TEXT).toBe('hedefe yalnız bir an değdi, tutulamadı');
+  });
+
+  it('hedefe hiç değmeyen temiz denemede işaret yok; sınırda gidip gelen hastada ortanca değer ve işaret', () => {
+    const clean = sim('epley');
+    epleyStuck(clean, lying(45, 8), 400);
+    expect(clean.s.records[1]!.reach?.touchedOnly).toBeUndefined();
+    expect(reachSummary(clean.s.records[1]!, clean.cfg.protocol.steps[1]!)).toBe('baş en çok ~8° sarktı (hedef 15–40°)');
+    const edge = sim('epley');
+    const s0 = edge.cfg.protocol.steps[0]!.target;
+    // 0,4 s hedefte (φ 17), 1,6 s dışında (φ 12).
+    run(edge, { maxSec: 300, poseOverride: (idx, t) => (idx === 0 || t <= 1 ? ideal(s0) : lying(45, Math.round(t * 10) % 20 < 4 ? 17 : 12)) });
+    const rec = edge.s.records[1]!;
+    expect(rec.unreachable).toBe(true);
+    expect(rec.reach?.phi).toBeCloseTo(12, 0);
+    expect(reachSummary(rec, edge.cfg.protocol.steps[1]!)).toBe(`baş en çok ~12° sarktı (hedef 15–40°); ${REACH_TOUCHED_ONLY_TEXT}`);
+  });
+
+  it('bildirilen değer hedef aralığındaysa yalnız "hedefe yalnız bir an değdi" (çelişkili "~16° sarktı … gelinemedi" yok)', () => {
+    const x = sim('epley');
+    // Yönerge çok uzun: hasta hedefte, ama pozisyon henüz doğrulanamadan "Pozisyona gelemiyorum" seçildi.
+    x.cfg = { ...x.cfg, introSecFor: () => 30 };
+    const s0 = x.cfg.protocol.steps[0]!.target;
+    send(x, { type: 'start' });
+    while (x.s.stepIndex < 1 || (x.t - x.s.stepStartedAt) / 1000 < 10) {
+      x.t += 100;
+      const inStep = (x.t - x.s.stepStartedAt) / 1000;
+      send(x, { type: 'tick', pose: x.s.stepIndex === 0 ? ideal(s0) : inStep <= 1 ? ideal(s0) : lying(45, 20) });
+    }
+    send(x, { type: 'pause' });
+    send(x, { type: 'abort', reason: 'POSITION_UNREACHABLE' });
+    const rec = x.s.records[1]!;
+    expect(rec.reachedAt).toBeNull();
+    expect(rec.reach?.touchedOnly).toBe(true);
+    expect(reachSummary(rec, x.cfg.protocol.steps[1]!)).toBe(REACH_TOUCHED_ONLY_TEXT);
+  });
+
+  it('kısa dizide (ortalama oluşmadan) durdurulursa eldeki ölçümlerden; tamamlanan adımda özet yine yok', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    while (x.s.stepIndex < 1) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[0]!.target) });
+    }
+    for (let i = 0; i < 8; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: lying(45, 6) });
+    }
+    send(x, { type: 'pause' });
+    send(x, { type: 'abort', reason: 'POSITION_UNREACHABLE' });
+    expect(x.s.records[1]!.reach?.phi).toBeCloseTo(6, 0);
+    expect(x.s.records[1]!.reach?.touchedOnly).toBeUndefined();
+    const ok = sim('epley');
+    run(ok);
+    ok.cfg.protocol.steps.forEach((st, i) => expect(reachSummary(ok.s.records[i]!, st)).toBeNull());
+  });
+});
+
+describe('tur 4 G1-4: sesli metin, duraklatma sesi, kısa seste seyrekleşme, yüzüstünden gelme', () => {
+  it('saniye kısaltması seste açılır; bir dakikadan uzun süre sade söylenir', () => {
+    expect(speakableSeconds('Sağ taraf testi: baş en çok ~8° geriye sarkabildi (hedef 15–40°); 72 s içinde gelinemedi')).toBe(
+      'Sağ taraf testi: baş en çok ~8° geriye sarkabildi (hedef 15–40°); 72 saniye içinde gelinemedi'
+    );
+    expect(speakableSeconds('geçiş 4 sn, 8,5 s sürdü; 3s.')).toBe('geçiş 4 saniye, 8,5 saniye sürdü; 3 saniye.');
+    expect(speakableSeconds('2 saat sonra, 45° sola, Sağ yan, 1 sol')).toBe('2 saat sonra, 45° sola, Sağ yan, 1 sol');
+    expect(spokenDuration(72)).toBe('bir dakikadan uzun süre');
+    expect(spokenDuration(45.4)).toBe('45 saniye');
+  });
+
+  it('yürütücünün söylediği hiçbir cümlede "s"/"sn" kısaltması yok (hasta, yakını, klinisyen; durdurmalar dahil)', () => {
+    const texts: string[] = [];
+    const collect = (x: Sim) => texts.push(...spoken(x));
+    for (const mode of ['patient', 'clinician'] as const) {
+      for (const id of ['epley', 'semont', 'dix-hallpike'] as const) {
+        const x = sim(id, mode);
+        run(x, { reactSec: 4 });
+        collect(x);
+      }
+    }
+    const h = sim('epley');
+    h.cfg = { ...h.cfg, helper: true };
+    epleyStuck(h, lying(45, 8), 400);
+    collect(h);
+    const full = sim('epley', 'clinician');
+    full.cfg = { ...full.cfg, clinicianVoice: 'full' };
+    epleyStuck(full, lying(45, 8), 120);
+    collect(full);
+    const v = sim('epley');
+    send(v, { type: 'start' });
+    while (v.s.stepIndex < 1 || v.s.phase !== 'holding') {
+      v.t += 100;
+      send(v, { type: 'tick', pose: ideal(v.cfg.protocol.steps[v.s.stepIndex]!.target) });
+    }
+    send(v, { type: 'vertigoToggle' });
+    while (v.s.stopReason === null && v.t < 600000) {
+      v.t += 100;
+      send(v, { type: 'tick', pose: ideal(v.cfg.protocol.steps[1]!.target) });
+    }
+    collect(v);
+    texts.push(pauseSpeech(v.cfg, true, true));
+    expect(texts.length).toBeGreaterThan(50);
+    for (const t of texts) expect(t, t).not.toMatch(/\d\s*(s|sn)(?![\p{L}\p{N}])/u);
+  });
+
+  it('duraklatma sesi varsayılan kısa (eylem + varsa "bir kez dokunun"); ayrıntı yalnız tam biçimde', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    send(x, { type: 'pause' });
+    expect(speakCues(x.cues).pop()!.text).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.');
+    expect(pauseSpeech(x.cfg, false, false)).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.');
+    expect(pauseSpeech(x.cfg, false, true).startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz')).toBe(true);
+    expect(pauseSpeech({ ...x.cfg, helper: true }, false, true)).toMatch(/"Bu pozisyona gelemiyor" düğmesine dokunun ve onaylayın\.$/);
+    const c = sim('epley', 'clinician');
+    expect(pauseSpeech(c.cfg, true, true)).toBe('Duraklatıldı.');
+  });
+
+  it('klinisyen kısa seste aynı yön ipucu üçüncüden sonra seyrekleşir; açık seste ve yanlış tarafta değişmez (k10)', () => {
+    const gaps = (voice: 'short' | 'full', text: string) => {
+      const x = sim('epley', 'clinician');
+      x.cfg = { ...x.cfg, clinicianVoice: voice };
+      const s0 = x.cfg.protocol.steps[0]!.target;
+      const said = timedRun(x, (idx, t) => (idx === 0 || t <= 1 ? ideal(s0) : lying(45, 8)), 120);
+      const ts = said.filter((w) => w.idx === 1 && w.text === text).map((w) => w.t);
+      return ts.slice(1).map((t, i) => t - ts[i]!);
+    };
+    const short = gaps('short', 'Daha sarkık.');
+    expect(short.length).toBeGreaterThanOrEqual(5);
+    // İlk üçü olağan aralıkla (~5 s), sonrakiler en az 10 s arayla.
+    short.slice(0, SAME_HINT_THIN_AFTER - 1).forEach((g) => expect(g).toBeLessThan(SAME_HINT_THIN_EVERY_SEC));
+    short.slice(SAME_HINT_THIN_AFTER - 1).forEach((g) => expect(g).toBeGreaterThanOrEqual(SAME_HINT_THIN_EVERY_SEC - 0.01));
+    const full = gaps('full', 'Ekstansiyonu artırın (baş daha sarkık).');
+    expect(full.length).toBeGreaterThanOrEqual(5);
+    full.forEach((g) => expect(g).toBeLessThan(SAME_HINT_THIN_EVERY_SEC));
+    // Yanlış taraf yönergesi seyrekleşmez.
+    const w = sim('epley', 'clinician');
+    const steps = w.cfg.protocol.steps;
+    const said = timedRun(w, normalExcept(w, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 60 ? lying(90, 0) : ideal(steps[3]!.target))), 900);
+    const ws = said.filter((x) => x.idx === 3 && x.text === 'Sırtüstünden hastanın soluna.').map((x) => x.t);
+    expect(ws.length).toBeGreaterThanOrEqual(5);
+    ws.slice(1).forEach((t, i) => expect(t - ws[i]!).toBeLessThan(SAME_HINT_THIN_EVERY_SEC));
+  });
+
+  it('hedef açıya yüzüstünden gelinince hemen ve açıkça söylenir, kayda geçer; sırtüstünden gelince kabul', () => {
+    const x = sim('epley');
+    const steps = x.cfg.protocol.steps;
+    const said = timedRun(
+      x,
+      normalExcept(x, 3, (t) => {
+        if (t < 2) return ideal(steps[2]!.target);
+        if (t < 14) return lying(90, 0); // yanlış (sağ) yan
+        if (t < 16) return lying(175, 0); // yüzüstü
+        if (t < 30) return lying(-135, 0); // yüzüstü üzerinden hedef açısında
+        if (t < 32) return lying(0, 0); // sırtüstü
+        return ideal(steps[3]!.target);
+      }),
+      600
+    );
+    expect(x.s.phase).toBe('done');
+    const rec = x.s.records[3]!;
+    expect(rec.proneArrival).toBe(true);
+    expect((rec.reachedAt! - rec.startedAt) / 1000).toBeGreaterThanOrEqual(32);
+    const prone = said.filter((w) => w.idx === 3 && w.text.startsWith('Yüzüstünden geçilerek gelindi; kabul edilmedi.'));
+    expect(prone.length).toBeGreaterThan(0);
+    expect(prone[0]!.text).toBe(
+      'Yüzüstünden geçilerek gelindi; kabul edilmedi. Önce sırtüstüne dönün, sonra bütün vücudunuzla sol yanınıza dönün.'
+    );
+    expect(prone[0]!.t).toBeGreaterThanOrEqual(16);
+    expect(prone[0]!.t).toBeLessThanOrEqual(16.5);
+    expect(prone[0]!.priority).toBe('high');
+    // Sırtüstüne gelince "şimdi sol yanınıza".
+    expect(said.some((w) => w.idx === 3 && w.text === 'Tamam, şimdi sol yanınıza.' && w.t >= 30)).toBe(true);
+    // Ekranda da not; sırtüstüne dönünce kalkar.
+    const y = sim('epley');
+    const notes: { t: number; notice: string | null }[] = [];
+    cueRun(
+      y,
+      normalExcept(y, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 6 ? lying(90, 0) : t < 8 ? lying(175, 0) : t < 20 ? lying(-135, 0) : t < 22 ? lying(0, 0) : ideal(steps[3]!.target))),
+      600,
+      (z) => {
+        if (z.s.stepIndex === 3) notes.push({ t: (z.t - z.s.stepStartedAt) / 1000, notice: z.s.notice });
+      }
+    );
+    expect(notes.find((n) => n.t > 10 && n.t < 19)?.notice).toBe(PRONE_ARRIVAL_NOTICE);
+    expect(notes.find((n) => n.t > 21)?.notice).toBeNull();
+  });
+
+  it("yüzüstünden hedefte kalan hasta ~60 s'de durur; özet dönüş uzaklığı yerine \"yüzüstünden geçilerek gelindi\"; yakını bitiş metni", () => {
+    const x = sim('epley');
+    const steps = x.cfg.protocol.steps;
+    run(x, {
+      maxSec: 600,
+      poseOverride: normalExcept(x, 3, (t) => (t < 2 ? ideal(steps[2]!.target) : t < 6 ? lying(90, 0) : t < 7 ? lying(175, 0) : lying(-135, 0)))
+    });
+    expect(x.s.stopReason).toBe('POSITION_UNREACHABLE');
+    const rec = x.s.records[3]!;
+    expect(rec.wrongSideStop).toBe(true);
+    expect(rec.proneArrival).toBe(true);
+    // Güvenlik kuralları aynen: hedef gevşetilmedi, ~60 s'de durdu.
+    expect(rec.reachedAt).toBeNull();
+    const dur = ((rec.endedAt ?? 0) - rec.startedAt) / 1000;
+    expect(dur).toBeGreaterThanOrEqual(60);
+    expect(dur).toBeLessThan(70);
+    const sum = reachSummary(rec, steps[3]!)!;
+    expect(sum).toContain(PRONE_ARRIVAL_TEXT);
+    expect(sum).not.toMatch(/döndü|uzak/);
+    expect(PRONE_ARRIVAL_TEXT).toBe('yüzüstünden geçilerek gelindi, kabul edilmedi');
+    expect(stopTextFor('POSITION_UNREACHABLE', x.s.records)).toBe(SAFETY_STOP_TEXT.WRONG_SIDE);
+    expect(stopTextFor('POSITION_UNREACHABLE', x.s.records, { helper: true })).toBe(SAFETY_STOP_TEXT_WRONG_SIDE_HELPER);
+    expect(SAFETY_STOP_TEXT_WRONG_SIDE_HELPER).toMatch(/Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun\./);
   });
 });
