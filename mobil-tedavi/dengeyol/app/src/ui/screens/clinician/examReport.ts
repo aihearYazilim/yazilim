@@ -4,7 +4,7 @@
 import { type Finding, type Findings, keyLabel, MECHANISM_LABEL, NYSTAGMUS_LABEL, rxFindingLock } from '../../../core/diagnosis';
 import { decodePrescription } from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
-import { recordStats, type StepRecord, vertigoSummary } from '../../../core/runner';
+import { recordStats, vertigoSummary } from '../../../core/runner';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
 
@@ -130,7 +130,6 @@ export function methodsOf(...fs: Findings[]): string[] {
  * Sarkma (φ) sapması istatistikleri. Yürütücü kaydı (StepRecord) bunları henüz tutmuyor; D1 θ alanlarıyla aynı biçimde
  * eklediğinde raporda kendiliğinden görünür.
  */
-type PhiFields = { sumAbsPhiErr?: number; maxAbsPhiErr?: number; phiSamples?: number };
 
 export interface StepLine {
   title: string;
@@ -139,7 +138,8 @@ export interface StepLine {
   inRangePct: number | null;
   manual: boolean;
   theta: { mean: number; max: number } | null;
-  phi: { mean: number; max: number } | null;
+  /** Sarkma açısı (φ): adımdaki ortalama ve en düşük değer (yürütücü kaydı). */
+  phi: { mean: number; min: number } | null;
   transitionSec: number | null;
   fastTargetSec: number | null;
   /** Nistagmus/belirti işareti özeti (gecikme pozisyona girişten). */
@@ -161,18 +161,14 @@ export function stepLines(m: ManeuverLog): StepLine[] {
     const st = def?.steps.find((s) => s.id === r.stepId);
     const targetSec = st ? (st.clinicianMinHoldSec ?? st.minHoldSec) : null;
     const stats = recordStats(r);
-    const p = r as StepRecord & PhiFields;
-    const phi =
-      p.phiSamples && p.phiSamples > 0 && p.sumAbsPhiErr !== undefined && p.maxAbsPhiErr !== undefined
-        ? { mean: round1(p.sumAbsPhiErr / p.phiSamples), max: round1(p.maxAbsPhiErr) }
-        : null;
+    const phi = stats.meanPhi !== null && stats.minPhi !== null ? { mean: stats.meanPhi, min: stats.minPhi } : null;
     const v = vertigoSummary(r);
     const nystagmus = v
       ? `nistagmus gecikme ${v.latencySec} s, ${v.durationSec !== null ? `süre ${v.durationSec} s` : 'bitişi işaretlenmedi'}${r.vertigoMarks.length > 1 ? ` (${r.vertigoMarks.length} işaret)` : ''}`
       : null;
     // Yarıda kalan manevranın son (kesilen) adımı "erken bitirildi" sayılmaz: o zaten "yarıda" yazılır.
     const interrupted = !m.completed && i === m.records.length - 1;
-    const early = !interrupted && r.endedAt !== null && targetSec !== null && targetSec >= 3 && r.holdSec <= EARLY_END_SEC;
+    const early = !interrupted && (!!r.endedEarly || (r.endedAt !== null && targetSec !== null && targetSec >= 3 && r.holdSec <= EARLY_END_SEC));
     return {
       title: r.title,
       holdSec: Math.round(r.holdSec),
@@ -196,7 +192,7 @@ export function stepLineText(s: StepLine, index: number): string {
   if (s.inRangePct !== null) parts.push(`hedefte %${s.inRangePct}`);
   else if (s.manual) parts.push('elle onay');
   if (s.theta) parts.push(`θ sapma ort. ${s.theta.mean}° / en çok ${s.theta.max}°`);
-  if (s.phi) parts.push(`φ (sarkma) sapma ort. ${s.phi.mean}° / en çok ${s.phi.max}°`);
+  if (s.phi) parts.push(`φ (sarkma) ort. ${s.phi.mean}° / en az ${s.phi.min}°`);
   if (s.transitionSec !== null) {
     parts.push(
       `geçiş ${s.transitionSec} s${s.fastTargetSec !== null ? (s.transitionSec > s.fastTargetSec ? ` (yavaş; hedef <${s.fastTargetSec} s)` : ` (hedef <${s.fastTargetSec} s)`) : ''}`

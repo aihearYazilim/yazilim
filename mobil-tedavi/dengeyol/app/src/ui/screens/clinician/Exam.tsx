@@ -964,7 +964,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
                       <th>Süre / hedef</th>
                       <th>Hedefte</th>
                       <th>θ sapma (ort. / en çok)</th>
-                      {anyPhi && <th>φ sarkma sapması (ort. / en çok)</th>}
+                      {anyPhi && <th>φ sarkma (ort. / en az)</th>}
                       {anyTransition && <th>Geçiş</th>}
                       <th>Nistagmus</th>
                     </tr>
@@ -979,7 +979,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
                         </td>
                         <td>{l.inRangePct !== null ? `%${l.inRangePct}` : l.manual ? 'elle' : '—'}</td>
                         <td>{l.theta ? `${l.theta.mean}° / ${l.theta.max}°` : '—'}</td>
-                        {anyPhi && <td>{l.phi ? `${l.phi.mean}° / ${l.phi.max}°` : '—'}</td>}
+                        {anyPhi && <td>{l.phi ? `${l.phi.mean}° / ${l.phi.min}°` : '—'}</td>}
                         {anyTransition && (
                           <td>
                             {l.transitionSec !== null

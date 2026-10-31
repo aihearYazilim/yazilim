@@ -4,7 +4,7 @@
  */
 import { type Prescription, rxValidUntil } from '../../../core/prescription';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
-import { recordStats, type StepRecord, vertigoSummary } from '../../../core/runner';
+import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary } from '../../../core/runner';
 import { RED_FLAGS, type SideDecision } from '../../../core/safety';
 import { formatDate, formatDateTimeYear, RX_VALID_DAYS } from '../../../state/episodes';
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from '../../../state/types';
@@ -26,7 +26,8 @@ const CODE_TEXT: Record<string, string> = {
   VERTIGO_TOO_LONG: 'manevrada baş dönmesi 2 dakikadan uzun sürdü ya da bitişi işaretlenmedi; güvenlik nedeniyle durduruldu',
   USER_FEELS_UNWELL: 'hasta kendini iyi hissetmedi',
   USER_ABORT: 'hasta manevrayı yarıda bıraktı',
-  INTERRUPTED: 'uygulamadan çıkıldı'
+  INTERRUPTED: 'uygulamadan çıkıldı',
+  POSITION_UNREACHABLE: 'manevranın bir pozisyonuna gelinemedi (baş yeterince sarkamadı ya da çevrilemedi); zorlamadan hekime yönlendirildi'
 };
 
 /** Atağın kapanış notunu (endNote) Türkçe cümleye çevirir. */
@@ -48,10 +49,7 @@ export function endNoteText(note: string): string {
 }
 
 export function stopReasonText(r: string | null): string {
-  if (r === 'VERTIGO_TOO_LONG') return 'durduruldu: baş dönmesi 2 dakikadan uzun';
-  if (r === 'USER_FEELS_UNWELL') return 'durduruldu: kendini iyi hissetmedi';
-  if (r === 'INTERRUPTED') return 'kesildi: uygulamadan çıkıldı';
-  return 'yarıda bırakıldı';
+  return r && r in STOP_REASON_TEXT ? STOP_REASON_TEXT[r as StopReason] : 'yarıda bırakıldı';
 }
 
 /** Adımdaki baş dönmesi: pozisyona gelişe göre gecikme ve süre (vertigoSummary). Yoksa null. */
@@ -69,7 +67,11 @@ export function stepSummary(r: StepRecord): string {
   const parts = [`${Math.round(r.holdSec)} s`];
   if (st.inRangePct !== null) parts.push(`hedefte %${st.inRangePct}`);
   if (st.meanAbsThetaErr !== null) parts.push(`sapma ort. ${st.meanAbsThetaErr}° / en çok ${st.maxAbsThetaErr}°`);
+  if (st.meanPhi !== null) parts.push(`sarkma ort. ${st.meanPhi}°`);
   if (r.manual) parts.push('elle onaylandı');
+  if (r.unreachable) parts.push('POZİSYONA GELİNEMEDİ');
+  if (r.endedEarly) parts.push('süre dolmadan geçildi');
+  if (r.slowTransition && r.transitionSec != null) parts.push(`yavaş geçiş ${Math.round(r.transitionSec * 10) / 10} s`);
   parts.push(symptomText(r) ?? 'baş dönmesi işaretlenmedi');
   return parts.join(' · ');
 }

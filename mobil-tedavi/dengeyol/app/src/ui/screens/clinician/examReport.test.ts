@@ -150,8 +150,8 @@ describe('manevra adımları', () => {
     const plain = stepLines(m([rec({ stepId: 'ep-1' })]))[0]!;
     expect(plain.theta).toEqual({ mean: 5, max: 12 });
     expect(plain.phi).toBeNull();
-    const withPhi = { ...rec({ stepId: 'ep-1' }), sumAbsPhiErr: 400, maxAbsPhiErr: 9.04, phiSamples: 100 };
-    expect(stepLines(m([withPhi]))[0]!.phi).toEqual({ mean: 4, max: 9 });
+    const withPhi = { ...rec({ stepId: 'ep-1' }), sumPhi: 2500, minPhi: 18.04, phiSamples: 100 };
+    expect(stepLines(m([withPhi]))[0]!.phi).toEqual({ mean: 25, min: 18 });
   });
 
   it('Semont geçiş süresi ve manevra sırasındaki nistagmus işaretleri', () => {

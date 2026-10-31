@@ -60,3 +60,9 @@ kilidi, ağsızlık) zayıflatılmaz.
 - Kriptografik imzalı reçete: sunucu/anahtar altyapısı gerektirir (ağsızlık çizgisi). Yerine uyarı + rapor/HBYS'de reçete kodu.
 - Reçeteyle kontrendikasyonun kaldırılması (k07): hekim gözetiminde manevra önerilir; ev kullanımında kilit kalır, metin düzeltilir.
 - Hasta raporunun klinisyen modunda QR ile içe aktarılması (k09): 2. tura bırakıldı.
+
+## Uygulama durumu (1. düzeltme turu sonunda)
+D1–D4'ün bütün maddeleri uygulandı ve birleştirildi; birleşim bağlantıları (titreşim tablosu → "Titreşimleri tanı",
+"pozisyona gelinemedi" → hasta akışı/rapor, reçetede hasta kodu, taraf uyuşmazlığı notu → rapor, "yakını yaptırdı",
+φ sarkma istatistiği → klinisyen raporu) yapıldı. 287 birim testi ve 13/13 uçtan uca senaryo geçiyor.
+Kırmızı bayrak soruları 11'den 14'e çıktı (nörolojik soru üçe bölündü, ortostatik/bayılma hissi eklendi).

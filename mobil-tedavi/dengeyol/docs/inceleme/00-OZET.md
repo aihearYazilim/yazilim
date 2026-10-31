@@ -12,7 +12,7 @@ bir sonraki tur hem düzeltmeleri hem yeni sorunları denetledi. Görev tanımı
 Her turun raporları: [tur-1](tur-1/), [tur-2](tur-2/), [tur-3](tur-3/).
 
 ## Son durum
-- 189 birim testi, 12/12 uçtan uca senaryo (gerçek Chromium, telefon boyutu, sanal sensör; hasta akışları tanıtmada dokunmadan).
+- 287 birim testi, 13/13 uçtan uca senaryo (gerçek Chromium, telefon boyutu, sanal sensör; hasta akışları tanıtmada dokunmadan).
 - Klinik son onay: **Koşullu** — genel yayına değil; etik kurul ve TİTCK onayıyla, klinikte gözetimli bir pilota uygun.
   En büyük açık, belirtiye dayalı taraf testinin nistagmusla karşılaştırılmamış olmasıdır; pilotta (Aşama A, VNG/Frenzel
   eşliğinde) ölçülmelidir.

@@ -11,7 +11,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
 import type { Side } from '../../../core/protocols';
 import { sideName } from '../../../core/protocols';
-import { vertigoSummary } from '../../../core/runner';
+import { SAFETY_STOP_TEXT, vertigoSummary } from '../../../core/runner';
 import {
   diagnosisGate,
   DOSE_TEXT,
@@ -553,8 +553,28 @@ export function EpisodeFlow() {
     }
   };
 
+  /** Pozisyona gelinemedi (ör. boyun kısıtlı): zorlatmadan durdurulur ve hekime yönlendirilir; hedef gevşetilmez. */
+  const unreachable = (o: RunnerOutcome) => o.phase === 'safetyStop' && o.state.stopReason === 'POSITION_UNREACHABLE';
+  const referUnreachable = () => {
+    const ep = activeEpisode(store.get());
+    if (mode === 'practice' || !ep) {
+      store.update((x) => ({
+        ...x,
+        episodes: [
+          ...x.episodes,
+          { id: uid(), startedAt: Date.now(), side: null, protocolId: maneuverId, redFlags: [], sideTests: [], maneuvers: [], retests: [], status: 'referred', endedAt: Date.now(), endNote: 'POSITION_UNREACHABLE' }
+        ]
+      }));
+    } else updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'POSITION_UNREACHABLE' }));
+    setStage({ k: 'end', tone: 'warn', title: 'Hekiminize başvurun', text: SAFETY_STOP_TEXT.POSITION_UNREACHABLE, testid: 'end-unreachable' });
+  };
+
   const onSideRunExit = (o: RunnerOutcome, order: Side[], results: SideTestResult[]) => {
     if (notStarted(o)) return;
+    if (unreachable(o)) {
+      referUnreachable();
+      return;
+    }
     const side = order[results.length]!;
     if (o.phase === 'aborted') {
       setStage({ k: 'end', tone: 'info', title: 'Test yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden başlayabilirsiniz.', testid: 'end-aborted' });
@@ -608,6 +628,10 @@ export function EpisodeFlow() {
   const onManeuverExit = (o: RunnerOutcome, side: Side) => {
     if (notStarted(o)) return;
     logManeuver(o, side);
+    if (unreachable(o)) {
+      referUnreachable();
+      return;
+    }
     // Manevranın herhangi bir pozisyonunda baş dönmesi ≥1 dk sürdüyse (taraf testiyle aynı eşik): atipik → hekime.
     // Tamamlanan manevrada bitişi işaretlenmemiş uzun işaret olamaz; yarıda bırakılanda yalnız kapanmış işaretler sayılır.
     const long = mode !== 'practice' && o.state.records.some((r) => {
@@ -646,7 +670,7 @@ export function EpisodeFlow() {
     } else if (o.phase === 'safetyStop') {
       const ep = activeEpisode(store.get());
       if (ep && mode !== 'practice') updateEpisode(ep.id, (e) => ({ ...e, status: 'referred', endedAt: Date.now(), endNote: 'VERTIGO_TOO_LONG' }));
-      setStage({ k: 'end', tone: 'warn', title: 'Manevra durduruldu', text: REFER_TEXT.ATYPICAL_LONG, testid: 'end-safety' });
+      setStage({ k: 'end', tone: 'warn', title: 'Manevra durduruldu', text: SAFETY_STOP_TEXT.VERTIGO_TOO_LONG, testid: 'end-safety' });
     } else if (o.state.stopReason === 'USER_FEELS_UNWELL') {
       setStage({
         k: 'end',
@@ -664,6 +688,11 @@ export function EpisodeFlow() {
     if (notStarted(o)) return;
     if (o.phase === 'aborted') {
       setStage({ k: 'end', tone: 'info', title: 'Test yarıda bırakıldı', text: 'Hazır olduğunuzda ana ekrandan yeniden deneyin.', testid: 'end-aborted' });
+      return;
+    }
+    if (unreachable(o)) {
+      // Pozisyona gelinemedi: test sonucu "baş dönmesi var" sayılmaz; hekime yönlendirilir.
+      referUnreachable();
       return;
     }
     const ep = activeEpisode(store.get());

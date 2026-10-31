@@ -1,24 +1,8 @@
-/**
- * "Titreşimleri tanı": her titreşim desenini anlamıyla birlikte tek tek çalar (sesi duymakta zorlanan kullanıcı, k04).
- *
- * GEÇİCİ: Desen listesi platform/haptics.ts'te HAPTIC_LEGEND olarak tanımlanınca (D1) aşağıdaki yerel liste kaldırılıp
- * `import { HAPTIC_LEGEND } from '../../platform/haptics'` kullanılmalıdır. Yerel liste mevcut HapticPattern adlarıyla yazıldı.
- */
+/** "Titreşimleri tanı": her titreşim desenini anlamıyla birlikte tek tek çalar (sesi duymakta zorlanan kullanıcı, k04). */
 import { applySettings } from '../../platform/feedback';
-import { haptics, type HapticPattern } from '../../platform/haptics';
+import { HAPTIC_LEGEND, haptics, type HapticPattern } from '../../platform/haptics';
 import { tones } from '../../platform/tones';
 import { useData } from '../../state/store';
-
-const LEGEND_FALLBACK: { pattern: HapticPattern; label: string }[] = [
-  { pattern: 'move', label: 'Şimdi hareket edin (yeni adım)' },
-  { pattern: 'reached', label: 'Doğru pozisyon, böyle kalın' },
-  { pattern: 'drift', label: 'Pozisyon bozuldu, düzeltin' },
-  { pattern: 'stepDone', label: 'Adım bitti' },
-  { pattern: 'markOn', label: 'Baş dönmesi işaretlendi' },
-  { pattern: 'markOff', label: 'Baş dönmesi geçti olarak işaretlendi' },
-  { pattern: 'pause', label: 'Duraklatıldı' },
-  { pattern: 'alarm', label: 'Durun: güvenlik uyarısı' }
-];
 
 export function HapticLegend() {
   const s = useData().settings;
@@ -39,7 +23,7 @@ export function HapticLegend() {
         </p>
       )}
       {supported && !s.haptics && <p className="small muted">Titreşim ayarı şu an kapalı: deneme çalar ama manevrada titreşim gelmez (Ayarlar &gt; Titreşim).</p>}
-      {LEGEND_FALLBACK.map((h) => (
+      {HAPTIC_LEGEND.map((h) => (
         <button key={h.pattern} type="button" className="btn secondary block" onClick={() => play(h.pattern)} data-testid={`haptic-${h.pattern}`}>
           {h.label}
         </button>
