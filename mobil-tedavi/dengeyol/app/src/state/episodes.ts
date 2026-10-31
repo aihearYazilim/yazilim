@@ -15,22 +15,18 @@ export const REDFLAG_VALID_MS = 6 * 60 * 60 * 1000;
 /** Sabah testi en erken saat. */
 export const MORNING_HOUR = 6;
 
-/**
- * Reçetenin geçerlilik süresi (muayene tarihinden itibaren gün). Reçete o muayenedeki atak içindir: nükste BPPV tipi ve
- * tarafı sıklıkla değişir (Kim HJ ve ark. JAMA Neurol 2023;80:244–250: nükslerin %56'sı ilk tanıdan farklı). Süre dolunca
- * varsayılan doz ve her atakta iki taraflı test uygulanır. Değer klinik danışmanla gözden geçirilmelidir.
- */
-export const RX_VALID_DAYS = 14;
+// Reçete geçerliliğinin tek tanımı core/prescription.ts'tedir (RX_VALID_DAYS, rxValidAt, rxValidityLabel): D tarihli
+// reçete D+13 gününün sonuna kadar (dahil) geçerlidir. Sabit buradan da dışa aktarılır (eski içe aktarmalar bozulmasın).
+import { rxValidAt } from '../core/prescription';
+export { RX_VALID_DAYS } from '../core/prescription';
 
-/** Reçete bu atak için hâlâ geçerli mi? */
+/**
+ * Reçete bu atak için hâlâ geçerli mi? D tarihli reçete D günü 00:00'dan D+13 gününün sonuna kadar (yerel saat) geçerlidir;
+ * D+14 günü 00:00'da biter. Gelecek tarihli reçete geçerli sayılmaz.
+ */
 export function rxActive(profile: PatientProfile | undefined, now: number = Date.now()): boolean {
   const rx = profile?.prescription;
-  if (!rx) return false;
-  const issued = new Date(`${rx.date}T00:00:00`).getTime();
-  if (!Number.isFinite(issued)) return false;
-  // Gelecek tarihli reçete geçerli sayılmaz (en çok 1 gün saat farkı payı).
-  if (issued - now > 24 * 60 * 60 * 1000) return false;
-  return now - issued <= RX_VALID_DAYS * 24 * 60 * 60 * 1000;
+  return !!rx && rxValidAt(rx, now);
 }
 
 /**

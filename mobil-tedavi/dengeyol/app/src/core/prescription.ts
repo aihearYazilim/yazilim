@@ -139,14 +139,77 @@ export function decodePrescription(token: string): { ok: true; value: Prescripti
   };
 }
 
+// ---- Geçerlilik ----------------------------------------------------------------------------------------------
+//
+// Tek tanım (reçete kartı, hasta raporu, ana ekran, rxActive ve klinisyen raporu/HBYS notu bunu kullanır):
+// D tarihli (yerel takvim günü) reçete, D günü 00:00'dan D+(RX_VALID_DAYS−1) gününün sonuna kadar GEÇERLİDİR (14 takvim
+// günü, muayene günü dahil). Ekranda son geçerli gün "… tarihine kadar (dahil)" diye yazılır; D+RX_VALID_DAYS günü 00:00'da
+// biter. Gelecek tarihli reçete geçerli sayılmaz. Hesap yerel takvimle yapılır (yaz saati geçişinde gün kaymaz).
+
 /**
- * Reçetenin geçerlilik bitişi (ms; muayene gününün başı + validDays gün, rxActive ile aynı sınır). Süre (gün) state/episodes.ts RX_VALID_DAYS'ten verilir;
- * çekirdek katman durum katmanına bağlanmasın diye parametre olarak alınır. Tarih okunamazsa null.
+ * Reçetenin geçerlilik süresi (muayene günü dahil takvim günü). Reçete o muayenedeki atak içindir: nükste BPPV tipi ve
+ * tarafı sıklıkla değişir (Kim HJ ve ark. JAMA Neurol 2023;80:244–250: nükslerin %56'sı ilk tanıdan farklı). Süre dolunca
+ * varsayılan doz ve her atakta iki taraflı test uygulanır. Değer klinik danışmanla gözden geçirilmelidir.
+ * (state/episodes.ts aynı sabiti yeniden dışa aktarır.)
  */
-export function rxValidUntil(p: Pick<Prescription, 'date'>, validDays: number): number | null {
-  const issued = new Date(`${p.date}T00:00:00`);
-  if (!Number.isFinite(issued.getTime())) return null;
-  return issued.getTime() + validDays * 24 * 60 * 60 * 1000;
+export const RX_VALID_DAYS = 14;
+
+type RxDate = Pick<Prescription, 'date'> | string;
+const dateKeyOf = (p: RxDate): string => (typeof p === 'string' ? p : p.date);
+
+/** YYYY-AA-GG → o günün (+addDays) yerel 00:00'ı; okunamazsa null. */
+function localDay(dateKey: string, addDays = 0): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!m) return null;
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const out = new Date(Number(m[1]), mo - 1, d + addDays);
+  return Number.isFinite(out.getTime()) ? out : null;
+}
+
+/** Reçetenin verildiği günün yerel başlangıcı (ms); okunamazsa null. */
+export function rxIssuedAt(p: RxDate): number | null {
+  return localDay(dateKeyOf(p))?.getTime() ?? null;
+}
+
+/** Son geçerli gün (yerel 00:00): D tarihli reçetede D+13 (o gün dahil geçerlidir). Okunamazsa null. */
+export function rxLastValidDay(p: RxDate, validDays: number = RX_VALID_DAYS): Date | null {
+  return localDay(dateKeyOf(p), validDays - 1);
+}
+
+/** Geçerliliğin bittiği an (ms, dışlayıcı): son geçerli günden sonraki günün 00:00'ı (D+14). Okunamazsa null. */
+export function rxValidUntil(p: RxDate, validDays: number = RX_VALID_DAYS): number | null {
+  return localDay(dateKeyOf(p), validDays)?.getTime() ?? null;
+}
+
+/** `now` anında geçerli mi: D 00:00 ≤ now < D+14 00:00. Gelecek tarihli ya da okunamayan tarih geçersizdir. */
+export function rxValidAt(p: RxDate, now: number, validDays: number = RX_VALID_DAYS): boolean {
+  const start = rxIssuedAt(p);
+  const end = rxValidUntil(p, validDays);
+  return start !== null && end !== null && now >= start && now < end;
+}
+
+/**
+ * Son geçerli günün metni: "12 Kasım 2026 tarihine kadar (dahil)" (long: hasta ekranları) ya da "12.11.2026 tarihine kadar
+ * (dahil)" (short: klinisyen raporu/HBYS notu). Hasta ve klinisyen ekranı aynı günü göstersin diye her yerde bu kullanılır.
+ */
+export function rxValidityLabel(p: RxDate, style: 'long' | 'short' = 'long', validDays: number = RX_VALID_DAYS): string | null {
+  const last = rxLastValidDay(p, validDays);
+  if (!last) return null;
+  const txt = last.toLocaleDateString('tr-TR', { day: '2-digit', month: style === 'short' ? '2-digit' : 'long', year: 'numeric' });
+  return `${txt} tarihine kadar (dahil)`;
+}
+
+/**
+ * Reçete kodu: bağlantıdaki sağlama toplamı (8 hex, "." sonrası). Klinisyen raporu/HBYS notu ve hasta raporu aynı kodu
+ * yazar; hekim gelen raporu kendi reçetesiyle eşleştirir. Bağlantı (token) verilirse ondan okunur; reçete nesnesi verilirse
+ * yeniden kodlanır (encodePrescription normalleştirdiği için aynı uygulamanın ürettiği bağlantıyla aynı kod çıkar). Hasta
+ * tarafında içe aktarılan bağlantı profilde saklanır (PatientProfile.prescriptionToken) ve önce o kullanılır.
+ */
+export function rxCode(x: string | Prescription): string {
+  const token = typeof x === 'string' ? x.trim() : encodePrescription(x);
+  return (token.split('.')[1] ?? '').toLowerCase();
 }
 
 /** Uygulamanın kendi adresine göre reçete bağlantısı üretir. */

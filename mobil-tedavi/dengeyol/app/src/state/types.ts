@@ -39,6 +39,19 @@ export interface PatientProfile {
   practiceDone?: boolean;
   /** Hekime/acile yönlendirilen bir ataktan sonra hastanın "hekimimle görüştüm" onayı (ms). */
   doctorClearedAt?: number;
+  /**
+   * Tanı zamanı (kurulumda zorunlu seçim): 'recent' "Son 2 hafta içinde" (tarih girilmedi; yanıt zamanı dxWhenAt),
+   * 'older' "Daha önce", 'date' tarih biliniyor (dxDate). Eski kayıtlarda yok. Yakınlık hesabı: dxIsRecent (state/dxTiming.ts).
+   */
+  dxWhen?: 'recent' | 'older' | 'date';
+  /** dxWhen === 'recent' yanıtının verildiği an (ms): "son 2 hafta" bu andan geriye sayılır. */
+  dxWhenAt?: number;
+  /** İçe aktarılan reçete bağlantısı (token): raporda reçete kodu klinisyenin HBYS notundakiyle aynı çıksın. */
+  prescriptionToken?: string;
+  /** Onaylanan bilgilendirme/onam metninin sürümü (CONSENT_VERSION); eski kayıtlarda yok (1. sürüm). */
+  consentVersion?: string;
+  /** Kurulumu ve onamı kim yaptı: hastanın kendisi ya da hasta adına, onun bilgisiyle bir yakını. */
+  consentBy?: 'self' | 'helper';
 }
 
 export interface ManeuverLog {
@@ -99,6 +112,11 @@ export interface Episode {
    * tarihli tanıda atak SIDE_CONFLICT ile yönlendirilir; eski tanıda uyarılır ve test tarafına manevra yapılır.
    */
   sideConflictNote?: string;
+  /**
+   * Reçeteli kısa yol kullanıldı mı (hasta "muayeneden beri hiç geçmedi" dedi; taraf testi yapılmadan reçete tarafına
+   * manevra). Eski kayıtlarda yok: rapor o zaman kayıtlardan çıkarır (rxShortcutUsed, reportText.ts).
+   */
+  rxShortcut?: boolean;
 }
 
 export interface ClinicPatient {

@@ -139,6 +139,14 @@ describe('reçete geçerlilik süresi', () => {
     expect(doseLimitsFor(profile, now).maxDays).toBe(3);
     expect(recentKnownSide(profile, now)).toBeNull();
   });
+  it('sınır: D+13 günü 23:59 geçerli, D+14 günü 00:00 geçersiz; muayene günü 00:00 geçerli, gelecek tarih geçersiz', () => {
+    // date 2026-10-01 → son geçerli gün 14 Ekim (dahil).
+    expect(rxActive(profile, new Date('2026-10-14T23:59:59').getTime())).toBe(true);
+    expect(rxActive(profile, new Date('2026-10-15T00:00:00').getTime())).toBe(false);
+    expect(rxActive(profile, new Date('2026-10-01T00:00:00').getTime())).toBe(true);
+    expect(rxActive(profile, new Date('2026-09-30T23:59:00').getTime())).toBe(false);
+    expect(rxActive({ ...profile, prescription: { ...rx, date: 'bozuk' } }, new Date('2026-10-05T12:00:00').getTime())).toBe(false);
+  });
 });
 
 describe('eski aktif atak', () => {

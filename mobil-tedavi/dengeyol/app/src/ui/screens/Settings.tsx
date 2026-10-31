@@ -10,6 +10,7 @@ import { Segmented } from '../components/Controls';
 import { HapticLegend } from '../components/HapticLegend';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
+import { CONSENT_VERSION, consentLine } from './patient/consent';
 
 export function Settings() {
   const d = useData();
@@ -123,6 +124,33 @@ export function Settings() {
       <section className="card stack">
         <h3>Kullanım modu</h3>
         <p className="small muted">Şu an: {s.role === 'clinician' ? 'Klinisyen' : s.role === 'patient' ? 'Hasta' : 'seçilmedi'}</p>
+        {s.role === 'patient' && (
+          <>
+            <div className="field" data-testid="settings-assist">
+              <label>Manevrayı kim yaptırıyor?</label>
+              <Segmented
+                label="Manevrayı kim yaptırıyor"
+                value={s.assist ?? 'self'}
+                onChange={(v) => set({ assist: v })}
+                options={[
+                  { value: 'self', label: 'Kendim' },
+                  { value: 'helper', label: 'Bir yakınım' }
+                ]}
+              />
+            </div>
+            {d.patient?.consentAt && (
+              <p className="small muted" data-testid="settings-consent">
+                Onam: {consentLine(d.patient)}
+                {(d.patient.consentVersion ?? '1') !== CONSENT_VERSION ? ' — bilgilendirme metni güncellendi; yeniden okuyup onaylayabilirsiniz.' : ''}
+              </p>
+            )}
+            {d.patient?.consentAt && (
+              <button className="btn ghost" onClick={() => nav('/hasta/kurulum?adim=baslangic')}>
+                Bilgilendirme ve onamı yeniden oku
+              </button>
+            )}
+          </>
+        )}
         <button
           className="btn secondary"
           onClick={() => {

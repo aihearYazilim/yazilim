@@ -17,14 +17,30 @@ import {
 } from '../../../core/safety';
 import { applySettings, unlockAudio } from '../../../platform/feedback';
 import { speech, Speech, SPEECH_RATES, SPEECH_SAMPLE } from '../../../platform/speech';
+import { localDayKey } from '../../../core/safety';
 import { store, useData } from '../../../state/store';
-import { CheckList, Choice, Segmented, StepDots } from '../../components/Controls';
+import type { PatientProfile } from '../../../state/types';
+import { CheckList, Choice, ListenAgain, Segmented, StepDots } from '../../components/Controls';
 import { HapticLegend } from '../../components/HapticLegend';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
-import { RxPaste } from './PatientHome';
+import { CONSENT_OPTIONS, CONSENT_RISKS, CONSENT_VERSION, consentStatement } from './consent';
+import { RxPaste, UrgencyLadder } from './PatientHome';
 
 type Stage = 'info' | 'dx' | 'contra' | 'gate';
+type DxWhen = NonNullable<PatientProfile['dxWhen']>;
+
+/** Tanı bu kadar günden eskiyse kurulumda bir kez bilgi verilir (kilit gevşemez; her atakta iki taraf test edilir). */
+const DX_OLD_DAYS = 14;
+
+const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci', 'Altıncı', 'Yedinci', 'Sekizinci', 'Dokuzuncu', 'Onuncu', 'On birinci', 'On ikinci', 'On üçüncü', 'On dördüncü'];
+
+/** Uygunluk listesinin sesli metni: kısa başlıklar madde madde ("uyuyorsa işaretleyin"); ayrıntılar ekranda (k05). */
+export const CONTRA_SPEECH = [
+  'Sizin için uygun mu? Aşağıdaki durumlardan size uyan varsa işaretleyin; emin olmadığınız bir madde varsa da işaretleyin ve doktorunuza sorun.',
+  ...CONTRAINDICATIONS.map((c, i) => `${ORDINALS[i] ?? `${i + 1}.`} madde: ${c.label}.`),
+  'Hiçbiri uymuyorsa en alttaki "Hiçbiri bana uymuyor" seçeneğini işaretleyin. Ayrıntılar ekranda yazıyor.'
+].join(' ');
 
 /** Seçili hızla örnek yönerge okur (kullanıcı dokunuşu içinde çağrılır: iOS ses kilidi). */
 function trySpeech() {
@@ -59,12 +75,24 @@ export function Onboarding() {
     if (!g.ok && g.reason === 'CONTRAINDICATION') return 'contra';
     return rx ? 'contra' : 'dx';
   });
-  // Düzenlemede daha önce verilen onay işaretli gelir.
-  const [consent, setConsent] = useState(!!d.patient?.consentAt);
+  // Düzenlemede daha önce verilen onay işaretli gelir (onam metni o zamandan beri değiştiyse yeniden işaretlenir).
+  const [consent, setConsent] = useState(!!d.patient?.consentAt && (d.patient?.consentVersion ?? '1') === CONSENT_VERSION);
+  // Bu oturumda onam ekranından geçildi mi (onam tarihi/sürümü/kimin onayladığı o zaman yenilenir).
+  const [consentGiven, setConsentGiven] = useState(false);
+  // Hasta adına yakını kuruyor (k02): manevra ekranları da yardımcıya göre konuşur (settings.assist).
+  const [helperSetup, setHelperSetup] = useState(d.patient?.consentBy === 'helper' || (!d.patient?.consentAt && d.settings.assist === 'helper'));
   const [dx, setDx] = useState<'yes' | 'no' | null>(rx ? 'yes' : (d.patient?.diagnosedByDoctor ? 'yes' : null));
   const [canal, setCanal] = useState<CanalAnswer | null>(rx ? 'PC' : (d.patient?.canal ?? null));
   const [side, setSide] = useState<SideAnswer | null>(rx ? rx.side : (d.patient?.side ?? null));
   const [dxDate, setDxDate] = useState(d.patient?.dxDate ?? rx?.date ?? '');
+  // Tanı zamanı zorunlu seçim (k03): tarih boş bırakılınca tanı sessizce "eski" sayılmasın.
+  const [dxWhen, setDxWhen] = useState<DxWhen | null>(rx ? 'date' : (d.patient?.dxWhen ?? (d.patient?.dxDate ? 'date' : null)));
+  const today = localDayKey(Date.now());
+  const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(dxDate) && dxDate <= today;
+  const dxWhenOk = dxWhen === 'recent' || dxWhen === 'older' || (dxWhen === 'date' && dateOk);
+  const dxOld =
+    dxWhen === 'older' ||
+    (dxWhen === 'date' && dateOk && Date.now() - new Date(`${dxDate}T00:00:00`).getTime() > DX_OLD_DAYS * 24 * 60 * 60 * 1000);
   const [contra, setContra] = useState<string[]>(d.patient?.contraindications ?? []);
   // Düzenlemede önceki "hiçbiri" yanıtı korunur; ilk kurulumda açıkça işaretlenmeli.
   const [none, setNone] = useState(!!d.patient?.consentAt && (d.patient?.contraindications ?? []).length === 0);
@@ -76,24 +104,40 @@ export function Onboarding() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [stage]);
+  // Uygunluk listesi açılınca bir kez sesli okunur (k05); adımdan çıkınca okuma kesilir.
+  useEffect(() => {
+    if (stage !== 'contra') return;
+    speech.speak(CONTRA_SPEECH, 'high');
+    return () => speech.cancel();
+  }, [stage]);
   const finish = () => {
     save();
     nav('/hasta', { replace: true });
   };
 
   const save = () => {
-    store.update((x) => ({
-      ...x,
-      patient: {
-        ...(x.patient ?? {}),
-        consentAt: x.patient?.consentAt || new Date().toISOString(),
-        diagnosedByDoctor: dx === 'yes',
-        dxDate: dxDate || undefined,
-        canal: canal ?? 'unknown',
-        side: side ?? 'unknown',
-        contraindications: contra
-      }
-    }));
+    store.update((x) => {
+      const prev = x.patient;
+      const when = dx === 'yes' ? dxWhen : null;
+      const fresh = consentGiven || !prev?.consentAt;
+      return {
+        ...x,
+        patient: {
+          ...(prev ?? {}),
+          consentAt: fresh ? new Date().toISOString() : prev!.consentAt,
+          consentVersion: fresh ? CONSENT_VERSION : prev?.consentVersion,
+          consentBy: fresh ? (helperSetup ? 'helper' : 'self') : prev?.consentBy,
+          diagnosedByDoctor: dx === 'yes',
+          dxWhen: when ?? undefined,
+          dxDate: when === 'date' ? dxDate || undefined : undefined,
+          // "Son 2 hafta içinde": yakınlık yanıt anından sayılır; yanıt değişmediyse ilk yanıt zamanı korunur.
+          dxWhenAt: when === 'recent' ? (prev?.dxWhen === 'recent' && prev.dxWhenAt ? prev.dxWhenAt : Date.now()) : undefined,
+          canal: canal ?? 'unknown',
+          side: side ?? 'unknown',
+          contraindications: contra
+        }
+      };
+    });
   };
 
   const gate = diagnosisGate({
@@ -120,8 +164,12 @@ export function Onboarding() {
               className="btn primary block xl"
               aria-disabled={!consent}
               onClick={() => {
-                if (consent) setStage(flow[1]!);
-                else {
+                if (consent) {
+                  // Dokunuş içinde ses kilidi açılır: sonraki adımın listesi kendiliğinden okunabilsin (iOS).
+                  unlockAudio();
+                  setConsentGiven(true);
+                  setStage(flow[1]!);
+                } else {
                   // Pasif düğmeye dokunulursa onay kutusunu göster.
                   const el = document.querySelector('[data-testid="ob-consent"]') as HTMLElement | null;
                   el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -135,9 +183,19 @@ export function Onboarding() {
             {!consent && <p className="small muted center">Devam etmek için yukarıdaki onay kutusunu işaretleyin.</p>}
           </>
         ) : stage === 'dx' ? (
-          <button className="btn primary block xl" disabled={!dx || (dx === 'yes' && (!canal || !side))} onClick={() => setStage('contra')} data-testid="ob-next">
-            Devam
-          </button>
+          <>
+            <button
+              className="btn primary block xl"
+              disabled={!dx || (dx === 'yes' && (!canal || !side || !dxWhenOk))}
+              onClick={() => setStage('contra')}
+              data-testid="ob-next"
+            >
+              Devam
+            </button>
+            {dx === 'yes' && canal && side && !dxWhenOk && (
+              <p className="small muted center">Devam etmek için tanının ne zaman konduğunu seçin.</p>
+            )}
+          </>
         ) : stage === 'contra' ? (
           <>
           <button
@@ -245,6 +303,39 @@ export function Onboarding() {
               </div>
             </details>
           )}
+          <div className="card stack" data-testid="ob-risks">
+            <h3>Olası yan etkiler</h3>
+            <ul className="stack" style={{ margin: 0, paddingLeft: 22, gap: 6 }}>
+              {CONSENT_RISKS.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            <h3>Seçenekleriniz</h3>
+            <ul className="stack" style={{ margin: 0, paddingLeft: 22, gap: 6 }}>
+              {CONSENT_OPTIONS.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </div>
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={helperSetup}
+            className="choice check"
+            onClick={() => {
+              const v = !helperSetup;
+              setHelperSetup(v);
+              // Manevra ekranları da yardımcıya göre konuşsun (sonra hazırlık ekranında ya da Ayarlar'da değiştirilebilir).
+              store.update((x) => ({ ...x, settings: { ...x.settings, assist: v ? 'helper' : 'self' } }));
+            }}
+            data-testid="ob-helper"
+          >
+            <span className="dot" />
+            <span>
+              Hasta adına, onun bilgisi ve isteğiyle bir yakını olarak kuruyorum
+              <span className="sub">Manevrada yönergeler size (yardımcıya) söylenir; hastaya yalnız kıpırdamaması söylenir.</span>
+            </span>
+          </button>
           <button
             type="button"
             role="checkbox"
@@ -254,10 +345,7 @@ export function Onboarding() {
             data-testid="ob-consent"
           >
             <span className="dot" />
-            <span>
-              Okudum ve anladım: DengeYol tanı koymaz, doktorun yerine geçmez ve yalnız hekim tanısıyla kullanılabilir. Tıbbi cihaz onayı olmayan, deneme
-              aşamasındaki bir araştırma uygulamasıdır; kullanımı kendi sorumluluğumdadır. (Verilerim yalnızca bu telefonda saklanır.)
-            </span>
+            <span>{consentStatement(helperSetup)}</span>
           </button>
         </>
       )}
@@ -313,10 +401,35 @@ export function Onboarding() {
                   ]}
                 />
               </div>
-              <div className="field">
-                <label htmlFor="dxdate">Tanı tarihi (isteğe bağlı)</label>
-                <input id="dxdate" className="input" type="date" value={dxDate} onChange={(e) => setDxDate(e.target.value)} />
+              <div className="field" data-testid="ob-dx-when">
+                <label>Tanı ne zaman kondu?</label>
+                <Choice
+                  name="Tanı zamanı"
+                  value={dxWhen}
+                  onChange={setDxWhen}
+                  options={[
+                    { value: 'recent', label: 'Son 2 hafta içinde' },
+                    { value: 'older', label: 'Daha önce', sub: '2 haftadan uzun süre önce' },
+                    { value: 'date', label: 'Tarihi biliyorum' }
+                  ]}
+                />
               </div>
+              {dxWhen === 'date' && (
+                <div className="field">
+                  <label htmlFor="dxdate">Tanı tarihi</label>
+                  <input id="dxdate" className="input" type="date" max={today} value={dxDate} onChange={(e) => setDxDate(e.target.value)} />
+                  {dxDate && !dateOk && <span className="small" style={{ color: 'var(--danger)' }}>Bugünden sonraki bir tarih seçilemez.</span>}
+                </div>
+              )}
+              {dxOld && (
+                <div className="notice info small" data-testid="ob-dx-older">
+                  <Icon name="info" />
+                  <span>
+                    Tanınız 2 haftadan eskiyse bu atakta kristaller başka tarafta ya da kanalda olabilir. Bu yüzden uygulama her atakta önce iki tarafı kısa bir
+                    testle dener; test hekiminizin söylediği taraftan farklı çıkarsa size söyler.
+                  </span>
+                </div>
+              )}
             </>
           )}
         </>
@@ -326,6 +439,7 @@ export function Onboarding() {
         <>
           <h1>Sizin için uygun mu?</h1>
           <p className="lead">Aşağıdakilerden size uyanları işaretleyin. Emin olmadığınız bir madde varsa işaretleyin ve doktorunuza sorun.</p>
+          <ListenAgain text={CONTRA_SPEECH} testid="ob-contra-listen" />
           <div className="notice info small">
             <Icon name="info" />
             <span>
@@ -411,6 +525,8 @@ function GateInfo({ reason, contra }: { reason: 'NO_DIAGNOSIS' | 'HORIZONTAL_CAN
         )}
         <p>{GATE_TEXT[reason]}</p>
       </div>
+      {/* Tanısız ilk atak: kilit kalır ama kişi yalnız bırakılmaz; ana ekrandaki aciliyet kartının aynısı (k03). */}
+      {reason === 'NO_DIAGNOSIS' && <UrgencyLadder />}
       {questions.length > 0 && (
         <div className="card stack" data-testid="ob-gate-questions">
           <h3>Hekiminize sorabilecekleriniz</h3>

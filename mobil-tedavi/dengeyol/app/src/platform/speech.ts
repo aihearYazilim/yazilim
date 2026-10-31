@@ -17,6 +17,36 @@ export const SPEECH_RATES: { value: number; label: string }[] = [
 export const SPEECH_SAMPLE =
   'Ses denemesi. Manevrada yönergeleri bu hızda duyacaksınız. Örneğin: Şimdi başınızı sağa çevirin ve yavaşça sırtüstü yatın.';
 
+/**
+ * Konuşma metnini sesli okumaya uygun hâle getirir (ekrandaki metin değişmez). Türkçe sesler "/" işaretini "bölü" diye,
+ * okları ve "·" işaretini adıyla okuyabilir (k01, k03, k05):
+ * - sözcükler arasındaki "/" → " ya da " ("aspirin/Coraspin" → "aspirin ya da Coraspin"); sayı/sayı (1/15) ve adresler korunur,
+ * - ayraçlar virgüllü duraklamaya çevrilir ("(hangi kulağınız alttayken)" → ", hangi kulağınız alttayken,"),
+ * - oklar ve köşeli ayraç işaretleri ("[←]", "→") atılır; "·" virgül olur; "~" → "yaklaşık ".
+ */
+export function speechText(text: string): string {
+  return (
+    text
+      // Ok işaretleri ve köşeli ayraçlı ok etiketleri
+      .replace(/\[\s*[←→↑↓]\s*\]/g, ' ')
+      .replace(/[←→↑↓⟵⟶]/g, ' ')
+      // Sözcükler arası eğik çizgi (sayı/sayı ve "https://" dokunulmaz)
+      .replace(/(^|[^\d:/])\s*\/\s*(?=[^\d/]|$)/g, '$1 ya da ')
+      .replace(/~\s*/g, 'yaklaşık ')
+      .replace(/\s*·\s*/g, ', ')
+      // Ayraçlar: duraklama
+      .replace(/\s*\(\s*/g, ', ')
+      .replace(/\s*\)\s*(?=[.,;:!?]|$)/g, '')
+      .replace(/\s*\)\s*/g, ', ')
+      // Art arda noktalama ve boşluk temizliği
+      .replace(/\s+([.,;:!?])/g, '$1')
+      .replace(/,\s*([.,;:!?])/g, '$1')
+      .replace(/^[\s,]+/, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+  );
+}
+
 export class Speech {
   enabled = true;
   rate = 1;
@@ -92,6 +122,12 @@ export class Speech {
 
   private speakInner(text: string, priority: 'high' | 'normal', onDone?: () => void): void {
     if (!this.enabled || !Speech.supported() || !text) return;
+    // Okunacak biçim ("/" → "ya da", ayraç → duraklama); ekrandaki metin değişmez.
+    const said = speechText(text);
+    if (!said) {
+      onDone?.();
+      return;
+    }
     const synth = window.speechSynthesis;
     if (priority === 'high') {
       synth.cancel();
@@ -100,7 +136,7 @@ export class Speech {
       // Eski ipuçlarını biriktirme
       return;
     }
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(said);
     u.lang = 'tr-TR';
     if (this.voice) u.voice = this.voice;
     u.rate = this.rate;
