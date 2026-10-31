@@ -39,3 +39,9 @@ Bitince son mesajında rapor yolunu, puanını ve en önemli 3 isteğini ver.
 Aynı kişi olarak geri döndüğünde: önceki raporundaki isteklerin uygulanıp uygulanmadığını (ve doğru uygulanıp
 uygulanmadığını) kendi gözünle kontrol et, yine baştan sona kullan, yeni sorunları bul. Raporu `<tur>` = `tur-2` altına
 yaz; tabloya "1. kullanımdaki isteğim: karşılandı / kısmen / karşılanmadı" satırlarını ekle ve yeni puan ver.
+
+## 3. kullanım
+2. kullanımdaki isteklerinin uygulanıp uygulanmadığını (`tur-2/00-SENTEZ.md` neyin yapıldığını ve neyin bilerek
+yapılmadığını söyler) kendi gözünle kontrol et, yine baştan sona kullan, yeni sorunları bul. Raporu `<tur>` = `tur-3`
+altına yaz; tabloya "2. kullanımdaki isteğim: karşılandı / kısmen / karşılanmadı" satırlarını ekle, yeni puan ver ve
+sonuna "Bu sürümü bir yakınıma önerir miyim / klinikte kullanır mıyım: Evet / Koşullu / Hayır" ekle.
