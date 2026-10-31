@@ -57,3 +57,9 @@ ne olduğunu yaz. Sunucu bu turda `http://localhost:4181/`.
 kullan. Raporu `tur-5` altına yaz; tabloya "4. kullanımdaki isteğim: karşılandı / kısmen / karşılanmadı" satırlarını ekle,
 yeni puan ver ve sonuna "Bu sürümü bir yakınıma önerir miyim / klinikte kullanır mıyım: Evet / Koşullu / Hayır" ve koşulu yaz.
 Sunucu bu turda `http://localhost:4182/`.
+
+## 6. kullanım
+5. kullanımdaki isteklerinin uygulanıp uygulanmadığını (`tur-5/00-SENTEZ.md`) kendi gözünle kontrol et, yine baştan sona
+kullan. Raporu `tur-6` altına yaz; tabloya "5. kullanımdaki isteğim: karşılandı / kısmen / karşılanmadı" satırlarını ekle,
+yeni puan ver ve sonuna "Bu sürümü bir yakınıma önerir miyim / klinikte kullanır mıyım: Evet / Koşullu / Hayır" ve koşulu yaz.
+Sunucu bu turda `http://localhost:4183/`.
