@@ -261,6 +261,7 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   const reportText = await page.getByTestId('episode-report').innerText();
   if (!reportText.includes('Epley')) throw new Error('raporda manevra yok');
   if (!/baş dönmesi|Belirti|–/.test(reportText)) throw new Error('raporda belirti işareti yok');
+  if (/\b(VERTIGO_TOO_LONG|ATYPICAL_LONG|BOTH_SIDES|SIDE_CONFLICT)\b/.test(reportText)) throw new Error('raporda ham iç kod var');
   await snap(page, 'rapor');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
@@ -531,6 +532,7 @@ await step('Hasta: odyolog reçetesini QR bağlantısıyla içe aktarır', async
   await page.getByTestId('rx-card').waitFor();
   const t = await page.getByTestId('rx-card').innerText();
   if (!t.includes('SAĞ') || !t.includes('Epley') || !t.includes('Odyolog Test Kullanıcı')) throw new Error('reçete içeriği hatalı: ' + t);
+  await page.getByTestId('rx-unsigned').waitFor();
   await snap(page, 'recete-ice-aktar');
   await page.getByTestId('rx-accept').click();
   await page.getByTestId('ob-consent').click();

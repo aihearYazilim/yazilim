@@ -4,10 +4,13 @@
  *  2) Telefon alında, dik oturuş ve karşıya bakış → nötr referans.
  *  3) Başı geriye yatırıp tavana bakış → ekranın yönü ve alın eğimi düzeltmesi.
  * Telefon alındayken ekran görünmediği için 2. ve 3. adım sesli ve geri sayımlıdır.
+ * Ekran çevirme ayarı (settings.screenFlip) açıksa alındaki adımlar yürütücüdeki gibi 180° döner (başucundaki kişi için);
+ * giriş ekranı dönmez (işaret kuralı telefon elde, normal okuma duruşunda ölçülür).
+ * Geri tuşu / kenardan kaydırma kalibrasyonu sessizce kapatmaz: ölçüm durur, sesle söylenir ve çıkış onayı sorulur.
  */
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { estimateSpeechSec } from '../../core/runner';
-import { store } from '../../state/store';
+import { store, useData } from '../../state/store';
 import {
   type Calibration,
   CALIBRATION_ERROR_TEXT,
@@ -50,7 +53,13 @@ export function Calibrate({
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Calibration | null>(null);
   const [sensorMsg, setSensorMsg] = useState<string | null>(null);
+  const [exitAsk, setExitAsk] = useState(false);
+  const flipped = !!useData().settings.screenFlip;
   const alive = useRef(true);
+  /** Her "Başla" yeni bir ölçüm kuşağı açar; geri tuşu kuşağı geçersiz kılarak süren ölçümü durdurur. */
+  const runGen = useRef(0);
+  const stageRef = useRef<Stage>('intro');
+  stageRef.current = stage;
 
   useEffect(() => {
     alive.current = true;
@@ -61,6 +70,37 @@ export function Calibrate({
   }, []);
 
   const P = audience === 'patient';
+
+  // Geri tuşu koruması (yürütücüdeki gibi): geçmişe bir girdi eklenir; geri gelince ölçüm durur ve çıkış onayı sorulur.
+  useEffect(() => {
+    const marker = { dengeyolCalibrate: true };
+    window.history.pushState(marker, '');
+    const onPop = () => {
+      // Hâlâ kendi girdimizdeysek (ör. geliştirme modunda çift bağlama) kullanıcı geri basmamıştır.
+      if ((window.history.state as { dengeyolCalibrate?: boolean } | null)?.dengeyolCalibrate) return;
+      window.history.pushState(marker, '');
+      // Süren ölçüm (henüz giriş ekranındaki ilk okuma dahil) durur.
+      runGen.current++;
+      setCount(0);
+      const st = stageRef.current;
+      if (st === 'place' || st === 'upright' || st === 'lookup' || st === 'done') {
+        setStage('intro');
+        speech.speak(
+          audience === 'patient' ? 'Durdurdum. Telefonu alnınızdan alıp ekrana bakın.' : 'Kalibrasyon durduruldu.',
+          'high'
+        );
+      }
+      setExitAsk(true);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // Kendi girdimiz hâlâ en üstteyse temizle (adres değişmez).
+      if ((window.history.state as { dengeyolCalibrate?: boolean } | null)?.dengeyolCalibrate) window.history.back();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const finished = useRef(false);
   const finish = (c: Calibration) => {
     if (finished.current) return;
@@ -80,24 +120,29 @@ export function Calibrate({
     await wait(extraMs);
   };
 
-  async function countdown(n: number) {
+  async function countdown(n: number, live: () => boolean) {
     for (let i = n; i > 0; i--) {
-      if (!alive.current) return false;
+      if (!live()) return false;
       setCount(i);
       tones.play('countdown');
       if (P) say(String(i));
       await wait(1000);
     }
+    if (!live()) return false;
     setCount(0);
-    return alive.current;
+    return true;
   }
 
   async function run() {
+    const my = ++runGen.current;
+    const live = () => alive.current && runGen.current === my;
+    setExitAsk(false);
     unlockAudio();
     void keepAwake();
     setError(null);
     sim.reading();
     const st = await source.start();
+    if (!live()) return;
     if (st !== 'ok') {
       setSensorMsg(
         st === 'denied'
@@ -113,6 +158,7 @@ export function Calibrate({
     }
     // 1) İşaret kuralı (telefon şu an elde, okuma duruşunda)
     const reading = await collectSamples(source, 600);
+    if (!live()) return;
     const sign = reading ? detectSign(reading.mean) : null;
     if (!sign) {
       fail('SIGN_AMBIGUOUS');
@@ -126,11 +172,12 @@ export function Calibrate({
         : 'Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın; üst kenar saç çizgisine doğru. Hasta dik oturup karşıya baksın.',
       P ? 2500 : 1500
     );
-    if (!alive.current) return;
+    if (!live()) return;
     sim.upright();
     setStage('upright');
-    if (!(await countdown(3))) return;
+    if (!(await countdown(3, live))) return;
     const up = await collectSamples(source, 1500);
+    if (!live()) return;
     if (!up || up.maxDevDeg > 6) {
       fail(null, P ? 'Telefon ölçüm sırasında kıpırdadı. Tekrar deneyelim; bu kez tamamen hareketsiz kalın.' : 'Ölçüm sırasında hareket oldu; tekrar deneyin.');
       return;
@@ -139,11 +186,17 @@ export function Calibrate({
     tones.play('move');
     // 3) Tavana bak
     setStage('lookup');
-    await sayAndWait(P ? 'Şimdi başınızı yavaşça geriye yatırın ve tavana bakın. Öyle kalın.' : 'Hastanın başını geriye yatırıp tavana baktırın.', 1200);
-    if (!alive.current) return;
+    await sayAndWait(
+      P
+        ? 'Şimdi başınızı yavaşça, zorlamadan, rahat olduğunuz kadar geriye yatırın ve tavana bakın. Öyle kalın.'
+        : 'Hastanın başını zorlamadan geriye yatırıp tavana baktırın.',
+      1200
+    );
+    if (!live()) return;
     sim.lookUp();
-    if (!(await countdown(2))) return;
+    if (!(await countdown(2, live))) return;
     const lu = await collectSamples(source, 1200);
+    if (!live()) return;
     if (!lu || lu.maxDevDeg > 8) {
       fail(null, P ? 'Telefon ölçüm sırasında kıpırdadı. Tekrar deneyelim.' : 'Ölçüm sırasında hareket oldu; tekrar deneyin.');
       return;
@@ -162,7 +215,7 @@ export function Calibrate({
       // Hasta modunda ayrı onay ekranı yok: cümle bitince kendiliğinden devam (sonraki yönerge onu kesmesin).
       // Ses kapalıysa da "tanındı" en az 1,5 s görünür.
       await Promise.all([sayAndWait('Tamam, telefon tanındı. Başınızı düzeltin ve telefonu alnınızda tutun; başlıyoruz.', 300), wait(1500)]);
-      if (alive.current) finish(res.calibration);
+      if (live()) finish(res.calibration);
     } else say('Kalibrasyon tamam.');
   }
 
@@ -174,51 +227,91 @@ export function Calibrate({
     say(msg);
   }
 
+  const exitCard = exitAsk && (
+    <div className="card tint-warn stack" role="alertdialog" aria-live="assertive" data-testid="cal-exit-ask">
+      <strong>{P ? 'Telefonu tanıtmadan çıkmak istiyor musunuz?' : 'Kalibrasyondan çıkmak istiyor musunuz?'}</strong>
+      <p className="small">
+        {P
+          ? 'Ölçüm durduruldu. Kalmak isterseniz "Başla"ya yeniden dokunun; çıkarsanız ana ekrana dönersiniz.'
+          : 'Ölçüm durduruldu. Çıkarsanız muayene ekranına dönersiniz.'}
+      </p>
+      <div className="row wrap">
+        <button type="button" className="btn secondary grow" onClick={() => setExitAsk(false)} data-testid="cal-exit-stay">
+          Kal
+        </button>
+        <button type="button" className="btn ghost grow" onClick={onCancel} data-testid="cal-exit-leave">
+          Evet, çık
+        </button>
+      </div>
+    </div>
+  );
+
+  // Alındaki adımlar: ekran çevirme açıksa yürütücüdeki gibi tam ekran ve 180° döner.
+  const onForehead = stage === 'place' || stage === 'upright' || stage === 'lookup' || stage === 'done';
+  const wrap = (children: ReactNode) =>
+    flipped && onForehead ? (
+      <div className="runner flipped" data-testid="calibrate-flipped">
+        <div className="runner-body" style={{ justifyContent: 'center' }}>
+          {children}
+        </div>
+      </div>
+    ) : (
+      children
+    );
+
   return (
     <div className="stack" data-testid="calibrate">
-      {stage === 'intro' && (
+      {exitCard}
+      {wrap(
         <>
-          <PhoneOnForehead />
-          <div className="card stack">
-            <h2>{P ? 'Telefonu başınıza tanıtalım' : 'Sensör kalibrasyonu'}</h2>
-            <p className="lead">
-              {P
-                ? 'Telefon, başınızın açısını ölçmek için alnınıza yaslanacak. Önce yaklaşık 30 saniyelik kısa bir ayar yapacağız (yalnız ilk kullanımda).'
-                : 'Telefon hastanın alnına yaslanır; ekran dışa baktığı için açıları siz görürsünüz.'}
-            </p>
-            {P ? (
-              <p>Telefonu elinizde normal tutup "Başla"ya dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.</p>
-            ) : (
-              <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
-                <li>Telefonu elinizde normal tutup "Başla"ya dokunun (cihazın yön kuralı ölçülür).</li>
-                <li>Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın; hasta dik oturup karşıya baksın.</li>
-                <li>Ardından hastanın başını geriye yatırıp tavana baktırın.</li>
-              </ol>
-            )}
-            <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">
-              <Icon name="play" /> Başla
-            </button>
-            {P && (
-              <button
-                className="btn ghost"
-                onClick={() => {
-                  unlockAudio();
-                  tones.play('test');
-                  say('Beni duyuyor musunuz? Duyuyorsanız Başla düğmesine dokunun.');
-                }}
-                data-testid="cal-sound-test"
-              >
-                <Icon name="volume" /> Sesi dene: beni duyuyor musunuz?
-              </button>
-            )}
-            {P && !speech.usable() && (
-              <div className="notice small" data-testid="cal-no-voice">
-                <Icon name="alert" />
-                <span>Bu telefonda Türkçe sesli okuma bulunamadı. Bir yakınınızın yanınızda olmasını ve yönergeleri ekrandan okumasını öneririz.</span>
+          {stage === 'intro' && (
+            <>
+              <PhoneOnForehead />
+              <div className="card stack">
+                <h2>{P ? 'Telefonu başınıza tanıtalım' : 'Sensör kalibrasyonu'}</h2>
+                <p className="lead">
+                  {P
+                    ? 'Telefon, başınızın açısını ölçmek için alnınıza yaslanacak. Önce yaklaşık 30 saniyelik kısa bir ayar yapacağız (yalnız ilk kullanımda).'
+                    : 'Telefon hastanın alnına yaslanır; ekran dışa baktığı için açıları siz görürsünüz.'}
+                </p>
+                {P ? (
+                  <p>Telefonu elinizde normal tutup "Başla"ya dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.</p>
+                ) : (
+                  <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
+                    <li>Telefonu elinizde normal tutup "Başla"ya dokunun (cihazın yön kuralı ölçülür).</li>
+                    <li>Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın; hasta dik oturup karşıya baksın.</li>
+                    <li>Ardından hastanın başını geriye yatırıp tavana baktırın.</li>
+                  </ol>
+                )}
+                <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">
+                  <Icon name="play" /> Başla
+                </button>
+                {P && (
+                  <button
+                    className="btn ghost"
+                    onClick={() => {
+                      unlockAudio();
+                      tones.play('test');
+                      say('Beni duyuyor musunuz? Duyuyorsanız Başla düğmesine dokunun.');
+                    }}
+                    data-testid="cal-sound-test"
+                  >
+                    <Icon name="volume" /> Sesi dene: beni duyuyor musunuz?
+                  </button>
+                )}
+                {P && !speech.usable() && (
+                  <div className="notice small" data-testid="cal-no-voice">
+                    <Icon name="alert" />
+                    <span>Bu telefonda Türkçe sesli okuma bulunamadı. Bir yakınınızın yanınızda olmasını ve yönergeleri ekrandan okumasını öneririz.</span>
+                  </div>
+                )}
+                <p className="small muted">Sesi açık tutun; telefonun sessiz modu kapalı olmalı.</p>
+                {flipped && (
+                  <p className="small muted" data-testid="cal-flip-note">
+                    Ekran çevirme açık: telefon alna yaslanınca ekran, başucundaki kişinin okuyabileceği gibi ters döner.
+                  </p>
+                )}
               </div>
-            )}
-            <p className="small muted">Sesi açık tutun; telefonun sessiz modu kapalı olmalı.</p>
-          </div>
         </>
       )}
 
@@ -291,6 +384,8 @@ export function Calibrate({
           <button className="btn ghost" onClick={onCancel}>
             Geri
           </button>
+        </>
+      )}
         </>
       )}
     </div>

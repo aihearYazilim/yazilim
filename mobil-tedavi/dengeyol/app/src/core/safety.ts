@@ -132,36 +132,110 @@ export function evaluateRedFlags(answers: Record<string, YesNo | undefined>): Re
 
 export interface Contraindication {
   id: string;
+  /** Kısa ad: kapı ekranında "sizi engelleyen durum" olarak gösterilir. */
+  label: string;
+  /** Kurulum listesindeki madde (gündelik dil; tıbbi terim parantez içinde). */
   text: string;
+  /** Bu maddeye özgü, hekime sorulacak soru. */
+  ask: string;
 }
 
 export const CONTRAINDICATIONS: Contraindication[] = [
-  { id: 'age', text: '18 yaşından küçüğüm.' },
+  {
+    id: 'age',
+    label: '18 yaşından küçük olmak',
+    text: '18 yaşından küçüğüm.',
+    ask: 'Çocuklarda bu baş dönmesi nasıl tedavi edilir; manevrayı muayenede siz yapabilir misiniz?'
+  },
   {
     id: 'neck',
-    text: 'Boyun omurgası hastalığım (boyun fıtığı nedeniyle hareket kısıtlılığı, boyun instabilitesi, ileri kireçlenme) ya da yakın zamanda boyun ameliyatım var.'
+    label: 'Boyun sorunu',
+    text: 'Boynumda hastalık var ya da boynumu rahat çeviremiyorum: ör. boyun fıtığı nedeniyle hareket kısıtlılığı, boyun kemiklerinde gevşeklik/kayma (instabilite), ileri kireçlenme ya da yakın zamanda boyun ameliyatı.',
+    ask: 'Boynumla Epley/Semont yapabilir miyim? Başımı ne kadar çevirip geriye bırakabilirim; değiştirilmiş bir biçim gerekir mi?'
   },
   {
     id: 'spine',
-    text: 'Ankilozan spondilit, ağır romatoid artrit, ileri kamburluk (kifoskolyoz), ciddi bel/sırt sorunu ya da omurilik yaralanmam var.'
+    label: 'Bel/sırt (omurga) sorunu',
+    text: 'Bel ya da sırt omurgamda ciddi bir sorun var: ör. omurganın sertleşip kaynaşması (ankilozan spondilit), ağır romatizma (romatoid artrit), ileri kamburluk (kifoskolyoz), omurilik yaralanması ya da yatıp kalkmamı, yan dönmemi kısıtlayan bel/sırt sorunu.',
+    ask: 'Bel/sırt sorunumla hızlı yatıp kalkmam ve yan dönmem uygun mu?'
   },
-  { id: 'vascular', text: 'Hekimimin bildiği ciddi şah damarı (karotis) darlığım ya da dengesiz kalp hastalığım var.' },
-  { id: 'stroke', text: 'Geçirilmiş inme ya da beyin damar hastalığım var.' },
-  { id: 'obesity', text: 'Kilom nedeniyle yatakta hızlı yan dönmem ve yüzüstü dönmem çok zor.' },
-  { id: 'cognition', text: 'Hafıza ya da dikkat sorunlarım nedeniyle adım adım yönergeleri takip etmekte zorlanıyorum.' },
-  { id: 'eye', text: 'Geçirilmiş retina yırtılması/dekolmanı ya da son birkaç ay içinde göz ameliyatım oldu.' },
-  { id: 'pregnancy', text: 'İleri dönem gebeyim.' },
+  {
+    id: 'vascular',
+    label: 'Şah damarı darlığı ya da dengesiz kalp hastalığı',
+    text: 'Hekimimin bildiği ciddi şah damarı (boyundaki ana damar, karotis) darlığım ya da kontrol altında olmayan (dengesiz) kalp hastalığım var.',
+    ask: 'Damar ya da kalp durumumla başımı çevirip geriye bırakmam güvenli mi?'
+  },
+  {
+    id: 'stroke',
+    label: 'Geçirilmiş inme ya da beyin damarı hastalığı',
+    text: 'Daha önce inme (felç) geçirdim ya da beyin damarı hastalığım var.',
+    ask: 'Baş dönmemin başka bir nedeni olabilir mi; manevrayı muayenede mi yapmalıyız?'
+  },
+  {
+    id: 'obesity',
+    label: 'Kilo nedeniyle hızlı dönememe',
+    text: 'Kilom nedeniyle yatakta hızla yan dönmem ve yüzüstü dönmem çok zor.',
+    ask: 'Kilom nedeniyle hangi manevra bana uygun; yardımla mı yapmalıyım?'
+  },
+  {
+    id: 'cognition',
+    label: 'Yönergeleri takip etmekte güçlük',
+    text: 'Unutkanlık ya da dikkat sorunu nedeniyle adım adım verilen yönergeleri takip etmekte zorlanıyorum.',
+    ask: 'Manevrayı bir yakınımla mı, yoksa sizin yanınızda mı yapmalıyım?'
+  },
+  {
+    id: 'eye',
+    label: 'Retina sorunu ya da yakın zamanda göz ameliyatı',
+    text: 'Gözümde retina yırtılması ya da ayrılması (dekolman) oldu ya da son birkaç ay içinde göz ameliyatı geçirdim.',
+    ask: 'Göz durumum hızlı baş hareketlerine engel mi?'
+  },
+  {
+    id: 'pregnancy',
+    label: 'İleri dönem gebelik',
+    text: 'Hamileliğimin son aylarındayım (ileri dönem gebelik).',
+    ask: 'Gebeliğimde manevrayı hangi biçimde ve nerede yapmalıyım?'
+  },
   {
     id: 'mobility',
-    text: 'Yatağa yatıp kalkmakta, yan dönmekte ya da başımı çevirmekte ciddi güçlük çekiyorum ve yanımda yardım edecek kimse yok.'
+    label: 'Yardımsız hareket güçlüğü',
+    text: 'Yatağa yatıp kalkmakta, yan dönmekte ya da başımı çevirmekte çok zorlanıyorum ve yanımda yardım edecek kimse yok.',
+    ask: 'Manevrayı bir yardımcıyla yapabilir miyim, yoksa muayenede mi yapmalıyız?'
   },
   {
     // İşitme kaybı tek başına engel değildir: işitme cihazı/kulaklık (Bluetooth), yardımcı, titreşim ve bip sesleri
     // yönlendirmeyi taşır. Yalnız bunların hiçbiri yoksa kapı kapanır.
     id: 'hearing',
-    text: 'Telefondan gelen sesli yönergeleri duyamıyorum; işitme cihazımla ya da kulaklıkla da duyamıyorum ve yanımda yardım edecek kimse yok.'
+    label: 'Sesli yönergeleri duyamama (yardımcı yok)',
+    text: 'Telefondan gelen sesli yönergeleri duyamıyorum; işitme cihazımla ya da kulaklıkla da duyamıyorum ve yanımda yardım edecek kimse yok.',
+    ask: 'Manevrayı yanımda biri varken mi, yoksa muayenede mi yapmalıyım?'
   }
 ];
+
+/**
+ * Tek başına engel OLMAYAN durumlar (kurulum listesinin altında ve kapı ekranında). Kan sulandırıcı kullanan hastaya her
+ * atakta ayrıca kanama/baş çarpması kırmızı bayrağı sorulur (RED_FLAGS).
+ */
+export const CONTRA_NOT_BLOCKING_TEXT =
+  'Kan sulandırıcı ilaç (ör. aspirin, varfarin, apiksaban), tansiyon ilacı ve kalça ya da diz protezi tek başına engel değildir. Kan sulandırıcı kullanıyorsanız her atakta ayrıca kanama ve başınızı çarpma sorulur. Düşmemek için manevraları yatakta yapın.';
+
+/** Her kontrendikasyonda hekime sorulabilecek genel sorular. */
+export const CONTRA_GENERAL_QUESTIONS: string[] = [
+  'Bu durumumla ev manevrası yapabilir miyim? Değiştirilmiş bir biçimde mi, sizin gözetiminizde mi yapılmalı?',
+  'Manevrayı muayenede siz yapabilir misiniz? Baş dönmesi yeniden başlarsa ne yapmalıyım, nereye başvurmalıyım?'
+];
+
+/** İşaretlenen kimliklerden bilinen kontrendikasyonlar (liste sırasıyla; bilinmeyen kimlikler atlanır). */
+export function contraindicationsFor(ids: string[]): Contraindication[] {
+  return CONTRAINDICATIONS.filter((c) => ids.includes(c.id));
+}
+
+/** Kapı ekranı için hekime sorulacak 2–3 soru: önce maddeye özgü (en çok 2), sonra genel sorular. */
+export function contraDoctorQuestions(ids: string[]): string[] {
+  const specific = contraindicationsFor(ids)
+    .map((c) => c.ask)
+    .slice(0, 2);
+  return [...specific, ...CONTRA_GENERAL_QUESTIONS].slice(0, 3);
+}
 
 // ---------------------------------------------------------------------------------------------
 // Tanı kapısı ve doz sınırları
@@ -191,11 +265,11 @@ export function diagnosisGate(i: DiagnosisGateInput): GateResult {
 
 export const GATE_TEXT: Record<'NO_DIAGNOSIS' | 'HORIZONTAL_CANAL' | 'CONTRAINDICATION', string> = {
   NO_DIAGNOSIS:
-    'DengeYol, daha önce hekim ya da odyolog muayenesiyle BPPV tanısı almış kişilerde atak tekrarladığında kullanılır. İlk kez yaşadığınız bir baş dönmesinde önce hekim muayenesi gerekir; çünkü baş dönmesinin başka, ciddi nedenleri olabilir.',
+    'DengeYol, daha önce hekim ya da odyolog (işitme uzmanı) muayenesiyle kristal oynaması (BPPV) tanısı almış kişilerde, baş dönmesi yeniden başladığında kullanılır. İlk kez yaşadığınız bir baş dönmesinde önce hekim muayenesi gerekir; çünkü baş dönmesinin başka, ciddi nedenleri de olabilir.',
   HORIZONTAL_CANAL:
-    'Yatay kanal BPPV\'nin evde kendi kendine tedavisi bu sürümde desteklenmiyor. Manevrayı odyolog ya da hekiminizin yapması gerekir. Odyoloğunuz ya da hekiminiz DengeYol\'un klinisyen modunu kullanabilir.',
+    'Yatay kanal tipi kristal oynamasının (yatay kanal BPPV) evde kendi kendine tedavisi bu sürümde yok. Manevrayı hekiminizin ya da odyoloğunuzun (işitme uzmanı) yapması gerekir; isterlerse DengeYol\'un klinisyen modunu kullanabilirler.',
   CONTRAINDICATION:
-    'İşaretlediğiniz durum nedeniyle manevraları kendi başınıza yapmanız güvenli olmayabilir. Lütfen önce hekiminize danışın.'
+    'İşaretlediğiniz durum nedeniyle baş çevirme hareketlerini (manevraları) evde kendi başınıza yapmanız güvenli olmayabilir. Hekiminiz manevrayı muayenede, kendi gözetiminde ya da size uygun değiştirilmiş bir biçimde yapmayı önerebilir. Bu durumda uygulamadaki ev manevraları kapalı kalır; hekim reçetesi (bağlantı ya da QR) de bunları açmaz.'
 };
 
 export interface DoseLimits {

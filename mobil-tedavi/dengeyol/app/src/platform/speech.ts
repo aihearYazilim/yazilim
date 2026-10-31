@@ -2,6 +2,21 @@
  * Sesli yönerge (Web Speech API, Türkçe). Ses yoksa sessizce görsel moda düşer.
  * Not: Yerel uygulama sürümünde önceden kaydedilmiş insan sesi kullanılması önerilir (docs/YOL-HARITASI.md).
  */
+/**
+ * Konuşma hızı seçenekleri (Ayarlar ve kurulum). "Çok yavaş", ağır işiten/yavaş okuyan kullanıcılar içindir (k04, k01);
+ * yürütücü süreleri hıza göre tahmin edildiğinden (estimateSpeechSec) ek ayar gerekmez.
+ */
+export const SPEECH_RATES: { value: number; label: string }[] = [
+  { value: 0.65, label: 'Çok yavaş' },
+  { value: 0.8, label: 'Yavaş' },
+  { value: 1, label: 'Normal' },
+  { value: 1.15, label: 'Hızlı' }
+];
+
+/** Hız denemesinde okunan örnek yönerge (gerçek bir manevra cümlesine benzer). */
+export const SPEECH_SAMPLE =
+  'Ses denemesi. Manevrada yönergeleri bu hızda duyacaksınız. Örneğin: Şimdi başınızı sağa çevirin ve yavaşça sırtüstü yatın.';
+
 export class Speech {
   enabled = true;
   rate = 1;

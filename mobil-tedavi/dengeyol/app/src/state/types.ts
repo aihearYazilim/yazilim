@@ -52,6 +52,10 @@ export interface ManeuverLog {
   /** Sensörsüz/elle onaylı mı? */
   manual: boolean;
   afterSymptoms?: 'none' | 'mild' | 'severe' | 'neuro';
+  /** Manevrayı bir yakını yaptırdı mı (kayıt anındaki settings.assist === 'helper'); eski kayıtlarda yok. */
+  assisted?: boolean;
+  /** Manevra sırasında kaç kez duraklatıldı (geri tuşu, duraklat düğmesi); kaydedilmediyse yok. */
+  pauses?: number;
 }
 
 export interface SideTestLog {

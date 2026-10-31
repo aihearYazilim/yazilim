@@ -1,20 +1,34 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PROTOCOLS, sideName } from '../../../core/protocols';
-import { recordStats } from '../../../core/runner';
-import { RED_FLAGS, REFER_TEXT } from '../../../core/safety';
-import { formatDate, formatDateTime, formatDateTimeYear } from '../../../state/episodes';
-import { useData } from '../../../state/store';
+import { RED_FLAGS } from '../../../core/safety';
+import { formatDateTime, formatDateTimeYear } from '../../../state/episodes';
+import { store, useData } from '../../../state/store';
 import type { Episode, EpisodeStatus } from '../../../state/types';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
+import {
+  assistFallbackText,
+  decisionText,
+  endNoteText,
+  maneuverTags,
+  priorDiagnosisText,
+  reportPlainText,
+  retestText,
+  rxHeaderLine,
+  rxValidityText,
+  sideCellText,
+  STATUS_LABEL,
+  stepSummary,
+  stopReasonText
+} from './reportText';
 
 const STATUS: Record<EpisodeStatus, { label: string; cls: string }> = {
-  active: { label: 'Aktif', cls: 'primary' },
-  resolved: { label: 'Düzeldi', cls: 'ok' },
-  referred: { label: 'Hekime yönlendirildi', cls: 'warn' },
-  emergency: { label: 'Acil yönlendirme', cls: 'danger' },
-  closed: { label: 'Kapatıldı', cls: '' }
+  active: { label: 'Şu anki atak', cls: 'primary' },
+  resolved: { label: STATUS_LABEL.resolved, cls: 'ok' },
+  referred: { label: STATUS_LABEL.referred, cls: 'warn' },
+  emergency: { label: STATUS_LABEL.emergency, cls: 'danger' },
+  closed: { label: STATUS_LABEL.closed, cls: '' }
 };
 
 export function History() {
@@ -66,7 +80,7 @@ export function EpisodeReport() {
       title="Atak raporu"
       back={true}
     >
-      <ShareReport />
+      <ShareReport e={e} />
       <ReportBody e={e} />
       <button className="btn secondary block no-print" onClick={() => window.print()}>
         <Icon name="print" /> Yazdır / PDF olarak kaydet
@@ -78,28 +92,49 @@ export function EpisodeReport() {
 function ReportBody({ e }: { e: Episode }) {
   const d = useData();
   const p = d.patient;
+  const now = Date.now();
+  const head = rxHeaderLine(p?.prescription);
+  const validity = p?.prescription ? rxValidityText(p.prescription, now) : null;
+  const note = e.endNote ? endNoteText(e.endNote) : '';
+  const assistFallback = assistFallbackText(e, d.settings);
+  // Büyük yazıda sağdan taşmasın: tablolar yerine satır satır liste (uzun sözcükler de kırılır).
+  const wrap = { overflowWrap: 'anywhere' as const };
   return (
-    <div className="stack" data-testid="episode-report">
+    <div className="stack" data-testid="episode-report" style={wrap}>
       <div className="card stack">
         <h2>DengeYol — BPPV atak raporu</h2>
-        <p className="small muted">Bu rapor hastanın kendi kullanımıyla oluşturulmuştur; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(Date.now())}</p>
+        {head && (
+          <p data-testid="report-head">
+            <strong>{head}</strong>
+          </p>
+        )}
+        <p className="small muted">Bu rapor hastanın kendi kullanımıyla oluşturulmuştur; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}</p>
         <dl className="kv">
           <dt>Atak başlangıcı</dt>
           <dd>{formatDateTimeYear(e.startedAt)}</dd>
           <dt>Durum</dt>
-          <dd>{STATUS[e.status].label}{e.endNote ? ` (${humanNote(e.endNote)})` : ''}</dd>
+          <dd>
+            {STATUS_LABEL[e.status]}
+            {note ? ` — ${note}` : ''}
+          </dd>
           <dt>Tedavi edilen taraf</dt>
           <dd>{e.side ? sideName(e.side) : '—'}</dd>
           <dt>Manevra</dt>
           <dd>{PROTOCOLS[e.protocolId].shortName}</dd>
           <dt>Önceki tanı</dt>
-          <dd>
-            {p?.prescription
-              ? `Reçete: ${sideName(p.prescription.side)} arka kanal, ${formatDate(new Date(p.prescription.date).getTime())}${p.prescription.by ? ', ' + p.prescription.by : ''}${p.prescription.clinic ? ', ' + p.prescription.clinic : ''}`
-              : p?.diagnosedByDoctor
-                ? `Hekim tanısı (${p.canal === 'PC' ? 'arka kanal' : p.canal === 'HC' ? 'yatay kanal' : 'kanal bilinmiyor'}, ${p.side === 'R' ? 'sağ' : p.side === 'L' ? 'sol' : 'taraf bilinmiyor'})${p.dxDate ? ', ' + p.dxDate : ''}`
-                : '—'}
-          </dd>
+          <dd>{priorDiagnosisText(p)}</dd>
+          {validity && (
+            <>
+              <dt>Reçete geçerliliği</dt>
+              <dd>{validity}</dd>
+            </>
+          )}
+          {assistFallback && (
+            <>
+              <dt>Manevrayı yaptıran</dt>
+              <dd>{assistFallback}</dd>
+            </>
+          )}
         </dl>
       </div>
 
@@ -119,35 +154,15 @@ function ReportBody({ e }: { e: Episode }) {
 
       {e.sideTests.length > 0 && (
         <div className="card stack">
-          <h3>Taraf testleri (semptom Dix-Hallpike)</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Zaman</th>
-                <th>Sağ</th>
-                <th>Sol</th>
-                <th>Karar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {e.sideTests.map((t, i) => {
-                const cell = (s: 'R' | 'L') => {
-                  const r = t.results.find((x) => x.side === s);
-                  if (!r) return '—';
-                  if (r.safetyStopped) return 'durduruldu (>2 dk)';
-                  return r.vertigo ? `baş dönmesi: gecikme ${r.latencySec ?? '?'} s, süre ${r.durationSec ?? '?'} s` : 'yok';
-                };
-                return (
-                  <tr key={i}>
-                    <td>{formatDateTimeYear(t.at)}</td>
-                    <td>{cell('R')}</td>
-                    <td>{cell('L')}</td>
-                    <td>{decisionText(t.decision)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <h3>Taraf testleri (belirtiyle Dix-Hallpike)</h3>
+          {e.sideTests.map((t, i) => (
+            <div key={i} className="small stack" style={{ gap: 2 }}>
+              <strong>{formatDateTimeYear(t.at)}</strong>
+              <span>Sağ: {sideCellText(t, 'R')}</span>
+              <span>Sol: {sideCellText(t, 'L')}</span>
+              <span>Karar: {decisionText(t.decision)}</span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -158,38 +173,26 @@ function ReportBody({ e }: { e: Episode }) {
             <div key={m.id} className="stack" style={{ gap: 6 }}>
               <div className="row wrap">
                 <strong>{formatDateTimeYear(m.at)}</strong>
-                <span className="chip">{PROTOCOLS[m.protocolId].shortName} {m.side ? sideName(m.side) : ''}</span>
-                <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : stopText(m.stopReason)}</span>
-                {m.manual && <span className="chip">sensörsüz</span>}
-                {m.afterSymptoms && <span className="chip">{m.afterSymptoms === 'none' ? 'sonrası: iyi' : m.afterSymptoms === 'mild' ? 'sonrası: hafif belirti' : 'sonrası: şiddetli belirti'}</span>}
+                <span className="chip">
+                  {PROTOCOLS[m.protocolId].shortName} {m.side ? sideName(m.side) : ''}
+                </span>
+                <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : stopReasonText(m.stopReason)}</span>
+                {maneuverTags(m).map((t) => (
+                  <span key={t} className="chip">
+                    {t}
+                  </span>
+                ))}
               </div>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Adım</th>
-                    <th>Süre</th>
-                    <th>Hedefte</th>
-                    <th>Hedeften sapma (ort. / en çok)</th>
-                    <th>Belirti</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {m.records.map((r, i) => {
-                    const st = recordStats(r);
-                    return (
-                      <tr key={i}>
-                        <td>{r.title}</td>
-                        <td>{Math.round(r.holdSec)} s</td>
-                        <td>{st.inRangePct !== null ? `%${st.inRangePct}` : '—'}</td>
-                        <td>{st.meanAbsThetaErr !== null ? `${st.meanAbsThetaErr}° / ${st.maxAbsThetaErr}°` : '—'}</td>
-                        <td>{r.vertigoMarks.length ? r.vertigoMarks.map((v) => `${Math.round(v.start)}–${v.end !== null ? Math.round(v.end) : '?'} s`).join(', ') : '—'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <ol className="stack small" style={{ margin: 0, paddingLeft: 22, gap: 6 }}>
+                {m.records.map((r, i) => (
+                  <li key={i}>
+                    <strong>{r.title}</strong>: {stepSummary(r)}
+                  </li>
+                ))}
+              </ol>
             </div>
           ))}
+          <p className="small muted">Gecikme, pozisyona gelişten baş dönmesinin işaretlenmesine kadar geçen süredir; süre, en uzun tek baş dönmesi dalgasıdır.</p>
         </div>
       )}
 
@@ -198,8 +201,7 @@ function ReportBody({ e }: { e: Episode }) {
           <h3>Tekrar testleri</h3>
           {e.retests.map((r, i) => (
             <div key={i} className="small">
-              <strong>{formatDateTimeYear(r.at)}</strong> ({r.kind === 'early' ? 'erken' : r.kind === 'morning' ? 'sabah' : 'diğer'}, {sideName(r.side)}):{' '}
-              {r.vertigo ? `baş dönmesi var (gecikme ${r.latencySec ?? '?'} s, süre ${r.durationSec ?? '?'} s)` : 'tetiklenmedi'}
+              {retestText(r)}
             </div>
           ))}
         </div>
@@ -208,37 +210,12 @@ function ReportBody({ e }: { e: Episode }) {
   );
 }
 
-function decisionText(d: Episode['sideTests'][number]['decision']): string {
-  switch (d.kind) {
-    case 'TREAT':
-      return `${sideName(d.side)} tarafa manevra`;
-    case 'NOT_TRIGGERED':
-      return 'tetiklenmedi';
-    case 'ASK_STRONGER':
-      return 'şiddet sorusu';
-    case 'REFER':
-      return 'hekime yönlendirildi';
-  }
-}
-
-function stopText(r: string | null): string {
-  if (r === 'VERTIGO_TOO_LONG') return 'durduruldu: uzun baş dönmesi';
-  if (r === 'USER_FEELS_UNWELL') return 'durduruldu: kendini iyi hissetmedi';
-  if (r === 'INTERRUPTED') return 'kesildi: uygulamadan çıkıldı';
-  return 'yarıda bırakıldı';
-}
-
-function humanNote(n: string): string {
-  if (n in REFER_TEXT) return REFER_TEXT[n as keyof typeof REFER_TEXT];
-  return n;
-}
-
-/** Raporu metin olarak paylaş (WhatsApp, e-posta vb.); paylaşma yoksa panoya kopyalar. */
-function ShareReport() {
+/** Raporu düz metin olarak paylaş (WhatsApp, e-posta vb.); paylaşma yoksa panoya kopyalar. */
+function ShareReport({ e }: { e: Episode }) {
   const [msg, setMsg] = useState<string | null>(null);
   const share = async () => {
-    const el = document.querySelector('[data-testid="episode-report"]') as HTMLElement | null;
-    const text = el?.innerText ?? '';
+    // Ekrandaki HTML'in innerText'i değil: satır satır okunur, tablo/sekme içermeyen ayrı özet.
+    const text = reportPlainText(e, store.get());
     try {
       if (navigator.share) {
         await navigator.share({ title: 'DengeYol atak raporu', text });
