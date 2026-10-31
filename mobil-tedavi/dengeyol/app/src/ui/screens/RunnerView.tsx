@@ -8,6 +8,7 @@ import { HINT_TEXT_CLINICIAN, HINT_TEXT_HELPER, HINT_TEXT_PATIENT, type HintKey 
 import { protocolForMode, resolveProtocol, type ProtocolId, type ResolvedProtocol, type Side, sideName, type StepDef } from '../../core/protocols';
 import {
   type ClinicianVoice,
+  clinicianSilent,
   type Cue,
   DEFAULT_RUNNER_CONFIG,
   effectiveMinHoldSec,
@@ -18,8 +19,19 @@ import {
   type RunnerEvent,
   type RunnerMode,
   type RunnerState,
-  runnerStep
+  runnerStep,
+  startSpeechText
 } from '../../core/runner';
+import {
+  armedChoice,
+  CONFIRM_PROMPT,
+  CONFIRM_WINDOW_MS,
+  initialPauseSheet,
+  type PauseChoice,
+  type PauseSheetState,
+  pauseSheetTap,
+  type SheetTarget
+} from '../../core/pauseSheet';
 import { applySettings, playCues, unlockAudio } from '../../platform/feedback';
 import { useMotion } from '../../platform/MotionContext';
 import { collectSamples, PoseTracker } from '../../platform/pose';
@@ -45,8 +57,9 @@ export const LONG_PRESS_MS = 2000;
  */
 export const SHEET_TAP_MAX_MS = 600;
 
-/** Klinisyen sesli yönerge seçenekleri (başlıktaki düğme sırayla değiştirir). */
+/** Klinisyen sesli yönerge seçenekleri (başlıktaki simge düğme sırayla değiştirir; durum aria-label ve rozette). */
 const CLINICIAN_VOICE_LABEL: Record<ClinicianVoice, string> = { full: 'Ses: açık', short: 'Ses: kısa', off: 'Ses: kapalı' };
+const CLINICIAN_VOICE_BADGE: Record<ClinicianVoice, string> = { full: 'A', short: 'K', off: '×' };
 const CLINICIAN_VOICE_NEXT: Record<ClinicianVoice, ClinicianVoice> = { short: 'full', full: 'off', off: 'short' };
 
 /** Konuşma motoru şu an konuşuyor ya da kuyrukta bekleyen cümle var mı (yoksa ya da hata verirse false). */
@@ -152,8 +165,11 @@ export function RunnerView({
   const setAssist = (v: 'self' | 'helper') => store.update((x) => ({ ...x, settings: { ...x.settings, assist: v } }));
   const cVoice: ClinicianVoice = settings.clinicianVoice ?? 'short';
   const setClinicianVoice = (v: ClinicianVoice) => {
-    // Kapatınca o an okunan cümle de susar.
-    if (v === 'off') speech.cancel();
+    // Kapatınca o an okunan cümle de susar; alt yazı da kalkar (söyleniyormuş izlenimi vermesin; k08, tur 3).
+    if (v === 'off') {
+      speech.cancel();
+      setCaption(null);
+    }
     store.update((x) => ({ ...x, settings: { ...x.settings, clinicianVoice: v } }));
   };
   const busy = useRef(false);
@@ -198,6 +214,12 @@ export function RunnerView({
         } else if (c.kind === 'speak' && c.tag === 'count' && speechBusy()) {
           // Kuyrukta bekleyen sayım geç okunur ve yanlış süre söyler (k04, tur 2): konuşma sürüyorsa bu sayım atlanır.
           continue;
+        } else if (c.kind === 'speak' && c.utterId !== undefined && cfg.awaitSpeechEnd) {
+          // İpucu/uyarı: gerçek bitiş (ya da kesiliş) bildirilir; aynı ipucu bitmeden yinelenmez (k02, tur 3).
+          const id = c.utterId;
+          speech.speak(c.text, c.priority, () => {
+            if (alive.current) dispatchRef.current({ type: 'cueSpoken', now: now(), utterId: id });
+          });
         } else playCues([c] as Cue[]);
       }
       const spoken = r.cues.filter((c) => c.kind === 'speak');
@@ -441,18 +463,15 @@ export function RunnerView({
         onPlaced?.(c);
       }
     }
-    // Yardımcı modunda yönergeler yakına; hastaya tek cümle söylenir.
-    const startCore = helperVoice
-      ? 'Başlıyoruz. Yönergeleri yakınınıza söyleyeceğim. Siz kıpırdamayın; başınızı yakınınız çevirecek.'
-      : manual
-        ? 'Başlıyoruz.'
-        : 'Başlıyoruz. Yönergeleri dinleyin.';
-    const startText = P ? `${startNote ? `${startNote} ` : ''}${startCore}` : 'Başlıyoruz.';
-    if (P && !settings.simulation) {
-      // Başlangıç cümlesi (ve varsa giriş notu) 3 s'lik sayımda ilk yönergeyle kesilmesin: önce sonuna kadar okunur.
-      await speech.speakAsync(startText, estimateSpeechSec(startText, settings.speechRate) * 2000 + 2000);
-      if (!alive.current) return;
-    } else speech.speak(startText, 'high');
+    // Yardımcı modunda yönergeler yakına; hastaya tek cümle söylenir. Klinisyen sesi kapalıyken hiç konuşulmaz (k08, tur 3).
+    const startText = startSpeechText(cfg, startNote);
+    if (startText !== null) {
+      if (P && !settings.simulation) {
+        // Başlangıç cümlesi (ve varsa giriş notu) 3 s'lik sayımda ilk yönergeyle kesilmesin: önce sonuna kadar okunur.
+        await speech.speakAsync(startText, estimateSpeechSec(startText, settings.speechRate) * 2000 + 2000);
+        if (!alive.current) return;
+      } else speech.speak(startText, 'high');
+    }
     for (let i = 3; i > 0; i--) {
       setPreCount(i);
       tones.play('countdown');
@@ -510,9 +529,49 @@ export function RunnerView({
     if (e.detail === 0) return true;
     return t0 === null || performance.now() - t0 < SHEET_TAP_MAX_MS;
   };
-  const sheetButton = (fn: () => void) => (e: React.MouseEvent) => {
+  /** Duraklatma sayfası onay durumu (kalıcı sonuçlu düğmeler iki adımda; bkz. core/pauseSheet). */
+  const [sheet, setSheetState] = useState<PauseSheetState>(initialPauseSheet);
+  const sheetRef = useRef(sheet);
+  const setSheet = (st: PauseSheetState) => {
+    sheetRef.current = st;
+    setSheetState(st);
+  };
+  // Onay süresi dolunca "Evet … eminim" düğmesi kalkar.
+  useEffect(() => {
+    if (sheet.armed === null || sheet.armedAt === null) return;
+    const t = setTimeout(() => setSheet(initialPauseSheet()), Math.max(0, sheet.armedAt + CONFIRM_WINDOW_MS - performance.now()));
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet.armed, sheet.armedAt]);
+  // Duraklatmadan çıkınca kurulmuş onay kalkar (bir sonraki duraklatma temiz açılır).
+  useEffect(() => {
+    if (state.phase !== 'paused' && sheetRef.current.armed !== null) setSheet(initialPauseSheet());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
+  /** Duraklatma sayfasında bir kısa dokunuşu işler (kural: core/pauseSheet). */
+  const onSheetTap = (target: SheetTarget) => {
+    const r = pauseSheetTap(sheetRef.current, target, {
+      now: performance.now(),
+      vertigoActive: sRef.current.vertigoActive,
+      patient: P
+    });
+    setSheet(r.state);
+    const a = r.action;
+    if (a.kind === 'vertigoEnd') dispatch({ type: 'vertigoToggle', now: now() });
+    else if (a.kind === 'resume') resumeNow();
+    else if (a.kind === 'arm') {
+      // Ekrana bakmadan dokunan da bir şey olduğunu bilsin: "hazırsanız dokunun" titreşimi ve kısa söz.
+      haptics.play('ready');
+      speech.speak(CONFIRM_PROMPT, 'high');
+      setCaption(CONFIRM_PROMPT);
+    } else if (a.kind === 'commit') {
+      const reason = a.choice === 'unwell' ? 'USER_FEELS_UNWELL' : a.choice === 'unreachable' ? 'POSITION_UNREACHABLE' : 'USER_ABORT';
+      dispatch({ type: 'abort', now: now(), reason });
+    }
+  };
+  const sheetButton = (target: SheetTarget) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (sheetTap(e)) fn();
+    if (sheetTap(e)) onSheetTap(target);
   };
 
   /** Ekrandaki başlık / yönerge / kısa özet: yardımcı modunda yardımcıya, klinisyende klinisyen metni. */
@@ -748,11 +807,22 @@ export function RunnerView({
   const isControl = (t: EventTarget) =>
     !!(t as HTMLElement).closest('button:not(.vertigo-pad), a, input, select, label, summary, .overlay');
   const guiding = !manual && ev?.hint && (state.phase === 'seeking' || state.phase === 'settling' || state.phase === 'drifting');
+  /** Onayı beklenen kalıcı seçim (süresi dolmadıysa). */
+  const armed = state.phase === 'paused' ? armedChoice(sheet, performance.now()) : null;
+  /** Kurulan seçimin yerinde dokunulamayan not durur (aynı yere ikinci kör dokunuş onaylamaz); diğerleri düğmedir. */
+  const sheetChoice = (choice: PauseChoice, btn: React.ReactNode) =>
+    armed === choice ? (
+      <div className="sheet-armed" role="status" data-testid={`runner-armed-${choice}`} key={choice}>
+        Onaylamak için yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.
+      </div>
+    ) : (
+      btn
+    );
   const observeDone = !P && step?.observe !== false && !state.vertigoActive && state.vertigoEndedAt !== null;
 
   return (
     <div
-      className={`runner${flipped ? ' flipped' : ''}${P ? ' press-surface' : ''}`}
+      className={`runner${flipped ? ' flipped' : ''}${P ? ' press-surface' : ' clinician'}`}
       data-testid="runner"
       data-phase={state.phase}
       data-step={state.stepIndex}
@@ -783,7 +853,8 @@ export function RunnerView({
             <Icon name="pause" /> Duraklat
           </button>
         )}
-        <div className="grow stack" style={{ gap: 6 }}>
+        <div className="grow stack runner-head-title" style={{ gap: 6 }}>
+          {/* En çok iki satır (390 px'te de; k08, tur 3). */}
           <strong>
             {protocol.shortName}
             {protocol.side ? ` · ${sideName(protocol.side)}` : ''} — Adım {state.stepIndex + 1}/{protocol.steps.length}
@@ -791,19 +862,24 @@ export function RunnerView({
           <StepDots total={protocol.steps.length} index={state.stepIndex} />
         </div>
         {!P && (
-          // Klinisyen sesli yönergesi: kısa → açık → kapalı (telefon hastanın alnında; k08, tur 2).
+          // Klinisyen sesli yönergesi: kısa → açık → kapalı (telefon hastanın alnında; k08, tur 2). Yalnız simge + rozet:
+          // başlığı sıkıştırıp "Ekranı çevir"i taşırmasın (k08, k10; tur 3). Durum aria-label ve title'da.
           <button
-            className="btn ghost runner-voice"
+            className="btn icon runner-voice"
             aria-label={`Sesli yönerge: ${CLINICIAN_VOICE_LABEL[cVoice]}. Değiştirmek için dokunun.`}
+            title={CLINICIAN_VOICE_LABEL[cVoice]}
             onClick={() => setClinicianVoice(CLINICIAN_VOICE_NEXT[cVoice])}
             data-testid="runner-clinician-voice"
             data-voice={cVoice}
           >
-            <Icon name="volume" size={18} /> {CLINICIAN_VOICE_LABEL[cVoice]}
+            <Icon name="volume" size={20} />
+            <span className="runner-voice-badge" aria-hidden="true">
+              {CLINICIAN_VOICE_BADGE[cVoice]}
+            </span>
           </button>
         )}
         <button
-          className="btn icon"
+          className="btn icon runner-flip"
           aria-label="Ekranı çevir"
           aria-pressed={flipped}
           title="Ekranı 180° çevir (başucunda duruyorsanız)"
@@ -905,7 +981,7 @@ export function RunnerView({
         )}
         {!manual && step && state.phase !== 'between' && <HangBar target={step.target} pose={pose} />}
 
-        {caption && caption !== instrText && !(guiding && ev?.hint && caption.includes(hintTexts[ev.hint])) && (
+        {caption && !clinicianSilent(cfg) && caption !== instrText && !(guiding && ev?.hint && caption.includes(hintTexts[ev.hint])) && (
           <p className="caption" aria-live="polite" data-testid="runner-caption">
             <Icon name="volume" size={18} /> {caption}
           </p>
@@ -957,7 +1033,7 @@ export function RunnerView({
           aria-label="Duraklatıldı"
           data-testid="runner-paused"
           // Ekrana bakmadan: NERESİ olursa olsun (düğmenin üstü de) 2 s basılı tutmak devam ettirir; uzun basış hiçbir düğmeyi
-          // seçmez (k01, tur 2). Tek kısa dokunuş baş dönmesi "geçti" işaretidir.
+          // seçmez (k01, tur 2). Baş dönmesi işaretliyken ilk kısa dokunuş, nereye denk gelirse gelsin "geçti"dir (k01, tur 3).
           onPointerDownCapture={() => {
             sheetDownAt.current = performance.now();
           }}
@@ -975,10 +1051,21 @@ export function RunnerView({
             e.stopPropagation();
             if ((e.target as HTMLElement).closest('button')) return;
             if (!sheetTap(e)) return;
-            if (P && sRef.current.vertigoActive) dispatch({ type: 'vertigoToggle', now: now() });
+            onSheetTap('background');
           }}
         >
-          <div className="sheet">
+          <div className="sheet" data-armed={armed ?? undefined}>
+            {/* Onay düğmesi seçim düğmelerinden uzakta, sayfanın üstünde: aynı yere ikinci kör dokunuş onaylamaz. */}
+            {armed && (
+              <button
+                className="btn danger block sheet-confirm"
+                onClick={sheetButton('confirm')}
+                data-testid="runner-confirm"
+                data-choice={armed}
+              >
+                {confirmLabel(armed, helperVoice)}
+              </button>
+            )}
             <h2>Duraklatıldı</h2>
             <p className="muted">
               {P
@@ -989,16 +1076,17 @@ export function RunnerView({
             </p>
             {P && (
               <p className="small" data-testid="runner-paused-hint">
-                Ekrana bakmadan: devam etmek için ekranın herhangi bir yerine 2 saniye basılı tutun. Düğmeler yalnız kısa
-                dokunuşla çalışır.
-                {state.vertigoActive ? ' Baş dönmesi geçtiyse bir kez dokunun.' : ''}
+                Ekrana bakmadan: devam etmek için ekranın herhangi bir yerine 2 saniye basılı tutun.
+                {state.vertigoActive
+                  ? ' Baş dönmesi geçtiyse bir kez dokunun; bu ilk dokunuş hiçbir düğmeyi seçmez.'
+                  : ' Aşağıdaki kırmızı ve gri düğmeler bir onay daha ister.'}
               </p>
             )}
             {state.vertigoActive && (
               <button
                 autoFocus
                 className="btn warn block"
-                onClick={sheetButton(() => dispatch({ type: 'vertigoToggle', now: now() }))}
+                onClick={sheetButton('vertigoEnd')}
                 data-testid="runner-paused-vertigo-end"
               >
                 {P ? (helperVoice ? 'Hastanın baş dönmesi geçti' : 'Baş dönmesi geçti') : 'Belirti / nistagmus bitti'}
@@ -1007,42 +1095,44 @@ export function RunnerView({
             <button
               className="btn primary block"
               autoFocus={!state.vertigoActive}
-              onClick={sheetButton(resumeNow)}
+              onClick={sheetButton('resume')}
               data-testid="runner-resume"
             >
               <Icon name="play" /> Devam et
             </button>
-            {P && (
-              <button
-                className="btn warn block"
-                onClick={sheetButton(() => dispatch({ type: 'abort', now: now(), reason: 'USER_FEELS_UNWELL' }))}
-                data-testid="runner-unwell"
-              >
-                {helperVoice ? 'Hasta kendini kötü hissediyor' : 'Kendimi kötü hissediyorum'}
-              </button>
-            )}
-            {P && (
+            {P &&
+              sheetChoice(
+                'unwell',
+                <button className="btn warn block" onClick={sheetButton('unwell')} data-testid="runner-unwell">
+                  {helperVoice ? 'Hasta kendini kötü hissediyor' : 'Kendimi kötü hissediyorum'}
+                </button>
+              )}
+            {P &&
               // Zorlamadan gelinemeyen pozisyon: yarıda bırakma değil; kaydedilir ve hekime yönlendirilir (hedef gevşetilmez).
-              <button
-                className="btn warn block"
-                onClick={sheetButton(() => dispatch({ type: 'abort', now: now(), reason: 'POSITION_UNREACHABLE' }))}
-                data-testid="runner-unreachable"
-              >
-                {helperVoice ? 'Bu pozisyona gelemiyor / boynu ağrıyor' : 'Pozisyona gelemiyorum / boynum ağrıyor'}
+              sheetChoice(
+                'unreachable',
+                <button className="btn warn block" onClick={sheetButton('unreachable')} data-testid="runner-unreachable">
+                  {helperVoice ? 'Bu pozisyona gelemiyor / boynu ağrıyor' : 'Pozisyona gelemiyorum / boynum ağrıyor'}
+                </button>
+              )}
+            {sheetChoice(
+              'abort',
+              <button className="btn secondary block" onClick={sheetButton('abort')} data-testid="runner-abort">
+                <Icon name="stop" /> {P ? (helperVoice ? 'Şimdilik bırak (hasta iyi)' : 'Şimdilik bırak (iyiyim)') : 'Sonlandır'}
               </button>
             )}
-            <button
-              className="btn secondary block"
-              onClick={sheetButton(() => dispatch({ type: 'abort', now: now(), reason: 'USER_ABORT' }))}
-              data-testid="runner-abort"
-            >
-              <Icon name="stop" /> {P ? (helperVoice ? 'Şimdilik bırak (hasta iyi)' : 'Şimdilik bırak (iyiyim)') : 'Sonlandır'}
-            </button>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+/** Onay düğmesi yazısı: ne onaylandığı açıkça ve "eminim" ile. */
+function confirmLabel(choice: PauseChoice, helper: boolean): string {
+  if (choice === 'unwell') return helper ? 'Evet, hasta kötü — eminim' : 'Evet, kendimi kötü hissediyorum — eminim';
+  if (choice === 'unreachable') return helper ? 'Evet, bu pozisyona gelemiyor — eminim' : 'Evet, pozisyona gelemiyorum — eminim';
+  return helper ? 'Evet, şimdilik bırak — eminim' : 'Evet, şimdilik bırakıyorum — eminim';
 }
 
 /** Açıyı kişiye göre söz: +θ = hastanın sağına. */

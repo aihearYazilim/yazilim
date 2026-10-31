@@ -87,6 +87,17 @@ export const PATIENT_FIRST_HINT_DELAY_SEC = 3;
 /** Bu kadar zorlama ipucundan (sarkma/dönüş) sonra "Daha fazla zorlamayın" denir. */
 export const STRAIN_AFTER_HINTS = 2;
 /**
+ * "Biraz daha geriye" (sarkma) ipucu bir adımda en çok bu kadar söylenir; sonraki sarkma ipucu, hasta ilerliyor olsa da
+ * "Daha fazla zorlamayın" olur (boynu kısıtlı hasta ilerledikçe itilmesin; k07, tur 3). Dönüş ipucunda ilerleme kuralı kalır.
+ */
+export const HANG_MORE_MAX_HINTS = 3;
+/** Aynı ipucu, önceki ipucu cümlesi bittikten en az bu kadar sonra (s) yinelenir; kendi kendini kesmez (k02, tur 3). */
+export const HINT_AFTER_SPEECH_GAP_SEC = 2;
+/** Kısa "Dur! Yanlış taraf." uyarısından sonra tam yönergeye geçmeden önceki kısa ara (s). */
+export const WRONG_SIDE_FOLLOW_GAP_SEC = 0.3;
+/** Yanlış taraf kısa uyarısı, sırtüstüne dönülüp yeniden yanlış yana geçilse de bu süreden (s) sık verilmez. */
+export const WRONG_SIDE_REALERT_SEC = 5;
+/**
  * "Daha fazla zorlamayın" yalnız açı bu süre (s) ilerlemediyse söylenir: yavaş ama ilerleyen hasta korkutulmaz (k01, tur 2).
  * İlerleme: hedefe uzaklığın en az PROGRESS_MIN_DEG azalması.
  */
@@ -108,6 +119,11 @@ export const UNREACHABLE_SEC = 60;
 export const PILLOW_PHI_DEG = 5;
 /** Hızlı geçiş adımında yönergeden sonra "Üç, iki, bir, şimdi!" sayımı (s). */
 export const GO_COUNT_SEC = 3;
+/**
+ * Semont'ta komuttan önce yatan hastanın pozisyonu doğrulama süresi (confirmSec) + bu kadar (s) içinde doğrulanmazsa
+ * "Zaten yattınız" tek başına söylenir; doğrulanırsa doğrulama cümlesiyle birleşir.
+ */
+export const EARLY_MOVE_SAY_AFTER_SEC = 1;
 
 /** Türkçe TTS için kaba konuşma süresi tahmini: ~13 karakter/saniye (hız 1,0). */
 export function estimateSpeechSec(text: string, rate = 1): number {
@@ -149,13 +165,43 @@ export const STOP_REASON_TEXT: Record<StopReason, string> = {
   INTERRUPTED: 'kesildi: uygulamadan çıkıldı'
 };
 
+/**
+ * Yanlış tarafta kalındığı için (yüzüstünden geçme denemesi ya da doğru yana getirilemeyen hasta) "pozisyona gelinemedi"
+ * durdurmasının kısa karşılığı (geçmiş, rapor). Neden kodu aynıdır (POSITION_UNREACHABLE); ayrım adım kaydındadır
+ * (`wrongSideStop`). Bkz. `stopReasonTextFor`.
+ */
+export const WRONG_SIDE_STOP_REASON_TEXT = 'durduruldu: yanlış tarafa dönüldü, doğru yana gelinemedi';
+
 /** Güvenlik durdurması bitiş ekranı metinleri (hasta modu). Durdurma kuralları ve yönlendirme kilidi aynen kalır. */
-export const SAFETY_STOP_TEXT: Record<'VERTIGO_TOO_LONG' | 'POSITION_UNREACHABLE', string> = {
+export const SAFETY_STOP_TEXT: Record<'VERTIGO_TOO_LONG' | 'POSITION_UNREACHABLE' | 'WRONG_SIDE', string> = {
   VERTIGO_TOO_LONG:
     'Baş dönmeniz 2 dakikadan uzun sürdü ya da geçtiği işaretlenmedi. Bu, tipik arka kanal BPPV\'ye uymuyor. Lütfen hekiminize ya da odyoloğunuza başvurun. Konuşma bozukluğu, güçsüzlük ya da çift görme olursa hemen 112\'yi arayın.',
   POSITION_UNREACHABLE:
-    'Manevranın bir pozisyonuna gelinemedi (ör. baş yeterince geriye sarkamadı ya da çevrilemedi). Zorlayarak yeniden denemeyin. Hekiminize ya da odyoloğunuza başvurun; boyun ya da bel hareketiniz kısıtlıysa manevranın değiştirilmiş biçimini ya da kendi gözetiminde yapılmasını önerebilir.'
+    'Manevranın bir pozisyonuna gelinemedi (örneğin baş yeterince geriye sarkamadı ya da çevrilemedi). Zorlayarak yeniden denemeyin. Hekiminize ya da odyoloğunuza başvurun; boyun ya da bel hareketiniz kısıtlıysa manevranın değiştirilmiş biçimini ya da kendi gözetiminde yapılmasını önerebilir.',
+  /** Yanlış tarafta kalındı (k02, tur 3): gerekçe boyun/bel değil; kilit aynen kalır. */
+  WRONG_SIDE:
+    'Manevrada yanlış tarafa dönüldü ve doğru yana gelinemedi (örneğin yüzüstünden geçilmeye çalışıldı). Bu, boyun ya da bel sorunu olduğu anlamına gelmez. Önce sırtüstüne dönün, sonra yavaşça oturun. Bugün yeniden denemeden önce hekiminize ya da odyoloğunuza danışın; manevrayı birlikte gözden geçirsinler.'
 };
+
+/** Durdurulan adım yanlış tarafta kalındığı için mi durdu (otomatik "gelinemedi" + kayıtta yanlış taraf)? */
+function stoppedOnWrongSide(records: readonly StepRecord[]): boolean {
+  return records.some((r) => r.unreachable && r.wrongSideStop);
+}
+
+/**
+ * Güvenlik durdurması bitiş ekranı metni: "pozisyona gelinemedi" yanlış tarafta kalındığı için olduysa ayrı gerekçe
+ * (k02, tur 3). Hasta akışı `SAFETY_STOP_TEXT.POSITION_UNREACHABLE` yerine bunu çağırır.
+ */
+export function stopTextFor(reason: 'VERTIGO_TOO_LONG' | 'POSITION_UNREACHABLE', records: readonly StepRecord[]): string {
+  if (reason === 'POSITION_UNREACHABLE' && stoppedOnWrongSide(records)) return SAFETY_STOP_TEXT.WRONG_SIDE;
+  return SAFETY_STOP_TEXT[reason];
+}
+
+/** Durma nedeninin kısa karşılığı (geçmiş, rapor): `STOP_REASON_TEXT` ile aynı; yanlış tarafta kalınmışsa ayrı gerekçe. */
+export function stopReasonTextFor(reason: StopReason, records: readonly StepRecord[]): string {
+  if (reason === 'POSITION_UNREACHABLE' && stoppedOnWrongSide(records)) return WRONG_SIDE_STOP_REASON_TEXT;
+  return STOP_REASON_TEXT[reason];
+}
 
 export interface StepRecord {
   stepId: string;
@@ -198,6 +244,17 @@ export interface StepRecord {
   noSitThrough?: boolean;
   /** Yan yatış adımında hasta karşı yana döndü; "önce sırtüstüne dönün" denildi. */
   wrongSide?: boolean;
+  /**
+   * "Pozisyona gelinemedi" durdurması yanlış tarafta kalındığı için oldu (otomatik 60 s kuralı ya da düğme, hasta o an
+   * yanlış yandayken). Bitiş/rapor metni buna göre seçilir: `stopTextFor`, `stopReasonTextFor`.
+   */
+  wrongSideStop?: boolean;
+  /**
+   * Hedef aranırken (pozisyon doğrulanmadan önce) ulaşılan en iyi açılar (°): sarkma (φ) ve dönüş (θ) ayrı ayrı hedefe en
+   * yakın değer. "Pozisyona gelinemedi"de raporda "baş en çok ~8° sarktı (hedef 15–40°)" yazılabilsin (k07, tur 3).
+   * Bkz. `reachSummary`.
+   */
+  reach?: { phi: number | null; theta: number | null };
   /** Adım tamamlandı ama tutma süresinin yarısından azında tam hedefteydi (histerezis payıyla): "sınırda tutuldu". */
   borderline?: boolean;
   /** Yatar adımlarda bekleme boyunca sarkma (φ) toplamı, en küçüğü ve örnek sayısı. */
@@ -260,6 +317,21 @@ export interface RunnerState {
   minTiltInStep: number | null;
   /** Semont: hasta komuttan önce yeni yana yattı (ms); sayım iptal edildi. */
   earlyMoveAt: number | null;
+  /** "Zaten yattınız" ayrı söylendi mi (pozisyon hemen doğrulanmadıysa); söylenmediyse doğrulama cümlesiyle birleşir. */
+  earlyMoveSaid: boolean;
+  /** Bu adımda söylenen "biraz daha geriye" (sarkma) ipucu sayısı; bkz. HANG_MORE_MAX_HINTS. */
+  hangHints: number;
+  /** Bu yanlış taraf geçişinde kısa "Dur! Yanlış taraf." uyarısı verildi mi (sırtüstüne dönülünce sıfırlanır). */
+  wrongSideAlerted: boolean;
+  /** Son kısa yanlış taraf uyarısının anı (ms). */
+  wrongSideAlertAt: number | null;
+  /**
+   * Son düzeltme ipucu / uyarı cümlesi: kimliği, bittiği varsayılan an (ms) ve ardından yeni ipucuna kadar ara (ms).
+   * Gerçek bitiş `cueSpoken` olayıyla gelir; gelmezse tahmin kullanılır. Bu süre dolmadan yeni ipucu söylenmez.
+   */
+  hintUtter: { id: number; until: number; gapMs: number } | null;
+  /** Konuşma kimliği sayacı (`Cue.utterId`). */
+  utterSeq: number;
 }
 
 export type RunnerEvent =
@@ -273,20 +345,46 @@ export type RunnerEvent =
   | { type: 'abort'; now: number; reason: StopReason }
   | { type: 'shock'; now: number }
   /** Adım yönergesinin konuşması gerçekten bitti (arayüz, `speech.speak` bitiş geri çağrısından). */
-  | { type: 'introSpoken'; now: number; stepIndex: number };
+  | { type: 'introSpoken'; now: number; stepIndex: number }
+  /** `utterId` taşıyan cümlenin konuşması bitti ya da kesildi (arayüz, `speech.speak` bitiş geri çağrısından). */
+  | { type: 'cueSpoken'; now: number; utterId: number };
 
 export type Cue =
   /** `tag: 'stepIntro'`: adım yönergesi; arayüz bitişini `introSpoken` olayıyla bildirir. */
   /**
    * `tag: 'count'`: "… saniye kaldı"; arayüz, konuşma sürüyorsa okumaz (geç okunan sayım yanlış süre söyler).
-   * `tag: 'hint'`: düzeltme ipucu; klinisyende kısa seste okunmaz (ekranda görünür).
+   * `tag: 'hint'`: düzeltme ipucu (klinisyen kısa seste 2–3 kelimelik biçimi).
+   * `tag: 'alert'`: kısa "Dur! Yanlış taraf." uyarısı.
+   * `utterId`: arayüz, bu cümlenin bitişini (ya da kesilişini) `cueSpoken` olayıyla bildirir (ipucu kendini kesmesin).
    */
-  | { kind: 'speak'; text: string; priority: 'high' | 'normal'; tag?: 'stepIntro' | 'count' | 'hint'; stepIndex?: number }
+  | {
+      kind: 'speak';
+      text: string;
+      priority: 'high' | 'normal';
+      tag?: 'stepIntro' | 'count' | 'hint' | 'alert';
+      stepIndex?: number;
+      utterId?: number;
+    }
   | {
       kind: 'haptic';
-      pattern: 'reached' | 'drift' | 'stepDone' | 'done' | 'alarm' | 'tap' | 'move' | 'markOn' | 'markOff' | 'pause' | 'ready';
+      pattern:
+        | 'reached'
+        | 'drift'
+        | 'stepDone'
+        | 'done'
+        | 'alarm'
+        | 'tap'
+        | 'move'
+        | 'markOn'
+        | 'markOff'
+        | 'pause'
+        | 'ready'
+        | 'wrongSide';
     }
-  | { kind: 'tone'; pattern: 'reached' | 'stepDone' | 'countdown' | 'done' | 'alarm' | 'move' | 'drift' | 'markOn' | 'markOff' | 'pause' };
+  | {
+      kind: 'tone';
+      pattern: 'reached' | 'stepDone' | 'countdown' | 'done' | 'alarm' | 'move' | 'drift' | 'markOn' | 'markOff' | 'pause' | 'wrongSide';
+    };
 
 export interface StepResult {
   state: RunnerState;
@@ -331,7 +429,13 @@ export function initialRunnerState(): RunnerState {
     progressAt: null,
     hintQuietUntil: null,
     minTiltInStep: null,
-    earlyMoveAt: null
+    earlyMoveAt: null,
+    earlyMoveSaid: false,
+    hangHints: 0,
+    wrongSideAlerted: false,
+    wrongSideAlertAt: null,
+    hintUtter: null,
+    utterSeq: 0
   };
 }
 
@@ -441,8 +545,33 @@ const TXT = {
     patient: 'Bu pozisyona gelinemedi. Daha fazla zorlamayın; burada bırakıyoruz. Yavaşça oturun. Tekrar denemeden önce hekiminize danışın.',
     helper: 'Bu pozisyona gelinemedi. Daha fazla zorlamayın; burada bırakıyoruz. Hastayı yavaşça oturtun. Tekrar denemeden önce hekime danışın.',
     clinician: 'Pozisyona gelinemedi; durduruldu.'
-  }
+  },
+  /** Yanlış tarafta kalındığı için durduruldu (k02, tur 3): gerekçe boyun değil. */
+  unreachableWrongSide: {
+    patient: 'Yanlış taraftan doğru yana gelinemedi; burada bırakıyoruz. Önce sırtüstüne dönün, sonra yavaşça oturun. Tekrar denemeden önce hekiminize danışın.',
+    helper: 'Hasta yanlış taraftan doğru yana getirilemedi; burada bırakıyoruz. Hastayı önce sırtüstüne getirin, sonra yavaşça oturtun. Tekrar denemeden önce hekime danışın.',
+    clinician: 'Yanlış taraf; doğru yana gelinemedi, durduruldu.'
+  },
+  /** Yanlış taraf algılanır algılanmaz (k02, tur 3): kısa, ayrı titreşim ve tonla; ardından tam yönerge. */
+  wrongSideAlert: { patient: 'Dur! Yanlış taraf.', helper: 'Dur! Yanlış taraf.', clinician: 'Dur! Yanlış taraf.' }
 } as const;
+
+/** Klinisyen kısa seste düzeltme ipuçları: 2–3 kelime, yön hastaya göre (k10, tur 3). Uzun biçim "açık" seste. */
+export const HINT_TEXT_CLINICIAN_SHORT: Record<HintKey, string> = {
+  LIE_DOWN: 'Hastayı yatırın.',
+  SIT_UP: 'Hastayı oturtun.',
+  TURN_RIGHT: 'Hastanın sağına.',
+  TURN_LEFT: 'Hastanın soluna.',
+  TURN_BODY_RIGHT: 'Gövdeyi sağına.',
+  TURN_BODY_LEFT: 'Gövdeyi soluna.',
+  WRONG_SIDE_RIGHT: 'Sırtüstünden hastanın sağına.',
+  WRONG_SIDE_LEFT: 'Sırtüstünden hastanın soluna.',
+  HANG_MORE: 'Daha sarkık.',
+  HANG_LESS: 'Daha az sarkık.',
+  CHIN_DOWN: 'Çene aşağı.',
+  CHIN_UP: 'Çene yukarı.',
+  HEAD_STRAIGHT: 'Başı düzleştirin.'
+};
 
 function introSec(cfg: RunnerConfig, step: StepDef): number {
   return cfg.introSecFor(stepSpeech(cfg, step));
@@ -472,23 +601,44 @@ function readySec(cfg: RunnerConfig, s: RunnerState, step: StepDef): number {
   return s.earlyMoveAt !== null ? Math.min(base, sec(s.earlyMoveAt - s.stepStartedAt)) : base;
 }
 
+const clinicianVoice = (cfg: RunnerConfig): ClinicianVoice => cfg.clinicianVoice ?? 'short';
+/** Klinisyen kısa (ya da kapalı) seste mi: kısa komutlar, 2–3 kelimelik yön ipuçları ve sayım. */
+const clinicianShort = (cfg: RunnerConfig) => cfg.mode === 'clinician' && clinicianVoice(cfg) !== 'full';
+/** Klinisyen sesi kapalı mı: hiç konuşma yok ("Başlıyoruz" dahil), alt yazı da gösterilmez; ton ve titreşim sürer (k08, tur 3). */
+export const clinicianSilent = (cfg: RunnerConfig): boolean => cfg.mode === 'clinician' && clinicianVoice(cfg) === 'off';
+
 function hintText(cfg: RunnerConfig, key: HintKey, step?: StepDef): string {
   const v = voice(cfg);
+  const short = clinicianShort(cfg);
   // Semont: hasta hâlâ önceki yanda. Yol oturuştandır, sırtüstü yuvarlanma değil.
   if (step?.fastTransitionSec !== undefined && (key === 'WRONG_SIDE_RIGHT' || key === 'WRONG_SIDE_LEFT')) {
     const right = key === 'WRONG_SIDE_RIGHT';
     return pick(cfg, {
       patient: `Hâlâ öbür yandasınız. Oturarak geçip tek hamlede ${right ? 'sağ' : 'sol'} yanınıza yatın.`,
       helper: `Hasta hâlâ öbür yanda. Oturuştan geçirip tek hamlede ${right ? 'sağ' : 'sol'} yanına yatırın.`,
-      clinician: `Hasta hâlâ öbür yanda: oturuştan geçirerek hastanın ${right ? 'sağına' : 'soluna'}.`
+      clinician: short
+        ? `Oturuştan hastanın ${right ? 'sağına' : 'soluna'}.`
+        : `Hasta hâlâ öbür yanda: oturuştan geçirerek hastanın ${right ? 'sağına' : 'soluna'}.`
     });
   }
-  return v === 'clinician' ? HINT_TEXT_CLINICIAN[key] : v === 'helper' ? HINT_TEXT_HELPER[key] : HINT_TEXT_PATIENT[key];
+  if (v === 'clinician') return short ? HINT_TEXT_CLINICIAN_SHORT[key] : HINT_TEXT_CLINICIAN[key];
+  return v === 'helper' ? HINT_TEXT_HELPER[key] : HINT_TEXT_PATIENT[key];
 }
 
-const clinicianVoice = (cfg: RunnerConfig): ClinicianVoice => cfg.clinicianVoice ?? 'short';
-/** Klinisyen kısa seste mi (yalnız kısa komutlar ve sayım). */
-const clinicianShort = (cfg: RunnerConfig) => cfg.mode === 'clinician' && clinicianVoice(cfg) !== 'full';
+/**
+ * Başlarken söylenen cümle (3 s'lik sayımdan önce). Klinisyen sesi kapalıyken null: hiç konuşulmaz (k08, tur 3).
+ * Hasta modunda varsa giriş notu (ör. "Önce sol tarafı…") başa eklenir.
+ */
+export function startSpeechText(cfg: RunnerConfig, startNote?: string): string | null {
+  if (cfg.mode === 'clinician') return clinicianSilent(cfg) ? null : 'Başlıyoruz.';
+  // Yardımcı modunda yönergeler yakına; hastaya tek cümle söylenir.
+  const core = cfg.helper
+    ? 'Başlıyoruz. Yönergeleri yakınınıza söyleyeceğim. Siz kıpırdamayın; başınızı yakınınız çevirecek.'
+    : cfg.sensorless
+      ? 'Başlıyoruz.'
+      : 'Başlıyoruz. Yönergeleri dinleyin.';
+  return `${startNote ? `${startNote} ` : ''}${core}`;
+}
 
 /** Adım yönergesi: hastaya, yardımcıya (varsa yardımcı metni) ya da klinisyene (kısa seste yalnız adım başlığı). */
 export function stepSpeech(cfg: RunnerConfig, step: StepDef): string {
@@ -594,6 +744,11 @@ function startStep(cfg: RunnerConfig, s: RunnerState, index: number, now: number
     hintQuietUntil: null,
     minTiltInStep: null,
     earlyMoveAt: null,
+    earlyMoveSaid: false,
+    hangHints: 0,
+    wrongSideAlerted: false,
+    wrongSideAlertAt: null,
+    hintUtter: null,
     records: [...s.records, newRecord(step, now)]
   };
 }
@@ -638,14 +793,30 @@ function finishStep(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[])
 /**
  * Pozisyona gelinemedi: adım durur, kayda yazılır, hekime yönlendirilir. Hedef gevşetilmez; hasta zorlanmaz.
  * (Otomatik: hasta modunda ~60 s; elle: duraklatma ekranındaki "Pozisyona gelemiyorum / boynum ağrıyor".)
+ * Adımda yanlış tarafa dönüldüyse (otomatik durdurma) ya da hasta o an yanlış yandaysa gerekçe "yanlış taraf"tır,
+ * boyun/bel değil (k02, tur 3): kayda `wrongSideStop` yazılır, söz ve bitiş metni buna göre seçilir.
  */
-function unreachableStop(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[]): StepResult {
+function unreachableStop(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[], auto: boolean): StepResult {
+  const rec = s.records[s.records.length - 1];
+  const wrongSideStop = !!rec?.wrongSide && (auto || s.wrongSideLatched);
   cues.push({ kind: 'haptic', pattern: 'alarm' });
   cues.push({ kind: 'tone', pattern: 'alarm' });
-  cues.push({ kind: 'speak', text: pick(cfg, TXT.unreachable), priority: 'high' });
-  const st = updateRecord(s, (r) => ({ ...r, endedAt: r.endedAt ?? now, holdSec: s.holdSec, unreachable: true }));
+  cues.push({ kind: 'speak', text: pick(cfg, wrongSideStop ? TXT.unreachableWrongSide : TXT.unreachable), priority: 'high' });
+  const st = updateRecord(s, (r) => ({
+    ...r,
+    endedAt: r.endedAt ?? now,
+    holdSec: s.holdSec,
+    unreachable: true,
+    ...(wrongSideStop ? { wrongSideStop: true } : {})
+  }));
   return {
-    state: { ...st, phase: 'safetyStop', phaseSince: now, stopReason: 'POSITION_UNREACHABLE', notice: 'Pozisyona gelinemedi.' },
+    state: {
+      ...st,
+      phase: 'safetyStop',
+      phaseSince: now,
+      stopReason: 'POSITION_UNREACHABLE',
+      notice: wrongSideStop ? 'Yanlış taraftan doğru yana gelinemedi.' : 'Pozisyona gelinemedi.'
+    },
     cues
   };
 }
@@ -672,10 +843,10 @@ export const VERTIGO_REMIND_EVERY_SEC = 30;
 export function runnerStep(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): StepResult {
   const r = runnerStepInner(cfg, s, ev);
   if (cfg.mode !== 'clinician') return r;
-  // Klinisyen sesi (k08, tur 2): telefon hastanın alnında. Kısa seste düzeltme ipuçları okunmaz (ekranda); kapalıyken hiç konuşma.
+  // Klinisyen sesi (k08, k10; tur 2–3): telefon hastanın alnında. Kısa seste ipuçları 2–3 kelimelik yön ("Hastanın sağına.");
+  // kapalıyken hiç konuşma yok, ton ve titreşim sürer. Boş söz (klinisyende karşılığı olmayan hasta cümlesi) okunmaz.
   const v = clinicianVoice(cfg);
-  if (v === 'full') return r;
-  return { state: r.state, cues: r.cues.filter((c) => c.kind !== 'speak' || (v === 'short' && c.tag !== 'hint')) };
+  return { state: r.state, cues: r.cues.filter((c) => c.kind !== 'speak' || (v !== 'off' && c.text !== '')) };
 }
 
 function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): StepResult {
@@ -701,11 +872,17 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
       return { state: { ...s, introSpokenAt: now }, cues };
     }
 
+    case 'cueSpoken': {
+      // İpucu/uyarı cümlesi bitti ya da kesildi: sonraki ipucu artık bekleyebilir (tahmin yerine gerçek bitiş).
+      if (!s.hintUtter || s.hintUtter.id !== ev.utterId || now >= s.hintUtter.until) return { state: s, cues };
+      return { state: { ...s, hintUtter: { ...s.hintUtter, until: now } }, cues };
+    }
+
     case 'abort': {
       // "Pozisyona gelemiyorum / boynum ağrıyor": yarıda bırakma değil, yönlendirmeli durdurma.
       if (ev.reason === 'POSITION_UNREACHABLE') {
         if (s.phase === 'idle') return { state: s, cues };
-        return unreachableStop(cfg, s, now, cues);
+        return unreachableStop(cfg, s, now, cues, false);
       }
       cues.push({ kind: 'haptic', pattern: 'alarm' });
       cues.push({ kind: 'speak', text: pick(cfg, TXT.stopped), priority: 'high' });
@@ -717,14 +894,15 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
       if (s.phase === 'paused' || s.phase === 'idle') return { state: s, cues };
       cues.push({ kind: 'haptic', pattern: 'pause' });
       cues.push({ kind: 'tone', pattern: 'pause' });
-      // Hasta ekranı göremez: devam yolu sesle söylenir (ekrana basılı tutmak); tek dokunuş baş dönmesi bitişidir. Boynu
-      // ağrıyan hastaya "olduğunuz yerde kalın" denmez; "Pozisyona gelemiyorum" yolu da söylenir (k07, tur 2).
+      // Hasta ekranı göremez: önce asıl eylem, devam yolu söylenir (ekrana basılı tutmak; k04, tur 3); tek dokunuş baş dönmesi
+      // bitişidir. Boynu ağrıyan hastaya "olduğunuz yerde kalın" denmez; "Pozisyona gelemiyorum" yolu da söylenir (k07, tur 2).
+      // Bu düğme kalıcı sonuçludur: dokunduktan sonra ekranın üstündeki "Evet" ile onaylanır (k01, tur 3).
       const vNote = s.vertigoActive ? ' Baş dönmesi geçtiyse ekrana bir kez dokunun.' : '';
       cues.push({
         kind: 'speak',
         text: pick(cfg, {
-          patient: `Duraklatıldı. Boynunuz ağrıyorsa yavaşça oturabilirsiniz.${vNote} Devam için ekrana iki saniye basılı tutun. Bu pozisyona gelemiyorsanız telefonu alıp "Pozisyona gelemiyorum" düğmesine dokunun.`,
-          helper: `Duraklatıldı. Hastanın boynu ağrıyorsa onu yavaşça oturtabilirsiniz.${vNote} Devam için ekrana iki saniye basılı tutun. Hasta bu pozisyona gelemiyorsa "Bu pozisyona gelemiyor" düğmesine dokunun.`,
+          patient: `Duraklatıldı. Devam için ekrana iki saniye basılı tutun.${vNote} Boynunuz ağrıyorsa yavaşça oturabilirsiniz. Bu pozisyona gelemiyorsanız telefonu alıp "Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın.`,
+          helper: `Duraklatıldı. Devam için ekrana iki saniye basılı tutun.${vNote} Hastanın boynu ağrıyorsa onu yavaşça oturtabilirsiniz. Hasta bu pozisyona gelemiyorsa "Bu pozisyona gelemiyor" düğmesine dokunun ve onaylayın.`,
           clinician: 'Duraklatıldı.'
         }),
         priority: 'high'
@@ -765,7 +943,8 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
           unreachSince: null,
           bestErrDeg: null,
           progressAt: null,
-          hintQuietUntil: null
+          hintQuietUntil: null,
+          hintUtter: null
         },
         cues
       };
@@ -886,6 +1065,29 @@ function vertigoReminderText(cfg: RunnerConfig, atSec: number, leftSec: number |
     : 'Baş dönmesi geçince ekrana dokunun; sürüyorsa böyle kalın.';
 }
 
+/**
+ * Baş dönmesi hatırlatmasının zamanı ve sözü. Durdurmadan önceki son hatırlatma kısadır ve durdurma cümlesiyle kesilmesin
+ * diye (yavaş seste de) sınırdan en az tahmini süresi + 2 s önce başlar (k01, tur 3).
+ */
+export function vertigoReminderPlan(
+  cfg: RunnerConfig,
+  next: number,
+  prevMark: number,
+  limit: number | null
+): { atSec: number; text: string } {
+  const isFinal = limit !== null && next >= VERTIGO_ATYPICAL_SEC && next + VERTIGO_REMIND_EVERY_SEC >= limit;
+  if (!isFinal || limit === null) {
+    return { atSec: next, text: vertigoReminderText(cfg, next, limit !== null ? Math.round(limit - next) : null) };
+  }
+  const finalText = (left: number) =>
+    cfg.helper
+      ? `Hasta "geçti" dediyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı durduracağım.`
+      : `Baş dönmesi geçtiyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı durduracağım.`;
+  const est = cfg.introSecFor(finalText(Math.round(limit - next)));
+  const atSec = Math.max(prevMark + 1, Math.min(next, Math.floor(limit - est - 2)));
+  return { atSec, text: finalText(Math.round(limit - atSec)) };
+}
+
 function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | null, cues: Cue[]): StepResult {
   let s: RunnerState = { ...s0 };
   const dt = s.lastTickAt === null ? 0 : Math.max(0, Math.min(1, sec(now - s.lastTickAt)));
@@ -944,15 +1146,12 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
     // hatırlat ve sonucu söyle. Durdurma kuralı aynen kalır.
     if (cfg.mode === 'patient') {
       const next = s.vertigoRemindMark === 0 ? VERTIGO_FIRST_REMIND_SEC : s.vertigoRemindMark + VERTIGO_REMIND_EVERY_SEC;
-      if (vSec >= next && (vertigoLimit === null || next < vertigoLimit)) {
+      const plan = vertigoLimit === null || next < vertigoLimit ? vertigoReminderPlan(cfg, next, s.vertigoRemindMark, vertigoLimit) : null;
+      if (plan && vSec >= plan.atSec) {
         s.vertigoRemindMark = next;
         cues.push({ kind: 'haptic', pattern: 'markOn' });
         cues.push({ kind: 'tone', pattern: 'markOn' });
-        cues.push({
-          kind: 'speak',
-          text: vertigoReminderText(cfg, next, vertigoLimit !== null ? Math.round(vertigoLimit - next) : null),
-          priority: 'normal'
-        });
+        cues.push({ kind: 'speak', text: plan.text, priority: 'normal' });
       }
     }
   }
@@ -967,11 +1166,23 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
   if (livePose && step.target.kind === 'lying' && sideGuarded(step.target) && step.fastTransitionSec === undefined) {
     // Yanlış taraf kilidi: karşı yana geçen hasta sırtüstüne (ya da oturuşa) dönene dek hedefe yüzüstünden gelemez (k02, tur 2).
     // Semont'ta hasta adım başında zaten önceki (karşı) yandadır; yol oturuştandır, kilit yoktur (ipucu yine "öbür yandasınız").
-    if (livePose.tiltFromUpright < LYING_MIN_TILT || Math.abs(livePose.theta) < SUPINE_ZONE_DEG) s.wrongSideLatched = false;
-    else if (onWrongSide(livePose, step.target)) s.wrongSideLatched = true;
+    if (livePose.tiltFromUpright < LYING_MIN_TILT || Math.abs(livePose.theta) < SUPINE_ZONE_DEG) {
+      s.wrongSideLatched = false;
+      // Sırtüstüne (ya da oturuşa) dönüldü: yeniden yanlış yana geçilirse kısa uyarı yine verilir.
+      s.wrongSideAlerted = false;
+    } else if (onWrongSide(livePose, step.target)) s.wrongSideLatched = true;
   }
   const ev = livePose ? evaluate(livePose, step.target, { wrongSideLatched: s.wrongSideLatched }) : null;
   if (measuring) s.evaluation = ev;
+
+  // Hedef aranırken ulaşılan en iyi açılar (pozisyon doğrulanmadan önce; k07, tur 3).
+  if (livePose && ev && ev.postureOk && !ev.wrongSide && step.target.kind === 'lying') {
+    const rec = s.records[s.records.length - 1];
+    if (rec && rec.reachedAt === null) {
+      const next = betterReach(rec.reach, livePose, step.target);
+      if (next) s = updateRecord(s, (r) => ({ ...r, reach: next }));
+    }
+  }
 
   if (livePose && step.fastTransitionSec !== undefined && s.records[s.records.length - 1]?.reachedAt === null) {
     // Semont: geçişte oturuştan geçildi mi (baş dikleşti mi; k10, tur 2).
@@ -979,10 +1190,20 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
   }
 
   // Semont: hasta "Şimdi!"den önce yeni yana yattıysa sayım iptal; yatmış hastaya hareket komutu verilmez (k10, tur 2).
+  // "Zaten yattınız" pozisyon doğrulanınca (≈1 s) geçiş geri bildirimiyle TEK cümlede söylenir; ayrı söylenip hemen ardından
+  // yavaş geçiş cümlesiyle kesilmez (k10, tur 3). Doğrulama gecikirse kısa süre sonra tek başına söylenir.
   if (hasGoCount(cfg, step) && s.goCount < 4 && s.earlyMoveAt === null && livePose && ev && arrivedOnTargetSide(livePose, step.target, ev)) {
     s.goCount = 4;
     s.earlyMoveAt = now;
     s = updateRecord(s, (r) => ({ ...r, movedBeforeCommand: true }));
+  }
+  if (
+    s.earlyMoveAt !== null &&
+    !s.earlyMoveSaid &&
+    s.records[s.records.length - 1]?.reachedAt === null &&
+    sec(now - s.earlyMoveAt) >= cfg.confirmSec + EARLY_MOVE_SAY_AFTER_SEC
+  ) {
+    s.earlyMoveSaid = true;
     // Uzun yönergeyi keser: hasta zaten yatıyor.
     cues.push({ kind: 'speak', text: pick(cfg, TXT.earlyMove), priority: 'high' });
   }
@@ -1060,19 +1281,20 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
           cues.push({ kind: 'tone', pattern: 'reached' });
         }
         let text = reachedText(cfg, step, false);
-        if ((slow || noSit) && cfg.mode === 'patient') {
-          // Evde Semont'un ana hataları yavaş geçiş ve yuvarlanma: hastaya da söylenir, kayda geçer (k10, tur 1–2).
+        const early = cfg.mode === 'patient' && s.earlyMoveAt !== null;
+        if ((slow || noSit || early) && cfg.mode === 'patient') {
+          // Evde Semont'un ana hataları yavaş geçiş, yuvarlanma ve komuttan önce hareket: hastaya da söylenir, kayda geçer
+          // (k10, tur 1–2). Komuttan önce yatıldıysa "Zaten yattınız" bu cümlenin başındadır: iki cümle birbirini kesmez (k10, tur 3).
           const parts: string[] = [];
+          if (early && !s.earlyMoveSaid) parts.push(cfg.helper ? 'Hasta zaten yattı; sayımı bırakıyoruz.' : 'Zaten yattınız; sayımı bırakıyoruz.');
           if (noSit) parts.push(cfg.helper ? 'Oturuştan geçirmediniz; bir dahaki sefere önce oturtun, sonra tek hamlede geçirin.' : 'Oturuştan geçmediniz; bir dahaki sefere önce oturun, sonra tek hamlede geçin.');
           if (slow && transition !== null) {
             const t = Math.round(transition);
-            parts.push(
-              cfg.helper
-                ? `Geçiş ${t} saniye sürdü; bir dahaki sefere tek hamlede, daha hızlı geçirin.`
-                : `Geçiş ${t} saniye sürdü; bir dahaki sefere tek hamlede, daha hızlı geçin.`
-            );
+            const how = early ? 'bir dahaki sefere "şimdi"yi bekleyip tek hamlede' : 'bir dahaki sefere tek hamlede, daha hızlı';
+            parts.push(cfg.helper ? `Geçiş ${t} saniye sürdü; ${how} geçirin.` : `Geçiş ${t} saniye sürdü; ${how} geçin.`);
           }
-          parts.push(cfg.helper ? 'Şimdi böyle tutun.' : 'Şimdi böyle kalın.');
+          if (early) parts.push(cfg.helper ? 'Böyle tutun.' : 'Böyle kalın, kıpırdamayın.');
+          else parts.push(cfg.helper ? 'Şimdi böyle tutun.' : 'Şimdi böyle kalın.');
           text = parts.join(' ');
         } else if ((slow || noSit) && cfg.mode === 'clinician') {
           // Klinisyen hastayı iki eliyle tutarken ekranı göremez: kısa sesli bilgi (k10, tur 2).
@@ -1084,8 +1306,10 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
           text,
           // Kuyrukta bekleyen eski düzeltme ipuçları "Tamam"ı geciktirmesin (k01, k04; tur 2): ipucu verildiyse ya da yönerge
           // bittiği biliniyorsa keser. Yalnız yönerge hâlâ okunuyor olabilirse kuyruğa girer ("doğru" bilgisi titreşimle hemen).
-          priority:
-            cfg.mode !== 'patient' || s.lastHintAt !== null || s.earlyMoveAt !== null || (!!cfg.awaitSpeechEnd && s.introSpokenAt !== null)
+          // "Zaten yattınız" ayrı söylendiyse (doğrulama gecikti) onu kesmez, ardına girer.
+          priority: s.earlyMoveSaid
+            ? 'normal'
+            : cfg.mode !== 'patient' || s.lastHintAt !== null || s.earlyMoveAt !== null || (!!cfg.awaitSpeechEnd && s.introSpokenAt !== null)
               ? 'high'
               : 'normal'
         });
@@ -1147,7 +1371,7 @@ function outOfTarget(
   if (patient && !cfg.sensorless && ready && anglesOff && !s.vertigoActive) {
     if (s.unreachSince === null) s.unreachSince = now;
     // Hedef gevşetilmez: süre dolunca durdurulur ve hekime yönlendirilir.
-    if (sec(now - s.unreachSince) >= UNREACHABLE_SEC) return unreachableStop(cfg, s, now, cues);
+    if (sec(now - s.unreachSince) >= UNREACHABLE_SEC) return unreachableStop(cfg, s, now, cues, true);
   } else if ((ev && !anglesOff) || s.vertigoActive) {
     // Oturdu ya da baş dönmesi işaretli: süre baştan. Hedefe tek an değmek (k07, tur 2) ve kısa sensör kesintisi sıfırlamaz.
     s.unreachSince = null;
@@ -1159,44 +1383,168 @@ function outOfTarget(
     s.progressAt = now;
   }
 
-  if (!hintsDue) return null;
-  if (s.hintQuietUntil !== null && now < s.hintQuietUntil) return null;
+  // Yanlış taraf (yan yatış adımı; Semont'ta önceki yanda kalmak bu değildir): algılanır algılanmaz kısa "Dur! Yanlış taraf."
+  // ve kendi titreşimi/tonu; tam yönerge onun ardından. Yönergenin ya da ipucu süresinin bitmesi beklenmez (k02, tur 3).
+  const wrongSide = !!ev?.wrongSide && step.fastTransitionSec === undefined;
+  if (wrongSide) {
+    markWrongSide(s);
+    if (wrongSideAlert(cfg, s, now, cues)) return null;
+  } else {
+    if (!hintsDue) return null;
+    if (s.hintQuietUntil !== null && now < s.hintQuietUntil) return null;
+  }
+  // Önceki ipucu cümlesi bitmeden (+ ara) yeni ipucu yok: kendi kendini kesmez, kuyrukta birikmez (k02, tur 3).
+  if (s.hintUtter && now < s.hintUtter.until + s.hintUtter.gapMs) return null;
   const sinceHint = s.lastHintAt === null ? Infinity : sec(now - s.lastHintAt);
   // Zorlama uyarısından ya da yastık ipucundan sonra ipuçları seyrekleşir.
-  const every = s.strainWarned || s.pillowSaid ? cfg.hintEverySec * 3 : cfg.hintEverySec;
-  if (sinceHint < every) return null;
+  const every = !wrongSide && (s.strainWarned || s.pillowSaid) ? cfg.hintEverySec * 3 : cfg.hintEverySec;
+  // Kısa uyarının ardından ilk tam yönerge aralık beklemez.
+  const firstAfterAlert =
+    wrongSide && s.wrongSideAlertAt !== null && (s.lastHintAt === null || s.lastHintAt < s.wrongSideAlertAt);
+  if (!firstAfterAlert && sinceHint < every) return null;
   if (ev && ev.hint) {
     const push = isPushHint(ev.hint);
     let text = hintText(cfg, ev.hint, step);
+    let plain = true;
     // Hiç sarkmıyorsa çoğu zaman yastık başın altındadır; hasta başını "bırakamaz". Sorun boyun değil: zorlama uyarısı verilmez.
     const pillowCase = patient && ev.hint === 'HANG_MORE' && !!pose && pose.phi < PILLOW_PHI_DEG;
     const stalled = s.progressAt === null || sec(now - s.progressAt) >= STRAIN_NO_PROGRESS_SEC;
+    // "Biraz daha geriye" en çok HANG_MORE_MAX_HINTS kez; sonra, hasta ilerliyor olsa da zorlama uyarısı (k07, tur 3).
+    const hangCapped = ev.hint === 'HANG_MORE' && s.hangHints >= HANG_MORE_MAX_HINTS;
     if (pillowCase && s.pushHints >= 1 && !s.pillowSaid) {
       text = pick(cfg, TXT.pillow);
       s.pillowSaid = true;
       // Baş dönen hasta yastığı birkaç saniyede düzeltemez: bir süre yeni ipucu yok (k10, tur 2).
       s.hintQuietUntil = now + PILLOW_WAIT_SEC * 1000;
+      plain = false;
     } else if (pillowCase && s.pillowSaid) {
       text = pick(cfg, TXT.pillowWait);
-    } else if (patient && push && !s.strainWarned && s.pushHints >= STRAIN_AFTER_HINTS && stalled) {
+      plain = false;
+    } else if (patient && push && !s.strainWarned && (hangCapped || (s.pushHints >= STRAIN_AFTER_HINTS && stalled))) {
       text = pick(cfg, TXT.strain);
       s.strainWarned = true;
+      plain = false;
     } else if (patient && push && s.strainWarned) {
       // "Öyle kalın" denildi: eski "biraz daha" ipucu artık söylenmez (k07, tur 2).
       text = pick(cfg, TXT.strainHold);
+      plain = false;
     }
-    // Semont'ta önceki yanda kalmak "yanlış taraf" kaydı değildir (komut kaçırıldı).
-    if (ev.wrongSide && step.fastTransitionSec === undefined) s.records = updateRecord(s, (r) => ({ ...r, wrongSide: true })).records;
     if (s.phase === 'drifting') cues.push({ kind: 'haptic', pattern: 'drift' });
-    // Yanlış taraf uyarısı beklemez (hasta yüzüstüne doğru dönüyor olabilir).
-    cues.push({ kind: 'speak', text, priority: ev.wrongSide ? 'high' : 'normal', tag: 'hint' });
+    // Yanlış taraf yönergesi beklemez (hasta yüzüstüne doğru dönüyor olabilir); önceki cümle bittiği için onu kesmez.
+    speakHint(cfg, s, now, cues, text, ev.wrongSide ? 'high' : 'normal', 'hint', HINT_AFTER_SPEECH_GAP_SEC);
     s.lastHintAt = now;
     if (push) s.pushHints += 1;
+    if (plain && ev.hint === 'HANG_MORE') s.hangHints += 1;
   } else if (!ev && (patient || s.phase === 'drifting') && !s.manualStep) {
-    cues.push({ kind: 'speak', text: pick(cfg, TXT.noSensor), priority: 'normal', tag: 'hint' });
+    // Klinisyen kısa seste okunmaz (ekranda yazıyor; her 5 s yinelenmesin).
+    if (!clinicianShort(cfg)) speakHint(cfg, s, now, cues, pick(cfg, TXT.noSensor), 'normal', 'hint', HINT_AFTER_SPEECH_GAP_SEC);
     s.lastHintAt = now;
   }
   return null;
+}
+
+/** Bir cümlenin bittiği varsayılan an (ms): gerçek bitiş bekleniyorsa üst sınır (tahmin×2+3 s), yoksa tahmin. */
+function utterEndAt(cfg: RunnerConfig, text: string, now: number): number {
+  const est = cfg.introSecFor(text);
+  return now + (cfg.awaitSpeechEnd ? est * 2 + 3 : est) * 1000;
+}
+
+/** İpucu/uyarı cümlesi: bitişi izlenir (`utterId` → `cueSpoken`); bitene dek (+ ara) yeni ipucu söylenmez. `s` yerinde güncellenir. */
+function speakHint(
+  cfg: RunnerConfig,
+  s: RunnerState,
+  now: number,
+  cues: Cue[],
+  text: string,
+  priority: 'high' | 'normal',
+  tag: 'hint' | 'alert' | undefined,
+  gapSec: number
+) {
+  const id = s.utterSeq + 1;
+  s.utterSeq = id;
+  cues.push({ kind: 'speak', text, priority, ...(tag ? { tag } : {}), utterId: id });
+  s.hintUtter = { id, until: utterEndAt(cfg, text, now), gapMs: gapSec * 1000 };
+}
+
+/** Adım kaydına "önce yanlış tarafa dönüldü" yazar (`s` yerinde). */
+function markWrongSide(s: RunnerState) {
+  const last = s.records[s.records.length - 1];
+  if (last && !last.wrongSide) s.records = updateRecord(s, (r) => ({ ...r, wrongSide: true })).records;
+}
+
+/**
+ * Yanlış taraf kısa uyarısı: "Dur! Yanlış taraf." + ayrı titreşim ve ton (yüksek öncelik; o an okunan yönergeyi keser).
+ * Bu geçişte bir kez; sırtüstüne dönülüp yeniden yanlış yana geçilirse yine (en sık WRONG_SIDE_REALERT_SEC'de bir).
+ * Verildiyse true. `s` yerinde güncellenir.
+ */
+function wrongSideAlert(cfg: RunnerConfig, s: RunnerState, now: number, cues: Cue[]): boolean {
+  if (s.wrongSideAlerted) return false;
+  s.wrongSideAlerted = true;
+  if (s.wrongSideAlertAt !== null && sec(now - s.wrongSideAlertAt) < WRONG_SIDE_REALERT_SEC) return false;
+  s.wrongSideAlertAt = now;
+  cues.push({ kind: 'haptic', pattern: 'wrongSide' });
+  cues.push({ kind: 'tone', pattern: 'wrongSide' });
+  speakHint(cfg, s, now, cues, pick(cfg, TXT.wrongSideAlert), 'high', 'alert', WRONG_SIDE_FOLLOW_GAP_SEC);
+  return true;
+}
+
+/** Hedefe daha yakın açı geldiyse yeni "en iyi ulaşılan" değerleri; değişiklik yoksa null. */
+function betterReach(prev: StepRecord['reach'], pose: HeadPose, target: Target): NonNullable<StepRecord['reach']> | null {
+  if (target.kind !== 'lying') return null;
+  const phiDist = (p: number) => (p < target.phiMin ? target.phiMin - p : p > target.phiMax ? p - target.phiMax : 0);
+  const thetaDist = (t: number) => Math.abs(angleDiff(target.theta, t));
+  const phi = Math.round(pose.phi * 10) / 10;
+  const theta = Math.round(pose.theta * 10) / 10;
+  let nPhi = prev?.phi ?? null;
+  let nTheta = prev?.theta ?? null;
+  let changed = false;
+  if (nPhi === null || phiDist(phi) < phiDist(nPhi)) {
+    nPhi = phi;
+    changed = true;
+  }
+  if (nTheta === null || thetaDist(theta) < thetaDist(nTheta)) {
+    nTheta = theta;
+    changed = true;
+  }
+  return changed ? { phi: nPhi, theta: nTheta } : null;
+}
+
+/** Dönüş sözü: +θ = hastanın sağı. */
+function turnWord(theta: number, approx: boolean): string {
+  const a = Math.round(Math.abs(theta));
+  if (a <= 3) return 'düz';
+  return `${theta > 0 ? 'sağa' : 'sola'} ${approx ? '~' : ''}${a}°`;
+}
+
+/**
+ * "Pozisyona gelinemedi" adımında aramada ulaşılan en iyi açının kısa özeti (rapor): hedefe gelinemeyen eksen(ler),
+ * örneğin "baş en çok ~8° sarktı (hedef 15–40°)" ya da "baş en çok sola ~20° döndü (hedef sola 45° ±10°)". Kayıt yoksa,
+ * hedef yatar değilse ya da ulaşılan açılar hedefteyse null (k07, tur 3).
+ */
+export function reachSummary(record: StepRecord, step: StepDef): string | null {
+  const reach = record.reach;
+  const t = step.target;
+  if (!reach || t.kind !== 'lying') return null;
+  const parts: string[] = [];
+  if (reach.theta !== null && Math.abs(angleDiff(t.theta, reach.theta)) > t.thetaTol) {
+    const w = turnWord(reach.theta, true);
+    parts.push(`${w === 'düz' ? 'baş hiç çevrilemedi' : `baş en çok ${w} döndü`} (hedef ${turnWord(t.theta, false)} ±${t.thetaTol}°)`);
+  }
+  if (reach.phi !== null) {
+    const p = Math.round(reach.phi);
+    const hedef =
+      t.phiMin >= 0
+        ? `hedef ${t.phiMin}–${t.phiMax}°`
+        : t.phiMax <= 0
+          ? `hedef ${-t.phiMax}–${-t.phiMin}° öne eğik`
+          : `hedef ${-t.phiMin}° öne eğik ile ${t.phiMax}° sarkık arası`;
+    if (reach.phi < t.phiMin) {
+      parts.push(p > 0 ? `baş en çok ~${p}° sarktı (${hedef})` : `baş hiç sarkmadı, ~${-p}° öne eğik kaldı (${hedef})`);
+    } else if (reach.phi > t.phiMax) {
+      parts.push(p > 0 ? `baş en az ~${p}° sarkık kaldı (${hedef})` : `baş en çok ~${-p}° öne eğildi (${hedef})`);
+    }
+  }
+  return parts.length ? parts.join('; ') : null;
 }
 
 function holdingTick(
@@ -1234,21 +1582,24 @@ function holdingTick(
       if (s.phase !== 'drifting') {
         s.phase = 'drifting';
         s = updateRecord(s, (r) => ({ ...r, driftCount: r.driftCount + 1 }));
-        cues.push({ kind: 'haptic', pattern: 'drift' });
-        cues.push({ kind: 'tone', pattern: 'drift' });
-        // Klinisyen kısa seste yalnız "Pozisyon bozuldu" (ipucu ekranda).
-        const hint = ev?.hint && !clinicianShort(cfg) ? hintText(cfg, ev.hint, step) : '';
-        cues.push({
-          kind: 'speak',
-          text: pick(cfg, {
+        const wrong = !!ev?.wrongSide && step.fastTransitionSec === undefined;
+        if (wrong) markWrongSide(s);
+        // Yanlış yana geçildiyse "bozuldu" yerine kısa yanlış taraf uyarısı (tam yönerge ardından gelir).
+        if (!(wrong && wrongSideAlert(cfg, s, now, cues))) {
+          cues.push({ kind: 'haptic', pattern: 'drift' });
+          cues.push({ kind: 'tone', pattern: 'drift' });
+          // Klinisyen kısa seste "Pozisyon bozuldu." + 2–3 kelimelik yön ("Daha sarkık."; k10, tur 3).
+          const hint = ev?.hint ? hintText(cfg, ev.hint, step) : '';
+          const text = pick(cfg, {
             patient: `Pozisyonu koruyun. ${hint}`.trim(),
             helper: `Pozisyon bozuldu. ${hint}`.trim(),
             clinician: `Pozisyon bozuldu. ${hint}`.trim()
-          }),
-          priority: 'high'
-        });
-        s.lastHintAt = now;
-        if (ev?.hint && isPushHint(ev.hint)) s.pushHints += 1;
+          });
+          speakHint(cfg, s, now, cues, text, 'high', undefined, HINT_AFTER_SPEECH_GAP_SEC);
+          s.lastHintAt = now;
+          if (ev?.hint && isPushHint(ev.hint)) s.pushHints += 1;
+          if (ev?.hint === 'HANG_MORE') s.hangHints += 1;
+        }
       } else {
         // Uzun süre geri gelinemezse aynı kurallar: seyrekleşen ipucu, zorlama uyarısı, ~60 s'de durdurma.
         const r = outOfTarget(cfg, s, step, now, ev, pose, true, true, cues);
