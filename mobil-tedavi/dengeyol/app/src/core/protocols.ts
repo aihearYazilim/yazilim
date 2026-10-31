@@ -48,6 +48,11 @@ export type Target =
        * "başınızı çevirin" yerine "bütün vücudunuzla dönün" ipucu verilir (boyun zorlanmasın).
        */
       bodyTurn?: boolean;
+      /**
+       * Bu yan yatış hedefine yüzüstünden geçilerek gelinir (BBQ roll 4. adım). Yoksa yan yatış hedeflerinde karşı yandaki
+       * hastaya "önce sırtüstüne dönün" denir ve hedefe yüzüstü üzerinden gelinmesi kabul edilmez (bkz. evaluator `sideGuarded`).
+       */
+      viaProne?: boolean;
     };
 
 export interface StepDef {
@@ -125,13 +130,21 @@ export const LIMITS = {
 } as const;
 
 const sit = (psiMin: number, psiMax: number): Target => ({ kind: 'sitting', psiMin, psiMax });
-const lie = (theta: number, thetaTol: number, phiMin: number, phiMax: number, bodyTurn?: boolean): Target => ({
+const lie = (
+  theta: number,
+  thetaTol: number,
+  phiMin: number,
+  phiMax: number,
+  bodyTurn?: boolean,
+  viaProne?: boolean
+): Target => ({
   kind: 'lying',
   theta,
   thetaTol,
   phiMin,
   phiMax,
-  ...(bodyTurn ? { bodyTurn } : {})
+  ...(bodyTurn ? { bodyTurn } : {}),
+  ...(viaProne ? { viaProne } : {})
 });
 
 const SIT_NEUTRAL = sit(-25, 35);
@@ -156,7 +169,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     {
       id: 'dh-sit',
       title: 'Oturuş, baş {Aya} 45°',
-      say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
+      say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarıya kadar gelsin.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} 45° çevrilir.',
       target: SIT_NEUTRAL,
       // Baş çevirme ölçülemez: yönergeden sonra çevirmeye zaman tanınır (k01, k02; tur 1).
@@ -170,14 +183,14 @@ const DIX_HALLPIKE: ProtocolDef = {
       short: 'Oturun; baş {Aya} 45° çevrili.',
       helperTitle: 'Oturuş, baş hastanın {Aına} 45°',
       helperSay:
-        'Hasta yatakta otursun; yastık, yatınca omuzlarının altına gelecek yerde olsun. Başını iki elinizle tutup hastanın {Aına} çevirin: çenesi {A} omzuna doğru yarı yolda olsun.',
+        'Hasta yatakta otursun; yastık, yatınca omuzlarının altına gelecek yerde olsun. Başını iki elinizle tutup hastanın {Aına} çevirin: çenesi {A} omzuna doğru yarıya kadar gelsin.',
       helperShort: 'Hasta oturuyor; baş hastanın {Aına} 45°.',
       helperReachedSay: 'Başı hastanın {Aına} çevirdiyseniz öyle tutun; birazdan yatıracağız.'
     },
     {
       id: 'dh-lie',
       title: 'Sırtüstü, baş {Aya} 45° ve sarkık',
-      say: 'Başınızın yönünü bozmadan hızla sırtüstü yatın. Başınız yastıktan geriye doğru hafifçe sarksın ve {Aya} çevrili kalsın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Başınız {Aya} dönük kalsın; hızla sırtüstü yatın. Başınız yastıktan geriye hafifçe sarksın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician:
         'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar. Nistagmusu gözleyin; başlangıç ve bitişi işaretleyin.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
@@ -190,7 +203,7 @@ const DIX_HALLPIKE: ProtocolDef = {
       short: 'Hızla sırtüstü yatın; baş {Aya} dönük, geriye sarkık.',
       helperTitle: 'Sırtüstü, baş hastanın {Aına} 45° ve sarkık',
       helperSay:
-        'Başın yönünü bozmadan hastayı hızla sırtüstü yatırın. Baş yastıktan geriye doğru hafifçe sarksın ve hastanın {Aına} çevrili kalsın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Baş hastanın {Aına} dönük kalsın; hastayı hızla sırtüstü yatırın. Baş yastıktan geriye hafifçe sarksın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
       helperShort: 'Hızla sırtüstü yatırın; baş hastanın {Aına} dönük, geriye sarkık.'
     },
     {
@@ -318,7 +331,7 @@ const EPLEY: ProtocolDef = {
     {
       id: 'ep-sit',
       title: 'Oturuş, baş {Aya} 45°',
-      say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarı yolda olsun.',
+      say: 'Oturun ve başınızı {Aya} çevirin: çeneniz {A} omzunuza doğru yarıya kadar gelsin.',
       clinician: 'Hasta yatakta oturur; yastık yatınca omuzların altına gelecek yerde. Baş {Aya} (etkilenen taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
       minHoldSec: 7,
@@ -331,14 +344,15 @@ const EPLEY: ProtocolDef = {
       short: 'Oturun; baş {Aya} 45° çevrili.',
       helperTitle: 'Oturuş, baş hastanın {Aına} 45°',
       helperSay:
-        'Hasta yatakta otursun; yastık, yatınca omuzlarının altına gelecek yerde olsun. Başını iki elinizle tutup hastanın {Aına} çevirin: çenesi {A} omzuna doğru yarı yolda olsun.',
+        'Hasta yatakta otursun; yastık, yatınca omuzlarının altına gelecek yerde olsun. Başını iki elinizle tutup hastanın {Aına} çevirin: çenesi {A} omzuna doğru yarıya kadar gelsin.',
       helperShort: 'Hasta oturuyor; baş hastanın {Aına} 45°.',
       helperReachedSay: 'Başı hastanın {Aına} çevirdiyseniz öyle tutun; birazdan yatıracağız.'
     },
     {
       id: 'ep-1',
       title: 'Sırtüstü, baş {Aya} 45° ve sarkık',
-      say: 'Başınızın yönünü bozmadan hızla sırtüstü yatın. Başınız yastıktan geriye doğru hafifçe sarksın ve hâlâ {Aya} çevrili kalsın. Baş dönmesi olabilir, bu beklenen bir durumdur. Başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      // Önce kısa eylem cümlesi, ayrıntı sonra; ~11 s (k05, k04; tur 2). Ayrıntı ekranda ve kısa satırda.
+      say: 'Başınız {Aya} dönük kalsın; hızla sırtüstü yatın. Başınız yastıktan geriye hafifçe sarksın. Baş dönmesi olabilir; başlarsa ekrana dokunun.',
       clinician: 'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
       minHoldSec: 45,
@@ -349,13 +363,13 @@ const EPLEY: ProtocolDef = {
       short: 'Hızla sırtüstü yatın; baş {Aya} dönük, geriye sarkık.',
       helperTitle: 'Sırtüstü, baş hastanın {Aına} 45° ve sarkık',
       helperSay:
-        'Başın yönünü bozmadan hastayı hızla sırtüstü yatırın. Baş yastıktan geriye doğru hafifçe sarksın ve hâlâ hastanın {Aına} çevrili kalsın. Baş dönmesi olabilir, bu beklenen bir durumdur. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Baş hastanın {Aına} dönük kalsın; hastayı hızla sırtüstü yatırın. Baş yastıktan geriye hafifçe sarksın. Baş dönmesi olabilir; hasta "dönüyor" derse ekrana siz dokunun.',
       helperShort: 'Hızla sırtüstü yatırın; baş hastanın {Aına} dönük, geriye sarkık.'
     },
     {
       id: 'ep-2',
       title: 'Sırtüstü, baş {Hya} 45°',
-      say: 'Başınızı kaldırmadan, geriye sarkık tutarak yavaşça {Hya} doğru çevirin. Şimdi başınız {H} tarafa 45 derece baksın ve hafifçe sarkık kalsın.',
+      say: 'Başınızı kaldırmadan yavaşça {Hya} çevirin. Başınız {H} tarafa yarıya kadar dönük ve geriye hafifçe sarkık kalsın.',
       clinician: 'Ekstansiyon korunarak baş {Hya} 90° çevrilir; baş {H} tarafa 45° bakar.',
       target: lie(-45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
       minHoldSec: 45,
@@ -366,13 +380,13 @@ const EPLEY: ProtocolDef = {
       short: 'Baş sarkık kalsın; yavaşça {Hya} 45° çevirin.',
       helperTitle: 'Sırtüstü, baş hastanın {Hına} 45°',
       helperSay:
-        'Başı kaldırmadan, geriye sarkık tutarak yavaşça hastanın {Hına} doğru çevirin. Şimdi baş hastanın {H} tarafına 45 derece baksın ve hafifçe sarkık kalsın.',
+        'Başı kaldırmadan yavaşça hastanın {Hına} doğru çevirin. Baş hastanın {H} tarafına yarıya kadar dönük ve geriye hafifçe sarkık kalsın.',
       helperShort: 'Baş sarkık kalsın; yavaşça hastanın {Hına} 45° çevirin.'
     },
     {
       id: 'ep-3',
       title: '{H} yan, burun yere',
-      say: 'Bütün vücudunuzla {H} yanınıza dönün. Başınızı da aynı yönde biraz daha çevirin; burnunuz yere doğru, yaklaşık 45 derece aşağı baksın.',
+      say: 'Bütün vücudunuzla {H} yanınıza dönün. Başınızı da biraz daha çevirin; burnunuz yarıya kadar yere baksın.',
       clinician: 'Hasta {H} yanına döner; baş gövdeyle birlikte dönerek yüz yere 45° bakar (başlangıca göre toplam 180°).',
       target: lie(-135, LIMITS.thetaTolFaceDown, -25, 30, true),
       minHoldSec: 45,
@@ -383,7 +397,7 @@ const EPLEY: ProtocolDef = {
       short: 'Bütün vücutla {H} yanınıza dönün; burun yere.',
       helperTitle: 'Hastanın {H} yanı, burun yere',
       helperSay:
-        'Hastayı bütün vücuduyla {H} yanına çevirin; başı da aynı yönde biraz daha dönsün, burnu yere doğru yaklaşık 45 derece aşağı baksın. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
+        'Hastayı bütün vücuduyla {H} yanına çevirin; başı da biraz daha dönsün, burnu yarıya kadar yere baksın. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
       helperShort: 'Hastayı bütün vücuduyla {H} yanına çevirin; burun yere. Ekranı göremezsiniz, sesi dinleyin.'
     },
     {
@@ -432,7 +446,7 @@ const SEMONT: ProtocolDef = {
     {
       id: 'se-sit',
       title: 'Oturuş, baş {Hya} 45°',
-      say: 'Yatağın uzun kenarının ortasına, bacaklarınız yataktan aşağı sarkacak şekilde oturun. İki yanınızda da yatacak kadar yer olsun. Başınızı {Hya} doğru 45 derece çevirin.',
+      say: 'Yatağın uzun kenarının ortasına oturun; bacaklarınız aşağı sarksın, iki yanınızda yatacak yer olsun. Başınızı {Hya} yarıya kadar çevirin.',
       clinician: 'Hasta yatak kenarında, iki yana yatabilecek şekilde oturur. Baş {Hya} (sağlam taraf) 45° çevrilir.',
       target: SIT_NEUTRAL,
       minHoldSec: 7,
@@ -445,14 +459,14 @@ const SEMONT: ProtocolDef = {
       short: 'Yatak kenarında oturun; baş {Hya} 45° çevrili.',
       helperTitle: 'Oturuş, baş hastanın {Hına} 45°',
       helperSay:
-        'Hasta yatağın uzun kenarının ortasına, bacakları yataktan aşağı sarkacak şekilde otursun; iki yanında da yatacak kadar yer olsun. Başını hastanın {Hına} doğru 45 derece çevirin.',
+        'Hasta yatağın uzun kenarının ortasına otursun; bacakları aşağı sarksın, iki yanında yatacak yer olsun. Başını hastanın {Hına} yarıya kadar çevirin.',
       helperShort: 'Hasta yatak kenarında; baş hastanın {Hına} 45°.',
       helperReachedSay: 'Başı hastanın {Hına} çevirdiyseniz öyle tutun; birazdan yatıracağız.'
     },
     {
       id: 'se-1',
       title: '{A} yan, burun yukarı',
-      say: 'Başınızın yönünü değiştirmeden hızla {A} yanınıza yatın. Burnunuz tavana doğru, yaklaşık 45 derece yukarı baksın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Başınızın yönü değişmesin; hızla {A} yanınıza yatın. Burnunuz yarıya kadar tavana baksın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
       clinician: 'Hasta hızla {A} yanına (etkilenen taraf) yatırılır; baş sağlam tarafa 45° çevrili kalır, burun yukarı 45°.',
       target: lie(45, 12, -30, 30),
       minHoldSec: 60,
@@ -462,14 +476,15 @@ const SEMONT: ProtocolDef = {
       short: 'Hızla {A} yanınıza yatın; burun yukarı.',
       helperTitle: 'Hastanın {A} yanı, burun yukarı',
       helperSay:
-        'Başın yönünü değiştirmeden hastayı hızla {A} yanına yatırın. Burnu tavana doğru, yaklaşık 45 derece yukarı baksın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Başın yönü değişmesin; hastayı hızla {A} yanına yatırın. Burnu yarıya kadar tavana baksın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
       helperShort: 'Hızla {A} yanına yatırın; burun yukarı.'
     },
     {
       id: 'se-2',
       title: '{H} yan, burun yere (tek hızlı hareket)',
-      // Hasta modunda yönergeden sonra "Üç, iki, bir, şimdi!" sayılır; geçiş o komutla yapılır (k10, tur 1).
-      say: 'Birazdan tek, hızlı ve kesintisiz bir hareketle oturma pozisyonundan geçerek {H} yanınıza yatacaksınız. Başınızın yönünü değiştirmeyin; burnunuz bu kez yere doğru 45 derece bakacak. Şimdilik kıpırdamayın; "şimdi" dediğimde hareket edin.',
+      // Hasta modunda yönergeden sonra "Üç, iki, bir, şimdi!" sayılır; geçiş o komutla yapılır (k10, tur 1). Yönerge
+      // "Kıpırdamayın." ile başlar: hasta ilk sözü duyar duymaz hareket etmesin (k10, tur 2).
+      say: 'Kıpırdamayın; "şimdi" dediğimde hareket edeceksiniz. O zaman tek, hızlı bir hamlede oturarak geçip {H} yanınıza yatın. Başınızın yönü değişmesin; burnunuz yarıya kadar yere baksın.',
       clinician:
         'Baş-gövde ilişkisi bozulmadan hasta tek hızlı hareketle karşı ({H}) yana geçirilir; burun yere 45° bakar.',
       target: lie(-135, LIMITS.thetaTolFaceDown, -30, 30),
@@ -481,7 +496,7 @@ const SEMONT: ProtocolDef = {
       short: '"Şimdi" deyince tek hamlede {H} yanınıza; burun yere.',
       helperTitle: 'Hastanın {H} yanı, burun yere (tek hızlı hareket)',
       helperSay:
-        'Birazdan hastayı tek, hızlı ve kesintisiz bir hareketle oturma pozisyonundan geçirerek {H} yanına yatıracaksınız. Başın yönü değişmesin; burnu bu kez yere doğru 45 derece bakacak. Şimdilik bekleyin; "şimdi" dediğimde hareket ettirin. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
+        'Şimdilik bekleyin; "şimdi" dediğimde hareket ettireceksiniz. O zaman hastayı tek, hızlı bir hamlede oturuştan geçirip {H} yanına yatırın. Başın yönü değişmesin; burnu yarıya kadar yere baksın. Bu adımda ekranı göremezsiniz; sesi dinleyin.',
       helperShort: '"Şimdi" deyince tek hamlede hastanın {H} yanına; burun yere.'
     },
     {
@@ -578,7 +593,8 @@ const BBQ_ROLL: ProtocolDef = {
       title: '{A} yanına (sırtüstünden 270°)',
       say: 'Aynı yönde dönmeye devam ederek {A} yanınıza gelin; {A} kulağınız yastığa değsin.',
       clinician: 'Aynı yönde dönülerek {A} yan pozisyona gelinir ({A} kulak altta; toplam 270°).',
-      target: lie(90, 15, -42, 20),
+      // Yüzüstünden gelinir: yanlış taraf denetimi uygulanmaz.
+      target: lie(90, 15, -42, 20, false, true),
       minHoldSec: 45,
       clinicianMinHoldSec: 30,
       afterVertigoSec: 15,

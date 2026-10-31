@@ -23,6 +23,11 @@ export interface Settings {
   screenFlip?: boolean;
   /** Hasta modunda manevrayı kim yaptırıyor. */
   assist?: 'self' | 'helper';
+  /**
+   * Klinisyen modunda sesli yönerge (telefon hastanın alnında): tam, kısa (yalnız kısa komut ve sayım) ya da kapalı.
+   * Yoksa 'short'. Manevra ekranının başlığından değiştirilir.
+   */
+  clinicianVoice?: 'full' | 'short' | 'off';
 }
 
 export interface PatientProfile {

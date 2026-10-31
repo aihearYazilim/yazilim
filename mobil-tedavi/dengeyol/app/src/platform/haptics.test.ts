@@ -35,6 +35,13 @@ describe('tur 1 (D1): titreşim desenleri ayırt edilebilir', () => {
     }
   });
 
+  it('tur 2 (E1-11): "hazırsanız dokunun" kendi desenine sahip, "hareket edin"den ayrı', () => {
+    expect(HAPTIC_LEGEND.map((x) => x.pattern)).toContain('ready');
+    expect(shape('ready').count).toBe(shape('move').count);
+    expect(shape('move').max / shape('ready').max).toBeGreaterThanOrEqual(3);
+    expect(shape('ready').count).not.toBe(shape('stepDone').count);
+  });
+
   it('adım bitti ile manevra bitti farklı; bozuldu sürekli vızıltıdır (~1,5 s)', () => {
     expect(shape('stepDone').count).not.toBe(shape('done').count);
     expect(shape('drift').count).toBeGreaterThanOrEqual(10);

@@ -1021,11 +1021,24 @@ input[type='radio'] {
   font-weight: 800;
   line-height: 1.25;
 }
+/* Yanlış taraf (yan yatış adımı): ok yok, belirgin uyarı; önce sırtüstüne dönülür (k02, tur 2). */
+.hint-banner.wrong {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 2px solid var(--danger);
+}
 .hint-arrow {
   font-size: 3rem;
   line-height: 1;
   color: var(--warn);
   flex: none;
+}
+/* Klinisyen sesli yönerge düğmesi (kısa / açık / kapalı): başlıkta dar yer kaplar. */
+.runner-voice {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 .caption {
   margin: 0;
