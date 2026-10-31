@@ -7,7 +7,11 @@ import {
   episodeDay,
   evaluateRedFlags,
   interpretSideTests,
+  RED_FLAG_DEFAULT_REFER,
   RED_FLAGS,
+  redFlagDoctorAsk,
+  redFlagReferText,
+  redFlagSpoken,
   type SideTestResult
 } from './safety';
 
@@ -76,6 +80,69 @@ describe('kırmızı bayrak dili (kullanıcı turu 1)', () => {
     expect(q('ear').text).toMatch(/işitme kaybı/);
     expect(q('ear').why).toMatch(/BUGÜN/);
     expect(q('ear').why).toMatch(/KBB/);
+  });
+});
+
+describe('kırmızı bayrak dili (kullanıcı turu 2)', () => {
+  const q = (id: string) => RED_FLAGS.find((x) => x.id === id)!;
+  it('14 soru kalır; hepsi "Evet" ile durdurur ve kısa adı vardır', () => {
+    expect(RED_FLAGS.length).toBe(14);
+    expect(RED_FLAGS.every((x) => x.stopsOn === 'yes' && x.label.length > 0)).toBe(true);
+  });
+  it('ortostatik soru BPPV dönmesini dışarıda bırakır, belirtiler ve hekim yönlendirmesi kalır', () => {
+    const o = q('orthostatic');
+    expect(o).toMatchObject({ stopsOn: 'yes', action: 'doctor' });
+    for (const w of ['Ayağa kalkınca', 'dönmeden', 'kararıyor', 'bayılacak', 'Yataktan kalkarken etrafın dönmesi sayılmaz']) {
+      expect(o.text).toContain(w);
+      expect(redFlagSpoken(o)).toContain(w);
+    }
+    // Durdurma alt satırı gerekçeyle aynı yeri söyler (aile hekimi/dahiliye), "odyolog" demez.
+    const todo = redFlagReferText('doctor', [o]);
+    expect(o.why).toMatch(/aile hekim/);
+    expect(todo).toMatch(/[Aa]ile hekim/);
+    expect(todo).toMatch(/dahiliye/);
+    expect(todo).not.toMatch(/odyolog/);
+  });
+  it('yürüyememe sorusu baş dönmesinden bağımsız sorulur ve acil kalır', () => {
+    const g = q('neuroGait');
+    expect(g.text).toMatch(/Yürüyemeyecek/);
+    expect(g.text).toMatch(/baş dönmesi olmadığı anlarda bile/);
+    expect(g.text).toMatch(/kıpırdatmadan dururken/);
+    expect(g).toMatchObject({ stopsOn: 'yes', action: 'emergency' });
+  });
+  it('sesli kısa biçim: ilaç adları ve parantezler yalnız ekranda, "/" okunmaz', () => {
+    for (const x of RED_FLAGS) {
+      const sp = redFlagSpoken(x);
+      expect(sp).not.toMatch(/[()/]/);
+      expect(sp.length).toBeLessThanOrEqual(x.text.length);
+    }
+    const a = redFlagSpoken(q('anticoag'));
+    expect(a).toMatch(/aspirin/i);
+    expect(a).toMatch(/kan sulandırıcı/);
+    expect(a).toMatch(/baş ağrı/);
+    expect(a).toMatch(/çarptınız/);
+    expect(a).not.toMatch(/Plavix|Coumadin|Xarelto|Eliquis|Lixiana|Pradaxa|Coraspin/);
+    // Ekranda tam liste kalır.
+    expect(q('anticoag').text).toMatch(/Coraspin.*Pradaxa/);
+    // Kulak sorusunun kısa biçimi her belirtiyi anar.
+    const e = redFlagSpoken(q('ear'));
+    for (const w of ['işitme kaybı', 'tıkanma', 'çınlama', 'ağrı', 'akıntı']) expect(e).toContain(w);
+    expect(redFlagSpoken(q('same'))).toMatch(/farklı mı\?$/);
+    expect(redFlagSpoken(q('same'))).not.toMatch(/BPPV|FARKLI/);
+  });
+  it('kulak sorusu: KBB değerlendirmesinden sonra nasıl yanıtlanacağı ve hekime sorulacak cümle', () => {
+    const e = q('ear');
+    expect(e.hint).toMatch(/KBB/);
+    expect(e.hint).toMatch(/"Hayır"/);
+    expect(e.hint).toMatch(/"Evet"/);
+    expect(redFlagDoctorAsk(e)).toMatch(/kulak sorusuna/);
+    expect(redFlagReferText('doctor', [e])).toMatch(/KBB/);
+  });
+  it('durdurma alt satırı: acilde 112; birden çok soruda tekrar yok; varsayılan metin', () => {
+    expect(redFlagReferText('emergency', [q('neuro')])).toMatch(/112/);
+    expect(redFlagReferText('doctor', [q('spontaneous'), q('headTrauma')])).toBe(RED_FLAG_DEFAULT_REFER);
+    expect(redFlagReferText('doctor', [])).toBe(RED_FLAG_DEFAULT_REFER);
+    expect(redFlagDoctorAsk(q('neck'))).toContain(q('neck').label);
   });
 });
 

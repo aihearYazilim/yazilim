@@ -1,8 +1,10 @@
 /**
  * Atak (episode) iş kuralları — saf fonksiyonlar.
  */
+import { dxIsRecent } from './dxTiming';
 import type { Side } from '../core/protocols';
-import { clampDose, DEFAULT_DOSE, DOSE_TEXT, type DoseLimits, doseStatus, localDayKey, type DoseStatus } from '../core/safety';
+import { clampDose, DEFAULT_DOSE, DOSE_TEXT, type DoseLimits, doseStatus, localDayKey, type DoseStatus, RED_FLAGS, type RedFlagQuestion } from '../core/safety';
+import type { StepRecord } from '../core/runner';
 import type { AppData, Episode, PatientProfile } from './types';
 
 /**
@@ -50,24 +52,39 @@ export type DxSideCheck = { kind: 'ok' } | { kind: 'refer'; note: string } | { k
  * Taraf testinin bulduğu taraf, hastanın beyan ettiği hekim tanısındaki tarafla çelişiyor mu? Geçerli reçete varsa bu
  * denetim yapılmaz (reçete tarafı `interpretSideTests` içinde zaten SIDE_CONFLICT üretir). Beyan doğrulanamadığı için
  * yalnız daha sıkı yönde kullanılır: yönlendirme ya da uyarı ekler, hiçbir zaman testsiz manevraya izin vermez.
+ * Tanı tarihi girilmemişse tanı yakın tarihli sayılır (kullanıcı turu 2, k03: bugün tanı alan kişi tarihi boş bırakıp
+ * hekiminin söylediğinin tersine manevraya gitmesin); yalnız kurulumda açıkça "daha önce" (dxWhen 'older') seçildiyse uyarılır.
  */
 export function dxSideCheck(profile: PatientProfile | undefined, testedSide: Side, now: number = Date.now()): DxSideCheck {
   if (!profile || !profile.diagnosedByDoctor || profile.side === 'unknown' || profile.side === testedSide) return { kind: 'ok' };
   if (rxActive(profile, now)) return { kind: 'ok' };
   const dxSide = profile.side;
-  const t = profile.dxDate ? new Date(`${profile.dxDate}T00:00:00`).getTime() : NaN;
-  const dayMs = 24 * 60 * 60 * 1000;
-  const recent = Number.isFinite(t) && t - now <= dayMs && now - t <= DX_SIDE_RECENT_DAYS * dayMs;
+  const dated = !!profile.dxDate && Number.isFinite(new Date(`${profile.dxDate}T00:00:00`).getTime());
+  // Kurulumdaki tanı zamanı seçimiyle aynı kural (belirsizlikte yakın tarihli sayılır → yönlendirme).
+  const recent = dxIsRecent(profile, now, DX_SIDE_RECENT_DAYS);
   const name = (s: Side) => (s === 'R' ? 'sağ' : 'sol');
-  const when = profile.dxDate ? ` (${profile.dxDate})` : ' (tarih girilmemiş)';
+  const when = dated
+    ? ` (${profile.dxDate})`
+    : profile.dxWhen === 'older'
+      ? ' (2 haftadan eski)'
+      : profile.dxWhen === 'recent'
+        ? ' (son 2 hafta içinde, tarih girilmemiş)'
+        : ' (tarih girilmemiş)';
   if (recent) {
-    return { kind: 'refer', note: `Hekim tanısı${when}: ${name(dxSide)}; taraf testi: ${name(testedSide)}. Yakın tarihli tanıyla çeliştiği için manevra yapılmadı, hekime yönlendirildi.` };
+    const why = dated || profile.dxWhen === 'recent' ? 'Yakın tarihli tanıyla' : 'Tanı tarihi bilinmediği için yakın tarihli sayılan tanıyla';
+    return { kind: 'refer', note: `Hekim tanısı${when}: ${name(dxSide)}; taraf testi: ${name(testedSide)}. ${why} çeliştiği için manevra yapılmadı, hekime yönlendirildi.` };
   }
   return {
     kind: 'warn',
     dxSide,
     note: `Hekim tanısı${when}: ${name(dxSide)}; bu atakta taraf testi: ${name(testedSide)}. Tanı ${DX_SIDE_RECENT_DAYS} günden eski olduğu için hasta uyarıldı; manevra test tarafı için önerildi.`
   };
+}
+
+/** Eski tanıyla taraf çelişkisinde geçiş ekranının kısa uyarısı (ayrıntı rapora yazılır). */
+export function dxWarnText(dxSide: Side, testedSide: Side): string {
+  const name = (s: Side) => (s === 'R' ? 'sağ' : 'sol');
+  return `Hekiminiz ${name(dxSide)} demişti, test ${name(testedSide)} gösterdi. Manevra yapmak istemiyorsanız telefonu alıp köşedeki Bitir'i basılı tutun.`;
 }
 
 /**
@@ -134,11 +151,13 @@ export function doseFor(d: AppData, e: Episode, now: number): DoseStatus {
 }
 
 /**
- * Şu an yeni bir manevra yapılabilir mi (aktif atak varsa ona, yoksa şimdi açılacak bir atağa göre)? Ana ekran ve atak
+ * Şu an yeni bir manevra yapılabilir mi (aktif atak varsa ona, bugün manevrayla kapatılmış ve yeniden açılacak atak varsa
+ * ona, yoksa şimdi açılacak bir atağa göre)? Ana ekran ve atak
  * başı bunu güvenlik sorularından önce gösterir: sınır doluyken soru sordurup sonra "sınır" denmez.
  */
 export function startDose(d: AppData, now: number): DoseStatus {
-  const ep = d.episodes.find((e) => e.status === 'active');
+  // Bugün manevrayla kapatılmış atak "Baş dönmem başladı" ile yeniden açılır: sınır o atağa göre (kullanıcı turu 2, k06).
+  const ep = d.episodes.find((e) => e.status === 'active') ?? sameDayReopenable(d, now) ?? undefined;
   const probe: Episode = ep ?? {
     id: '__probe',
     startedAt: now,
@@ -267,6 +286,43 @@ export function pendingReferral(d: AppData): Episode | null {
   const cleared = d.patient?.doctorClearedAt;
   if (cleared && cleared > (last.endedAt ?? 0)) return null;
   return last;
+}
+
+/**
+ * Atağı hekime/acile yönlendiren güvenlik soruları (son kırmızı bayrak kaydında durduran yanıtlar). Kilit kartı hangi
+ * yanıtla durdurulduğunu ve hekime sorulacak cümleyi bundan yazar. Başka nedenle (ör. uzun baş dönmesi) yönlendirildiyse boş.
+ */
+export function referralFlags(e: Episode): RedFlagQuestion[] {
+  const last = e.redFlags[e.redFlags.length - 1];
+  if (!last || !last.stopped) return [];
+  return RED_FLAGS.filter((q) => last.answers[q.id] === q.stopsOn);
+}
+
+/** Alt tip yanıtları bu süre içinde aynı atakta yeniden sorulmaz (güvenlik sorularıyla aynı süre). */
+export const SUBTYPE_VALID_MS = 6 * 60 * 60 * 1000;
+
+/** Bu atakta alt tip soruları yakın zamanda yanıtlandı mı (yarıda bırakılıp devam edilen atakta yeniden sorulmasın)? */
+export function subtypeRemembered(e: Episode | null | undefined, now: number): boolean {
+  const s = e?.subtype;
+  return !!s && now >= s.at && now - s.at <= SUBTYPE_VALID_MS;
+}
+
+/** Manevra kaydının duraklatma toplamı: yürütücü duraklatmaları adım kayıtlarına (`pauses`) yazar. */
+export function totalPauses(records: StepRecord[]): number {
+  return records.reduce((n, r) => n + (r.pauses ?? 0), 0);
+}
+
+/** Gece saati (22:00–06:00): hatırlatıcı bu saate düşerse "uyuyorsanız uyanınca yapın" denir. */
+export function isNightTime(t: number): boolean {
+  const h = new Date(t).getHours();
+  return h >= 22 || h < MORNING_HOUR;
+}
+
+/** Test saati geceye düşüyorsa gösterilecek not; değilse null. */
+export function nightNote(t: number): string | null {
+  return isNightTime(t)
+    ? `Test saati (${formatTime(t)}) gece. Uyanıksanız o saatte yapın; uyuyacaksanız alarm kurmanız gerekmez, uyanınca yapın.`
+    : null;
 }
 
 export function needsRedFlags(e: Episode | null, now: number): boolean {

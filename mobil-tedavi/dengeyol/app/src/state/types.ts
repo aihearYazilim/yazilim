@@ -117,6 +117,11 @@ export interface Episode {
    * manevra). Eski kayıtlarda yok: rapor o zaman kayıtlardan çıkarır (rxShortcutUsed, reportText.ts).
    */
   rxShortcut?: boolean;
+  /**
+   * Bu atakta verilen alt tip yanıtları (kullanıcı turu 2, k06): 6 saat içinde atağa devam edilirse yeniden sorulmaz.
+   * trigger: 'turnUnsure' = yatay kanal onayında "Emin değilim".
+   */
+  subtype?: { at: number; trigger: 'liedown' | 'unsure' | 'turnUnsure'; duration: 'short' | 'mid' | 'unsure' };
 }
 
 export interface ClinicPatient {
