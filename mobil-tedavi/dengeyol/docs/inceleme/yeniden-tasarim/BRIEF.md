@@ -35,6 +35,18 @@ Hedef: ana ekrandan manevraya en az dokunuş, en kısa süre; hiçbir ekranda ne
 - **Sonrası:** tek soru, tek ekran.
 Sesli yönlendirme, titreşim, yardımcı modu, rapor, QR aktarım, klinisyen modu korunur.
 
+## 2b. Cesur tanı ve manevra (proje sahibinin kararı)
+Uygulama kararsız kaldığı her yerde hekime göndermek yerine **en olası tanıyı koyar ve uygun manevrayı yaptırır**;
+gerekçeyi tek cümleyle söyler, kayda yazar ("Uygulamanın kararı: …"). Kullanıcı isterse başka tarafı/manevrayı seçebilir.
+- Arka kanal (yatarken/kalkarken tetiklenen): iki taraflı test → baş dönmesi olan taraf; ikisi de pozitifse "hangisi daha
+  şiddetliydi" sorusu ya da daha uzun/şiddetli olan taraf seçilir → Epley (ya da Semont).
+- Yatay kanal (yatakta sağa-sola dönünce): sırtüstü baş çevirme (supine roll) testi iki yana → daha şiddetli taraf etkilenen
+  taraf kabul edilir (geotropik varsayım, en sık biçim) → evde **BBQ roll** (ya da Gufoni); varsayım söylenir ve kaydedilir.
+- Test tetiklemediyse: kullanıcının bildirdiği tarafa ya da son tanı tarafına manevra önerilir ("Yine de manevra yap");
+  yoksa deneme olarak iki tarafa sırayla yapılabilir.
+- Atipik süre (>1 dk), sık tekrar, çok kanal şüphesi: uyarı + en olası manevraya devam.
+Kırmızı bayrak (inme belirtisi) uyarısı ve 112 bilgisi her zaman gösterilir ama kullanıcıyı kilitlemez.
+
 ## 3. Kabul
 - Tanısız yeni kullanıcı kurulumdan manevraya kilitlenmeden ulaşır.
 - Hiçbir ekranda "yalnız geri dön" seçeneği kalmaz; her uyarının "Yine de devam et"i vardır ve kayda geçer.
