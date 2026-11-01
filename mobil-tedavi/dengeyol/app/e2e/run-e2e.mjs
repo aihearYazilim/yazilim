@@ -1622,6 +1622,11 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   if ((await hold.getAttribute('data-reason')) !== 'VERTIGO_TOO_LONG') throw new Error('uyarı nedeni: ' + (await hold.getAttribute('data-reason')));
   if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('yürütücü beklemede değil');
   await page.getByTestId('runner-hold-112').waitFor();
+  // Önerilen yol "Durdur" büyük dolu birincil; "Devam et" çerçeveli ikincil (yeni kullanıcı turu 1, L1-4).
+  if ((await page.getByTestId('runner-hold-stop').getAttribute('data-variant')) !== 'primary') throw new Error('"Durdur" birincil düğme değil');
+  if ((await page.getByTestId('runner-hold-continue').getAttribute('data-variant')) !== 'secondary') throw new Error('"Devam et" ikincil düğme değil');
+  if (!(await page.getByTestId('runner-hold-stop').evaluate((b) => b.classList.contains('primary')))) throw new Error('"Durdur" dolu değil');
+  await page.getByTestId('runner-safety-hold-hint').waitFor();
   // Kendiliğinden seçim yok: bir süre sonra da bekliyor, kayıt yazılmadı.
   await page.waitForTimeout(1500);
   if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('uyarı kendiliğinden kapandı');
@@ -1632,16 +1637,54 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   let ep = (await storeOf(page)).episodes[0];
   if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Devam et" VERTIGO_TOO_LONG kaydı yazmadı: ' + kindsOf(ep).join(', '));
   if (ep.maneuvers.length) throw new Error('"Devam et" manevrayı bitirdi');
-  // Baş dönmesi sürüyor: bir sınır daha sonra yeniden uyarı; bu kez "Durdur".
+  // Baş dönmesi sürüyor: bir sınır daha sonra yeniden uyarı; bu kez ekrana bakmadan "Durdur" (y07): kısa kör dokunuş bir
+  // şey seçmez, ekranın herhangi bir yerine 2 s basılı tutmak durdurur.
   await hold.waitFor({ timeout: 20000 });
   await unlocked(page);
-  await page.getByTestId('runner-hold-stop').click();
+  const textBox = await page.getByTestId('runner-safety-hold-text').boundingBox();
+  await page.mouse.click(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('kısa kör dokunuş seçim yaptı');
+  // Kısa basış (1 s) da seçmez.
+  await page.mouse.move(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(1000);
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('1 s basış seçim yaptı');
+  await page.mouse.down();
+  await page.waitForTimeout(2300);
+  await page.mouse.up();
   await page.getByTestId('end-safety').waitFor({ timeout: 15000 });
   await page.getByTestId('end-retry').waitFor();
   ep = (await storeOf(page)).episodes[0];
   const m = ep.maneuvers.at(-1);
   if (!m || m.completed || m.stopReason !== 'VERTIGO_TOO_LONG') throw new Error('durdurulan manevra kaydı: ' + JSON.stringify(m && { c: m.completed, r: m.stopReason }));
   if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Durdur" aşma kaydı yazdı');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift dokunuş baş dönmesi işaretlemez; hızlı çift dokunuş işareti açık bırakmaz; tek dokunuş işaretler', async () => {
+  // ×4: Epley sarkık baş adımı (45 s) gerçek ~11 s; çift dokunuş ve 1 s bekleme adım içinde kalır.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 4 }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await startManeuver(page);
+  await holdAtStep(page, 1, 60000);
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  await page.getByTestId('runner-pause').press('Enter');
+  await waitPhase(page, ['paused']);
+  await page.getByTestId('runner-resume').dblclick();
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused');
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('vertigo-pad').getAttribute('aria-pressed')) === 'true') throw new Error('"Devam et"e çift dokunuşun ikincisi baş dönmesi işaretledi');
+  await page.waitForTimeout(1200);
+  // Titreyen elle hızlı çift dokunuş (y02): başlatma işareti geri alınır, baş dönmesi "açık" kalmaz.
+  await page.getByTestId('vertigo-pad').dblclick();
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('vertigo-pad').getAttribute('aria-pressed')) === 'true') throw new Error('hızlı çift dokunuş baş dönmesini açık bıraktı');
+  await page.waitForTimeout(1200);
+  await page.getByTestId('vertigo-pad').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="vertigo-pad"]')?.getAttribute('aria-pressed') === 'true', null, { timeout: 3000 });
   noErrors(errors);
   await ctx.close();
 });
