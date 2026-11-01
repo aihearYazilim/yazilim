@@ -9,7 +9,8 @@ import {
   NYSTAGMUS_LABEL,
   type ObservationMethod,
   OBSERVATION_METHODS,
-  rxFindingLock
+  rxFindingWarning,
+  RX_OVERRIDE_HINT
 } from '../../../core/diagnosis';
 import { decodePrescription, rxValidUntil as rxValidUntilMs } from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
@@ -61,36 +62,97 @@ export function dxValid(exam: ClinicExam): boolean {
 }
 
 /**
- * Verilmiş reçete hâlâ geçerli tanıya mı dayanıyor ve şu an kilit yok mu? Reçeteden sonra eklenen bir bulgu (ör. tekrar
- * testte ≥1 dk yanıt) kilit doğurursa eski QR rapora/nota yazılmaz.
+ * Verilmiş reçete hâlâ güncel mi: dayandığı bulgu/tanı değişmedi, kesin engel yok ve şu anki uyarı (varsa) gerekçeyle
+ * aşılmış. Reçeteden sonra eklenen bir bulgu (ör. tekrar testte ≥1 dk yanıt) yeni bir uyarı doğurursa eski QR rapora/nota
+ * yazılmaz; klinisyen uyarıyı görüp yeniden karar verir.
  */
 export function rxCurrent(exam: ClinicExam): boolean {
-  return (
-    !!exam.prescriptionToken &&
-    dxValid(exam) &&
-    exam.prescriptionFindingsKey === exam.diagnosis?.findingsKey &&
-    rxBlockReason(exam) === null
-  );
+  if (!exam.prescriptionToken || rxBlockReason(exam) !== null) return false;
+  const dx = exam.diagnosis;
+  if (dx) {
+    // rxBlockReason null → tanı geçerli (bulgular onaydan sonra değişmedi).
+    if (exam.prescriptionFindingsKey !== dx.findingsKey) return false;
+    // Tanısız yazılmış reçeteden sonra başka tarafa tanı onaylandıysa reçete o tanıya dayanmaz.
+    const r = decodePrescription(exam.prescriptionToken);
+    if (dx.side && (!r.ok || r.value.side !== dx.side)) return false;
+  } else if (exam.prescriptionFindingsKey !== findingsKeyOf(exam.findings)) return false;
+  const w = rxWarning(exam);
+  return !w || rxOverrideCovers(exam, w);
 }
 
-// ---- Ev reçetesi kilidi --------------------------------------------------------------------------------
+// ---- Ev reçetesi: kesin engel ve uyarı ------------------------------------------------------------------
 
 /**
- * Ev reçetesini engelleyen durum (null → verilebilir). Onaylı tanıya EK OLARAK bulgulara da bakar: elle girilen tanı
- * (ör. "kanalolitiazis") bulguda ≥1 dk yanıt ya da çok kanallı tutulum varken kilidi açmaz.
+ * Ev reçetesini gerçekten engelleyen durum (null → form açılır). Yeniden tasarımda yalnız iki durum kalır, ikisi de
+ * klinisyenin tek dokunuşla düzelttiği tutarlılık şartıdır: bulgular onaydan sonra değiştiyse tanı yeniden onaylanır;
+ * reçete biçimi yalnız arka kanal (Epley/Semont) taşır. Tanısızlık, kupulolitiazis, ≥1 dk yanıt ve çok kanal artık
+ * uyarıdır (rxWarning).
  */
 export function rxBlockReason(exam: ClinicExam): string | null {
   const dx = exam.diagnosis;
-  if (!dx) return 'Ev reçetesi için önce Tanı sekmesinde arka kanal tanısını onaylayın.';
+  if (!dx) return null;
   if (!dxValid(exam)) return 'Bulgular tanı onaylandıktan sonra değişti. Tanıyı yeniden onaylayın.';
-  if (dx.canal !== 'PC') return 'Ev reçetesi yalnızca arka kanal BPPV için verilebilir. Yatay ve ön kanal manevraları klinikte yapılmalıdır.';
-  if (!dx.side) return 'Onaylı tanıda taraf yok. Ev reçetesi için tarafı belli bir arka kanal tanısı onaylayın.';
-  const lock = rxFindingLock(exam.findings, exam.retestFindings);
-  if (lock) return lock.message;
-  if (dx.mechanism === 'cupulolithiasis') {
-    return 'Kupulolitiazis şüphesinde baş dönmesi 1 dakikadan uzun sürer; evde güvenlik kuralı her manevrada hastayı hekime yönlendirir. Ev reçetesi verilmez, tedaviyi klinikte yapın.';
-  }
+  if (dx.canal !== 'PC') return 'Ev reçetesi yalnızca arka kanal BPPV için verilebilir (reçete Epley/Semont taşır). Yatay ve ön kanal manevraları klinikte yapılmalıdır.';
   return null;
+}
+
+export type RxWarnCode = 'NO_DIAGNOSIS' | 'NO_SIDE' | 'LONG_RESPONSE' | 'MULTI_CANAL' | 'CUPULOLITHIASIS';
+
+export interface RxWarning {
+  code: RxWarnCode;
+  /** Muayeneye yazılan aşma kaydının türü: `RX_<neden>` (BRIEF §1). */
+  kind: `RX_${RxWarnCode}`;
+  /** Kısa ad (HBYS satırında parantez içinde). */
+  label: string;
+  message: string;
+}
+
+const RX_WARN_LABEL: Record<RxWarnCode, string> = {
+  NO_DIAGNOSIS: 'onaylı tanı yok',
+  NO_SIDE: 'onaylı tanıda taraf yok',
+  LONG_RESPONSE: '≥1 dk nistagmus',
+  MULTI_CANAL: 'çok kanallı tutulum',
+  CUPULOLITHIASIS: 'kupulolitiazis'
+};
+
+/**
+ * Ev reçetesi uyarısı (null → uyarısız reçete). Eskiden kilitti (yeniden tasarım, BRIEF §1 son satır): klinisyen
+ * "Yine de reçete yaz" ile gerekçe yazarak reçete verebilir. Onaylı tanıya EK OLARAK bulgulara da bakar: elle girilen tanı
+ * (ör. "kanalolitiazis") bulguda ≥1 dk yanıt ya da çok kanallı tutulum varken uyarıyı kaldırmaz.
+ */
+export function rxWarning(exam: ClinicExam): RxWarning | null {
+  const w = (code: RxWarnCode, message: string): RxWarning => ({ code, kind: `RX_${code}`, label: RX_WARN_LABEL[code], message });
+  const dx = exam.diagnosis;
+  if (!dx) return w('NO_DIAGNOSIS', 'Tanı sekmesinde onaylı arka kanal tanısı yok; ev reçetesi önerilmez. Tarafı seçip gerekçe yazarak yine de reçete verebilirsiniz.');
+  const lock = rxFindingWarning(exam.findings, exam.retestFindings);
+  if (lock) return w(lock.code === 'long-response' ? 'LONG_RESPONSE' : 'MULTI_CANAL', lock.message);
+  if (dx.mechanism === 'cupulolithiasis') {
+    return w(
+      'CUPULOLITHIASIS',
+      `Kupulolitiazis şüphesinde baş dönmesi 1 dakikadan uzun sürer; evde 2 dakikalık güvenlik uyarısı her manevrada çıkabilir. Ev reçetesi önerilmez, tedaviyi klinikte yapmanız önerilir. ${RX_OVERRIDE_HINT}`
+    );
+  }
+  if (!dx.side) return w('NO_SIDE', 'Onaylı tanıda taraf yok; ev reçetesi önerilmez. Tarafı seçip gerekçe yazarak yine de reçete verebilirsiniz.');
+  return null;
+}
+
+/** Kayıt (HBYS notu, basılı rapor) için uyarı metni: ekrana yönelik "gerekçe yazarak yine de…" cümlesi çıkar. */
+export function recordText(message: string): string {
+  return message.replace(` ${RX_OVERRIDE_HINT}`, '').trim();
+}
+
+/** Muayenedeki aşma kaydı bu uyarıyı karşılıyor mu (aynı neden; yeni bir uyarı doğarsa yeniden karar gerekir). */
+export function rxOverrideCovers(exam: ClinicExam, w: RxWarning | null = rxWarning(exam)): boolean {
+  return !!w && !!exam.rxOverride && exam.rxOverride.kind === w.kind && exam.rxOverride.reason.trim().length > 0;
+}
+
+/** "Uyarıya rağmen reçete: <gerekçe> (uyarı: <kısa ad>)." — HBYS notu ve basılı rapor; güncel reçete yoksa null. */
+export function rxOverrideLine(exam: ClinicExam): string | null {
+  if (!rxCurrent(exam)) return null;
+  const w = rxWarning(exam);
+  if (!w || !rxOverrideCovers(exam, w)) return null;
+  const reason = exam.rxOverride!.reason.trim().replace(/[.\s]+$/, '');
+  return `Uyarıya rağmen reçete: ${reason} (uyarı: ${w.label}).`;
 }
 
 // ---- Bulgu ve tanı metinleri ---------------------------------------------------------------------------
@@ -387,8 +449,8 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
   } else if (dx) {
     lines.push('Tanı: bulgular onaydan sonra değişti; tanı yeniden onaylanmadı.');
   }
-  const lock = rxFindingLock(exam.findings, exam.retestFindings);
-  if (lock) lines.push(`Ev reçetesi kilidi: ${lock.message}`);
+  const lock = rxFindingWarning(exam.findings, exam.retestFindings);
+  if (lock) lines.push(`Ev reçetesi uyarısı: ${recordText(lock.message)}`);
   if (exam.maneuvers.length) {
     lines.push('Manevralar:');
     for (const m of exam.maneuvers) lines.push(`- ${maneuverLineText(m)}`);
@@ -404,6 +466,8 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
       lines.push(
         `Ev reçetesi: ${sideName(r.value.side)} ${r.value.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla ${r.value.perDay}, ${r.value.days} gün (DengeYol, QR ile verildi; reçete kodu ${rxCode(exam.prescriptionToken)}). ${rxValidityShort(r.value.date)}; testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken.`
       );
+      const ov = rxOverrideLine(exam);
+      if (ov) lines.push(ov);
     }
   }
   for (const h of exam.homeReports ?? []) {

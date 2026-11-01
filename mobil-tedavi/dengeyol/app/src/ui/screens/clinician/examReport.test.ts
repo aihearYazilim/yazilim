@@ -33,6 +33,9 @@ import {
   rxBlockReason,
   rxCurrent,
   rxLastValidDay,
+  rxOverrideCovers,
+  rxOverrideLine,
+  rxWarning,
   rxValidityText,
   shortDate,
   stepFlagLabels,
@@ -100,45 +103,113 @@ describe('bulgu imzası', () => {
   });
 });
 
-describe('ev reçetesi kilidi bulguya da bakar', () => {
+describe('ev reçetesi uyarısı (eski kilit) bulguya da bakar', () => {
   const long: Findings = { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 75 }), dhL: f({}) };
   const typical: Findings = { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) };
+  const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 3 });
 
-  it('elle "kanalolitiazis" tanısı ≥60 s bulguda reçeteyi açmaz', () => {
+  it('elle "kanalolitiazis" tanısı ≥60 s bulguda uyarıyı kaldırmaz; artık kilit değil', () => {
     const e = exam(long, manualPC('canalithiasis'));
     expect(dxValid(e)).toBe(true);
-    expect(rxBlockReason(e)).toMatch(/75 s.*≥1 dk/);
+    expect(rxBlockReason(e)).toBeNull();
+    const w = rxWarning(e);
+    expect(w?.kind).toBe('RX_LONG_RESPONSE');
+    expect(w?.message).toMatch(/75 s.*≥1 dk/);
+    expect(w?.message).toMatch(/yine de reçete verebilirsiniz/);
   });
 
-  it('tipik bulgu + elle kanalolitiazis → reçete verilebilir', () => {
-    expect(rxBlockReason(exam(typical, manualPC('canalithiasis')))).toBeNull();
+  it('tipik bulgu + elle kanalolitiazis → uyarısız reçete', () => {
+    const e = exam(typical, manualPC('canalithiasis'));
+    expect(rxBlockReason(e)).toBeNull();
+    expect(rxWarning(e)).toBeNull();
   });
 
-  it('elle kupulolitiazis tanısı her durumda kilitler', () => {
-    expect(rxBlockReason(exam(typical, manualPC('cupulolithiasis')))).toMatch(/Kupulolitiazis/);
+  it('elle kupulolitiazis tanısı uyarı doğurur (RX_CUPULOLITHIASIS)', () => {
+    const w = rxWarning(exam(typical, manualPC('cupulolithiasis')));
+    expect(w?.kind).toBe('RX_CUPULOLITHIASIS');
+    expect(w?.message).toMatch(/Kupulolitiazis/);
   });
 
-  it('tekrar testteki ≥1 dk yanıt da kilitler', () => {
+  it('tekrar testteki ≥1 dk yanıt da uyarı doğurur', () => {
     const e = exam(typical, manualPC('canalithiasis'), { retestFindings: { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 65 }) } });
-    expect(rxBlockReason(e)).toMatch(/^Tekrar test/);
+    expect(rxWarning(e)?.message).toMatch(/^Tekrar test/);
   });
 
-  it('reçeteden sonra kilit doğarsa reçete güncel sayılmaz, nota yazılmaz', () => {
-    const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 3 });
+  it('çok kanallı tutulum uyarısı (RX_MULTI_CANAL)', () => {
+    const e = exam({
+      dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }),
+      dhL: f({}),
+      rollR: f({ nystagmus: 'horizontal-geotropic', intensity: 3, durationSec: 30 }),
+      rollL: f({ nystagmus: 'horizontal-geotropic', intensity: 1, durationSec: 20 })
+    }, manualPC('canalithiasis'));
+    expect(rxWarning(e)?.kind).toBe('RX_MULTI_CANAL');
+  });
+
+  it('tanı yoksa uyarı (RX_NO_DIAGNOSIS); taraf yoksa RX_NO_SIDE', () => {
+    expect(rxBlockReason(exam(typical))).toBeNull();
+    expect(rxWarning(exam(typical))?.kind).toBe('RX_NO_DIAGNOSIS');
+    expect(rxWarning(exam(typical, { ...manualPC('canalithiasis'), side: null }))?.kind).toBe('RX_NO_SIDE');
+  });
+
+  it('bayat tanı ve arka kanal dışı tanı kesin engel olarak kalır (tutarlılık / reçete biçimi)', () => {
+    const stale = exam(typical, manualPC('canalithiasis'));
+    stale.findings = long;
+    expect(rxBlockReason(stale)).toMatch(/yeniden onaylayın/);
+    expect(rxBlockReason(exam(typical, { ...manualPC('canalithiasis'), canal: 'HC', label: 'x' }))).toMatch(/yalnızca arka kanal/);
+  });
+
+  it('reçeteden sonra yeni uyarı doğarsa reçete güncel sayılmaz, nota yazılmaz', () => {
     const e = exam(typical, manualPC('canalithiasis'), { prescriptionToken: token });
     e.prescriptionFindingsKey = e.diagnosis!.findingsKey;
     expect(rxCurrent(e)).toBe(true);
     e.retestFindings = { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 65 }) };
     expect(rxCurrent(e)).toBe(false);
     expect(examNoteText(e, undefined, {})).not.toMatch(/Ev reçetesi:/);
+    expect(examNoteText(e, undefined, {})).toMatch(/Ev reçetesi uyarısı: Tekrar test/);
   });
 
-  it('tanı yoksa / bayatsa / yatay kanalsa eski kilitler korunur', () => {
-    expect(rxBlockReason(exam(typical))).toMatch(/önce Tanı/);
-    const stale = exam(typical, manualPC('canalithiasis'));
-    stale.findings = long;
-    expect(rxBlockReason(stale)).toMatch(/yeniden onaylayın/);
-    expect(rxBlockReason(exam(typical, { ...manualPC('canalithiasis'), canal: 'HC', label: 'x' }))).toMatch(/yalnızca arka kanal/);
+  it('uyarıya rağmen reçete: gerekçe aynı neden için kayıtlıysa reçete güncel; HBYS notunda "Uyarıya rağmen reçete"', () => {
+    const e = exam(long, manualPC('canalithiasis'), { prescriptionToken: token });
+    e.prescriptionFindingsKey = e.diagnosis!.findingsKey;
+    expect(rxCurrent(e)).toBe(false);
+    expect(rxOverrideLine(e)).toBeNull();
+    e.rxOverride = { at: T0, kind: 'RX_LONG_RESPONSE', reason: 'Hasta kliniğe gelemiyor; telefonla izlenecek.' };
+    expect(rxOverrideCovers(e)).toBe(true);
+    expect(rxCurrent(e)).toBe(true);
+    expect(rxOverrideLine(e)).toBe('Uyarıya rağmen reçete: Hasta kliniğe gelemiyor; telefonla izlenecek (uyarı: ≥1 dk nistagmus).');
+    const note = examNoteText(e, undefined, {});
+    const lines = note.split('\n');
+    const i = lines.findIndex((l) => l.startsWith('Ev reçetesi:'));
+    expect(i).toBeGreaterThan(-1);
+    expect(lines[i + 1]).toBe('Uyarıya rağmen reçete: Hasta kliniğe gelemiyor; telefonla izlenecek (uyarı: ≥1 dk nistagmus).');
+  });
+
+  it('gerekçe başka bir neden içinse ya da boşsa uyarıyı karşılamaz', () => {
+    const e = exam(long, manualPC('canalithiasis'), { prescriptionToken: token, rxOverride: { at: T0, kind: 'RX_NO_DIAGNOSIS', reason: 'x' } });
+    e.prescriptionFindingsKey = e.diagnosis!.findingsKey;
+    expect(rxOverrideCovers(e)).toBe(false);
+    expect(rxCurrent(e)).toBe(false);
+    e.rxOverride = { at: T0, kind: 'RX_LONG_RESPONSE', reason: '   ' };
+    expect(rxOverrideCovers(e)).toBe(false);
+  });
+
+  it('tanısız reçete: bulgu imzasına bağlı; bulgu değişirse ya da başka tarafa tanı onaylanırsa güncel değil', () => {
+    const e = exam(typical, undefined, {
+      prescriptionToken: token,
+      prescriptionFindingsKey: findingsKeyOf(typical),
+      rxOverride: { at: T0, kind: 'RX_NO_DIAGNOSIS', reason: 'Klinik bulgu net, tanı sonra girilecek' }
+    });
+    expect(rxCurrent(e)).toBe(true);
+    expect(rxOverrideLine(e)).toMatch(/^Uyarıya rağmen reçete: Klinik bulgu net, tanı sonra girilecek \(uyarı: onaylı tanı yok\)\.$/);
+    expect(rxCurrent({ ...e, findings: long })).toBe(false);
+    // Sol tarafa tanı onaylandı: sağ reçete o tanıya dayanmaz (uyarı da kalktı).
+    const left = { ...e, diagnosis: { ...manualPC('canalithiasis'), side: 'L' as const, findingsKey: findingsKeyOf(typical) } };
+    expect(rxCurrent(left)).toBe(false);
+    // Aynı tarafa tanı onaylandı: uyarı kalkar, reçete güncel kalır.
+    const right = { ...e, diagnosis: { ...manualPC('canalithiasis'), findingsKey: findingsKeyOf(typical) } };
+    expect(rxWarning(right)).toBeNull();
+    expect(rxCurrent(right)).toBe(true);
+    expect(rxOverrideLine(right)).toBeNull();
   });
 });
 
@@ -284,9 +355,9 @@ describe('HBYS notu (kısa)', () => {
     expect(lines.find((l) => l.startsWith('- Sağ Dix-Hallpike'))).not.toMatch(/gözlem:/);
   });
 
-  it('bulgu kilidi notta yazılır', () => {
+  it('bulgu uyarısı notta yazılır (ekrandaki "yine de reçete" cümlesi olmadan)', () => {
     const e = exam({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 75 }) }, manualPC('canalithiasis'));
-    expect(examNoteText(e, undefined, {})).toMatch(/Ev reçetesi kilidi: Sağ Dix-Hallpike: nistagmus 75 s/);
+    expect(examNoteText(e, undefined, {})).toMatch(/Ev reçetesi uyarısı: Sağ Dix-Hallpike: nistagmus 75 s.*klinikte yapmanız önerilir\.$/m);
   });
 });
 

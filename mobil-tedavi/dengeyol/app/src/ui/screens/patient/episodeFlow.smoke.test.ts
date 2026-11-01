@@ -184,6 +184,10 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
   });
 
   it('manevra az önce yapıldı ve günlük sınır doldu: "Yine de manevra yap" ve doz uyarısı aşılır (EARLY_REPEAT, DOSE)', async () => {
+    // Saat gün ortasına sabit: manevralar birkaç dakika önce; gece yarısından hemen sonra koşulunca "bugün" sayımı bozulmasın.
+    // (beforeEach'teki sahte zamanlayıcılar Date ile birlikte yeniden kurulur; afterEach gerçek saate döner.)
+    vi.useRealTimers();
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
     seed();
     const now = Date.now();
     const man = (i: number) => ({ id: 'm' + i, at: now - (10 - i) * 60_000, protocolId: 'epley' as const, side: 'R' as const, completed: true, stopReason: null, records: [], manual: false });

@@ -45,7 +45,7 @@ import { haptics } from '../../platform/haptics';
 import { keepAwake, releaseAwake, wakeLockSupported } from '../../platform/wakeLock';
 import { logOverride } from '../../state/overrides';
 import { store, useData } from '../../state/store';
-import { Segmented, StepDots } from '../components/Controls';
+import { Segmented, StepDots, useTapLock } from '../components/Controls';
 import { HangBar, HeadGauge, HoldRing } from '../components/Gauges';
 import { Icon } from '../components/Icon';
 import { publishSimTarget, useSimAuto } from '../components/SimPanel';
@@ -85,6 +85,9 @@ export interface RunnerOutcome {
   protocol: ResolvedProtocol;
   manual: boolean;
 }
+
+/** Güvenlik uyarısı açıldıktan sonra seçim düğmelerinin kilitli kaldığı süre (ms). */
+const SAFETY_HOLD_LOCK_MS = 1000;
 
 export function RunnerView({
   protocolId,
@@ -600,6 +603,13 @@ export function RunnerView({
   const sayOf = (st: StepDef) => (!P ? st.clinician : helperVoice && st.helperSay ? st.helperSay : st.say);
   const shortOf = (st: StepDef) => (!P ? undefined : helperVoice && st.helperShort ? st.helperShort : st.short);
 
+  /**
+   * Güvenlik uyarısı (safetyHold) açılınca seçim düğmeleri kısa süre kilitli: baş dönmesinin geçtiğini işaretlemek için
+   * alındaki telefona körlemesine dokunan hasta, tam o anda açılan uyarıda "Durdur"u ya da "Devam et"i seçmesin
+   * (manevra sonrası soru ve "Yine de devam et" düğmeleriyle aynı kural).
+   */
+  const holdLocked = useTapLock(state.phase === 'safetyHold' && state.safetyHold ? state.safetyHold.at : undefined, SAFETY_HOLD_LOCK_MS);
+
   // --- Başlamadan önce ---------------------------------------------------------------------
   if (!started && auto && !autoFailed) {
     return (
@@ -826,7 +836,7 @@ export function RunnerView({
    */
   const chooseSafety = (choice: 'continue' | 'stop') => {
     const cur = sRef.current;
-    if (cur.phase !== 'safetyHold' || !cur.safetyHold) return;
+    if (cur.phase !== 'safetyHold' || !cur.safetyHold || holdLocked) return;
     if (choice === 'continue') {
       unlockAudio();
       void keepAwake();
@@ -1076,14 +1086,14 @@ export function RunnerView({
           aria-label="Güvenlik uyarısı"
           data-testid="runner-safety-hold"
           data-reason={state.safetyHold.reason}
-          // Kör dokunuş ve uzun basış hiçbir seçimi yapmaz (yalnız kısa dokunuş; duraklatma sayfasıyla aynı kural).
+          // Açılıştaki kör dokunuş (SAFETY_HOLD_LOCK_MS kilidi) ve uzun basış hiçbir seçimi yapmaz (duraklatma sayfasıyla aynı kural).
           onPointerDownCapture={() => {
             sheetDownAt.current = performance.now();
           }}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="sheet">
+          <div className="sheet" data-locked={holdLocked || undefined} style={holdLocked ? { opacity: 0.85 } : undefined}>
             <h2>{state.safetyHold.reason === 'VERTIGO_TOO_LONG' ? 'Baş dönmesi uzun sürdü' : 'Pozisyona gelinemedi'}</h2>
             <p data-testid="runner-safety-hold-text">{safetyHoldText(state)}</p>
             <p className="small muted">Manevra bekliyor; siz seçmeden devam etmez.</p>

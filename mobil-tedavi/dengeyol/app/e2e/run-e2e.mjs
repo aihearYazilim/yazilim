@@ -159,6 +159,7 @@ async function step(name, fn) {
   }
 }
 
+
 /** Yeni soru/onay ekranında düğmeler kısa süre kilitli (çift dokunuş koruması): kilit kalkana dek bekle. */
 async function unlocked(page) {
   await page.waitForFunction(() => !document.querySelector('[data-locked]'));
@@ -172,43 +173,45 @@ async function clickChoice(page, name) {
   await radio.click();
 }
 
-async function answerRedFlags(page, stopOn = null) {
-  for (let i = 0; i < 20; i++) {
-    const q = page.getByTestId('redflag-question');
-    if (!(await q.isVisible().catch(() => false))) return;
-    const id = await q.getAttribute('data-qid');
-    // Yanıt düğmeleri her yeni soruda kısa süre kilitli (çift dokunuş koruması)
-    await page.locator('.yesno:not([data-locked])').waitFor();
-    if (stopOn && id === stopOn) {
-      await page.getByTestId('yn-yes').click();
-      await unlocked(page);
-      await page.getByTestId('redflag-confirm-yes').click();
-      return;
-    }
-    // Her soruda güvenli yanıt "Hayır, yok"
-    await page.getByTestId('yn-no').click();
-    await page.waitForFunction((prev) => {
-      const el = document.querySelector('[data-testid="redflag-question"]');
-      return !el || el.getAttribute('data-qid') !== prev;
-    }, id);
-  }
+const storeOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')));
+const kindsOf = (ep) => (ep?.overrides ?? []).map((o) => o.kind);
+
+/**
+ * Güvenlik listesi (yeniden tasarım: tek ekran işaret listesi). `check`: işaretlenecek maddeler (rf-<id>); boşsa "Hiçbiri yok,
+ * devam". Yanıtı taze olduğu için liste gelmezse (ör. tekrar testi) bir şey yapmaz.
+ */
+async function answerRedFlags(page, check = []) {
+  await page
+    .locator(
+      '[data-testid="redflags"], [data-testid="prep"], [data-testid="prep-ready"], [data-testid="cal-start"], [data-testid="runner"], [role="radiogroup"], [data-testid="plan-warn"], [data-testid="dose-warn"], [data-testid="contra-warn"]'
+    )
+    .first()
+    .waitFor({ timeout: 15000 });
+  if (!(await page.getByTestId('redflags').isVisible().catch(() => false))) return;
+  for (const id of check) await page.getByTestId('rf-' + id).click();
+  // Büyük düğme açılışta kısa süre kilitli (ana ekrandaki dokunuşun ikincisi "Hiçbiri yok" sayılmasın).
+  await unlocked(page);
+  await page.getByTestId(check.length ? 'redflags-continue' : 'redflags-none').click();
+  await page.getByTestId('redflags').waitFor({ state: 'detached' });
 }
 
-/** Yeni atakta alt tip soruları (arka kanala uyan yanıtlar). */
-async function answerSubtype(page) {
-  await clickChoice(page, /Yatarken ya da yataktan kalkarken/);
-  await clickChoice(page, /1 dakikadan kısa/);
+/** Alt tip (tek soru): yalnız sorulursa (tanıda kanal biliniyorsa ya da yanıt tazeyse sorulmaz). */
+async function answerSubtype(page, value = 'liedown') {
+  await page.locator('[data-testid="subtype-liedown"], [data-testid="prep"]').first().waitFor({ timeout: 15000 });
+  if (!(await page.getByTestId('subtype-' + value).isVisible().catch(() => false))) return;
+  await unlocked(page);
+  await page.getByTestId('subtype-' + value).click();
 }
 
-/** İki yönlü taraf testi (soru telefondan önce): sol negatif, sağ pozitif → tek dokunuşla sağ tarafa manevra. */
-async function sideTestRightPositive(page) {
-  await clickChoice(page, 'Sağ yanıma yatınca');
+/**
+ * İki taraflı test (taraf sorusu yok; sıra kendiliğinden: bilinen taraf varsa önce öbürü, yoksa önce sağ). Hazırlık ekranından
+ * başlar. positiveAt: baş dönmesi işaretlenecek test (1 ya da 2). Temiz kararda telefon alında "chain-continue" gelir.
+ */
+async function sideTest(page, positiveAt) {
   await calibrate(page);
-  await driveRunner(page);
-  await page.locator('[data-testid="rest-continue"]:not([disabled])').click({ timeout: 15000 });
-  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
-  // Karar: sağ → telefon alında, tek dokunuşla manevraya geçiş
-  await page.getByTestId('chain-continue').click({ timeout: 15000 });
+  await driveRunner(page, positiveAt === 1 ? { markVertigoAtStep: 1, vertigoSec: 0.8 } : {});
+  await page.locator('[data-testid="rest-continue"][data-enabled]').click({ timeout: 15000 });
+  await driveRunner(page, positiveAt === 2 ? { markVertigoAtStep: 1, vertigoSec: 0.8 } : {});
 }
 
 async function calibrate(page) {
@@ -238,6 +241,7 @@ async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, t
   if (!(await page.getByTestId('sim-panel').isVisible().catch(() => false))) await page.getByTestId('sim-open').click();
   const t0 = Date.now();
   let lastStep = -1;
+  let lastGoto = 0;
   let marked = false;
   while (Date.now() - t0 < timeout) {
     const runner = page.getByTestId('runner');
@@ -249,10 +253,17 @@ async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, t
       if (await page.getByTestId('sim-panel').isVisible().catch(() => false)) throw new Error('demo paneli yürütücü bitince kapanmadı');
       return phase;
     }
+    // Güvenlik uyarısı (uzun baş dönmesi / pozisyona gelinemedi) bu yardımcıda beklenmez: senaryo kendisi yönetir.
+    if (phase === 'safetyHold') throw new Error('beklenmeyen güvenlik uyarısı: ' + (await page.getByTestId('runner-safety-hold').getAttribute('data-reason')));
     if (st !== lastStep && phase !== 'between') {
       lastStep = st;
       if (onStep) await onStep(st);
       await page.getByTestId('sim-goto').click();
+      lastGoto = Date.now();
+    } else if (phase === 'seeking' && Date.now() - lastGoto > 1500) {
+      // Hedef geç yayımlandıysa (ör. giriş cümlesi sırasında) sanal baş eski hedefte kalmasın: yeniden götür.
+      await page.getByTestId('sim-goto').click();
+      lastGoto = Date.now();
     }
     if (markVertigoAtStep === st && !marked && phase === 'holding') {
       marked = true;
@@ -265,40 +276,115 @@ async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, t
   throw new Error('yürütücü zaman aşımı');
 }
 
+const PATIENT_OK = {
+  consentAt: '2026-01-01T00:00:00.000Z',
+  contraindications: [],
+  diagnosedByDoctor: true,
+  canal: 'PC',
+  side: 'R'
+};
+
+const MIN = 60000;
+
+/** `minutesAgo` dakika önce tamamlanmış sağ Epley kaydı (birkaç dakika: gece yarısına yakın koşuda gün değişmesin). */
+function maneuverAgo(id, minutesAgo, extra = {}) {
+  return {
+    id,
+    at: Date.now() - minutesAgo * MIN,
+    protocolId: 'epley',
+    side: 'R',
+    completed: true,
+    stopReason: null,
+    records: [],
+    manual: false,
+    afterSymptoms: 'none',
+    ...extra
+  };
+}
+
+/** Taraf testi bitmiş (sağ), güvenlik soruları az önce yanıtlanmış, manevrası yapılmamış aktif atak. */
+function readyEpisode(id = 'act') {
+  const t = Date.now() - 10 * MIN;
+  return { id, startedAt: t, side: 'R', protocolId: 'epley', redFlags: [{ at: t, answers: {}, stopped: false }], sideTests: [], maneuvers: [], retests: [], status: 'active' };
+}
+
+/** Ana ekran → "Başım dönüyor" (atağa devam) → hazırlık → tanıtma; ardından sağ Epley kendiliğinden başlar. */
+async function toManeuver(page) {
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('prep').waitFor();
+  await calibrate(page);
+}
+
+/** Yürütücü belirtilen faza gelene (ya da ekrandan kalkana: gone) dek bekler. */
+async function waitPhase(page, phases, timeout = 15000) {
+  await page.waitForFunction(
+    (ps) => {
+      const r = document.querySelector('[data-testid="runner"]');
+      return r ? ps.includes(r.getAttribute('data-phase')) : ps.includes('gone');
+    },
+    phases,
+    { timeout }
+  );
+}
+
+/** Tohumlanmış atakta manevra yürütücüsünü başlatır ve hareket fazına gelene dek bekler. */
+async function startManeuver(page) {
+  await toManeuver(page);
+  await page.locator('[data-testid="runner-start"], [data-testid="runner"]').first().waitFor({ timeout: 30000 });
+  if (await page.getByTestId('runner-start').isVisible().catch(() => false)) await page.getByTestId('runner-start').click();
+  await page.getByTestId('runner').waitFor();
+  await waitPhase(page, ['intro', 'seeking', 'settling', 'holding', 'drifting', 'between']);
+}
+
+/** Konsol hatası varsa senaryo düşer. */
+function noErrors(errors) {
+  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+}
+
 // ------------------------------------------------------------------------------------------------
-await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1 saat tekrar testi → rapor', async () => {
+await step('Hasta: tek ekran kurulum → isteğe bağlı tanı → güvenlik listesi → kalibrasyon → iki taraf testi → Epley → 1 saat tekrar testi → rapor', async () => {
   const { ctx, page, errors } = await newPage(seed());
   await page.goto(BASE);
   await snap(page, 'karsilama');
   await page.getByTestId('role-patient').click();
-  await snap(page, 'kurulum-1');
+  await snap(page, 'kurulum-tek-ekran');
   // Onam: yan etkiler ve seçenekler katlanabilir (kapalı gelir), acil kartı görünür (kullanıcı turu 3, k03).
   if ((await page.locator('[data-testid="ob-risks"] details[open]').count()) !== 0) throw new Error('onamda yan etkiler kutusu açık geliyor');
   await page.getByTestId('ob-risks-side-effects').locator('summary').click();
   if (!(await page.getByTestId('ob-risks-side-effects').innerText()).includes('düşebilirsiniz')) throw new Error('yan etkiler açılınca görünmüyor');
   await page.getByTestId('ob-consent').click();
-  await page.getByTestId('ob-next').click();
-  await page.getByRole('radio', { name: 'Evet, tanı kondu' }).click();
-  await page.getByRole('radio', { name: /Arka \(posterior\) kanal/ }).click();
-  await page.getByRole('radio', { name: 'Sağ kulak' }).click();
-  // Tanı zamanı zorunlu seçim (tarih boşken tanı sessizce "eski" sayılmasın).
-  await page.getByRole('radio', { name: 'Son 2 hafta içinde' }).click();
-  await snap(page, 'kurulum-tani');
-  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-start').click();
+  // Kurulum tek ekran: onaydan sonra doğrudan ana ekran; tanı girilmedi bilgisi tek satır, büyük düğme kilitsiz.
+  await page.getByTestId('start-episode').waitFor();
+  await page.getByTestId('home-no-dx').waitFor();
+  await snap(page, 'hasta-ana-tanisiz');
+  // Tanı bilgisi isteğe bağlı (Ayarlar → Bilgilerim).
+  await page.goto(BASE + '#/hasta/kurulum?adim=tani');
+  await clickChoice(page, 'Evet, tanı kondu');
+  await clickChoice(page, /Arka \(posterior\) kanal/);
+  await clickChoice(page, 'Sağ kulak');
+  await clickChoice(page, 'Son 2 hafta içinde');
+  await snap(page, 'bilgilerim-tani');
   // Uygunluk listesinde her maddenin başında sesteki kısa ad kalın (k05).
   if ((await page.locator('button[role="checkbox"] strong', { hasText: 'Boyun sorunu:' }).count()) !== 1) throw new Error('uygunluk listesinde kısa ad kalın değil');
-  await page.getByTestId('ob-none').click();
-  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-save').click();
   await page.getByTestId('start-episode').waitFor();
+  if (await page.getByTestId('home-no-dx').count()) throw new Error('tanı girildikten sonra "tanı yok" satırı kaldı');
   await snap(page, 'hasta-ana');
   await page.getByTestId('start-episode').click();
-  await snap(page, 'kirmizi-bayrak');
+  await page.getByTestId('redflags').waitFor();
+  await snap(page, 'guvenlik-listesi');
   await answerRedFlags(page);
-  await snap(page, 'alt-tip-sorusu');
-  await answerSubtype(page);
-  await snap(page, 'taraf-sorusu');
-  await sideTestRightPositive(page);
-  await snap(page, 'manevra-hazir');
+  // Hekim tanısı arka kanal: alt tip sorulmaz. Taraf sorusu yok: önce sol (şüpheli olmayan), sonra sağ test.
+  await page.getByTestId('prep').waitFor();
+  await snap(page, 'hazirlik');
+  await sideTest(page, 2);
+  const gate = page.getByTestId('chain-continue');
+  await gate.waitFor({ timeout: 15000 });
+  if (!/sağ/i.test(await gate.innerText())) throw new Error('sağ taraf kararı beklenirdi: ' + (await gate.innerText()));
+  await snap(page, 'karar-gecis');
+  await gate.click();
   let shotDone = false;
   const phase = await driveRunner(page, {
     markVertigoAtStep: 1,
@@ -345,7 +431,9 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   const reportText = await page.getByTestId('episode-report').innerText();
   if (!reportText.includes('Epley')) throw new Error('raporda manevra yok');
   if (!/baş dönmesi|Belirti|–/.test(reportText)) throw new Error('raporda belirti işareti yok');
-  if (/\b(VERTIGO_TOO_LONG|ATYPICAL_LONG|BOTH_SIDES|SIDE_CONFLICT)\b/.test(reportText)) throw new Error('raporda ham iç kod var');
+  if (/\b(VERTIGO_TOO_LONG|ATYPICAL_LONG|BOTH_SIDES|SIDE_CONFLICT|APP_DECISION)\b/.test(reportText)) throw new Error('raporda ham iç kod var');
+  // Uygulamanın kararı araştırma kaydında (tek cümle gerekçe).
+  if (!(await page.getByTestId('report-overrides').innerText()).includes('Uygulamanın kararı: sağ taraf')) throw new Error('raporda uygulamanın kararı yok');
   await snap(page, 'rapor');
   // Dönem raporu: dönemdeki bütün ataklar, başta tek satır sonuç (k09).
   await page.goto(BASE + '#/hasta/rapor/donem');
@@ -353,86 +441,125 @@ await step('Hasta: kurulum → kırmızı bayrak → kalibrasyon → Epley → 1
   if (!/^\d+ atak · \d+ manevra/.test(periodSummary)) throw new Error('dönem raporu özeti hatalı: ' + periodSummary);
   if ((await page.getByTestId('period-episode').count()) < 1) throw new Error('dönem raporunda atak yok');
   await snap(page, 'donem-raporu');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Hasta: taraf bilinmiyor → iki yönlü semptom testi → sağ tarafa manevra kararı', async () => {
-  const data = seed({
-    settings: { role: 'patient' },
-    data: { patient: { consentAt: new Date().toISOString(), diagnosedByDoctor: true, canal: 'PC', side: 'unknown', contraindications: [] } }
-  });
+await step('Hasta: taraf bilinmiyor → iki taraf testi kendiliğinden (önce sağ) → sağ tarafa manevra kararı', async () => {
+  const data = seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, consentAt: new Date().toISOString(), side: 'unknown' } } });
   const { ctx, page, errors } = await newPage(data);
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
   await answerSubtype(page);
-  await clickChoice(page, 'Sağ yanıma yatınca');
-  await snap(page, 'hazirlik');
+  // Taraf sorusu yok: doğrudan hazırlık.
+  await page.getByTestId('prep').waitFor();
+  if (await page.getByRole('radiogroup', { name: 'Şüpheli taraf' }).count()) throw new Error('taraf sorusu hâlâ soruluyor');
   await calibrate(page);
-  // Önce sol (şüpheli olmayan) test: baş dönmesi yok (tanıtmadan sonra kendiliğinden başlar)
-  await driveRunner(page);
-  await page.getByTestId('rest-continue').waitFor();
-  await snap(page, 'taraf-ara');
-  await page.locator('[data-testid="rest-continue"]:not([disabled])').click({ timeout: 15000 });
-  // Sonra sağ (telefon alında, kendiliğinden başlar): baş dönmesi işaretle
+  // Önce sağ (bilinen taraf yok): baş dönmesi işaretle (tanıtmadan sonra kendiliğinden başlar)
   await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  await page.getByTestId('rest-continue').waitFor();
+  if (!/sol tarafı test edeceğiz/i.test(await page.getByTestId('rest-continue').innerText())) throw new Error('ikinci test sol olmalıydı');
+  await snap(page, 'taraf-ara');
+  await page.locator('[data-testid="rest-continue"][data-enabled]').click({ timeout: 15000 });
+  // Sonra sol (telefon alında, kendiliğinden başlar): baş dönmesi yok
+  await driveRunner(page);
   // Karar: sağ tarafa manevra → tek dokunuşla geçiş ekranı
   const gate = page.getByTestId('chain-continue');
   await gate.waitFor({ timeout: 15000 });
   const txt = await gate.innerText();
   if (!/sağ/i.test(txt)) throw new Error('sağ taraf beklenirdi: ' + txt);
   await snap(page, 'taraf-karari-gecis');
+  const ep = (await storeOf(page)).episodes[0];
+  const dec = ep.sideTests.at(-1)?.decision;
+  if (dec?.kind !== 'TREAT' || dec.side !== 'R') throw new Error('taraf testi kararı kaydedilmedi: ' + JSON.stringify(dec));
+  if (!kindsOf(ep).includes('APP_DECISION')) throw new Error('uygulamanın kararı kayda yazılmadı');
   await gate.click();
   await page.getByTestId('runner').waitFor({ timeout: 20000 });
   const step = await page.getByTestId('runner').getAttribute('data-step');
   if (step !== '0') throw new Error('Epley ilk adımı bekleniyordu');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Hasta: acil kırmızı bayrak → durdurma ve 112 ekranı', async () => {
-  const data = seed({
-    settings: { role: 'patient' },
-    data: { patient: { consentAt: new Date().toISOString(), diagnosedByDoctor: true, canal: 'PC', side: 'R', contraindications: [] } }
-  });
-  const { ctx, page, errors } = await newPage(data);
-  await page.goto(BASE + '#/hasta');
-  await page.getByTestId('start-episode').click();
-  await answerRedFlags(page, 'neuro');
-  await page.getByTestId('stop-emergency').waitFor();
-  const tel = await page.locator('a[href="tel:112"]').count();
-  if (tel < 1) throw new Error('112 bağlantısı yok');
-  await snap(page, 'acil-durdurma');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
-  await ctx.close();
+await step('Hasta: acil kırmızı bayrak → 112 uyarısı; "Durdur" atağı acil olarak kapatır, "Yine de devam et" RED_FLAG kaydıyla sürer', async () => {
+  const data = seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, consentAt: new Date().toISOString() } } });
+  // a) Durdur: atak "acil" olarak kapanır, rapora gidilir; aşma kaydı yok.
+  {
+    const { ctx, page, errors } = await newPage(data);
+    await page.goto(BASE + '#/hasta');
+    await page.getByTestId('start-episode').click();
+    await answerRedFlags(page, ['neuro']);
+    await page.getByTestId('stop-emergency').waitFor();
+    if ((await page.locator('a[href="tel:112"]').count()) < 1) throw new Error('112 bağlantısı yok');
+    await page.getByTestId('call-112').waitFor();
+    // Kilit yok: altında "Yine de devam et" de var.
+    await page.getByTestId('redflag-override').waitFor();
+    await snap(page, 'acil-uyari');
+    await page.getByTestId('redflag-stop').click();
+    await page.getByTestId('episode-report').waitFor();
+    const ep = (await storeOf(page)).episodes[0];
+    if (ep.status !== 'emergency' || !ep.redFlags.at(-1)?.stopped) throw new Error('durdurulan atak acil olarak kapanmadı: ' + ep.status);
+    if (kindsOf(ep).includes('RED_FLAG')) throw new Error('durdurulunca aşma kaydı yazıldı');
+    noErrors(errors);
+    await ctx.close();
+  }
+  // b) Yine de devam et: akış sürer (hazırlık), RED_FLAG kaydı işaretlenen maddeyle; raporda araştırma kaydı.
+  {
+    const { ctx, page, errors } = await newPage(data);
+    await page.goto(BASE + '#/hasta');
+    await page.getByTestId('start-episode').click();
+    await answerRedFlags(page, ['neuro']);
+    await page.getByTestId('stop-emergency').waitFor();
+    await unlocked(page);
+    await page.getByTestId('redflag-override').click();
+    await page.getByTestId('prep').waitFor();
+    const ep = (await storeOf(page)).episodes[0];
+    if (ep.status !== 'active') throw new Error('devam edilen atak kapandı: ' + ep.status);
+    const ov = ep.overrides?.find((o) => o.kind === 'RED_FLAG');
+    if (!ov || !ov.detail?.includes('neuro')) throw new Error('RED_FLAG kaydı yok: ' + JSON.stringify(ep.overrides));
+    await page.goto(BASE + '#/hasta/rapor/' + ep.id);
+    const rep = await page.getByTestId('report-overrides').innerText();
+    if (/\bRED_FLAG\b/.test(rep)) throw new Error('araştırma kaydında ham kod: ' + rep);
+    await snap(page, 'rapor-arastirma-kaydi');
+    noErrors(errors);
+    await ctx.close();
+  }
 });
 
-await step('Hasta: tanısız ilk atak → manevralar kilitli', async () => {
-  const { ctx, page } = await newPage(seed({ settings: { role: 'patient' } }));
+await step('Hasta: tanısız ilk atak → kilitlenmeden teste ve manevraya ulaşır, NO_DIAGNOSIS kaydı', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' } }));
   await page.goto(BASE + '#/hasta/kurulum');
   await page.getByTestId('ob-consent').click();
-  await page.getByTestId('ob-next').click();
-  await page.getByRole('radio', { name: 'Hayır / emin değilim' }).click();
-  await page.getByTestId('ob-next').click();
-  await page.getByTestId('ob-none').click();
-  await page.getByTestId('ob-next').click();
-  await page.getByTestId('ob-gate-blocked').waitFor();
-  // Tanısız kapı ekranında da aciliyet kartı (ana ekrandakiyle aynı).
-  await page.getByTestId('urgency-ladder').waitFor();
-  await snap(page, 'kilit-tanisiz');
+  await page.getByTestId('ob-start').click();
+  await page.getByTestId('home-no-dx').waitFor();
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('redflags').waitFor();
+  // Tanısız kişiye "aynı baş dönmesi mi" sorulmaz (karşılaştıracağı tanı yok).
+  if (await page.getByTestId('rf-same').count()) throw new Error('tanısız kişiye "aynı baş dönmesi mi" soruldu');
+  await answerRedFlags(page);
+  await page.getByTestId('subtype-liedown').waitFor();
+  await snap(page, 'tanisiz-alt-tip');
+  await answerSubtype(page);
+  await page.getByTestId('prep').waitFor();
+  // Bilinen taraf yok: önce sağ (pozitif), sonra sol.
+  await sideTest(page, 1);
+  const gate = page.getByTestId('chain-continue');
+  await gate.waitFor({ timeout: 15000 });
+  if (!/sağ/i.test(await gate.innerText())) throw new Error('sağ taraf kararı beklenirdi');
+  await gate.click();
+  await page.getByTestId('runner').waitFor({ timeout: 20000 });
+  if ((await page.getByTestId('runner').getAttribute('data-step')) !== '0') throw new Error('manevranın ilk adımı bekleniyordu');
+  await snap(page, 'tanisiz-manevra');
+  const ep = (await storeOf(page)).episodes.at(-1);
+  const kinds = kindsOf(ep);
+  if (!kinds.includes('NO_DIAGNOSIS') || !kinds.includes('APP_DECISION')) throw new Error('NO_DIAGNOSIS/APP_DECISION kaydı yok: ' + kinds.join(', '));
+  if (ep.side !== 'R') throw new Error('atak tarafı yazılmadı: ' + ep.side);
+  noErrors(errors);
   await ctx.close();
 });
 
-const PATIENT_OK = {
-  consentAt: '2026-01-01T00:00:00.000Z',
-  contraindications: [],
-  diagnosedByDoctor: true,
-  canal: 'PC',
-  side: 'R'
-};
-
-await step('Hasta: hekime yönlendirilen ataktan sonra yeni atak onay ister; deneme günlük sınırı', async () => {
+await step('Hasta: hekime yönlendirilen ataktan sonra kilit yok (bilgi satırı + başlat, REFERRAL kaydı); deneme günlük sınırında "Yine de dene"', async () => {
   const now = Date.now();
   const referred = {
     id: 'old', startedAt: now - 7200e3, endedAt: now - 3600e3, side: 'R', protocolId: 'epley', redFlags: [], sideTests: [],
@@ -441,42 +568,71 @@ await step('Hasta: hekime yönlendirilen ataktan sonra yeni atak onay ister; den
   const { ctx, page, errors } = await newPage(
     seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [referred], practiceLog: [now - 60e3, now - 30e3] } })
   );
-  await page.goto(BASE + '#/hasta/atak/start');
-  await page.getByTestId('blocked-referral').waitFor();
-  await snap(page, 'yonlendirme-kilidi');
-  await page.getByTestId('doctor-cleared').click();
-  await page.getByTestId('doctor-cleared-yes').click();
-  await page.getByTestId('redflag-question').waitFor();
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('home-referral-line').waitFor();
+  await snap(page, 'yonlendirme-bilgi-satiri');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('redflags').waitFor();
+  let st = await storeOf(page);
+  if (!kindsOf(st.episodes.find((e) => e.id === 'old')).includes('REFERRAL')) throw new Error('yönlendirilen atağa REFERRAL kaydı yazılmadı');
+  await answerRedFlags(page);
+  st = await storeOf(page);
+  // Kayıt yönlendirilen atağa bir kez yazılır; yeni atakta tekrarlanmaz, ana ekran bilgi satırı da kalkar.
+  if (kindsOf(st.episodes.find((e) => e.id === 'old')).filter((k) => k === 'REFERRAL').length !== 1) throw new Error('REFERRAL kaydı bir kez değil');
+  if (!st.episodes.some((e) => e.id !== 'old' && e.status === 'active')) throw new Error('yeni atak açılmadı');
+  // Deneme manevrası: günlük sınır doluyken uyarı + "Yine de dene".
   await page.goto(BASE + '#/hasta');
   await page.goto(BASE + '#/hasta/atak/practice');
   await page.getByTestId('blocked-practice').waitFor();
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await unlocked(page);
+  await page.getByTestId('practice-override').click();
+  await page.getByTestId('redflags').waitFor();
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekranı çevir, ekrana dokunarak işaret', async () => {
+await step('Hasta: kontrendikasyon uyarısı madde adıyla; "Yine de devam et" CONTRAINDICATION kaydı, aynı atakta yeniden sorulmaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, contraindications: ['neck'] } } }));
+  await page.goto(BASE + '#/hasta');
+  if (!(await page.getByTestId('home-gate-items').innerText()).includes('Boyun sorunu')) throw new Error('ana ekranda kontrendikasyon satırı yok');
+  await page.getByTestId('start-episode').click();
+  const w = page.getByTestId('contra-warn');
+  await w.waitFor();
+  if (!(await w.innerText()).includes('Boyun sorunu')) throw new Error('uyarıda madde adı yok: ' + (await w.innerText()));
+  await snap(page, 'kontrendikasyon-uyarisi');
+  await unlocked(page);
+  await page.getByTestId('contra-override').click();
+  await answerRedFlags(page);
+  await page.getByTestId('prep').waitFor();
+  const ep = (await storeOf(page)).episodes[0];
+  const ov = ep.overrides?.find((o) => o.kind === 'CONTRAINDICATION');
+  if (!ov?.detail?.includes('Boyun sorunu')) throw new Error('CONTRAINDICATION kaydı yok: ' + JSON.stringify(ep.overrides));
+  // Aynı atağa devamda yeniden sorulmaz.
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.locator('[data-testid="contra-warn"], [data-testid="prep"], [data-testid="redflags"]').first().waitFor();
+  if (await page.getByTestId('contra-warn').count()) throw new Error('aşılan kontrendikasyon uyarısı aynı atakta yeniden geldi');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Kullanılabilirlik: güvenlik listesinde yanlış işaret dokunarak kalkar, yardımcı kartı, ekranı çevir, ekrana dokunarak işaret', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 5 }, data: { patient: PATIENT_OK } }));
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
-  // İlk soruya yanlışlıkla "Evet" → onay ekranı → "Yanlış dokundum" → aynı soru
-  const q = page.getByTestId('redflag-question');
-  const firstId = await q.getAttribute('data-qid');
-  await page.locator('.yesno:not([data-locked])').waitFor();
-  const tapBox = await page.getByTestId('yn-yes').boundingBox();
-  await page.getByTestId('yn-yes').click();
-  await page.getByTestId('redflag-confirm').waitFor();
-  await snap(page, 'yanlis-dokunus-onayi');
-  await unlocked(page);
-  // Tur 3 (k05, k06): yanıt kartının başlığında yanıt; "Evet, doğru" dokunulan yerle çakışmaz, "Yanlış dokundum" oradadır.
-  if (!/— doğru mu\?$/.test((await page.getByTestId('redflag-confirm-title').innerText()).trim())) throw new Error('onay başlığında yanıt yok');
-  const yesBox = await page.getByTestId('redflag-confirm-yes').boundingBox();
-  if (tapBox && yesBox && yesBox.y < tapBox.y + tapBox.height && tapBox.y < yesBox.y + yesBox.height) throw new Error('"Evet, doğru" dokunulan yerin üstünde');
-  await page.getByTestId('redflag-confirm-back').click();
-  if ((await q.getAttribute('data-qid')) !== firstId) throw new Error('yanlış dokunuştan sonra aynı soruya dönülmedi');
+  await page.getByTestId('redflags').waitFor();
+  // Yanlışlıkla işaretlenen madde yeniden dokununca kalkar; büyük düğme "Hiçbiri yok"a döner (ayrı onay ekranı yok).
+  await page.getByTestId('rf-neuro').click();
+  const cont = page.getByTestId('redflags-continue');
+  await cont.waitFor();
+  if (!(await cont.innerText()).includes('(1)')) throw new Error('işaret sayısı düğmede yok: ' + (await cont.innerText()));
+  await snap(page, 'yanlis-isaret');
+  await page.getByTestId('rf-neuro').click();
+  await page.getByTestId('redflags-none').waitFor();
+  if ((await page.getByTestId('rf-neuro').getAttribute('aria-checked')) === 'true') throw new Error('işaret kalkmadı');
   await answerRedFlags(page);
-  await answerSubtype(page);
-  await clickChoice(page, 'Sağ yanıma yatınca');
   await page.getByTestId('prep').waitFor();
+  if ((await storeOf(page)).episodes[0].redFlags.at(-1)?.stopped) throw new Error('kaldırılan işaret durdurma olarak kaydedildi');
   await page.getByRole('button', { name: 'Bir yakınımla' }).click();
   await page.getByTestId('helper-card').waitFor();
   // Tur 3: yakını modunda hazırlık maddeleri yardımcıya göre; "Titreşimleri tanı" hazırlıkta açılır (k02, k04).
@@ -495,18 +651,58 @@ await step('Kullanılabilirlik: yanlış dokunuş onayı, yardımcı kartı, ekr
   await page.getByTestId('runner-step-title').click();
   await page.waitForFunction(() => document.querySelector('[data-testid="vertigo-pad"]')?.getAttribute('aria-pressed') === 'true');
   await snap(page, 'ekrana-dokunarak-isaret');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Klinisyen: tanı onaylanmadan reçete kilitli; aynı kod ikinci hasta açmaz', async () => {
-  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+/** Klinisyen: yeni hasta ve muayene açar. */
+async function newExam(page, code) {
   await page.goto(BASE + '#/odyolog');
   await page.getByTestId('clin-new').click();
-  await page.getByTestId('clin-code').fill('K-7');
+  await page.getByTestId('clin-code').fill(code);
   await page.getByTestId('clin-create').click();
-  await page.getByRole('button', { name: 'Reçete' }).click();
-  await page.getByTestId('rx-blocked').waitFor();
+}
+
+/** Klinisyen raporundaki HBYS notunu panodan okur. */
+async function hbysNote(page) {
+  await page.getByRole('button', { name: 'Rapor', exact: true }).click();
+  await page.getByTestId('exam-report').waitFor();
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByTestId('exam-copy-note').click();
+  return page.evaluate(() => navigator.clipboard.readText());
+}
+
+await step('Klinisyen: tanı onaylanmadan reçete uyarısı → "Yine de reçete yaz" (taraf + gerekçe) → QR; HBYS notunda "Uyarıya rağmen reçete"; aynı kod ikinci hasta açmaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await newExam(page, 'K-7');
+  await page.getByRole('button', { name: 'Reçete', exact: true }).click();
+  const warn = page.getByTestId('rx-warning');
+  await warn.waitFor();
+  if ((await warn.getAttribute('data-kind')) !== 'RX_NO_DIAGNOSIS') throw new Error('uyarı türü: ' + (await warn.getAttribute('data-kind')));
+  if (await page.getByTestId('rx-blocked').count()) throw new Error('tanısızlık hâlâ kilit');
+  if (await page.getByTestId('rx-make').count()) throw new Error('uyarı aşılmadan reçete formu açıldı');
+  await snap(page, 'odyolog-recete-uyarisi');
+  await page.getByTestId('rx-override').click();
+  const make = page.getByTestId('rx-make');
+  await make.waitFor();
+  if (await make.isEnabled()) throw new Error('taraf ve gerekçe olmadan reçete düğmesi etkin');
+  // Onaylı tanıda taraf yok: taraf klinisyence seçilir.
+  await page.getByTestId('rx-side-pick').getByRole('button', { name: 'Sol', exact: true }).click();
+  if (await make.isEnabled()) throw new Error('gerekçesiz reçete düğmesi etkin');
+  await page.getByTestId('rx-override-reason').fill('Klinik tablo tipik; tanı kontrolde girilecek');
+  await make.click();
+  await page.getByTestId('rx-output').waitFor();
+  if (!(await page.getByTestId('rx-summary').innerText()).includes('SOL')) throw new Error('reçete tarafı yanlış: ' + (await page.getByTestId('rx-summary').innerText()));
+  const ovNote = await page.getByTestId('rx-override-note').innerText();
+  if (ovNote !== 'Uyarıya rağmen reçete: Klinik tablo tipik; tanı kontrolde girilecek (uyarı: onaylı tanı yok).') throw new Error('aşma notu: ' + ovNote);
+  await snap(page, 'odyolog-uyariya-ragmen-recete');
+  const ex = (await storeOf(page)).clinicExams[0];
+  if (ex.rxOverride?.kind !== 'RX_NO_DIAGNOSIS' || ex.rxOverride.reason !== 'Klinik tablo tipik; tanı kontrolde girilecek') throw new Error('muayeneye aşma kaydı yazılmadı: ' + JSON.stringify(ex.rxOverride));
+  const note = await hbysNote(page);
+  if (!/^Ev reçetesi: sol Epley/m.test(note)) throw new Error('HBYS notunda reçete yok: ' + note);
+  if (!note.includes('Uyarıya rağmen reçete: Klinik tablo tipik; tanı kontrolde girilecek (uyarı: onaylı tanı yok).')) throw new Error('HBYS notunda gerekçe yok: ' + note);
+  await page.getByTestId('report-rx-override').waitFor();
+  // Aynı kod ikinci hasta açmaz.
   await page.goto(BASE + '#/odyolog');
   await page.getByTestId('clin-new').click();
   await page.getByTestId('clin-code').fill('k-7');
@@ -514,16 +710,13 @@ await step('Klinisyen: tanı onaylanmadan reçete kilitli; aynı kod ikinci hast
   await page.getByTestId('clin-create').click();
   const n = await page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')).clinicPatients.length);
   if (n !== 1) throw new Error('aynı kodla ikinci hasta kaydı açıldı: ' + n);
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Klinisyen: ≥1 dk bulguda elle "kanalolitiazis" tanısı reçete kilidini açmaz; elle girişte ön seçim yok', async () => {
+await step('Klinisyen: ≥1 dk bulguda elle "kanalolitiazis" reçete uyarısını kaldırmaz; "Yine de reçete yaz" gerekçeyle QR verir; elle girişte ön seçim yok', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
-  await page.goto(BASE + '#/odyolog');
-  await page.getByTestId('clin-new').click();
-  await page.getByTestId('clin-code').fill('2026-10-30-000123');
-  await page.getByTestId('clin-create').click();
+  await newExam(page, '2026-10-30-000123');
   const code = await page.getByTestId('exam-patient-code').innerText();
   if (!code.includes('2026-10-30-000123')) throw new Error('hasta kodu tam görünmüyor: ' + code);
   // Sağ DH elle: hiçbir yanıt önceden seçili değil, Kaydet kapalı
@@ -542,28 +735,70 @@ await step('Klinisyen: ≥1 dk bulguda elle "kanalolitiazis" tanısı reçete ki
   await page.getByRole('radio', { name: 'Arka kanal' }).click();
   await page.getByRole('button', { name: 'Sağ', exact: true }).click();
   await page.getByRole('button', { name: 'Kanalolitiazis', exact: true }).click();
-  await page.getByTestId('dx-manual-lock').waitFor();
+  const dxWarn = await page.getByTestId('dx-manual-warn').innerText();
+  if (!dxWarn.includes('uyarısı sürer')) throw new Error('elle tanı uyarısı beklenmedik: ' + dxWarn);
   await page.getByTestId('dx-manual-save').click();
   await page.getByRole('button', { name: 'Reçete', exact: true }).click();
-  await page.getByTestId('rx-blocked').waitFor();
-  if (await page.getByTestId('rx-make').count()) throw new Error('≥1 dk bulguda reçete formu açıldı');
-  await snap(page, 'odyolog-kupulo-kilidi');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  const warn = page.getByTestId('rx-warning');
+  await warn.waitFor();
+  if ((await warn.getAttribute('data-kind')) !== 'RX_LONG_RESPONSE') throw new Error('uyarı türü: ' + (await warn.getAttribute('data-kind')));
+  if (await page.getByTestId('rx-make').count()) throw new Error('uyarı aşılmadan reçete formu açıldı');
+  await snap(page, 'odyolog-kupulo-uyarisi');
+  await page.getByTestId('rx-override').click();
+  // Taraf onaylı tanıdan gelir (seçilmez).
+  if (!(await page.getByTestId('rx-side').innerText()).includes('Sağ')) throw new Error('reçete tarafı tanıdan gelmedi');
+  if (await page.getByTestId('rx-side-pick').count()) throw new Error('tanıda taraf varken taraf seçimi açıldı');
+  if (await page.getByTestId('rx-make').isEnabled()) throw new Error('gerekçesiz reçete düğmesi etkin');
+  await page.getByTestId('rx-override-reason').fill('Hasta kliniğe gelemiyor, telefonla izlenecek.');
+  if (await page.getByTestId('rx-ack').count()) await page.getByTestId('rx-ack').check();
+  await page.getByTestId('rx-make').click();
+  await page.getByTestId('rx-output').waitFor();
+  const ovNote = await page.getByTestId('rx-override-note').innerText();
+  if (ovNote !== 'Uyarıya rağmen reçete: Hasta kliniğe gelemiyor, telefonla izlenecek (uyarı: ≥1 dk nistagmus).') throw new Error('aşma notu: ' + ovNote);
+  const note = await hbysNote(page);
+  if (!note.includes('Ev reçetesi uyarısı: Sağ Dix-Hallpike: nistagmus 75 s')) throw new Error('HBYS notunda bulgu uyarısı yok: ' + note);
+  if (note.includes('yine de reçete verebilirsiniz')) throw new Error('HBYS notunda ekran yönergesi kaldı');
+  if (!note.includes('Uyarıya rağmen reçete: Hasta kliniğe gelemiyor, telefonla izlenecek (uyarı: ≥1 dk nistagmus).')) throw new Error('HBYS notunda gerekçe yok: ' + note);
+  await page.getByTestId('report-rx-warn').waitFor();
+  await page.getByTestId('report-rx-override').waitFor();
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Hasta: "sırtüstü baş çevirince" yanıtı yatay kanal şüphesiyle hekime yönlendirir', async () => {
-  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK } }));
+await step('Hasta: "yatakta sağa-sola dönünce" yanıtı → sırtüstü baş çevirme testi → daha şiddetli taraf → BBQ roll', async () => {
+  // Hekim tanısında kanal bilinmiyor: alt tip sorusu gelir.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, canal: 'unknown', side: 'unknown' } } }));
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
-  await clickChoice(page, /Sırtüstü yatarken sağa-sola/);
-  await page.getByTestId('subtype-hc-confirm').waitFor();
-  await unlocked(page);
-  await page.getByTestId('subtype-hc-yes').click();
-  await page.getByTestId('end-refer').waitFor();
-  await snap(page, 'alt-tip-yatay-kanal');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await page.getByTestId('subtype-turn').waitFor();
+  await answerSubtype(page, 'turn');
+  // Eskiden hekime yönlendirirdi; artık evde yatay kanal testi ve BBQ roll.
+  await page.getByTestId('prep-hc').waitFor();
+  if (await page.getByTestId('end-refer').count()) throw new Error('yatay kanal yanıtı hâlâ hekime yönlendiriyor');
+  await snap(page, 'yatay-kanal-hazirlik');
+  await calibrate(page);
+  // Sırtüstü baş çevirme: 2. adım (baş sağa) baş dönmesi; sola çevirince yok.
+  const p1 = await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  if (p1 !== 'done') throw new Error('sırtüstü baş çevirme testi tamamlanmadı: ' + p1);
+  const gate = page.getByTestId('chain-continue');
+  await gate.waitFor({ timeout: 15000 });
+  if (!/sağ/i.test(await gate.innerText())) throw new Error('sağ taraf kararı beklenirdi: ' + (await gate.innerText()));
+  await snap(page, 'yatay-kanal-karar');
+  let ep = (await storeOf(page)).episodes.at(-1);
+  const test = ep.sideTests.at(-1);
+  if (test?.canal !== 'HC' || test.decision?.kind !== 'TREAT' || test.decision.side !== 'R') throw new Error('yatay kanal testi kaydı: ' + JSON.stringify(test));
+  if (!ep.overrides?.find((o) => o.kind === 'APP_DECISION')?.detail?.includes('BBQ roll')) throw new Error('kararda BBQ roll yok: ' + JSON.stringify(ep.overrides));
+  if (!kindsOf(ep).includes('SUBTYPE')) throw new Error('SUBTYPE kaydı yok');
+  await gate.click();
+  const p2 = await driveRunner(page, { timeout: 180000 });
+  if (p2 !== 'done') throw new Error('BBQ roll tamamlanmadı: ' + p2);
+  await clickChoice(page, 'İyiyim');
+  await page.getByTestId('end-maneuver-done').waitFor();
+  ep = (await storeOf(page)).episodes.at(-1);
+  const m = ep.maneuvers.at(-1);
+  if (m?.protocolId !== 'bbq-roll' || m.side !== 'R' || !m.completed) throw new Error('BBQ roll kaydı: ' + JSON.stringify(m && { p: m.protocolId, s: m.side, c: m.completed }));
+  noErrors(errors);
   await ctx.close();
 });
 
@@ -649,14 +884,14 @@ await step('Hasta: odyolog reçetesini QR bağlantısıyla içe aktarır', async
   if (!(await page.getByTestId('rx-valid-until').innerText()).includes('(dahil)')) throw new Error('reçete geçerliliği "(dahil)" yazmıyor');
   await snap(page, 'recete-ice-aktar');
   await page.getByTestId('rx-accept').click();
+  // Tek ekran kurulum: onay + "Başla"; reçete bilgisi kendiliğinden dolar (tanı sorulmaz).
   await page.getByTestId('ob-consent').click();
-  await page.getByTestId('ob-next').click();
-  // Reçete varken tanı adımı atlanır
-  await page.getByTestId('ob-none').click();
-  await page.getByTestId('ob-next').click();
+  await page.getByTestId('ob-start').click();
   await page.getByTestId('start-episode').waitFor();
   const home = await page.locator('main').innerText();
   if (!home.includes('Reçete')) throw new Error('ana ekranda reçete yok');
+  // Reçete hekim tanısı yerine geçer: "tanı yok" satırı gösterilmez.
+  if (await page.getByTestId('home-no-dx').count()) throw new Error('reçeteliyken "tanı yok" satırı var');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
   await ctx.close();
 });
@@ -875,55 +1110,11 @@ await step('Klinisyen: kayıtsız tarayıcıda rapor bağlantısı kopyalama yö
   await ctx.close();
 });
 
+
 // ------------------------------------------------------------------------------------------------
 // 2. ve 3. turda düzelen davranışlar (kullanıcı turu 4, k06): gerilemeye karşı uçtan uca kilit. Hızlı ve belirlenimci:
 // tohumlanmış atak (güvenlik soruları ve taraf testi yapılmış) doğrudan manevraya götürür; demo sensör, ×20 zaman.
-
-const MIN = 60000;
-
-/** `minutesAgo` dakika önce tamamlanmış sağ Epley kaydı (birkaç dakika: gece yarısına yakın koşuda gün değişmesin). */
-function maneuverAgo(id, minutesAgo, extra = {}) {
-  return {
-    id,
-    at: Date.now() - minutesAgo * MIN,
-    protocolId: 'epley',
-    side: 'R',
-    completed: true,
-    stopReason: null,
-    records: [],
-    manual: false,
-    afterSymptoms: 'none',
-    ...extra
-  };
-}
-
-/** Taraf testi bitmiş (sağ), güvenlik soruları az önce yanıtlanmış, manevrası yapılmamış aktif atak. */
-function readyEpisode(id = 'act') {
-  const t = Date.now() - 10 * MIN;
-  return { id, startedAt: t, side: 'R', protocolId: 'epley', redFlags: [{ at: t, answers: {}, stopped: false }], sideTests: [], maneuvers: [], retests: [], status: 'active' };
-}
-
-/** Ana ekran → "Ataka devam et" → hazırlık → tanıtma; ardından sağ Epley kendiliğinden başlar. */
-async function toManeuver(page) {
-  await page.goto(BASE + '#/hasta');
-  await page.getByTestId('continue-episode').click();
-  await page.getByTestId('prep').waitFor();
-  await calibrate(page);
-}
-
-const storeOf = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('dengeyol:v1')));
-
-/** Yürütücü belirtilen faza gelene (ya da ekrandan kalkana: gone) dek bekler. */
-async function waitPhase(page, phases, timeout = 15000) {
-  await page.waitForFunction(
-    (ps) => {
-      const r = document.querySelector('[data-testid="runner"]');
-      return r ? ps.includes(r.getAttribute('data-phase')) : ps.includes('gone');
-    },
-    phases,
-    { timeout }
-  );
-}
+// Yeniden tasarımdan (kilit yok) sonra eski "engel" kilitleri yerine uyarı + "Yine de devam et" + kayıt sınanır.
 
 await step('Tur 2–3 kilidi: "Şu an nasılsınız?" ekranında aynı yere kör dokunuşlar acil kaydı açmaz', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
@@ -969,7 +1160,7 @@ await step('Tur 2–3 kilidi: "Şu an nasılsınız?" ekranında aynı yere kör
   await ctx.close();
 });
 
-await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden açılır; 1 saatlik tekrar testi korunur, adresle manevra açılmaz', async () => {
+await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden açılır; 1 saatlik tekrar testi uyarısı, "Yine de manevra yap" EARLY_REPEAT kaydı', async () => {
   const now = Date.now();
   const closed = {
     ...readyEpisode('today'),
@@ -984,11 +1175,12 @@ await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden aç�
   const start = page.getByTestId('start-episode');
   if (!(await start.innerText()).includes('Bugünkü atağınıza devam edilir')) throw new Error('ana ekran yeniden açmayı söylemiyor');
   await start.click();
-  const plan = page.getByTestId('end-plan');
+  const plan = page.getByTestId('plan-warn');
   await plan.waitFor();
   const t = await plan.innerText();
-  if (!t.includes('yeni atak açılmaz') || !/tekrar testi/.test(t)) throw new Error('plan ekranı beklenmedik: ' + t);
-  if (await page.getByTestId('redflag-question').count()) throw new Error('yeniden açmada güvenlik soruları soruldu');
+  if (!t.includes('Manevra az önce yapıldı') || !/Tekrar testi/.test(t)) throw new Error('plan uyarısı beklenmedik: ' + t);
+  await page.getByTestId('plan-override').waitFor();
+  if (await page.getByTestId('redflags').count()) throw new Error('yeniden açmada önce güvenlik listesi açıldı');
   let st = await storeOf(page);
   if (st.episodes.length !== 1 || st.episodes[0].status !== 'active' || st.episodes[0].endedAt) throw new Error('aynı atak yeniden açılmadı');
   // Ana ekran: aynı atak, tekrar testi saati (henüz hazır değil).
@@ -996,21 +1188,27 @@ await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden aç�
   await page.getByTestId('active-episode').waitFor();
   if (await page.getByTestId('do-retest').count()) throw new Error('1 saat dolmadan tekrar testi açıldı');
   if (!(await page.getByTestId('active-episode').innerText()).includes('Test saati')) throw new Error('tekrar testi saati yok');
-  // Adresle "treat"/"start": manevra ya da test açılmaz, sıradaki adım söylenir.
+  // Adresle "treat"/"start": manevra ya da test kendiliğinden açılmaz, önce uyarı.
   for (const mode of ['treat', 'start']) {
     await page.goto(BASE + '#/hasta/atak/' + mode);
-    await page.getByTestId('end-plan').waitFor();
-    if ((await page.getByTestId('prep').count()) || (await page.getByTestId('runner').count())) throw new Error(`#/hasta/atak/${mode} manevra açtı`);
+    await page.getByTestId('plan-warn').waitFor();
+    if ((await page.getByTestId('prep').count()) || (await page.getByTestId('runner').count())) throw new Error(`#/hasta/atak/${mode} uyarısız manevra açtı`);
   }
+  // Kilit yok: "Yine de manevra yap" akışı sürdürür ve kayda geçer.
+  await unlocked(page);
+  await page.getByTestId('plan-override').click();
+  await answerRedFlags(page);
+  await page.getByTestId('prep').waitFor();
   st = await storeOf(page);
   if (st.episodes.length !== 1 || st.episodes[0].maneuvers.length !== 1) throw new Error('yeni atak ya da manevra kaydı açıldı');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  if (!kindsOf(st.episodes[0]).includes('EARLY_REPEAT')) throw new Error('EARLY_REPEAT kaydı yok: ' + kindsOf(st.episodes[0]).join(', '));
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Tur 2–3 kilidi: günlük sınır doluyken ana ekranda sınır kartı; aktif atakta "Manevrayı tekrarla" yok', async () => {
+await step('Tur 2–3 kilidi: günlük sınır doluyken ana ekranda bilgi satırı + başlat; akışta doz uyarısı, "Yine de devam et" DOSE kaydı', async () => {
   const now = Date.now();
-  // a) Bugün 3 manevrayla kapatılmış atak: büyük düğme yerine sınır kartı ve sonraki izinli zaman.
+  // a) Bugün 3 manevrayla kapatılmış atak: büyük düğme kalır, altında sınır satırı ve sonraki izinli zaman.
   const closed = {
     ...readyEpisode('today'),
     startedAt: now - 12 * MIN,
@@ -1022,16 +1220,27 @@ await step('Tur 2–3 kilidi: günlük sınır doluyken ana ekranda sınır kart
   const a = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [closed] } }));
   await a.page.goto(BASE + '#/hasta');
   const card = await a.page.getByTestId('home-dose-limit').innerText();
-  if (!card.includes('Bugünlük manevra sınırı doldu') || !card.includes('Bir sonraki manevra en erken')) throw new Error('sınır kartı eksik: ' + card);
-  if (await a.page.getByTestId('start-episode').count()) throw new Error('sınır doluyken "Baş dönmem başladı" görünüyor');
-  await snap(a.page, 'sinir-karti');
-  // Adresle de güvenlik soruları sordurulmaz, manevra açılmaz.
-  await a.page.goto(BASE + '#/hasta/atak/start');
-  await a.page.locator('[data-testid="end-plan"], [data-testid="end-dose"]').first().waitFor();
-  if ((await a.page.getByTestId('redflag-question').count()) || (await a.page.getByTestId('prep').count())) throw new Error('sınır doluyken akış açıldı');
-  if (a.errors.length) throw new Error('konsol hataları: ' + a.errors.join(' | '));
+  if (!card.includes('Bugün için önerilen manevra sayısına ulaştınız') || !card.includes('Önerilen sonraki manevra')) throw new Error('sınır satırı eksik: ' + card);
+  await a.page.getByTestId('start-episode').waitFor();
+  await snap(a.page, 'sinir-satiri');
+  // Akış: aynı gün yeniden açma → tekrar testi uyarısı → doz uyarısı; ikisi de aşılabilir ve kayda geçer.
+  await a.page.getByTestId('start-episode').click();
+  await a.page.getByTestId('plan-warn').waitFor();
+  await unlocked(a.page);
+  await a.page.getByTestId('plan-override').click();
+  const dose = a.page.getByTestId('dose-warn');
+  await dose.waitFor();
+  if (!(await dose.innerText()).includes('Bugün için önerilen manevra sayısına ulaştınız')) throw new Error('doz uyarısı metni: ' + (await dose.innerText()));
+  await snap(a.page, 'doz-uyarisi');
+  await unlocked(a.page);
+  await a.page.getByTestId('dose-override').click();
+  await answerRedFlags(a.page);
+  await a.page.getByTestId('prep').waitFor();
+  const ka = kindsOf((await storeOf(a.page)).episodes[0]);
+  if (!ka.includes('DOSE') || !ka.includes('EARLY_REPEAT')) throw new Error('DOSE/EARLY_REPEAT kaydı yok: ' + ka.join(', '));
+  noErrors(a.errors);
   await a.ctx.close();
-  // b) Aktif atak: bugün 3 manevra, tekrar testi pozitif → yeniden manevra düğmesi yerine sınır metni.
+  // b) Aktif atak: bugün 3 manevra, tekrar testi pozitif → "Manevrayı tekrarla" kalır, altında sınır satırı.
   const active = {
     ...readyEpisode('act'),
     maneuvers: [maneuverAgo('m1', 7), maneuverAgo('m2', 5), maneuverAgo('m3', 3)],
@@ -1039,58 +1248,48 @@ await step('Tur 2–3 kilidi: günlük sınır doluyken ana ekranda sınır kart
   };
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [active] } }));
   await page.goto(BASE + '#/hasta');
-  const home = await page.getByTestId('active-episode').innerText();
-  if (await page.getByTestId('do-treat').count()) throw new Error('sınır doluyken "Manevrayı tekrarla" görünüyor');
-  if (!home.includes('Bugün için önerilen en fazla manevra')) throw new Error('aktif atakta sınır metni yok');
-  await page.goto(BASE + '#/hasta/atak/treat');
-  const end = page.getByTestId('end-dose');
-  await end.waitFor();
-  if (!(await end.innerText()).includes('Bugün için önerilen en fazla manevra')) throw new Error('adresle sınır metni yok');
-  if ((await page.getByTestId('prep').count()) || (await page.getByTestId('redflag-question').count())) throw new Error('#/hasta/atak/treat sınırda akış açtı');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await page.getByTestId('do-treat').waitFor();
+  const limitLine = await page.getByTestId('active-episode').getByTestId('home-dose-limit').innerText();
+  if (!limitLine.includes('Bugün için önerilen manevra sayısına ulaştınız')) throw new Error('aktif atakta sınır satırı yok: ' + limitLine);
+  await page.getByTestId('do-treat').click();
+  await page.getByTestId('dose-warn').waitFor();
+  if ((await page.getByTestId('prep').count()) || (await page.getByTestId('runner').count())) throw new Error('doz uyarısı gösterilmeden manevra açıldı');
+  await unlocked(page);
+  await page.getByTestId('dose-override').click();
+  await answerRedFlags(page);
+  await page.getByTestId('prep').waitFor();
+  if (!kindsOf((await storeOf(page)).episodes[0]).includes('DOSE')) throw new Error('DOSE kaydı yok');
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Tur 2–3 kilidi: okuma kilidi soru başına hatırlanır (ikinci atakta yanıtlanmış soruda yalnız çift dokunuş kilidi)', async () => {
-  // Sahte ses: her cümle 4 s. İlk okunuş kilidi en çok 2,5 s; çift dokunuş kilidi ~0,6 s.
+await step('Tur 2–3 kilidi (tek ekran liste): açılışta "Hiçbiri yok" kısa süre kilitli, kilitliyken dokunuş yanıt sayılmaz; yanıtlanan maddeler cihazda hatırlanır', async () => {
+  // Eski soru-soru okuma kilidinin yerine: tek ekranda büyük düğmenin açılış kilidi (ana ekrandaki çift dokunuşun ikincisi
+  // "Hiçbiri yok" sayılmasın). Sahte ses açık: kısa okunuş düğmeyi uzun süre kilitlemez.
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', speech: true }, data: { patient: PATIENT_OK } }), { speechMs: 4000 });
-  /** Soru göründükten sonra düğmelerin kilitli kaldığı süre (ms). */
-  const lockOf = async (pg) => {
-    await pg.getByTestId('redflag-question').waitFor();
-    const t0 = Date.now();
-    await pg.locator('.yesno:not([data-locked])').waitFor({ timeout: 10000 });
-    return Date.now() - t0;
-  };
-  const answerNo = async (pg) => {
-    const id = await pg.getByTestId('redflag-question').getAttribute('data-qid');
-    await pg.getByTestId('yn-no').click();
-    await pg.waitForFunction((prev) => document.querySelector('[data-testid="redflag-question"]')?.getAttribute('data-qid') !== prev, id);
-  };
-  // 1. atak: ilk iki soru bu cihazda ilk kez soruluyor → okuma kilidi.
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
-  const first = [];
-  for (let i = 0; i < 2; i++) {
-    first.push(await lockOf(page));
-    await answerNo(page);
-  }
-  if (first.some((ms) => ms < 1800)) throw new Error('ilk karşılaşmada okuma kilidi yok: ' + first.join(', '));
-  const answered = Object.keys((await storeOf(page)).settings.answeredQuestions ?? {});
-  if (answered.length !== 2) throw new Error('yanıtlanan sorular hatırlanmadı: ' + answered.join(', '));
-  await page.close();
-  // 2. atak (aynı cihaz, yeni sayfa): yanıtlanmış iki soruda yalnız kısa kilit; 3. soru hâlâ ilk kez → okuma kilidi.
-  const page2 = await ctx.newPage();
-  page2.on('pageerror', (e) => errors.push(String(e)));
-  await page2.goto(BASE + '#/hasta/atak/start');
-  const second = [];
-  for (let i = 0; i < 3; i++) {
-    second.push(await lockOf(page2));
-    await answerNo(page2);
-  }
-  if (second[0] > 1500 || second[1] > 1500) throw new Error('yanıtlanmış soruda okuma kilidi sürüyor: ' + second.join(', '));
-  if (second[0] < 300 || second[1] < 300) throw new Error('çift dokunuş kilidi kalkmış: ' + second.join(', '));
-  if (second[2] < 1800) throw new Error('ilk kez sorulan 3. soruda okuma kilidi yok: ' + second.join(', '));
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await page.getByTestId('redflags').waitFor();
+  const t0 = Date.now();
+  if ((await page.locator('.sticky-actions[data-locked]').count()) !== 1) throw new Error('liste kilitsiz açıldı (sınama geçersiz)');
+  // Kilitliyken büyük düğmeye dokunuş (çift dokunuşun ikincisi gibi): liste yerinde kalır.
+  await page.getByTestId('redflags-none').click({ force: true });
+  if (Date.now() - t0 > 700) throw new Error('dokunuş kilit süresinden sonra yapıldı (sınama geçersiz)');
+  await page.waitForTimeout(150);
+  if (!(await page.getByTestId('redflags').isVisible())) throw new Error('kilitliyken dokunuş "Hiçbiri yok" sayıldı');
+  await unlocked(page);
+  const lockMs = Date.now() - t0;
+  if (lockMs > 2000) throw new Error('liste kilidi çok uzun (ses okunuşuna bağlı kalmış olabilir): ' + lockMs);
+  if ((await storeOf(page)).episodes.length) throw new Error('kilitliyken atak/yanıt kaydı açıldı');
+  await snap(page, 'liste-acilis-kilidi');
+  await page.getByTestId('redflags-none').click();
+  await page.getByTestId('prep').waitFor();
+  const st = await storeOf(page);
+  const rf = st.episodes[0].redFlags.at(-1);
+  if (!rf || rf.stopped || Object.values(rf.answers).some((v) => v === true)) throw new Error('yanıtlar yanlış kaydedildi: ' + JSON.stringify(rf));
+  const answered = Object.keys(st.settings.answeredQuestions ?? {});
+  if (answered.length < Object.keys(rf.answers).length || !answered.includes('neuro')) throw new Error('yanıtlanan maddeler hatırlanmadı: ' + answered.join(', '));
+  noErrors(errors);
   await ctx.close();
 });
 
@@ -1176,62 +1375,36 @@ async function tapWhileLocked(page, group, sinceMs, lockMs) {
   if (await g.locator('[role="radio"][aria-checked="true"]').count()) throw new Error(`kilitliyken dokunuş "${group}" seçimini işaretledi`);
 }
 
-await step('Tur 5 kilidi: seçenek ekranlarında çift dokunuşun ikincisi sonraki soruyu yanıtlamaz', async () => {
-  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK } }));
+/** Hekim tanısı var ama kanal bilinmiyor: alt tip sorusu sorulur. */
+const PATIENT_CANAL_UNKNOWN = { ...PATIENT_OK, canal: 'unknown' };
+
+await step('Tur 5 kilidi: güvenlik listesinden sonra çift dokunuşun ikincisi alt tip sorusunu yanıtlamaz', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_CANAL_UNKNOWN } }));
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
-  // Güvenlik soruları: sonuncusuna kadar normal; sonuncunun "Hayır"ından hemen sonra ilk seçenek ekranına kilitliyken dokunuş.
-  const seen = [];
-  let reachedChoice = false;
-  for (let i = 0; i < 30; i++) {
-    const q = page.getByTestId('redflag-question');
-    await q.waitFor();
-    const id = await q.getAttribute('data-qid');
-    seen.push(id);
-    await page.locator('.yesno:not([data-locked])').waitFor();
-    const t0 = Date.now();
-    await page.getByTestId('yn-no').click();
-    await page.waitForFunction(
-      (prev) => {
-        const el = document.querySelector('[data-testid="redflag-question"]');
-        return !el || el.getAttribute('data-qid') !== prev;
-      },
-      id
-    );
-    if (!(await q.isVisible().catch(() => false))) {
-      await tapWhileLocked(page, 'Tetikleyen hareket', t0, 800);
-      reachedChoice = true;
-      break;
-    }
-  }
-  if (!reachedChoice) throw new Error('güvenlik sorularından sonra seçenek ekranına gelinmedi');
-  // Seçenekten seçeneğe: "Tetikleyen hareket" yanıtlanınca "Süre" sorusu kilitli açılır; hemen gelen dokunuş yanıtlamaz.
+  await page.getByTestId('redflags').waitFor();
   await unlocked(page);
-  const t1 = Date.now();
-  await page.getByRole('radio', { name: /Yatarken ya da yataktan kalkarken/ }).click();
-  await tapWhileLocked(page, 'Süre', t1, 800);
+  const t0 = Date.now();
+  await page.getByTestId('redflags-none').click();
+  // "Hiçbiri yok"tan hemen sonra alt tip sorusu kilitli açılır; hemen gelen dokunuş yanıtlamaz.
+  await tapWhileLocked(page, 'Tetikleyen hareket', t0, 800);
   await snap(page, 'secenek-cift-dokunus');
-  // Bilinçli yanıt kilit kalkınca çalışır. "Süre" yanıtlanınca taraf sorusu kilitli açılır; hemen gelen ikinci dokunuş onu da
-  // yanıtlamaz (kullanıcı turu 6, k06 #1).
-  await unlocked(page);
-  const t2 = Date.now();
-  await page.getByRole('radio', { name: /1 dakikadan kısa/ }).click();
-  await tapWhileLocked(page, 'Şüpheli taraf', t2, 800);
-  if (await page.getByRole('radiogroup', { name: 'Süre' }).count()) throw new Error('"Süre" sorusu ekranda kaldı');
-  if (await page.getByTestId('prep').count()) throw new Error('kilitliyken dokunuş taraf sorusunu geçip hazırlığa götürdü');
-  const sub = (await storeOf(page)).episodes.at(-1)?.subtype;
-  if (sub?.trigger !== 'liedown' || sub?.duration !== 'short') throw new Error('alt tip yanıtları kaydedilmedi: ' + JSON.stringify(sub));
-  const rf = (await storeOf(page)).episodes.at(-1)?.redFlags?.at(-1)?.answers ?? {};
-  const unseen = Object.keys(rf).filter((k) => !seen.includes(k));
-  if (unseen.length) throw new Error('ekranda görülmeden yanıtlanan güvenlik sorusu: ' + unseen.join(', '));
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  if (await page.getByTestId('prep').count()) throw new Error('kilitliyken dokunuş alt tip sorusunu geçip hazırlığa götürdü');
+  // Bilinçli yanıt kilit kalkınca çalışır.
+  await answerSubtype(page, 'liedown');
+  await page.getByTestId('prep').waitFor();
+  const ep = (await storeOf(page)).episodes.at(-1);
+  if (ep?.subtype?.trigger !== 'liedown') throw new Error('alt tip yanıtı kaydedilmedi: ' + JSON.stringify(ep?.subtype));
+  const rf = ep.redFlags.at(-1);
+  if (!rf || rf.stopped || Object.values(rf.answers).some((v) => v === true)) throw new Error('güvenlik listesi yanıtı yanlış: ' + JSON.stringify(rf));
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Tur 5 kilidi: sık tekrar uyarısı varken 1. güvenlik sorusunun Evet/Hayır düğmeleri iPhone 13 ekranında görünür', async () => {
+await step('Tur 5 kilidi: sık tekrar uyarısı varken güvenlik listesinin "Hiçbiri yok" düğmesi iPhone 13 ekranında görünür', async () => {
   const now = Date.now();
   const DAY = 24 * 3600e3;
-  // Son 6 ayda 4 kapanmış atak (+ yeni atak): sık tekrar uyarısı 1. soruda gösterilir.
+  // Son 6 ayda 4 kapanmış atak (+ yeni atak): sık tekrar uyarısı güvenlik listesinde gösterilir.
   const past = [8, 35, 70, 120].map((d, i) => ({
     id: 'old' + i,
     startedAt: now - d * DAY,
@@ -1247,68 +1420,43 @@ await step('Tur 5 kilidi: sık tekrar uyarısı varken 1. güvenlik sorusunun Ev
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: past } }));
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
-  await page.getByTestId('redflag-question').waitFor();
+  await page.getByTestId('redflags').waitFor();
   await page.getByTestId('recurrence-warning').waitFor();
   const vp = page.viewportSize();
-  for (const id of ['yn-yes', 'yn-no']) {
-    const b = await page.getByTestId(id).boundingBox();
-    if (!b || b.y < 0 || b.y + b.height > vp.height || b.x < 0 || b.x + b.width > vp.width) {
-      throw new Error(`${id} görünür alanın dışında: ${JSON.stringify(b)} (ekran ${vp.width}×${vp.height})`);
-    }
+  const b = await page.getByTestId('redflags-none').boundingBox();
+  if (!b || b.y < 0 || b.y + b.height > vp.height || b.x < 0 || b.x + b.width > vp.width) {
+    throw new Error(`"Hiçbiri yok" görünür alanın dışında: ${JSON.stringify(b)} (ekran ${vp.width}×${vp.height})`);
   }
   const scrolled = await page.evaluate(() => window.scrollY);
-  if (scrolled !== 0) throw new Error('1. soru sayfa kaydırılmış olarak açıldı: ' + scrolled);
-  await snap(page, 'sik-tekrar-1-soru');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  if (scrolled !== 0) throw new Error('güvenlik listesi sayfa kaydırılmış olarak açıldı: ' + scrolled);
+  await snap(page, 'sik-tekrar-liste');
+  noErrors(errors);
   await ctx.close();
 });
 
 // ------------------------------------------------------------------------------------------------
-// Kullanıcı turu 6 (k06 #1): elle denenip testle korunmayan kalan beş davranış da uçtan uca kilit altında.
+// Kullanıcı turu 6 (k06 #1): elle denenip testle korunmayan kalan davranışlar da uçtan uca kilit altında.
 
-await step('Tur 6 kilidi: güvenlik sorularında sistem geri tuşu önceki soruya döner; verilen yanıtlar korunur', async () => {
+await step('Tur 6 kilidi (tek ekran liste): sistem geri tuşu ana ekrana döner; yarım atak ya da yanıt kaydı açılmaz, yeniden başlayınca liste temiz', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK } }));
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
-  const q = page.getByTestId('redflag-question');
-  const qid = () => q.getAttribute('data-qid');
-  const answerNo = async () => {
-    await q.waitFor();
-    const id = await qid();
-    await page.locator('.yesno:not([data-locked])').waitFor();
-    await page.getByTestId('yn-no').click();
-    await page.waitForFunction((prev) => document.querySelector('[data-testid="redflag-question"]')?.getAttribute('data-qid') !== prev, id);
-    return id;
-  };
-  const ids = [await answerNo(), await answerNo()];
-  const third = await qid();
-  /** Sistem geri tuşu (tarayıcı geçmişinde bir adım geri): beklenen soruya dönülmeli ve önceki "Hayır" seçili gelmeli. */
-  const back = async (expected) => {
-    await page.evaluate(() => history.back());
-    await page.waitForFunction((want) => document.querySelector('[data-testid="redflag-question"]')?.getAttribute('data-qid') === want, expected, { timeout: 5000 });
-    const pressed = await page.getByTestId('yn-no').getAttribute('aria-pressed');
-    if (pressed !== 'true') throw new Error(`geri dönülen soruda (${expected}) verilen yanıt korunmadı`);
-  };
-  await back(ids[1]);
-  await back(ids[0]);
-  // Hâlâ akışta: ana ekrana çıkılmadı, "çıkılsın mı" sorusu da açılmadı.
-  if (!page.url().includes('#/hasta/atak/')) throw new Error('geri tuşu akıştan çıkardı: ' + page.url());
-  if (await page.getByTestId('redflag-leave').count()) throw new Error('önceki soruya dönmek yerine "çıkılsın mı" açıldı');
-  await snap(page, 'geri-tusu-onceki-soru');
-  // Yeniden ileri: yanıtlar yerinde, sıra bozulmadı.
-  if ((await answerNo()) !== ids[0] || (await qid()) !== ids[1]) throw new Error('geri dönüşten sonra soru sırası bozuldu');
-  if ((await page.getByTestId('yn-no').getAttribute('aria-pressed')) !== 'true') throw new Error('ileri giderken 2. sorunun yanıtı kayboldu');
-  if ((await answerNo()) !== ids[1] || (await qid()) !== third) throw new Error('3. soruya dönülmedi');
-  // Yanıt verilmişken ilk soruda geri tuşu sessizce çıkmaz: önce sorar.
-  await back(ids[1]);
-  await back(ids[0]);
+  await page.getByTestId('redflags').waitFor();
+  await page.getByTestId('rf-neuro').click();
+  await page.getByTestId('redflags-continue').waitFor();
   await page.evaluate(() => history.back());
-  await page.getByTestId('redflag-leave').waitFor({ timeout: 5000 });
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await page.getByTestId('start-episode').waitFor({ timeout: 5000 });
+  if (page.url().includes('#/hasta/atak/')) throw new Error('geri tuşu akışta kaldı: ' + page.url());
+  if ((await storeOf(page)).episodes.length) throw new Error('geri dönülen listeden atak/yanıt kaydı açıldı');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('redflags-none').waitFor();
+  if ((await page.getByTestId('rf-neuro').getAttribute('aria-checked')) === 'true') throw new Error('eski işaret yeni listede duruyor');
+  await snap(page, 'geri-tusu-liste');
+  noErrors(errors);
   await ctx.close();
 });
 
-await step('Tur 6 kilidi: yarıda bırakılan atağa 6 saat içinde devamda alt tip soruları yeniden sorulmaz; sonra sorulur', async () => {
+await step('Tur 6 kilidi: yarıda bırakılan atağa 6 saat içinde devamda alt tip sorusu yeniden sorulmaz; sonra sorulur', async () => {
   const now = Date.now();
   /** Güvenlik soruları yarım saat önce, alt tip `subtypeAgoMin` dakika önce yanıtlanmış; taraf testi yapılmamış atak. */
   const halfDone = (subtypeAgoMin) => ({
@@ -1323,24 +1471,24 @@ await step('Tur 6 kilidi: yarıda bırakılan atağa 6 saat içinde devamda alt 
     status: 'active',
     subtype: { at: now - subtypeAgoMin * MIN, trigger: 'liedown', duration: 'short' }
   });
-  for (const [ago, want] of [
-    [40, 'Şüpheli taraf'],
-    [7 * 60, 'Tetikleyen hareket']
+  for (const [ago, wantSubtype] of [
+    [40, false],
+    [7 * 60, true]
   ]) {
-    const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [halfDone(ago)] } }));
+    const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_CANAL_UNKNOWN, episodes: [halfDone(ago)] } }));
     await page.goto(BASE + '#/hasta');
-    await page.getByTestId('continue-episode').click();
-    await page.getByRole('radiogroup').first().waitFor({ timeout: 10000 });
-    if (await page.getByTestId('redflag-question').count()) throw new Error('yanıtı taze güvenlik soruları yeniden soruldu');
-    const name = await page.getByRole('radiogroup').first().getAttribute('aria-label');
-    if (name !== want) throw new Error(`${ago} dk önce yanıtlanan alt tipte beklenen "${want}", gelen "${name}"`);
-    if (ago === 40) await snap(page, 'alt-tip-hatirlandi');
-    if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+    await page.getByTestId('start-episode').click();
+    await page.locator('[data-testid="prep"], [data-testid="subtype-liedown"], [data-testid="redflags"]').first().waitFor({ timeout: 10000 });
+    if (await page.getByTestId('redflags').count()) throw new Error('yanıtı taze güvenlik listesi yeniden açıldı');
+    const asked = await page.getByRole('radiogroup', { name: 'Tetikleyen hareket' }).isVisible().catch(() => false);
+    if (asked !== wantSubtype) throw new Error(`${ago} dk önce yanıtlanan alt tipte soru ${asked ? 'soruldu' : 'sorulmadı'}`);
+    if (!wantSubtype) await snap(page, 'alt-tip-hatirlandi');
+    noErrors(errors);
     await ctx.close();
   }
 });
 
-await step('Tur 6 kilidi: manevra yapılan gün sınırı doluyken ana ekranda gün sınırı kartı; başlat düğmesi ve adresle akış yok', async () => {
+await step('Tur 6 kilidi: manevra yapılan gün sınırı doluyken ana ekranda gün sınırı satırı + başlat; akışta uyarı, "Yine de devam et" DOSE kaydı', async () => {
   const now = Date.now();
   const DAY = 24 * 3600e3;
   // Varsayılan doz (reçetesiz): en çok 3 farklı günde manevra. Son 3 günün her birinde birer manevra; bugün 4. gün olurdu.
@@ -1361,20 +1509,26 @@ await step('Tur 6 kilidi: manevra yapılan gün sınırı doluyken ana ekranda g
   const card = page.getByTestId('home-dose-limit');
   await card.waitFor();
   const t = await card.innerText();
-  if (!t.includes('Evde manevra sınırı doldu') || !t.includes('gün sayısı doldu') || !t.includes('hekiminize')) throw new Error('gün sınırı kartı eksik: ' + t);
+  if (!t.includes('önerilen gün sayısı doldu') || !t.includes('Hekiminize')) throw new Error('gün sınırı satırı eksik: ' + t);
   if (t.includes('Bugünlük')) throw new Error('gün sınırı günlük sınır gibi yazıldı: ' + t);
-  if (await page.getByTestId('start-episode').count()) throw new Error('gün sınırı doluyken "Baş dönmem başladı" görünüyor');
-  await snap(page, 'gun-siniri-karti');
-  await page.goto(BASE + '#/hasta/atak/start');
-  const end = page.getByTestId('end-dose');
-  await end.waitFor();
-  if (!(await end.innerText()).includes('gün sayısı doldu')) throw new Error('adresle gün sınırı metni yok');
-  if ((await page.getByTestId('redflag-question').count()) || (await page.getByTestId('prep').count())) throw new Error('gün sınırında akış açıldı');
-  if ((await storeOf(page)).episodes.length !== 1) throw new Error('gün sınırında yeni atak açıldı');
-  if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await page.getByTestId('start-episode').waitFor();
+  await snap(page, 'gun-siniri-satiri');
+  await page.getByTestId('start-episode').click();
+  const warn = page.getByTestId('dose-warn');
+  await warn.waitFor();
+  if (!(await warn.innerText()).includes('gün sayısı doldu')) throw new Error('akışta gün sınırı metni yok');
+  if ((await page.getByTestId('redflags').count()) || (await page.getByTestId('prep').count())) throw new Error('uyarı gösterilmeden akış açıldı');
+  if ((await storeOf(page)).episodes.length !== 1) throw new Error('uyarı aşılmadan yeni atak açıldı');
+  await unlocked(page);
+  await page.getByTestId('dose-override').click();
+  await answerRedFlags(page);
+  await page.getByTestId('prep').waitFor();
+  const st = await storeOf(page);
+  const cur = st.episodes.find((e) => e.id !== 'days');
+  if (!cur || !kindsOf(cur).includes('DOSE')) throw new Error('yeni atakta DOSE kaydı yok: ' + JSON.stringify(cur?.overrides));
+  noErrors(errors);
   await ctx.close();
 });
-
 /** Sayfanın görünürlüğünü değiştirir (telefonda uygulama arka plana alınıp geri gelince olduğu gibi). */
 async function setHidden(page, hidden) {
   await page.evaluate((h) => {
@@ -1391,15 +1545,6 @@ const unloadWarns = (page) =>
     window.dispatchEvent(e);
     return e.defaultPrevented;
   });
-
-/** Tohumlanmış atakta manevra yürütücüsünü başlatır ve hareket fazına gelene dek bekler. */
-async function startManeuver(page) {
-  await toManeuver(page);
-  await page.locator('[data-testid="runner-start"], [data-testid="runner"]').first().waitFor({ timeout: 30000 });
-  if (await page.getByTestId('runner-start').isVisible().catch(() => false)) await page.getByTestId('runner-start').click();
-  await page.getByTestId('runner').waitFor();
-  await waitPhase(page, ['intro', 'seeking', 'settling', 'holding', 'drifting', 'between']);
-}
 
 await step('Tur 6 kilidi: manevra sırasında uygulama arka plana alınınca yürütücü duraklar; geri gelince kendiliğinden sürmez', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
@@ -1420,7 +1565,7 @@ await step('Tur 6 kilidi: manevra sırasında uygulama arka plana alınınca yü
 await step('Tur 6 kilidi: manevra sürerken sayfayı kapatma/yenileme uyarısı var; manevra öncesi ve bitince yok', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
   await page.goto(BASE + '#/hasta');
-  await page.getByTestId('continue-episode').waitFor();
+  await page.getByTestId('start-episode').waitFor();
   if (await unloadWarns(page)) throw new Error('ana ekranda kapatma uyarısı var');
   await startManeuver(page);
   if (!(await unloadWarns(page))) throw new Error('manevra sürerken kapatma uyarısı (beforeunload) yok');
@@ -1433,6 +1578,71 @@ await step('Tur 6 kilidi: manevra sürerken sayfayı kapatma/yenileme uyarısı 
   if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
   if (await unloadWarns(page)) throw new Error('manevra bitince kapatma uyarısı kalkmadı');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+/** Manevrayı `stepIndex` adımında tutma fazına getirir (demo başı hedefe götürerek). */
+async function holdAtStep(page, stepIndex, timeout = 30000) {
+  if (!(await page.getByTestId('sim-panel').isVisible().catch(() => false))) await page.getByTestId('sim-open').click();
+  const t0 = Date.now();
+  let last = -1;
+  while (Date.now() - t0 < timeout) {
+    const r = page.getByTestId('runner');
+    const st = Number(await r.getAttribute('data-step'));
+    const phase = await r.getAttribute('data-phase');
+    if (st === stepIndex && phase === 'holding') return;
+    if (st !== last && phase !== 'between') {
+      last = st;
+      await page.getByTestId('sim-goto').click();
+    }
+    await page.waitForTimeout(120);
+  }
+  throw new Error(`${stepIndex}. adımın tutma fazına gelinmedi`);
+}
+
+await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam et" VERTIGO_TOO_LONG kaydıyla sürer, "Durdur" durdurur', async () => {
+  // ×20: 2 dakikalık sınır gerçek 6 s.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await startManeuver(page);
+  // Epley 2. adım (sarkık baş): baş dönmesi başladı, bitişi işaretlenmiyor.
+  await holdAtStep(page, 1);
+  // Kullanıcının göreceği ekran: demo paneli kapalı (uyarı sayfasını örtmesin).
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  await page.getByTestId('vertigo-pad').click();
+  const hold = page.getByTestId('runner-safety-hold');
+  // Uyarı açılır açılmaz gelen kör dokunuş ("baş dönmesi geçti" diye ekrana dokunan hasta) seçim yapmaz.
+  await hold.waitFor({ timeout: 20000, state: 'attached' });
+  const holdVisible = Date.now();
+  const contBox = await page.getByTestId('runner-hold-continue').boundingBox();
+  const stopBox = await page.getByTestId('runner-hold-stop').boundingBox();
+  for (const b of [stopBox, contBox]) await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+  if (Date.now() - holdVisible > 900) throw new Error('kör dokunuş geç yapıldı (sınama geçersiz)');
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('uyarı açılır açılmaz gelen kör dokunuş seçim yaptı');
+  if ((await hold.getAttribute('data-reason')) !== 'VERTIGO_TOO_LONG') throw new Error('uyarı nedeni: ' + (await hold.getAttribute('data-reason')));
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('yürütücü beklemede değil');
+  await page.getByTestId('runner-hold-112').waitFor();
+  // Kendiliğinden seçim yok: bir süre sonra da bekliyor, kayıt yazılmadı.
+  await page.waitForTimeout(1500);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('uyarı kendiliğinden kapandı');
+  await snap(page, 'yurutucu-guvenlik-uyarisi');
+  await unlocked(page);
+  await page.getByTestId('runner-hold-continue').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'safetyHold');
+  let ep = (await storeOf(page)).episodes[0];
+  if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Devam et" VERTIGO_TOO_LONG kaydı yazmadı: ' + kindsOf(ep).join(', '));
+  if (ep.maneuvers.length) throw new Error('"Devam et" manevrayı bitirdi');
+  // Baş dönmesi sürüyor: bir sınır daha sonra yeniden uyarı; bu kez "Durdur".
+  await hold.waitFor({ timeout: 20000 });
+  await unlocked(page);
+  await page.getByTestId('runner-hold-stop').click();
+  await page.getByTestId('end-safety').waitFor({ timeout: 15000 });
+  await page.getByTestId('end-retry').waitFor();
+  ep = (await storeOf(page)).episodes[0];
+  const m = ep.maneuvers.at(-1);
+  if (!m || m.completed || m.stopReason !== 'VERTIGO_TOO_LONG') throw new Error('durdurulan manevra kaydı: ' + JSON.stringify(m && { c: m.completed, r: m.stopReason }));
+  if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Durdur" aşma kaydı yazdı');
+  noErrors(errors);
   await ctx.close();
 });
 
