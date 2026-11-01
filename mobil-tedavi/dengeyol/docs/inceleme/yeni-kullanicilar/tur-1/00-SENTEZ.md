@@ -1,7 +1,7 @@
 # Yeni kullanıcı turu 1 — sentez ve düzeltmeler
 
-Puanlar (sezgisellik / memnuniyet): y03 Türkçesi zayıf 5/6 · y04 araştırma hemşiresi 7/4 · y05 acil hekimi 7/5 ·
-y06 okumayan genç 6/6 · y08 aile hekimi 7/7. (y01, y02, y07 kullanım sınırı nedeniyle sonradan; raporları gelince eklenir.)
+Puanlar (sezgisellik / memnuniyet): y01 ilk atak gece 6/7 · y02 seksen yaş 5/6 · y07 bulantılı 5/5 · y03 Türkçesi zayıf 5/6 · y04 araştırma hemşiresi 7/4 · y05 acil hekimi 7/5 ·
+y06 okumayan genç 6/6 · y08 aile hekimi 7/7.
 
 Ortak bulgular (birden çok kişi): rapor yanlış test/manevra adı yazıyor (y04, y06); talimat pozisyona varınca kesiliyor,
 "dokunun" duyulmuyor (y03, y06, y08); uyarılarda dolu renkli düğme "Yine de …" (y03, y05, y06); kurulumda "Başla"
@@ -17,6 +17,11 @@ kapalıyken etkin görünüyor (y03, y06); araştırma kaydı yanlış/ham kodlu
 | 3 | Orta | Klinisyen testinde "Oturuş, baş sağa 45°" adımı hasta zaten oturuyorken "Pozisyon doğru" ile 0,3 s'de kesilmesin; baş çevirme komutu bitsin | y08 |
 | 4 | Orta | Güvenlik bekleme ekranında (uzun baş dönmesi) "Durdur" birincil, "Devam et" ikincil | y03, y05 |
 
+## L1 ek (y07)
+| 5 | Kritik | Duraklatma ve uzun baş dönmesi uyarısında "Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun." | y07 |
+| 7 | Yüksek | Testte hızlı çift dokunuşta baş dönmesi açık kalıyor ve 2 dk sonra yanlış güvenlik duraklatması; açık baş dönmesinde 30 s sonra "Geçtiyse dokunun" hatırlatması | y02 |
+| 6 | Yüksek | Uzun baş dönmesi uyarısı ve duraklatmada ekrana bakmadan seçim (2 sn basılı tut = Durdur), sesle anlatılır; "Kendimi kötü hissediyorum" seste de | y07 |
+
 ## L2 — Hasta akışı ve ekranlar (EpisodeFlow.tsx, Onboarding.tsx, PatientHome.tsx, flowText.ts, onboardingText.ts, Controls.tsx)
 | # | Önem | İstek | Kaynak |
 |---|---|---|---|
@@ -26,6 +31,8 @@ kapalıyken etkin görünüyor (y03, y06); araştırma kaydı yanlış/ham kodlu
 | 4 | Orta | Hazırlıkta "Hazırım" ekranın altında sabit görünür; "Tekrar dinle" ikincil | y06 |
 | 5 | Orta | Test/manevra başlıkları Türkçe: "Sırtüstü baş çevirme testi", "Yatakta dönme manevrası (BBQ roll)" | y06 |
 | 6 | Orta | Güvenlik listesi gündelik dille, maddelere simge; açılış kilidinde seçenekler gri görünmesin (kilit görünmez olsun ya da "dinleyin…" etiketi) ; akışta "daha yavaş konuş" düğmesi | y03 |
+| 9 | Yüksek | Güvenlik listesinde işaretlenen madde sesle söylenir; 112 uyarısından önce "Bunu mu işaretlediniz?" (yanlış dokunuş koruması, kilit değil); "Listeyi dinle" üstte | y02 |
+| 8 | Yüksek | Test tetiklemeyince karar ekranı tek büyük önerilen düğme ("Hangi yan bilmiyorum → iki tarafa sırayla"); seçimden sonra manevra doğrudan; ikinci "Kim yapıyor" yok. Hazırlıkta ayrıntılar katlanır. Onay "Başla"nın hemen üstünde | y01 |
 | 7 | Orta | Test tetiklemediyse tek cümle: "Test baş dönmesi yapmadı; BPPV olmayabilir" + yine de manevra seçeneği | y05 |
 
 ## L3 — Kayıt, rapor, araştırma verisi (state/types.ts, state/overrides.ts, reportText.ts, core/reportShare.ts, HomeReportView.tsx, examReport.ts)
@@ -38,6 +45,7 @@ kapalıyken etkin görünüyor (y03, y06); araştırma kaydı yanlış/ham kodlu
 | 5 | Orta | Demo modu ve uygulama/algoritma sürümü her atağa ve rapora yazılsın | y04 |
 | 6 | Orta | Reçetesiz kurulumda isteğe bağlı çalışma katılımcı numarası; ev raporunda taşınsın | y04 |
 | 7 | Orta | Klinisyende katılımcı başına satır satır CSV dışa aktarım (atak, test, manevra, aşma); isteğe bağlı VAS (0–10) atak öncesi/sonrası | y04 |
+| 9 | Yüksek | Karar ekranında seçilen taraf kayda "taraf seçilmedi" diye geçiyor; uygulama kapanınca yarım manevra kayda "yarıda kaldı (adım n)" yazılsın | y01 |
 | 8 | Orta | Ev raporu varsayılan olarak yeni bir kontrol muayenesine eklensin; açılınca tek cümle klinik öneri | y08 |
 
 ## L4 — Klinisyen (Exam.tsx, FindingForm.tsx, core/prescription.ts, core/diagnosis.ts, examReport.ts)
@@ -49,3 +57,14 @@ kapalıyken etkin görünüyor (y03, y06); araştırma kaydı yanlış/ham kodlu
 | 4 | Orta | Bulgu formunda kısa "nasıl görünür" yardımı, "Emin değilim, baş dönmesi var" seçeneği; kanalolitiazis/kupulolitiazis açıklaması; supine roll formunda "Şiddet" açıklaması ve "Kaydet" neden kapalı | y08 |
 | 5 | Orta | Reçete ekranında iPhone için "Önce Ana Ekrana Ekle, sonra bağlantıyı açın" talimatı | y04, y08 |
 | 6 | Düşük | Aynı oturumda kalibrasyon yeni muayenede yeniden kullanılabilsin ("Önceki kalibrasyonu kullan") | y05 |
+
+## L5 — Kötü an sonrası durum (L2 birleşince; PatientHome.tsx, EpisodeFlow.tsx)
+| # | Önem | İstek | Kaynak |
+|---|---|---|---|
+| 1 | Yüksek | Kusma bildiriminden sonra ana ekran doğru: "Bugün kusma bildirdiniz; manevra yok, sabah kısa test"; yanlış "son testte baş dönmesi gelmedi" ve "3/3 manevra" kalkar; tek tutarlı sabah saati; yeniden deneme uyarısının gerekçesi kusma, kayıt türü ayrı (`VOMITING`), `DOSE:DAILY_LIMIT` değil | y07 |
+| 2 | Yüksek | "Kendimi kötü hissediyorum" ile durduktan ve "Durdur"dan sonra ana ekranda not; yeniden başlarken "Kusma/kötü hissetme geçti mi?" | y07 |
+| 3 | Orta | Atak sırasında uygulamadan çıkıp dönünce yapılmış taraf testi kaybolmasın; manevra yarıda kaldıysa hazırlık baştan gelmesin, "kaldığınız yerden" | y07, y01 |
+| 4 | Orta | Hazırlıktaki "Hazırım" ve kalibrasyondaki "Başla" için ekranın her yerine dokunmak yeterli (telefon alında); güvenlik listesinin sesli kısa okunuşu, kusma maddesi gündelik dille | y07 |
+| 5 | Kritik | Karşılamada "Klinisyenim"e yanlış dokunuş klinisyen modunu kalıcı açıyor: "Hekim misiniz? Evet / Hayır, hastayım" onayı; klinisyen ana ekranında büyük "Hasta moduna dön" | y02 |
+| 6 | Yüksek | Telefon alna konana kadar her ekran kısaca konuşsun (karşılama, kurulum, telefonu tanıtma girişi); "onay kutusu" yerine gündelik söz | y02 |
+| 7 | Orta | Bilinen hekim tanısı tarafı (ör. "sağ kulak") ana ekranda/atak başında kolayca girilebilsin; girilince yalnız o taraf test edilir | y02 |

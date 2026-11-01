@@ -25,13 +25,14 @@
  * v3 (yeni kullanıcı turu 1; y04 #1–#7, y05 #7): araştırma kaydı klinisyene ulaşır. Ataklara aşma/karar/bilgi kayıtları
  * (`o`), güvenlik sorularının işaretlenen yanıtları ve devam edilip edilmediği (`f`), demo modu (`S`), taraf testinin türü
  * (`t` kaydının 5. öğesi 'H' = sırtüstü baş çevirme testi); rapora kurulumda işaretlenen kontrendikasyonlar (`k`) ve çalışma
- * katılımcı no (`i`) eklendi. v1/v2 çözücü 5 öğeli test kaydını geçersiz sayar, öbürlerini sessizce atar: bu yüzden bunlar
+ * katılımcı no (`i`) eklendi; reçete manevrasında 'b' (BBQ roll, yatay kanal reçetesi) yalnız v3'te geçerlidir (eski
+ * çözücü bilinmeyen harfi Semont sayardı). v1/v2 çözücü 5 öğeli test kaydını geçersiz sayar, öbürlerini sessizce atar: bu yüzden bunlar
  * ancak sürüm 3 ile yazılır ve kodlayıcı v3'ü YALNIZ bu bilgilerden biri varsa yazar (eski uygulama "güncelleyin" der).
  * Uygulama ve karar kuralı sürümü (`w`) her sürümde yazılır (eski çözücü yok sayar; yeni çözücü her sürümde okur). `w`
  * varsa rapor araştırma kaydını taşıyan bir uygulamadan gelmiştir: kayıt yoksa "aşma yok" demektir; `w` yoksa (eski
  * uygulama) araştırma kaydı bilinmiyor. Bu sürüm v1, v2 ve v3'ü okur.
  */
-import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidUntil } from './prescription';
+import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxManeuverFromWire, rxManeuverWire, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
 import { type StepRecord, type StopReason, vertigoSummary } from './runner';
 import { APP_VERSION, DECISION_RULES_VERSION } from './version';
@@ -122,7 +123,7 @@ export interface HomeSideTest {
   R: SideCell | null;
   L: SideCell | null;
   decision: SideDecision;
-  /** v3: hangi test (PC Dix-Hallpike, HC sırtüstü baş çevirme). v1/v2 bağlantısında yok (arka kanal varsayılır). */
+  /** v3: 'HC' sırtüstü baş çevirme testi; yoksa Dix-Hallpike (arka kanal; v1/v2 bağlantısında hep böyle). */
   canal?: 'PC' | 'HC';
 }
 
@@ -353,12 +354,14 @@ export function homeEpisodeOf(e: Episode, reportVersion: { app?: string; rules?:
 
 /**
  * Raporun bağlantıya yazılacağı sürüm: v3'e özgü bilgi (araştırma kaydı, işaretlenen güvenlik sorusu, demo modu, sırtüstü
- * baş çevirme testi, kontrendikasyon, katılımcı no) varsa 3; v2'ye özgü bilgi (testte durdurma ya da, adım ayrıntısı
+ * baş çevirme testi, kontrendikasyon, katılımcı no, yatay kanal reçetesi) varsa 3; v2'ye özgü bilgi (testte durdurma ya da, adım ayrıntısı
  * bağlantıdaysa, yüzüstünden gelme bayrağı) varsa 2; yoksa 1 (eski klinisyen uygulamaları okuyabilsin; bkz. dosya başı).
  */
-export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped' | 'studyId' | 'contraindications'>): number {
+export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped' | 'studyId' | 'contraindications' | 'rx'>): number {
   const v3 =
     !!r.studyId ||
+    // Yatay kanal reçetesi ('b'): eski çözücü bilinmeyen manevra harfini Semont sayardı; v3'te "güncelleyin" der.
+    (!!r.rx && r.rx.maneuver !== 'epley' && r.rx.maneuver !== 'semont') ||
     (r.contraindications?.length ?? 0) > 0 ||
     r.episodes.some(
       (e) => !!e.simulation || (e.redFlags?.length ?? 0) > 0 || (e.overrides?.length ?? 0) > 0 || e.sideTests.some((t) => t.canal === 'HC')
@@ -566,7 +569,7 @@ interface Wire {
   g: number;
   p?: string;
   c?: string;
-  r?: [string, Side, 'e' | 's', number, number];
+  r?: [string, Side, 'e' | 's' | 'b', number, number];
   a: number;
   b: number;
   e: WireEpisode[];
@@ -662,7 +665,7 @@ function toWire(r: HomeReport): Wire {
   const w: Wire = { v, g: toMin(r.generatedAt), a: toMin(r.period.from), b: toMin(r.period.to), e: [] };
   if (r.pid) w.p = r.pid.slice(0, PID_MAX_LEN);
   if (r.rxCode) w.c = r.rxCode;
-  if (r.rx) w.r = [r.rx.date, r.rx.side, r.rx.maneuver === 'epley' ? 'e' : 's', r.rx.perDay, r.rx.days];
+  if (r.rx) w.r = [r.rx.date, r.rx.side, rxManeuverWire(r.rx.maneuver), r.rx.perDay, r.rx.days];
   w.e = r.episodes.map((e) => wireEpisode(e, !r.stepsDropped, v3));
   if (r.stepsDropped) w.x = 1;
   if (r.episodesOmitted > 0) w.o = r.episodesOmitted;
@@ -920,7 +923,7 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
       if (!Array.isArray(t) || !(t.length === 4 || (v >= 3 && t.length === 5 && t[4] === 'H'))) fail();
       const a = t as unknown[];
       const st: HomeSideTest = { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, R: readCell(a[1]), L: readCell(a[2]), decision: readDecision(a[3]) };
-      if (v >= 3) st.canal = a.length === 5 ? 'HC' : 'PC';
+      if (a.length === 5) st.canal = 'HC';
       return st;
     }),
     maneuvers: arr(o.m, MAX_MANEUVERS).map((m) => {
@@ -1060,8 +1063,9 @@ function readWire(o: Record<string, unknown>): HomeReport {
     if (!Array.isArray(o.r) || o.r.length !== 5) fail();
     const a = o.r as unknown[];
     if (typeof a[0] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a[0])) fail();
-    if (a[2] !== 'e' && a[2] !== 's') fail();
-    out.rx = { date: a[0] as string, side: side(a[1]), maneuver: a[2] === 'e' ? 'epley' : 'semont', perDay: int(a[3], 1, 9), days: int(a[4], 1, 99) };
+    // 'b' (BBQ roll, yatay kanal reçetesi) yalnız v3'te: eski çözücü bilinmeyen harfi Semont sanmasın diye v3 ile yazılır.
+    if (a[2] !== 'e' && a[2] !== 's' && !(v >= 3 && a[2] === 'b')) fail();
+    out.rx = { date: a[0] as string, side: side(a[1]), maneuver: rxManeuverFromWire(a[2]), perDay: int(a[3], 1, 9), days: int(a[4], 1, 99) };
   }
   return out;
 }

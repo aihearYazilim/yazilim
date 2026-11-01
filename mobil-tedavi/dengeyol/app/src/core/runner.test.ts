@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { poseFromUp, upFromLying, upFromSitting, type HeadPose } from './geometry';
 import { protocolForMode, resolveProtocol, type Target } from './protocols';
 import {
+  CLINICIAN_TURN_SEC,
   clinicianSilent,
+  estimateSpeechSec,
+  HOLD_CHOICE_HELPER,
+  HOLD_CHOICE_PATIENT,
+  stepAsksTap,
   type Cue,
   DEFAULT_RUNNER_CONFIG,
   HANG_MORE_MAX_HINTS,
@@ -90,6 +95,10 @@ function run(x: Sim, opts: { reactSec?: number; maxSec?: number; poseOverride?: 
   }
 }
 
+/** Duraklatma sesinin kusma/boyun ve "kendimi kötü" cümleleri (hasta; y07, yeni kullanıcı turu 1). */
+const PAUSE_SAFE_P =
+  'Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun. Kendinizi kötü hissediyorsanız ekrandaki "Kendimi kötü hissediyorum" düğmesine dokunun.';
+
 describe('Epley yürütücüsü (hasta modu)', () => {
   it('ideal hasta ile tüm adımları tamamlar; süreler en azından minimum', () => {
     const x = sim('epley');
@@ -103,8 +112,10 @@ describe('Epley yürütücüsü (hasta modu)', () => {
     const total = x.t / 1000;
     expect(total).toBeGreaterThan(5 + 45 * 3 + 60);
     expect(total).toBeLessThan(400);
-    // "Tamam, böyle kalın" doğrulanan her adımda söylenir; otururken baş çevirme (doğrulanamaz) adımında dürüst cümle
-    expect(x.cues.filter((c) => c.kind === 'speak' && c.text === 'Tamam, böyle kalın.').length).toBe(4);
+    // "Tamam, böyle kalın" doğrulanan her adımda söylenir; otururken baş çevirme (doğrulanamaz) adımında dürüst cümle.
+    // Yönergesi "ekrana dokunun" diyen adımda (sarkık baş) varışta kısa dokunma hatırlatması da (yeni kullanıcı turu 1).
+    expect(x.cues.filter((c) => c.kind === 'speak' && c.text === 'Tamam, böyle kalın.').length).toBe(3);
+    expect(x.cues.filter((c) => c.kind === 'speak' && c.text === 'Tamam, böyle kalın. Baş dönerse ekrana dokunun.').length).toBe(1);
     expect(x.cues.some((c) => c.kind === 'speak' && c.text.startsWith('Başınızı sağa çevirdiyseniz öyle kalın'))).toBe(true);
   });
 
@@ -276,12 +287,12 @@ describe('inceleme sonrası düzeltmeler', () => {
     expect(vertigoSummary({ ...r, vertigoMarks: [{ start: 3, end: 5 }, { start: 8, end: null }] })!.durationSec).toBeNull();
   });
 
-  it('kazara çift dokunuş (1 s içinde) yok sayılır', () => {
+  it('kazara çift dokunuş (1 s içinde) yok sayılır; ≤0,5 s ise başlatma işaretini geri alır (yeni kullanıcı turu 1, y02)', () => {
     const x = sim('epley');
     send(x, { type: 'start' });
     x.t += 500;
     send(x, { type: 'vertigoToggle' });
-    x.t += 300;
+    x.t += 700;
     send(x, { type: 'vertigoToggle' });
     expect(x.s.vertigoActive).toBe(true);
     expect(x.s.records[0]!.vertigoMarks).toHaveLength(1);
@@ -340,7 +351,7 @@ describe('kullanıcı ajanı düzeltmeleri', () => {
         markedAt = x.t;
       }
     }
-    const reminders = x.cues.filter((c) => c.kind === 'speak' && /^Baş dönmesi (geç|bir dakikayı)/.test(c.text));
+    const reminders = x.cues.filter((c) => c.kind === 'speak' && /^Baş dönmesi (geç|bir dakikayı|sürüyor mu)/.test(c.text));
     // 15, 45, 75 ve 105. saniyede; 120 s sınırında hatırlatma yerine durdurma gelir.
     expect(reminders.length).toBe(4);
     expect(x.s.phase).toBe('safetyStop');
@@ -375,7 +386,7 @@ describe('tur 1 denetim düzeltmeleri', () => {
     }
     expect(marked).toBe(true);
     expect(x.s.phase).toBe('safetyStop');
-    expect(x.cues.filter((c) => c.kind === 'speak' && /^Baş dönmesi (geç|bir dakikayı)/.test(c.text)).length).toBe(4);
+    expect(x.cues.filter((c) => c.kind === 'speak' && /^Baş dönmesi (geç|bir dakikayı|sürüyor mu)/.test(c.text)).length).toBe(4);
   });
 
   it('duraklatmadayken baş dönmesi "geçti" olarak işaretlenebilir; devamda yanlış durdurma olmaz', () => {
@@ -596,15 +607,15 @@ describe('tur 1 D1-2: baş dönmesi işaretliyken hatırlatma', () => {
       x.t += 100;
       send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[1]!.target) });
     }
-    expect(spoken({ ...x, cues: x.cues.slice(n) }).some((t) => t.startsWith('Baş dönmesi geç'))).toBe(false);
+    expect(spoken({ ...x, cues: x.cues.slice(n) }).some((t) => t.startsWith('Baş dönmesi sürüyor mu'))).toBe(false);
     for (let i = 0; i < 10; i++) {
       x.t += 100;
       send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[1]!.target) });
     }
     const after = x.cues.slice(n);
-    const rem = spoken({ ...x, cues: after }).find((t) => t.startsWith('Baş dönmesi geç'));
-    // Tur 2 (k01): ilk hatırlatma korkutmaz, hekim sözü yok.
-    expect(rem).toBe('Baş dönmesi geçince ekrana dokunun; sürüyorsa böyle kalın.');
+    const rem = spoken({ ...x, cues: after }).find((t) => t.startsWith('Baş dönmesi sürüyor mu'));
+    // Tur 2 (k01): ilk hatırlatma korkutmaz, hekim sözü yok. Soru biçiminde (y02, yeni kullanıcı turu 1).
+    expect(rem).toBe('Baş dönmesi sürüyor mu? Geçtiyse ekrana dokunun; sürüyorsa böyle kalın.');
     expect(hapticsOf(after)).toEqual(['markOn']);
   });
 });
@@ -996,7 +1007,7 @@ describe('tur 2 E1-6: baş dönmesi hatırlatmaları 60 s eşiğiyle tutarlı', 
   it('15 s: yalnız "geçince dokunun"; 45 s: bir dakika eşiği; 75/105 s: dürüst; 2 dk durdurma aynen', () => {
     const { x, texts } = remindersFor(false);
     expect(texts).toHaveLength(4);
-    expect(texts[0]).toBe('Baş dönmesi geçince ekrana dokunun; sürüyorsa böyle kalın.');
+    expect(texts[0]).toBe('Baş dönmesi sürüyor mu? Geçtiyse ekrana dokunun; sürüyorsa böyle kalın.');
     expect(texts[1]).toBe('Baş dönmesi geçtiyse şimdi ekrana dokunun. Bir dakikayı geçerse hekime danışmak gerekir.');
     expect(texts[2]).toMatch(/^Baş dönmesi bir dakikayı geçti; bunu hekiminize söyleyeceğiz\..* 45 saniye içinde dokunulmazsa manevrayı duraklatıp soracağım\.$/);
     expect(texts[3]).toMatch(/15 saniye içinde/);
@@ -1006,7 +1017,7 @@ describe('tur 2 E1-6: baş dönmesi hatırlatmaları 60 s eşiğiyle tutarlı', 
   });
   it('yardımcı modunda da aynı sıra', () => {
     const { texts } = remindersFor(true);
-    expect(texts[0]).toBe('Hasta "geçti" deyince ekrana dokunun; sürüyorsa böyle tutun.');
+    expect(texts[0]).toBe('Hastanın baş dönmesi sürüyor mu? Hasta "geçti" derse ekrana dokunun; sürüyorsa böyle tutun.');
     expect(texts[2]).toMatch(/bunu hekime söyleyeceğiz/);
   });
 });
@@ -1038,7 +1049,7 @@ describe('tur 2 E1-7: konuşma kuyruğu', () => {
       poseOverride: (idx, t) =>
         idx === 1 && t > 1 && t < 16 ? lying(20, 25) : t > 1 || idx === 0 ? ideal(st[idx]!.target) : ideal(st[Math.max(0, idx - 1)]!.target)
     });
-    const tamam = speakCues(x.cues).filter((c) => c.text === 'Tamam, böyle kalın.');
+    const tamam = speakCues(x.cues).filter((c) => c.text.startsWith('Tamam, böyle kalın.'));
     expect(tamam[0]!.priority).toBe('high'); // 1. adım: ipucundan sonra
     expect(tamam[1]!.priority).toBe('normal'); // 2. adım: ipucu yok
   });
@@ -1077,13 +1088,13 @@ describe('tur 2 E1-8: duraklatma sesi', () => {
     // Ayrıntı tur 4'ten beri "Tekrar dinle"de (pauseSpeech tam biçimi); ilk okunuş kısa (bkz. G1-4).
     const x = sim('epley');
     const t = pauseSpeech(x.cfg, false, true);
-    expect(t).toMatch(/Boynunuz ağrıyorsa yavaşça oturabilirsiniz/);
+    expect(t).toMatch(/boynunuz ağrıyorsa da yavaşça oturun/);
     expect(t).toMatch(/"Pozisyona gelemiyorum"/);
     expect(t).toMatch(/iki saniye basılı tutun/);
     expect(t).not.toMatch(/Olduğunuz yerde/);
     const y = sim('epley');
     y.cfg = { ...y.cfg, helper: true };
-    expect(pauseSpeech(y.cfg, false, true)).toMatch(/Hastanın boynu ağrıyorsa.*"Bu pozisyona gelemiyor"/);
+    expect(pauseSpeech(y.cfg, false, true)).toMatch(/boynu ağrıyorsa.*"Bu pozisyona gelemiyor"/);
   });
 });
 
@@ -1393,7 +1404,7 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
     send(x, { type: 'pause' });
     const t = speakCues(x.cues).pop()!.text;
     expect(t.startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.')).toBe(true);
-    expect(pauseSpeech(x.cfg, false, true)).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın\.$/);
+    expect(pauseSpeech(x.cfg, false, true)).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun\. Bu iki düğme bir onay daha ister\.$/);
     // Baş dönmesi işaretliyken "bir kez dokunun" hemen eylemin ardından.
     const y = sim('epley');
     send(y, { type: 'start' });
@@ -1401,10 +1412,10 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
     send(y, { type: 'vertigoToggle' });
     send(y, { type: 'pause' });
     expect(speakCues(y.cues).pop()!.text).toBe(
-      'Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Baş dönmesi geçtiyse ekrana bir kez dokunun. Boynunuz ağrıyorsa yavaşça oturun.'
+      'Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Baş dönmesi geçtiyse ekrana bir kez dokunun. ' + PAUSE_SAFE_P
     );
     expect(pauseSpeech(y.cfg, true, true)).toMatch(
-      /^Duraklatıldı\. Devam için ekrana iki saniye basılı tutun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Boynunuz/
+      /^Duraklatıldı\. Devam için ekrana iki saniye basılı tutun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Kusacak/
     );
   });
 
@@ -1476,7 +1487,7 @@ describe('tur 3 F1-5: sesli yönerge sırası', () => {
       }
       expect(x.s.stopReason).toBe('VERTIGO_TOO_LONG');
       const last = reminders[reminders.length - 1]!;
-      expect(last.text).toMatch(/^Baş dönmesi geçtiyse hemen ekrana dokunun\. \d+ saniye içinde dokunulmazsa manevrayı duraklatıp soracağım\.$/);
+      expect(last.text).toMatch(/^Baş dönmesi sürüyor mu\? Geçtiyse hemen ekrana dokunun\. \d+ saniye içinde dokunulmazsa manevrayı duraklatıp soracağım\.$/);
       expect(last.t + x.cfg.introSecFor(last.text)).toBeLessThanOrEqual(120 - 1.9);
       const left = Number(/(\d+) saniye/.exec(last.text)![1]);
       expect(Math.abs(last.t + left - 120)).toBeLessThanOrEqual(1);
@@ -1700,16 +1711,19 @@ describe('tur 4 G1-4: sesli metin, duraklatma sesi, kısa seste seyrekleşme, y�
     for (const t of texts) expect(t, t).not.toMatch(/\d\s*(s|sn)(?![\p{L}\p{N}])/u);
   });
 
-  it('duraklatma sesi varsayılan kısa (eylem + varsa "bir kez dokunun" + boyun cümlesi); ayrıntı yalnız tam biçimde', () => {
+  it('duraklatma sesi varsayılan kısa (eylem + varsa "bir kez dokunun" + kusma/boyun + "kendimi kötü"); ayrıntı yalnız tam biçimde', () => {
     const x = sim('epley');
     send(x, { type: 'start' });
     send(x, { type: 'pause' });
-    expect(speakCues(x.cues).pop()!.text).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz ağrıyorsa yavaşça oturun.');
-    expect(pauseSpeech(x.cfg, false, false)).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz ağrıyorsa yavaşça oturun.');
-    // Telefon alındayken "Tekrar dinle" görülemez: boyun güvenlik cümlesi kısa seste de kalır (k07, tur 5).
-    expect(pauseSpeech({ ...x.cfg, helper: true }, false, false)).toMatch(/Hastanın boynu ağrıyorsa onu yavaşça oturtun\.$/);
-    expect(pauseSpeech(x.cfg, false, true).startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Boynunuz')).toBe(true);
-    expect(pauseSpeech({ ...x.cfg, helper: true }, false, true)).toMatch(/"Bu pozisyona gelemiyor" düğmesine dokunun ve onaylayın\.$/);
+    expect(speakCues(x.cues).pop()!.text).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. ' + PAUSE_SAFE_P);
+    expect(pauseSpeech(x.cfg, false, false)).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. ' + PAUSE_SAFE_P);
+    // Telefon alındayken "Tekrar dinle" görülemez: boyun ve kusma güvenlik cümleleri ve "kötüyüm" yolu kısa seste de kalır
+    // (k07, tur 5; y07, yeni kullanıcı turu 1).
+    expect(pauseSpeech({ ...x.cfg, helper: true }, false, false)).toMatch(
+      /Hasta kusacak gibiyse başını kaldırıp yana çevirin ya da oturtun; boynu ağrıyorsa da onu yavaşça oturtun\. Hasta kendini kötü hissediyorsa "Hasta kendini kötü hissediyor" düğmesine dokunun\.$/
+    );
+    expect(pauseSpeech(x.cfg, false, true).startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. ' + PAUSE_SAFE_P)).toBe(true);
+    expect(pauseSpeech({ ...x.cfg, helper: true }, false, true)).toMatch(/"Bu pozisyona gelemiyor" düğmesine dokunun\. Bu iki düğme bir onay daha ister\.$/);
     const c = sim('epley', 'clinician');
     expect(pauseSpeech(c.cfg, true, true)).toBe('Duraklatıldı.');
   });
@@ -2042,7 +2056,12 @@ describe('güvenlik uyarısı (safetyHold): 2 dk baş dönmesi ve 60 s pozisyon'
     expect(x.s.stopReason).toBeNull();
     expect(safetyHoldText(x.s)).toBe(SAFETY_HOLD_TEXT.VERTIGO_TOO_LONG);
     expect(SAFETY_HOLD_TEXT.VERTIGO_TOO_LONG).toMatch(/112/);
-    expect(spoken(x)[spoken(x).length - 1]).toMatch(/2 dakikadan uzun.*devam ya da durdur/);
+    // Ekrana bakmadan seçim: önerilen "Durdur" iki saniye basılı tutmak; "Devam et" düğmeyle; kusma güvenliği (y07).
+    const said = spoken(x)[spoken(x).length - 1]!;
+    expect(said).toMatch(/2 dakikadan uzun/);
+    expect(said).toMatch(/Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun\./);
+    expect(said).toMatch(/durdurmak için ekrana iki saniye basılı tutun\. Devam etmek isterseniz ekrandaki Devam et düğmesine dokunun\.$/);
+    expect(said).not.toMatch(/Telefonu alıp/);
     expect(hapticsOf(x.cues)).toContain('alarm');
     const frozen = { step: x.s.stepIndex, hold: x.s.holdSec, records: x.s.records };
     // 10 dakika saat, dokunuş ve duraklatma: hiçbir şey değişmez.
@@ -2196,5 +2215,193 @@ describe('güvenlik uyarısının araştırma kaydı açıklaması', () => {
     expect(v).toBe(`Epley · sağ, adım 2/${x.cfg.protocol.steps.length} (${title}): baş dönmesi 2 dakikayı aştı`);
     const u = safetyHoldDetail(x.cfg.protocol, { stepIndex: 1, safetyHold: { reason: 'POSITION_UNREACHABLE', from: 'seeking', at: 0, wrongSide: true } });
     expect(u).toMatch(/yanlış taraftan doğru yana 1 dakikada gelinemedi$/);
+  });
+});
+
+describe('yeni kullanıcı turu 1 — L1: yürütücü ve ses', () => {
+  const quick = (x: Sim) => (i: number, t: number): HeadPose =>
+    t > 0.5 || i === 0 ? ideal(x.cfg.protocol.steps[i]!.target) : ideal(x.cfg.protocol.steps[i - 1]!.target);
+
+  it('L1-1: dokunma talimatı yönergenin başında; hızlı varışta yönerge kesilmez, varışta kısa hatırlatma', () => {
+    const x = sim('dix-hallpike');
+    x.cfg = { ...x.cfg, introSecFor: (t) => estimateSpeechSec(t) };
+    const said = timedRun(x, quick(x), 200);
+    const intro = said.find((w) => w.idx === 1 && w.t === 0)!;
+    expect(intro.text.startsWith('Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun. Şimdi')).toBe(true);
+    // Hasta 0,5 s'de yattı: "Tamam" yönergenin (tahmini) sonundan önce söylenmez.
+    const arrive = said.find((w) => w.idx === 1 && w.text.startsWith('Tamam'))!;
+    expect(arrive.text).toBe('Tamam, böyle kalın. Baş dönerse ekrana dokunun.');
+    expect(arrive.t).toBeGreaterThanOrEqual(estimateSpeechSec(intro.text));
+    // Dokunma talimatı olmayan adımda (oturuş) hatırlatma yok.
+    expect(said.filter((w) => w.idx === 2 && w.text.startsWith('Tamam')).map((w) => w.text)).toEqual(['Tamam, böyle kalın.']);
+  });
+
+  it('L1-1: yardımcı modunda talimat ve hatırlatma yardımcıya; supine roll, Epley, Semont, BBQ roll gözlem adımları da', () => {
+    const x = sim('dix-hallpike');
+    x.cfg = { ...x.cfg, helper: true };
+    const said = timedRun(x, quick(x), 200);
+    expect(said.find((w) => w.idx === 1 && w.t === 0)!.text.startsWith('Hasta "dönüyor" derse ekrana siz dokunun')).toBe(true);
+    expect(said.map((w) => w.text)).toContain('Tamam, böyle tutun. Hasta "dönüyor" derse ekrana dokunun.');
+    for (const id of ['supine-roll', 'epley', 'semont', 'bbq-roll'] as const) {
+      const cfg: RunnerConfig = { ...DEFAULT_RUNNER_CONFIG, mode: 'patient', protocol: resolveProtocol(id, 'R'), introSecFor: () => 3 };
+      const asks = cfg.protocol.steps.filter((st) => stepAsksTap(cfg, st));
+      expect(asks.length, id).toBeGreaterThan(0);
+      for (const st of asks) expect(st.say.startsWith('Baş dönmesi'), st.say).toBe(true);
+    }
+    // Klinisyende hatırlatma yok (klinisyen kendisi işaretler).
+    const c = sim('dix-hallpike', 'clinician');
+    expect(c.cfg.protocol.steps.some((st) => stepAsksTap(c.cfg, st))).toBe(false);
+  });
+
+  it('L1-2: duraklatmadan "Devam et"ten sonra ~1 s içinde dokunuş baş dönmesi sayılmaz; sonra sayılır', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    for (let i = 0; i < 60; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[0]!.target) });
+    }
+    send(x, { type: 'pause' });
+    x.t += 3000;
+    send(x, { type: 'resume' });
+    // Çift dokunuşun ikincisi (aynı an ve 0,3 s sonra): yok sayılır, kayıt açılmaz.
+    send(x, { type: 'vertigoToggle' });
+    x.t += 300;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+    expect(x.s.records[x.s.records.length - 1]!.vertigoMarks).toHaveLength(0);
+    x.t += 800;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(true);
+    expect(x.s.records[x.s.records.length - 1]!.vertigoMarks).toHaveLength(1);
+  });
+
+  it('L1-2: güvenlik uyarısında "Devam et"ten sonra da ~1 s içinde dokunuş baş dönmesini bitirmez', () => {
+    const x = sim('epley');
+    x.autoStop = false;
+    send(x, { type: 'start' });
+    let marked = false;
+    while (x.t < 400000 && x.s.phase !== 'safetyHold') {
+      x.t += 100;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+      if (x.s.stepIndex === 1 && !marked && x.s.phase === 'holding') {
+        send(x, { type: 'vertigoToggle' });
+        marked = true;
+      }
+    }
+    expect(x.s.phase).toBe('safetyHold');
+    x.t += 2000;
+    send(x, { type: 'safetyChoice', choice: 'continue' });
+    x.t += 200;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(true);
+    x.t += 1000;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+  });
+
+  it('L1-3: klinisyen oturuş adımında hasta zaten pozisyondayken baş çevirme komutu "Pozisyon doğru" ile kesilmez', () => {
+    for (const voice of ['short', 'full'] as const) {
+      const x = sim('dix-hallpike', 'clinician');
+      x.cfg = { ...x.cfg, clinicianVoice: voice, introSecFor: () => 1.5 };
+      // Hasta baştan oturuyor: oturuş hedefi ilk andan doğru.
+      const said = timedRun(x, quick(x), 200);
+      const cmd = speakCues(x.cues)[0]!;
+      expect(cmd.text).toMatch(/sağ(ına|a) 45°/);
+      const ok = said.filter((w) => w.idx === 0 && w.t > 0)[0]!;
+      expect(ok.text, voice).toBe('Oturuş doğru.');
+      // Komutu kesmez (kuyruğa girer) ve komutun tahmini süresi + baş çevirme payından önce söylenmez.
+      expect(ok.priority).toBe('normal');
+      expect(ok.t).toBeGreaterThanOrEqual(estimateSpeechSec(cmd.text) + CLINICIAN_TURN_SEC - 0.05);
+      expect(said.some((w) => w.idx === 0 && w.text === 'Pozisyon doğru.')).toBe(false);
+      // Yatış adımı değişmez: "Pozisyon doğru." yüksek öncelikle.
+      expect(said.find((w) => w.idx === 1 && w.text === 'Pozisyon doğru.')?.priority).toBe('high');
+    }
+  });
+
+  it('L1-4/y07: güvenlik uyarısı sesi ekrana bakmadan seçimi söyler (iki saniye basılı = durdur); "Telefonu alıp" demez', () => {
+    expect(HOLD_CHOICE_PATIENT).toMatch(/^Durdurmanızı öneririm: durdurmak için ekrana iki saniye basılı tutun\./);
+    expect(HOLD_CHOICE_HELPER).toMatch(/iki saniye basılı tutun/);
+    const x = sim('epley');
+    x.autoStop = false;
+    // 60 s pozisyona gelinemedi uyarısı (baş hiç sarkmıyor).
+    run(x, { maxSec: 200, poseOverride: (idx, t) => (idx === 1 && t > 1 ? lying(20, 0) : ideal(x.cfg.protocol.steps[idx]!.target)) });
+    expect(x.s.phase).toBe('safetyHold');
+    const said = spoken(x)[spoken(x).length - 1]!;
+    expect(said.endsWith(HOLD_CHOICE_PATIENT)).toBe(true);
+    expect(said).not.toMatch(/Telefonu alıp/);
+  });
+});
+
+describe('yeni kullanıcı turu 1 — y02: titreyen elle çift dokunuş ve açık kalan baş dönmesi', () => {
+  it('≤0,5 s arayla iki dokunuş başlatma işaretini geri alır; sesle söylenir, kayıtta "başladı" kalmaz', () => {
+    const x = sim('epley');
+    send(x, { type: 'start' });
+    x.t += 500;
+    send(x, { type: 'vertigoToggle' });
+    x.t += 300;
+    const n = x.cues.length;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+    expect(x.s.records[0]!.vertigoMarks).toHaveLength(0);
+    expect(x.s.records[0]!.vertigoTapCancels).toBe(1);
+    const said = speakCues(x.cues.slice(n));
+    expect(said.map((c) => c.text)).toEqual(['İki kez dokundunuz; işaret kaldırıldı. Baş dönmesi varsa ekrana bir kez dokunun.']);
+    expect(said[0]!.priority).toBe('high');
+    expect(hapticsOf(x.cues.slice(n))).toEqual(['markOff']);
+    // Üçüncü dokunuş (aynı titreme, 1 s içinde) yeniden açmaz; sonra tek dokunuş olağan biçimde işaretler.
+    x.t += 300;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+    x.t += 1500;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(true);
+    expect(x.s.records[0]!.vertigoMarks).toHaveLength(1);
+    // Bitiş yönünde hızlı çift dokunuş geri almaz: bitiş kalır (güvenli yön).
+    x.t += 5000;
+    send(x, { type: 'vertigoToggle' });
+    x.t += 300;
+    send(x, { type: 'vertigoToggle' });
+    expect(x.s.vertigoActive).toBe(false);
+    expect(x.s.records[0]!.vertigoMarks[0]!.end).not.toBeNull();
+  });
+
+  it('yardımcı ve klinisyen modunda geri alma sözü kendi sesinde', () => {
+    for (const [mode, helper, text] of [
+      ['patient', true, 'İki kez dokundunuz; işaret kaldırıldı. Hasta "dönüyor" derse ekrana bir kez dokunun.'],
+      ['clinician', false, 'İşaret kaldırıldı.']
+    ] as const) {
+      const x = sim('epley', mode);
+      x.cfg = { ...x.cfg, helper };
+      send(x, { type: 'start' });
+      x.t += 500;
+      send(x, { type: 'vertigoToggle' });
+      x.t += 400;
+      send(x, { type: 'vertigoToggle' });
+      expect(x.s.vertigoActive).toBe(false);
+      expect(spoken(x)[spoken(x).length - 1]).toBe(text);
+    }
+  });
+
+  it('açık kalan baş dönmesinde güvenlik uyarısından önce "Baş dönmesi sürüyor mu?" diye sorulur (ilk hatırlatma ve son hatırlatma)', () => {
+    // Dönmesi olmayan tarafta istemsiz kalan işaret (Dix-Hallpike yatış adımı): hasta bir daha dokunmuyor.
+    const x = sim('dix-hallpike');
+    x.autoStop = false;
+    send(x, { type: 'start' });
+    let markedAt: number | null = null;
+    const asked: number[] = [];
+    while (x.t < 600000 && x.s.phase !== 'safetyHold') {
+      x.t += 100;
+      const n = x.cues.length;
+      send(x, { type: 'tick', pose: ideal(x.cfg.protocol.steps[x.s.stepIndex]!.target) });
+      if (x.s.stepIndex === 1 && markedAt === null && x.s.phase === 'holding') {
+        send(x, { type: 'vertigoToggle' });
+        markedAt = x.t;
+      }
+      if (markedAt !== null && speakCues(x.cues.slice(n)).some((c) => c.text.startsWith('Baş dönmesi sürüyor mu?'))) asked.push((x.t - markedAt) / 1000);
+    }
+    expect(x.s.phase).toBe('safetyHold');
+    expect(asked.length).toBeGreaterThanOrEqual(2);
+    expect(asked[0]).toBeLessThanOrEqual(30);
+    expect(asked[asked.length - 1]).toBeLessThan(120);
   });
 });

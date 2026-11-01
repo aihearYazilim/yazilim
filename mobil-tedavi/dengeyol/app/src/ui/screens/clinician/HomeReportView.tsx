@@ -3,6 +3,7 @@
  */
 import { homeReportHasResearch, type HomeReport } from '../../../core/reportShare';
 import { sideName } from '../../../core/protocols';
+import { rxManeuverName } from '../../../core/prescription';
 import { Icon } from '../../components/Icon';
 import { RESEARCH_GROUP_TITLE, researchLineText } from '../patient/reportText';
 import {
@@ -69,7 +70,7 @@ export function HomeReportView({
           <>
             <dt>Reçete</dt>
             <dd>
-              {sideName(report.rx.side).toLocaleUpperCase('tr-TR')} · {report.rx.maneuver === 'epley' ? 'Epley' : 'Semont'} · günde en fazla{' '}
+              {sideName(report.rx.side).toLocaleUpperCase('tr-TR')} · {rxManeuverName(report.rx)} · günde en fazla{' '}
               {report.rx.perDay}, {report.rx.days} gün · {report.rx.date.split('-').reverse().join('.')}
             </dd>
           </>

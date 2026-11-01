@@ -15,6 +15,7 @@ import { unreachableStopDetail } from './reportText';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
+import { rxCanalOf, rxPcManeuver, rxProtocolId } from '../../../core/prescription';
 import type { ProtocolId, Side } from '../../../core/protocols';
 import { sideName } from '../../../core/protocols';
 import { SAFETY_STOP_TEXT, stopTextFor, vertigoSummary } from '../../../core/runner';
@@ -281,12 +282,16 @@ export function EpisodeFlow() {
   /** Reçeteli kısa yol yalnız muayene edilen baş dönmesinin devamıysa (hasta "geçip yeniden başladı" derse tam akış). */
   const rxBypassRef = useRef(false);
 
-  const pcManeuver: 'epley' | 'semont' = profile?.prescription?.maneuver ?? 'epley';
+  // Arka kanal yolu: reçetedeki arka kanal manevrası ya da Epley (yatay kanal reçetesinde de arka kanal yolu Epley'dir).
+  const pcManeuver: 'epley' | 'semont' = rxPcManeuver(profile?.prescription);
 
   /** Atağın manevrası: son manevra, yoksa kanala göre. */
   const episodeProtocol = (ep: Episode | null | undefined): ProtocolId => {
     const last = ep?.maneuvers[ep.maneuvers.length - 1];
-    return last ? last.protocolId : maneuverFor(episodeCanal(ep), pcManeuver);
+    if (last) return last.protocolId;
+    // Reçeteli kısa yolda manevra reçetenin manevrasıdır (yatay kanal reçetesinde BBQ roll), ilk manevra yazılmadan önce de.
+    if (ep?.rxShortcut && profile?.prescription) return rxProtocolId(profile.prescription);
+    return maneuverFor(episodeCanal(ep), pcManeuver);
   };
 
   /** Bilinen (şüpheli) taraf: reçete, kurulumdaki tanı ya da son atak. Test sırası ve tetiklenmeyen testte öneri. */
@@ -562,7 +567,8 @@ export function EpisodeFlow() {
    * karar: karar ekranı ("Yine de devam et", başka taraf, öbür test, durdur). phoneOn: telefon hâlâ alında.
    */
   const decideAndApply = (canal: HomeCanal, results: SideTestResult[], stronger: Side | 'equal' | null, phoneOn: boolean) => {
-    const rxSide = canal === 'PC' ? recentKnownSide(profile) : null;
+    // Reçete tarafı yalnız aynı kanalın testinde karşılaştırılır (yatay kanal reçetesi → sırtüstü baş çevirme testi).
+    const rxSide = profile?.prescription && rxCanalOf(profile.prescription) === canal ? recentKnownSide(profile) : null;
     let dec = (canal === 'PC' ? decidePosterior : decideHorizontal)(results, { stronger, doctorSide: rxSide, suggested: knownSide() });
     if (dec.ask) {
       setStage({ k: 'stronger', canal, results });
@@ -1130,7 +1136,8 @@ export function EpisodeFlow() {
               if (v === 'same') {
                 const s = profile.prescription!.side;
                 setEpisodeSide(s);
-                const next = prepFor({ k: 'maneuver', side: s, protocolId: pcManeuver });
+                // Reçetenin manevrası: arka kanalda Epley/Semont, yatay kanalda BBQ roll.
+                const next = prepFor({ k: 'maneuver', side: s, protocolId: rxProtocolId(profile.prescription!) });
                 if (doseGate(next)) setStage(next);
               } else {
                 // Geçip yeniden başladıysa nüks: tip ve taraf yeniden belirlenir.

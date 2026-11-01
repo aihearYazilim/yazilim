@@ -86,8 +86,14 @@ export interface RunnerOutcome {
   manual: boolean;
 }
 
-/** Güvenlik uyarısı açıldıktan sonra seçim düğmelerinin kilitli kaldığı süre (ms). */
+/** Güvenlik uyarısı açıldıktan sonra seçim düğmelerinin (ve "basılı tut = Durdur"un) kilitli kaldığı süre (ms). */
 const SAFETY_HOLD_LOCK_MS = 1000;
+/**
+ * "Devam et"ten (duraklatma ya da güvenlik uyarısı) sonra bu kadar (ms, gerçek zaman) baş dönmesi dokunuşu alınmaz: çift
+ * dokunuşun ikincisi yürütücüye düşüp sahte baş dönmesi kaydı açmasın (y06, yeni kullanıcı turu 1). Yürütücüdeki aynı kural
+ * (RESUME_TAP_GUARD_SEC) yürütücü saatiyle çalışır; bu, demo hızlandırmasında da gerçek dokunuş aralığını korur.
+ */
+export const RESUME_TAP_GUARD_MS = 1000;
 
 export function RunnerView({
   protocolId,
@@ -538,6 +544,10 @@ export function RunnerView({
     suppressClick.current = false;
     return true;
   };
+  /** Son "Devam et" anı (performance.now; duraklatma ya da güvenlik uyarısı). */
+  const resumedAt = useRef<number | null>(null);
+  /** "Devam et"e çift dokunuşun ikincisi mi (RESUME_TAP_GUARD_MS içinde gelen baş dönmesi dokunuşu yok sayılır)? */
+  const tapGuarded = () => resumedAt.current !== null && performance.now() - resumedAt.current < RESUME_TAP_GUARD_MS;
   /** Duraklatma sayfasında basışın başladığı an (performance.now). */
   const sheetDownAt = useRef<number | null>(null);
   /**
@@ -840,7 +850,7 @@ export function RunnerView({
   // düğmeler kendi işini yapar.
   const onBodyTap = (e: React.MouseEvent) => {
     if (swallowClick()) return;
-    if (!canMark) return;
+    if (!canMark || tapGuarded()) return;
     if ((e.target as HTMLElement).closest('button, a, input, select, label, summary')) return;
     dispatch({ type: 'vertigoToggle', now: now() });
   };
@@ -851,10 +861,12 @@ export function RunnerView({
   const chooseSafety = (choice: 'continue' | 'stop') => {
     const cur = sRef.current;
     if (cur.phase !== 'safetyHold' || !cur.safetyHold || holdLocked) return;
+    cancelPress();
     if (choice === 'continue') {
       unlockAudio();
       void keepAwake();
       logOverride(cur.safetyHold.reason, safetyHoldDetail(protocol, cur) ?? undefined);
+      resumedAt.current = performance.now();
     }
     dispatch({ type: 'safetyChoice', now: now(), choice });
   };
@@ -862,6 +874,7 @@ export function RunnerView({
     // Arama/arka plandan sonra ses motorları yeniden açılır (bu dokunuş iOS için gereklidir).
     unlockAudio();
     void keepAwake();
+    resumedAt.current = performance.now();
     dispatch({ type: 'resume', now: now() });
   };
   /** Uzun basışın başlamayacağı denetimler (baş dönmesi alanı ekranın parçası sayılır). */
@@ -1076,7 +1089,7 @@ export function RunnerView({
         <button
           className={`vertigo-pad${state.vertigoActive ? ' active' : ''}`}
           onClick={() => {
-            if (swallowClick()) return;
+            if (swallowClick() || tapGuarded()) return;
             dispatch({ type: 'vertigoToggle', now: now() });
           }}
           data-testid="vertigo-pad"
@@ -1100,17 +1113,32 @@ export function RunnerView({
           aria-label="Güvenlik uyarısı"
           data-testid="runner-safety-hold"
           data-reason={state.safetyHold.reason}
-          // Açılıştaki kör dokunuş (SAFETY_HOLD_LOCK_MS kilidi) ve uzun basış hiçbir seçimi yapmaz (duraklatma sayfasıyla aynı kural).
+          // Açılıştaki kör dokunuş (SAFETY_HOLD_LOCK_MS kilidi) ve kısa kör dokunuş hiçbir seçimi yapmaz. Ekrana bakmadan
+          // seçim (y07, yeni kullanıcı turu 1): hasta modunda ekranın herhangi bir yerine (düğmenin üstü de) 2 s basılı tutmak
+          // önerilen yolu, "Durdur"u seçer; kilit sürerken başlayan basış saymaz. "Devam et" yalnız düğmeyle.
           onPointerDownCapture={() => {
             sheetDownAt.current = performance.now();
           }}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            if (!P || holdLocked) return;
+            startPress(() => chooseSafety('stop'));
+          }}
+          onPointerUp={cancelPress}
+          onPointerLeave={cancelPress}
+          onPointerCancel={cancelPress}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="sheet" data-locked={holdLocked || undefined} style={holdLocked ? { opacity: 0.85 } : undefined}>
             <h2>{state.safetyHold.reason === 'VERTIGO_TOO_LONG' ? 'Baş dönmesi uzun sürdü' : 'Pozisyona gelinemedi'}</h2>
             <p data-testid="runner-safety-hold-text">{safetyHoldText(state)}</p>
             <p className="small muted">Manevra bekliyor; siz seçmeden devam etmez.</p>
+            {P && (
+              <p className="small" data-testid="runner-safety-hold-hint">
+                Ekrana bakmadan: durdurmak için ekranın herhangi bir yerine 2 saniye basılı tutun. Devam etmek için alttaki
+                "Devam et" düğmesine dokunun.
+              </p>
+            )}
             {P && settings.speech && (
               <button
                 className="btn ghost block sheet-replay"
@@ -1127,18 +1155,21 @@ export function RunnerView({
                 <Icon name="volume" /> Tekrar dinle
               </button>
             )}
+            {/* Önerilen yol büyük dolu birincil düğme; aşma (devam) çerçeveli ikincil ve kayda geçer (BRIEF; y03, y05). */}
             <button
-              className="btn warn block xl"
+              className="btn primary block xl"
               onClick={(e) => {
                 e.stopPropagation();
                 if (sheetTap(e)) chooseSafety('stop');
               }}
               data-testid="runner-hold-stop"
+              data-variant="primary"
             >
               <Icon name="stop" /> Durdur
             </button>
             <button
-              className="btn secondary block xl"
+              className="btn secondary block"
+              data-variant="secondary"
               onClick={(e) => {
                 e.stopPropagation();
                 if (sheetTap(e)) chooseSafety('continue');

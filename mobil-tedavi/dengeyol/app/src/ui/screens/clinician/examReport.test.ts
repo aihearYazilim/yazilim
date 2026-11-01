@@ -44,6 +44,8 @@ import {
   rxOverrideCovers,
   rxOverrideLine,
   rxWarning,
+  RX_REASON_MIN,
+  RX_WARN_PATIENT_LABEL,
   rxValidityText,
   shortDate,
   stepFlagLabels,
@@ -159,11 +161,20 @@ describe('ev reçetesi uyarısı (eski kilit) bulguya da bakar', () => {
     expect(rxWarning(exam(typical, { ...manualPC('canalithiasis'), side: null }))?.kind).toBe('RX_NO_SIDE');
   });
 
-  it('bayat tanı ve arka kanal dışı tanı kesin engel olarak kalır (tutarlılık / reçete biçimi)', () => {
+  it('yalnız bayat tanı kesin engel olarak kalır (tutarlılık); yatay kanal reçete alır, ön kanal uyarıdır', () => {
     const stale = exam(typical, manualPC('canalithiasis'));
     stale.findings = long;
     expect(rxBlockReason(stale)).toMatch(/yeniden onaylayın/);
-    expect(rxBlockReason(exam(typical, { ...manualPC('canalithiasis'), canal: 'HC', label: 'x' }))).toMatch(/yalnızca arka kanal/);
+    // Yatay kanal tanısı artık reçete alır (BBQ roll; kullanıcı turu yeni-1, L4-1).
+    const hc = exam(typical, { ...manualPC('canalithiasis'), canal: 'HC', label: 'x' });
+    expect(rxBlockReason(hc)).toBeNull();
+    expect(rxWarning(hc)).toBeNull();
+    // Ön kanal: kilit değil, uyarı + gerekçe (kanal klinisyence seçilir).
+    const ac = exam(typical, { ...manualPC('unknown'), canal: 'AC', label: 'x' });
+    expect(rxBlockReason(ac)).toBeNull();
+    expect(rxWarning(ac)?.kind).toBe('RX_CANAL');
+    expect(rxWarning(ac)?.message).toMatch(/ön kanal/);
+    expect(rxWarning(exam(typical, { ...manualPC('unknown'), canal: null, label: 'x' }))?.kind).toBe('RX_CANAL');
   });
 
   it('reçeteden sonra yeni uyarı doğarsa reçete güncel sayılmaz, nota yazılmaz', () => {
@@ -199,6 +210,45 @@ describe('ev reçetesi uyarısı (eski kilit) bulguya da bakar', () => {
     expect(rxCurrent(e)).toBe(false);
     e.rxOverride = { at: T0, kind: 'RX_LONG_RESPONSE', reason: '   ' };
     expect(rxOverrideCovers(e)).toBe(false);
+  });
+
+  it('yatay kanal reçetesi: tanıyla aynı kanal ve tarafsa güncel; HBYS notunda "sağ BBQ roll (yatay kanal)"', () => {
+    const roll: Findings = {
+      rollR: f({ nystagmus: 'horizontal-geotropic', latencySec: 2, durationSec: 30, intensity: 3 }),
+      rollL: f({ nystagmus: 'horizontal-geotropic', latencySec: 2, durationSec: 20, intensity: 1 })
+    };
+    const dx = { canal: 'HC' as const, side: 'R' as const, mechanism: 'canalithiasis' as const, label: 'Sağ yatay kanal BPPV — geotropik (kanalolitiazis)', fromSuggestion: true };
+    const hcToken = encodePrescription({ v: 1, side: 'R', canal: 'HC', maneuver: 'bbq-roll', date: '2026-10-30', perDay: 2, days: 3 });
+    const e = exam(roll, dx, { prescriptionToken: hcToken });
+    e.prescriptionFindingsKey = e.diagnosis!.findingsKey;
+    expect(rxWarning(e)).toBeNull();
+    expect(rxCurrent(e)).toBe(true);
+    expect(examNoteText(e, undefined, {})).toMatch(/^Ev reçetesi: sağ BBQ roll \(yatay kanal\), günde en fazla 2, 3 gün/m);
+    // Arka kanal reçetesi yatay kanal tanısına dayanmaz.
+    const pc = exam(roll, dx, { prescriptionToken: token, prescriptionFindingsKey: findingsKeyOf(roll) });
+    expect(rxCurrent(pc)).toBe(false);
+  });
+
+  it('santral örüntü: saf aşağı vuran nistagmus tanıdan önce gelir, bulguyu adıyla söyler (RX_CENTRAL); HBYS notuna girer', () => {
+    const central: Findings = { dhR: f({ nystagmus: 'downbeat-pure', latencySec: 0, durationSec: 30 }), dhL: f({ nystagmus: 'downbeat-pure', latencySec: 0, durationSec: 30 }) };
+    const w = rxWarning(exam(central));
+    expect(w?.kind).toBe('RX_CENTRAL');
+    expect(w?.title).toMatch(/Santral örüntü: saf aşağı vuran nistagmus/);
+    expect(w?.message).toMatch(/^Sağ Dix-Hallpike: saf aşağı vuran nistagmus; Sol Dix-Hallpike: saf aşağı vuran nistagmus\. Santral/);
+    expect(RX_WARN_PATIENT_LABEL.CENTRAL).toMatch(/beyin kaynaklı/);
+    // Atipik desen de santral.
+    expect(rxWarning(exam({ dhR: f({ nystagmus: 'other', durationSec: 10 }) }, manualPC('canalithiasis')))?.kind).toBe('RX_CENTRAL');
+    const note = examNoteText(exam(central), undefined, {});
+    expect(note).toMatch(/Santral örüntü: Sağ Dix-Hallpike: saf aşağı vuran nistagmus/);
+    // Uyarıya rağmen reçete: gerekçe kaydı ve HBYS satırı.
+    const e = exam(central, undefined, {
+      prescriptionToken: token,
+      prescriptionFindingsKey: findingsKeyOf(central),
+      rxOverride: { at: T0, kind: 'RX_CENTRAL', reason: 'MR randevusu verildi, hasta takipte' }
+    });
+    expect(rxCurrent(e)).toBe(true);
+    expect(rxOverrideLine(e)).toBe('Uyarıya rağmen reçete: MR randevusu verildi, hasta takipte (uyarı: santral örüntü).');
+    expect(RX_REASON_MIN).toBe(10);
   });
 
   it('tanısız reçete: bulgu imzasına bağlı; bulgu değişirse ya da başka tarafa tanı onaylanırsa güncel değil', () => {

@@ -718,6 +718,19 @@ describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı 
     expect(r.ok && r.value).toEqual(report);
   });
 
+  it('yatay kanal reçetesi (BBQ roll, "b") v3 ile yazılır; v1/v2 bağlantısında "b" geçersiz (eski çözücü Semont sanmasın)', () => {
+    const base = buildHomeReport(data([episode(T0)]), { now: T0 + 3 * 24 * 60 * MIN });
+    const hc = { ...base, rx: { ...base.rx!, maneuver: 'bbq-roll' as const } };
+    expect(homeReportVersion(hc)).toBe(3);
+    const { token, report } = encodeHomeReport(hc);
+    expect((wireOf(token).r as unknown[])[2]).toBe('b');
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(report);
+    expect(r.ok && r.value.rx?.maneuver).toBe('bbq-roll');
+    const m = Math.floor(T0 / MIN);
+    expect(decodeHomeReport(tokenOf({ v: 2, g: m, a: m, b: m, r: ['2026-10-31', 'R', 'b', 3, 5], e: [] }))).toEqual({ ok: false, error: 'FIELDS' });
+  });
+
   it('kısaltma: cümle sınırında, yoksa sözcük sınırında "…" ile', () => {
     expect(compactOverrideDetail('DOSE', 'kısa')).toBe('kısa');
     expect(compactOverrideDetail('NO_DIAGNOSIS', 'Hekim tanısı olmadan kullanım')).toBeUndefined();

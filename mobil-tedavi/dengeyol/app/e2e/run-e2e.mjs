@@ -817,6 +817,213 @@ await step('Hasta: "yatakta sağa-sola dönünce" yanıtı → sırtüstü baş 
   await ctx.close();
 });
 
+/** Reçete bağlantısının gövdesini (JSON) çözer. */
+const rxBody = (url) => JSON.parse(Buffer.from(url.split('#/recete/')[1].split('.')[0], 'base64url').toString('utf8'));
+
+/** Reçete bağlantısını açar, kabul eder ve tek ekran kurulumu bitirir (ana ekran). */
+async function acceptRx(page, url) {
+  await page.goto(url);
+  await page.getByTestId('rx-card').waitFor();
+  await page.getByTestId('rx-accept').click();
+  await page.getByTestId('ob-consent').click();
+  await page.getByTestId('ob-start').click();
+  await page.getByTestId('start-episode').waitFor();
+}
+
+await step('Klinisyen → hasta (yatay kanal, L4-1): supine roll bulgusu → yatay kanal tanısı → BBQ roll reçetesi (v3); hasta kısa yolda BBQ roll yapar, "geçmişti" derse sırtüstü baş çevirme testi', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await newExam(page, 'Y-1');
+  // Elle gir sırası: Sağ DH, Sol DH, sırtüstü nötr, baş sağa, baş sola.
+  const roll = async (i, intensity, dur) => {
+    await page.getByRole('button', { name: 'Elle gir' }).nth(i).click();
+    await page.getByTestId('finding-form').waitFor();
+    await page.getByRole('radio', { name: 'Yatay geotropik' }).click();
+    await page.locator('#dur').fill(dur);
+    // Şiddet seçilmeden Kaydet kapalı ve nedeni yazılı (L4-4).
+    if (await page.getByTestId('finding-save').isEnabled()) throw new Error('şiddetsiz roll bulgusunda Kaydet etkin');
+    if (!(await page.getByTestId('finding-save-why').innerText()).includes('şiddeti seçin')) throw new Error('Kaydet kapalı nedeni yazmıyor');
+    await page.getByTestId('finding-intensity-help').waitFor();
+    await page.getByRole('button', { name: intensity }).click();
+    await page.getByTestId('finding-save').click();
+  };
+  await roll(3, '3 güçlü', '30');
+  await roll(4, '1 hafif', '20');
+  await page.getByRole('button', { name: 'Tanı', exact: true }).click();
+  const sug = page.getByTestId('dx-suggestion').first();
+  await sug.waitFor();
+  if (!/Sağ yatay kanal/.test(await sug.innerText())) throw new Error('tanı önerisi: ' + (await sug.innerText()));
+  await page.getByTestId('dx-confirm').first().click();
+  await page.getByRole('button', { name: 'Reçete', exact: true }).click();
+  // Kilit yok: reçete formu doğrudan açılır, kanal tanıdan gelir, manevra BBQ roll.
+  if (await page.getByTestId('rx-blocked').count()) throw new Error('yatay kanal tanısında reçete hâlâ kilitli');
+  if (await page.getByTestId('rx-warning').count()) throw new Error('yatay kanal tipik tanısında beklenmeyen uyarı');
+  if (!(await page.getByTestId('rx-canal').innerText()).includes('Yatay kanal')) throw new Error('reçete kanalı tanıdan gelmedi');
+  await page.getByTestId('rx-maneuver-hc').waitFor();
+  await page.getByTestId('rx-make').click();
+  await page.getByTestId('rx-output').waitFor();
+  const sum = await page.getByTestId('rx-summary').innerText();
+  if (!sum.includes('SAĞ yatay kanal · BBQ roll')) throw new Error('reçete özeti: ' + sum);
+  // iPhone talimatı (L4-5) hekim ekranında.
+  if (!(await page.getByTestId('rx-ios-tip').innerText()).includes('Ana Ekrana Ekle')) throw new Error('iPhone talimatı yok');
+  await snap(page, 'odyolog-yatay-kanal-recete');
+  const url = await page.getByTestId('rx-url').inputValue();
+  const body = rxBody(url);
+  if (body.v !== 3 || body.canal !== 'HC' || body.maneuver !== 'bbq-roll' || body.side !== 'R') throw new Error('reçete gövdesi: ' + JSON.stringify(body));
+  const note = await hbysNote(page);
+  if (!/^Ev reçetesi: sağ BBQ roll \(yatay kanal\)/m.test(note)) throw new Error('HBYS notunda yatay kanal reçetesi yok: ' + note);
+  noErrors(errors);
+  await ctx.close();
+
+  // Hasta 1: "muayeneden beri geçmedi" → doğrudan BBQ roll (reçete tarafı).
+  {
+    const { ctx, page, errors } = await newPage(seed());
+    await page.goto(url);
+    await page.getByTestId('rx-card').waitFor();
+    if ((await page.getByTestId('rx-dx').innerText()) !== 'SAĞ kulak — yatay kanal kristal oynaması (BPPV)') throw new Error('reçete kartı tanı: ' + (await page.getByTestId('rx-dx').innerText()));
+    if ((await page.getByTestId('rx-maneuver').innerText()) !== 'BBQ roll') throw new Error('reçete kartı manevra');
+    await snap(page, 'hasta-yatay-kanal-recete-karti');
+    await acceptRx(page, url);
+    const p = (await storeOf(page)).patient;
+    if (p.canal !== 'HC' || p.side !== 'R' || p.prescription?.maneuver !== 'bbq-roll') throw new Error('profil: ' + JSON.stringify({ c: p.canal, s: p.side, rx: p.prescription }));
+    if (!(await page.getByTestId('home-rx').innerText()).includes('BBQ roll')) throw new Error('ana ekranda reçete manevrası yanlış');
+    await page.getByTestId('start-episode').click();
+    await answerRedFlags(page);
+    await page.getByTestId('rx-same').waitFor({ timeout: 15000 });
+    await unlocked(page);
+    await page.getByTestId('rx-same').click();
+    await page.getByTestId('prep-hc').waitFor();
+    await calibrate(page);
+    const ph = await driveRunner(page, { timeout: 180000 });
+    if (ph !== 'done') throw new Error('BBQ roll tamamlanmadı: ' + ph);
+    await clickChoice(page, 'İyiyim');
+    await page.getByTestId('end-maneuver-done').waitFor();
+    const ep = (await storeOf(page)).episodes.at(-1);
+    const m = ep.maneuvers.at(-1);
+    if (m?.protocolId !== 'bbq-roll' || m.side !== 'R' || !m.completed) throw new Error('BBQ roll kaydı: ' + JSON.stringify(m && { p: m.protocolId, s: m.side, c: m.completed }));
+    if (ep.rxShortcut !== true || ep.sideTests.length !== 0) throw new Error('reçeteli kısa yol kaydı: ' + JSON.stringify({ k: ep.rxShortcut, t: ep.sideTests.length }));
+    noErrors(errors);
+    await ctx.close();
+  }
+
+  // Hasta 2: "geçmişti; yeniden başladı" → alt tip sorulmadan sırtüstü baş çevirme testi → BBQ roll kararı.
+  {
+    const { ctx, page, errors } = await newPage(seed());
+    await acceptRx(page, url);
+    await page.getByTestId('start-episode').click();
+    await answerRedFlags(page);
+    await page.getByTestId('rx-new').waitFor({ timeout: 15000 });
+    await unlocked(page);
+    await page.getByTestId('rx-new').click();
+    await page.getByTestId('prep-hc').waitFor();
+    if (await page.getByTestId('subtype-turn').count()) throw new Error('yatay kanal reçetesinde alt tip yeniden soruldu');
+    await calibrate(page);
+    const p1 = await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+    if (p1 !== 'done') throw new Error('sırtüstü baş çevirme testi tamamlanmadı: ' + p1);
+    const gate = page.getByTestId('chain-continue');
+    await gate.waitFor({ timeout: 15000 });
+    if (!/sağ/i.test(await gate.innerText())) throw new Error('sağ taraf kararı beklenirdi: ' + (await gate.innerText()));
+    const ep = (await storeOf(page)).episodes.at(-1);
+    const t = ep.sideTests.at(-1);
+    if (t?.canal !== 'HC' || t.decision?.kind !== 'TREAT' || t.decision.side !== 'R') throw new Error('yatay kanal testi kaydı: ' + JSON.stringify(t));
+    if (!ep.overrides?.find((o) => o.kind === 'APP_DECISION')?.detail?.includes('BBQ roll')) throw new Error('kararda BBQ roll yok');
+    noErrors(errors);
+    await ctx.close();
+  }
+});
+
+await step('Klinisyen (L4-2): saf aşağı vuran nistagmus → Tedavi ve Reçete uyarısı bulguyu adıyla söyler; gerekçe ≥10 karakter; hastanın kartında "Hekim uyarıya rağmen verdi"', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await newExam(page, 'S-1');
+  await page.getByRole('button', { name: 'Elle gir' }).nth(0).click();
+  await page.getByRole('radio', { name: 'Saf aşağı vuran' }).click();
+  await page.locator('#lat').fill('0');
+  await page.locator('#dur').fill('30');
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
+  await page.getByRole('radio', { name: 'Yok' }).click();
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Tedavi', exact: true }).click();
+  const tc = await page.getByTestId('treat-central').innerText();
+  if (!tc.includes('Santral örüntü — Sağ Dix-Hallpike: saf aşağı vuran nistagmus')) throw new Error('Tedavi uyarısı bulguyu adıyla söylemiyor: ' + tc);
+  await page.getByRole('button', { name: 'Reçete', exact: true }).click();
+  const warn = page.getByTestId('rx-warning');
+  await warn.waitFor();
+  if ((await warn.getAttribute('data-kind')) !== 'RX_CENTRAL') throw new Error('uyarı türü: ' + (await warn.getAttribute('data-kind')));
+  const wt = await warn.innerText();
+  if (!wt.includes('Santral örüntü: saf aşağı vuran nistagmus') || !wt.includes('Sağ Dix-Hallpike: saf aşağı vuran nistagmus')) throw new Error('reçete uyarısı: ' + wt);
+  await snap(page, 'odyolog-santral-uyari');
+  await page.getByTestId('rx-override').click();
+  await page.getByTestId('rx-side-pick').getByRole('button', { name: 'Sağ', exact: true }).click();
+  await page.getByTestId('rx-override-reason').fill('x');
+  if (await page.getByTestId('rx-make').isEnabled()) throw new Error('tek harf gerekçeyle reçete düğmesi etkin');
+  if (!(await page.getByTestId('rx-make-why').innerText()).includes('en az 10 karakter')) throw new Error('kısa gerekçe nedeni yazmıyor');
+  await page.getByTestId('rx-override-reason').fill('Nöroloji konsültasyonu istendi; MR randevusu var');
+  await page.getByTestId('rx-make').click();
+  await page.getByTestId('rx-output').waitFor();
+  if (!(await page.getByTestId('rx-override-note').innerText()).includes('(uyarı: santral örüntü)')) throw new Error('aşma notu');
+  if (!(await page.getByTestId('rx-output-ov').innerText()).includes('Hekim uyarıya rağmen verdi')) throw new Error('hasta kartı önizlemesi yok');
+  const url = await page.getByTestId('rx-url').inputValue();
+  if (rxBody(url).v !== 3 || !rxBody(url).ov) throw new Error('reçetede uyarı notu yok: ' + JSON.stringify(rxBody(url)));
+  const ex = (await storeOf(page)).clinicExams[0];
+  if (ex.rxOverride?.kind !== 'RX_CENTRAL') throw new Error('muayeneye aşma kaydı: ' + JSON.stringify(ex.rxOverride));
+  noErrors(errors);
+  await ctx.close();
+  {
+    const { ctx, page, errors } = await newPage(seed());
+    await page.goto(url);
+    const line = await page.getByTestId('rx-override-line').innerText();
+    if (!line.startsWith('Hekim uyarıya rağmen verdi: muayene bulgusu beyin kaynaklı')) throw new Error('reçete kartında uyarı satırı: ' + line);
+    await snap(page, 'hasta-recete-uyariya-ragmen');
+    await acceptRx(page, url);
+    if (!(await page.getByTestId('home-rx-ov').innerText()).includes('Hekim uyarıya rağmen verdi')) throw new Error('ana ekranda uyarı satırı yok');
+    noErrors(errors);
+    await ctx.close();
+  }
+});
+
+await step('Klinisyen (L4-3/L4-4/L4-6): tipik arka kanal bulgusundan sonra "Sıradaki: Tanı" (roll isteğe bağlı); bulgu formunda "Nasıl görünür?" ve "Emin değilim"; yeni muayenede "Önceki kalibrasyonu kullan"', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test', method: 'çıplak göz' } } }));
+  await newExam(page, 'T-1');
+  await page.getByTestId('test-run-dhR').click();
+  if (await page.getByTestId('cal-reuse').count()) throw new Error('kalibrasyon yokken "önceki kalibrasyon" sunuldu');
+  await calibrate(page);
+  await page.getByTestId('runner-ready').waitFor();
+  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.5 });
+  await page.getByTestId('finding-form').waitFor();
+  // Çıplak göz: "Emin değilim" kısa yolu ve "Nasıl görünür?" yardımı (L4-4).
+  await page.getByTestId('finding-unsure').waitFor();
+  await page.getByTestId('finding-help').locator('summary').click();
+  if (!(await page.getByTestId('finding-help').innerText()).includes('üst kutup alttaki kulağa')) throw new Error('nasıl görünür yardımı eksik');
+  await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).click();
+  await page.locator('#lat').fill('3');
+  await page.locator('#dur').fill('20');
+  await page.getByTestId('finding-save').click();
+  // Sol DH: "Emin değilim, baş dönmesi var" → nistagmus yok + baş dönmesi + not.
+  await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
+  await page.getByTestId('finding-unsure').click();
+  await page.getByTestId('finding-save').click();
+  let fx = (await storeOf(page)).clinicExams[0].findings;
+  if (fx.dhL?.nystagmus !== 'none' || fx.dhL.vertigo !== true || !fx.dhL.note?.includes('emin değil')) throw new Error('"emin değilim" kaydı: ' + JSON.stringify(fx.dhL));
+  // Nistagmussuz baş dönmesi tipik öneriyi düşürür: sol DH'yi negatif yap → tipik → "Sıradaki: Tanı".
+  await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
+  await page.getByRole('radio', { name: 'Yok' }).click();
+  await page.locator('input[type="checkbox"]').first().uncheck();
+  await page.getByTestId('finding-save').click();
+  await page.getByTestId('test-next-dx').waitFor();
+  if (!(await page.getByTestId('test-next').innerText()).includes('isteğe bağlı')) throw new Error('roll testi isteğe bağlı yazmıyor');
+  await snap(page, 'odyolog-siradaki-tani');
+  await page.getByTestId('test-next-dx').click();
+  await page.getByTestId('dx-suggestion').first().waitFor();
+  // Yeni muayene: bu oturumdaki kalibrasyon tek dokunuşla yeniden kullanılır (L4-6).
+  await newExam(page, 'T-2');
+  await page.getByTestId('test-run-dhR').click();
+  await page.getByTestId('cal-reuse').click();
+  await page.getByTestId('runner-ready').waitFor();
+  if (await page.getByTestId('cal-start').count()) throw new Error('önceki kalibrasyon kullanılmadı');
+  noErrors(errors);
+  await ctx.close();
+});
+
 let rxUrl = null;
 /** Odyolog senaryosunun sonundaki uygulama verisi (muayene + reçete): basılı rapor senaryosu bunu tohumlar. */
 let clinState = null;
@@ -864,7 +1071,7 @@ await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley �
   await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
   await page.getByRole('radio', { name: 'Yok' }).click();
   await page.getByTestId('finding-save').click();
-  await page.getByRole('button', { name: 'Tanı' }).click();
+  await page.getByRole('button', { name: 'Tanı', exact: true }).click();
   await page.getByTestId('dx-suggestion').first().waitFor();
   const dxText = await page.getByTestId('dx-suggestion').first().innerText();
   if (!/Sağ arka kanal/.test(dxText)) throw new Error('tanı önerisi beklenmedik: ' + dxText);
@@ -1659,6 +1866,11 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   if ((await hold.getAttribute('data-reason')) !== 'VERTIGO_TOO_LONG') throw new Error('uyarı nedeni: ' + (await hold.getAttribute('data-reason')));
   if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('yürütücü beklemede değil');
   await page.getByTestId('runner-hold-112').waitFor();
+  // Önerilen yol "Durdur" büyük dolu birincil; "Devam et" çerçeveli ikincil (yeni kullanıcı turu 1, L1-4).
+  if ((await page.getByTestId('runner-hold-stop').getAttribute('data-variant')) !== 'primary') throw new Error('"Durdur" birincil düğme değil');
+  if ((await page.getByTestId('runner-hold-continue').getAttribute('data-variant')) !== 'secondary') throw new Error('"Devam et" ikincil düğme değil');
+  if (!(await page.getByTestId('runner-hold-stop').evaluate((b) => b.classList.contains('primary')))) throw new Error('"Durdur" dolu değil');
+  await page.getByTestId('runner-safety-hold-hint').waitFor();
   // Kendiliğinden seçim yok: bir süre sonra da bekliyor, kayıt yazılmadı.
   await page.waitForTimeout(1500);
   if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('uyarı kendiliğinden kapandı');
@@ -1669,16 +1881,54 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   let ep = (await storeOf(page)).episodes[0];
   if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Devam et" VERTIGO_TOO_LONG kaydı yazmadı: ' + kindsOf(ep).join(', '));
   if (ep.maneuvers.length) throw new Error('"Devam et" manevrayı bitirdi');
-  // Baş dönmesi sürüyor: bir sınır daha sonra yeniden uyarı; bu kez "Durdur".
+  // Baş dönmesi sürüyor: bir sınır daha sonra yeniden uyarı; bu kez ekrana bakmadan "Durdur" (y07): kısa kör dokunuş bir
+  // şey seçmez, ekranın herhangi bir yerine 2 s basılı tutmak durdurur.
   await hold.waitFor({ timeout: 20000 });
   await unlocked(page);
-  await page.getByTestId('runner-hold-stop').click();
+  const textBox = await page.getByTestId('runner-safety-hold-text').boundingBox();
+  await page.mouse.click(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('kısa kör dokunuş seçim yaptı');
+  // Kısa basış (1 s) da seçmez.
+  await page.mouse.move(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(1000);
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('1 s basış seçim yaptı');
+  await page.mouse.down();
+  await page.waitForTimeout(2300);
+  await page.mouse.up();
   await page.getByTestId('end-safety').waitFor({ timeout: 15000 });
   await page.getByTestId('end-retry').waitFor();
   ep = (await storeOf(page)).episodes[0];
   const m = ep.maneuvers.at(-1);
   if (!m || m.completed || m.stopReason !== 'VERTIGO_TOO_LONG') throw new Error('durdurulan manevra kaydı: ' + JSON.stringify(m && { c: m.completed, r: m.stopReason }));
   if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Durdur" aşma kaydı yazdı');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift dokunuş baş dönmesi işaretlemez; hızlı çift dokunuş işareti açık bırakmaz; tek dokunuş işaretler', async () => {
+  // ×4: Epley sarkık baş adımı (45 s) gerçek ~11 s; çift dokunuş ve 1 s bekleme adım içinde kalır.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 4 }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await startManeuver(page);
+  await holdAtStep(page, 1, 60000);
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  await page.getByTestId('runner-pause').press('Enter');
+  await waitPhase(page, ['paused']);
+  await page.getByTestId('runner-resume').dblclick();
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused');
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('vertigo-pad').getAttribute('aria-pressed')) === 'true') throw new Error('"Devam et"e çift dokunuşun ikincisi baş dönmesi işaretledi');
+  await page.waitForTimeout(1200);
+  // Titreyen elle hızlı çift dokunuş (y02): başlatma işareti geri alınır, baş dönmesi "açık" kalmaz.
+  await page.getByTestId('vertigo-pad').dblclick();
+  await page.waitForTimeout(300);
+  if ((await page.getByTestId('vertigo-pad').getAttribute('aria-pressed')) === 'true') throw new Error('hızlı çift dokunuş baş dönmesini açık bıraktı');
+  await page.waitForTimeout(1200);
+  await page.getByTestId('vertigo-pad').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="vertigo-pad"]')?.getAttribute('aria-pressed') === 'true', null, { timeout: 3000 });
   noErrors(errors);
   await ctx.close();
 });

@@ -430,6 +430,43 @@ export function rxFindingWarning(findings: Findings, retestFindings: Findings = 
   return null;
 }
 
+/**
+ * Santral örüntü bulgusu (kullanıcı turu yeni-1, L4-2): saf aşağı vuran nistagmus, atipik desen ya da ≥1 dk süren
+ * pozisyonel nistagmus. Tedavi ve Reçete sekmelerinde uyarı bulguyu ADIYLA söyler (yalnız Tanı sekmesinde kalmasın).
+ */
+export interface CentralFinding {
+  kind: 'downbeat-pure' | 'atypical' | 'long';
+  /** "Sağ Dix-Hallpike: saf aşağı vuran nistagmus" (tekrar testteyse "Tekrar test · " önekli). */
+  name: string;
+}
+
+/** Santral örüntü bulguları (önce saf aşağı vuran ve atipik, sonra ≥1 dk). Yoksa boş dizi. */
+export function centralFindings(findings: Findings, retestFindings: Findings = {}): CentralFinding[] {
+  const strong: CentralFinding[] = [];
+  const long: CentralFinding[] = [];
+  for (const [src, fx] of [
+    ['', findings],
+    ['Tekrar test · ', retestFindings]
+  ] as const) {
+    for (const [k, f] of Object.entries(fx) as [FindingKey, Finding | undefined][]) {
+      if (!f) continue;
+      const at = `${src}${keyLabel(k)}`;
+      if (f.nystagmus === 'downbeat-pure') strong.push({ kind: 'downbeat-pure', name: `${at}: saf aşağı vuran nistagmus` });
+      else if (f.nystagmus === 'other') strong.push({ kind: 'atypical', name: `${at}: atipik nistagmus deseni` });
+      if (f.nystagmus !== 'none' && isLong(f)) long.push({ kind: 'long', name: `${at}: nistagmus ${f.durationSec} s sürdü (≥1 dk)` });
+    }
+  }
+  return [...strong, ...long];
+}
+
+/**
+ * Santral örüntü uyarı metni (Tedavi sekmesi): bulguları adıyla sayar. Bulgu yoksa null.
+ */
+export function centralWarningText(list: CentralFinding[]): string | null {
+  if (list.length === 0) return null;
+  return `Santral örüntü — ${list.map((c) => c.name).join('; ')}. Santral pozisyonel nistagmus (serebellum/beyin sapı) dışlanmalı: nörolojik değerlendirme, gerekirse MR.`;
+}
+
 export function keyLabel(k: FindingKey): string {
   switch (k) {
     case 'dhR':
