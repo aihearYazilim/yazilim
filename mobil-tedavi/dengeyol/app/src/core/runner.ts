@@ -1601,7 +1601,10 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
           s.lastHintAt = now;
         }
       }
-    } else if (onWrongSide(livePose, tg)) {
+    } else if (lyingNow && onWrongSide(livePose, tg)) {
+      // Yalnız yatarken: dik otururken yatay bileşen çok küçüktür ve θ gürültüyle rastgele bir yön gösterir. Eskiden kilit
+      // oturuşta da kuruluyordu; oturuştan doğrudan hedef yana yatan (ara örnek olmadan) hasta "yüzüstünden geldi" sayılıp
+      // sırtüstüne dönene dek kabul edilmiyor, 60 s sonra "pozisyona gelinemedi" çıkıyordu (e2e'de yük altında BBQ roll).
       s.wrongSideLatched = true;
       s.viaSupine = false;
     }

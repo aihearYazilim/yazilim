@@ -256,26 +256,50 @@ async function driveRunner(page, { markVertigoAtStep = null, vertigoSec = 0.6, t
   let lastStep = -1;
   let lastGoto = 0;
   let marked = false;
+  const trace = [];
+  let lastKey = '';
   while (Date.now() - t0 < timeout) {
     const runner = page.getByTestId('runner');
     if (!(await runner.isVisible().catch(() => false))) return;
     const st = Number(await runner.getAttribute('data-step'));
     const phase = await runner.getAttribute('data-phase');
+    const key = `${st}:${phase}`;
+    if (key !== lastKey) {
+      lastKey = key;
+      const info = await page.evaluate(() => {
+        const s = window.__dengeyolSim?.state?.();
+        const h = document.querySelector('[data-testid="runner-hint"]')?.getAttribute('data-hint') ?? '-';
+        const u = s ? `${s.reading ? 'okuma ' : ''}${s.headUp.x.toFixed(2)},${s.headUp.y.toFixed(2)},${s.headUp.z.toFixed(2)}` : '?';
+        return `baş ${u} ipucu ${h}`;
+      });
+      trace.push(`${Date.now() - t0}ms ${key} [${info}]`);
+    }
     if (phase === 'done' || phase === 'aborted' || phase === 'safetyStop') {
       await page.waitForTimeout(1600);
       if (await page.getByTestId('sim-panel').isVisible().catch(() => false)) throw new Error('demo paneli yürütücü bitince kapanmadı');
       return phase;
     }
     // Güvenlik uyarısı (uzun baş dönmesi / pozisyona gelinemedi) bu yardımcıda beklenmez: senaryo kendisi yönetir.
-    if (phase === 'safetyHold') throw new Error('beklenmeyen güvenlik uyarısı: ' + (await page.getByTestId('runner-safety-hold').getAttribute('data-reason')));
+    if (phase === 'safetyHold') {
+      const info = await page.evaluate(() => {
+        const s = window.__dengeyolSim?.state?.();
+        return s ? `${s.reading ? 'okuma ' : ''}${s.headUp.x.toFixed(2)},${s.headUp.y.toFixed(2)},${s.headUp.z.toFixed(2)}` : '?';
+      });
+      trace.push(`son baş ${info}`);
+      const cal = await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('dengeyol:v1')).patient?.calibration ?? null));
+      trace.push(`kalibrasyon ${cal}`);
+    }
+    if (phase === 'safetyHold') throw new Error('beklenmeyen güvenlik uyarısı: ' + (await page.getByTestId('runner-safety-hold').getAttribute('data-reason')) + ' | ' + trace.slice(-12).join(' | '));
     if (st !== lastStep && phase !== 'between') {
       lastStep = st;
       if (onStep) await onStep(st);
       await page.getByTestId('sim-goto').click();
+      trace.push(`${Date.now() - t0}ms goto@${st}`);
       lastGoto = Date.now();
     } else if (phase === 'seeking' && Date.now() - lastGoto > 1500) {
       // Hedef geç yayımlandıysa (ör. giriş cümlesi sırasında) sanal baş eski hedefte kalmasın: yeniden götür.
       await page.getByTestId('sim-goto').click();
+      trace.push(`${Date.now() - t0}ms regoto@${st}`);
       lastGoto = Date.now();
     }
     if (markVertigoAtStep === st && !marked && phase === 'holding') {

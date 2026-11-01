@@ -2446,3 +2446,41 @@ describe('yeni kullanıcı turu 2 (M2): yürütücü sesi', () => {
     expect(v).toMatch(/^Epley · sağ, adım 2\/5 \(Sırtüstü, baş sağa 45° ve sarkık\)/);
   });
 });
+
+describe('yan yatış kilidi otururken kurulmaz (e2e BBQ roll ara sıra POSITION_UNREACHABLE; tur 2)', () => {
+  it('dik otururken θ gürültüsü karşı yanı gösterse de kilit kurulmaz; oturuştan doğrudan hedef yana yatan hasta kabul edilir', () => {
+    const cfg: RunnerConfig = { ...DEFAULT_RUNNER_CONFIG, mode: 'patient', protocol: resolveProtocol('bbq-roll', 'R'), introSecFor: () => 3 };
+    const x: Sim = { cfg, s: initialRunnerState(), t: 0, cues: [], autoStop: false };
+    send(x, { type: 'start' });
+    // Dik oturuş: yatay bileşen çok küçük, yönü karşı yanı (θ ≈ −90°) gösteriyor (sensör gürültüsü).
+    const sitNoise = poseFromUp({ x: 0.01, y: 1, z: 0.001 });
+    expect(sitNoise.theta).toBeLessThan(-60);
+    expect(sitNoise.tiltFromUpright).toBeLessThan(5);
+    // Tek sayıda örnek: eski kodda kilit her örnekte kurulup bir sonrakinde kalkıyordu; son oturuş örneği kilitli kalırdı.
+    for (let i = 0; i < 41; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: sitNoise });
+    }
+    expect(x.s.wrongSideLatched).toBe(false);
+    // Tek örnekte oturuştan hedefe (sağ yan, θ +90°): ara örnek yok (seyrek ölçüm, hızlı hareket).
+    const target = ideal(cfg.protocol.steps[0]!.target);
+    for (let i = 0; i < 40 && x.s.phase !== 'holding'; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: target });
+    }
+    expect(x.s.phase).toBe('holding');
+    expect(x.s.evaluation?.wrongSide).toBeFalsy();
+  });
+
+  it('yatarken karşı yana geçen hasta için kilit eskisi gibi kurulur', () => {
+    const cfg: RunnerConfig = { ...DEFAULT_RUNNER_CONFIG, mode: 'patient', protocol: resolveProtocol('bbq-roll', 'R'), introSecFor: () => 3 };
+    const x: Sim = { cfg, s: initialRunnerState(), t: 0, cues: [], autoStop: false };
+    send(x, { type: 'start' });
+    const wrong = poseFromUp(upFromLying(-90, 0));
+    for (let i = 0; i < 40; i++) {
+      x.t += 100;
+      send(x, { type: 'tick', pose: wrong });
+    }
+    expect(x.s.wrongSideLatched).toBe(true);
+  });
+});

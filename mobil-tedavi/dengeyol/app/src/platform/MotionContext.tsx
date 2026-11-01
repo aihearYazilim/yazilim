@@ -22,7 +22,9 @@ export function MotionProvider({ children }: { children: ReactNode }) {
     if (settings.simulation) void sim.start();
     else sim.stop();
     // Yalnız demo modunda: uçtan uca testler sanal telefonu panel açılmadan alına koyabilsin (L5-4).
-    const w = window as unknown as { __dengeyolSim?: { upright: () => void; reading: () => void } };
+    const w = window as unknown as {
+      __dengeyolSim?: { upright: () => void; reading: () => void; state: () => { reading: boolean; headUp: { x: number; y: number; z: number } } };
+    };
     if (settings.simulation) {
       w.__dengeyolSim = {
         upright: () => {
@@ -31,7 +33,9 @@ export function MotionProvider({ children }: { children: ReactNode }) {
         },
         reading: () => {
           sim.reading = true;
-        }
+        },
+        /** Sanal başın o anki durumu (uçtan uca testlerde hata ayıklama izi için). */
+        state: () => ({ reading: sim.reading, headUp: sim.getHeadUp() })
       };
     } else delete w.__dengeyolSim;
   }, [settings.simulation]);
