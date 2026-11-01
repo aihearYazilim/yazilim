@@ -33,6 +33,16 @@ describe('konuşma metni (speechText)', () => {
   });
 });
 
+describe('yeni kullanıcı turu 3 (N2-5; y05): çift nokta', () => {
+  it('birleştirilen cümlelerdeki ".." ve "?." tek işarete iner; tek nokta ve ondalık sayı değişmez', () => {
+    expect(speechText("çift görme ya da şiddetli baş ağrısı.. Hemen 112'yi arayın.")).toBe("çift görme ya da şiddetli baş ağrısı. Hemen 112'yi arayın.");
+    expect(speechText('baş ağrısı. .')).toBe('baş ağrısı.');
+    expect(speechText('Geçti mi?.')).toBe('Geçti mi?');
+    expect(speechText('Bekleyin...')).toBe('Bekleyin.');
+    expect(speechText('1.5 saniye bekleyin.')).toBe('1.5 saniye bekleyin.');
+  });
+});
+
 describe('saniye kısaltması (kullanıcı turu 4, k07)', () => {
   it('sayıdan sonraki "s" "saniye" okunur; sözcük içindeki s değişmez', () => {
     expect(speechText('72 s içinde gelinemedi')).toBe('72 saniye içinde gelinemedi');

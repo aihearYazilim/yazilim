@@ -7,6 +7,7 @@ import {
   estimateSpeechSec,
   HOLD_CHOICE_HELPER,
   HOLD_CHOICE_PATIENT,
+  VERTIGO_HOLD_SPOKEN,
   stepAsksTap,
   type Cue,
   DEFAULT_RUNNER_CONFIG,
@@ -14,7 +15,6 @@ import {
   initialRunnerState,
   pauseSpeech,
   pauseReturnSpeech,
-  blindUnwellPrompt,
   PRONE_ARRIVAL_NOTICE,
   PRONE_ARRIVAL_TEXT,
   REACH_TOUCHED_ONLY_TEXT,
@@ -97,9 +97,11 @@ function run(x: Sim, opts: { reactSec?: number; maxSec?: number; poseOverride?: 
   }
 }
 
-/** Duraklatma sesinin kusma/boyun ve "kendimi kötü" cümleleri (hasta; y07, yeni kullanıcı turu 1). */
+/** Duraklatma sesinin ilk cümlesi: devam yolu ("Devam et"e dokunmak; yeni kullanıcı turu 3, N2-1). */
+const PAUSE_HEAD_P = 'Duraklatıldı. Devam etmek için ekrandaki Devam et düğmesine dokunun.';
+/** Duraklatma sesinin "kendimi kötü" (iki saniye basılı = durdur) ve kusma/boyun cümleleri (hasta; y07, N2-1). */
 const PAUSE_SAFE_P =
-  'Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun. Kendinizi kötü hissediyorsanız ekrana iki kez hızlıca dokunun.';
+  'Kendinizi kötü hissediyorsanız, durdurmak için ekrana iki saniye basılı tutun. Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun.';
 
 describe('Epley yürütücüsü (hasta modu)', () => {
   it('ideal hasta ile tüm adımları tamamlar; süreler en azından minimum', () => {
@@ -1400,24 +1402,22 @@ describe('tur 3 F1-4: klinisyen sesi', () => {
 });
 
 describe('tur 3 F1-5: sesli yönerge sırası', () => {
-  it('duraklatma sesi önce eylemi söyler: "Devam için ekrana iki saniye basılı tutun."', () => {
+  it('duraklatma sesi önce eylemi söyler: "Devam etmek için ekrandaki Devam et düğmesine dokunun." (N2-1)', () => {
     const x = sim('epley');
     send(x, { type: 'start' });
     send(x, { type: 'pause' });
     const t = speakCues(x.cues).pop()!.text;
-    expect(t.startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun.')).toBe(true);
-    expect(pauseSpeech(x.cfg, false, true)).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun\. Bu iki düğme bir onay daha ister\.$/);
+    expect(t.startsWith(PAUSE_HEAD_P)).toBe(true);
+    expect(pauseSpeech(x.cfg, false, true)).toMatch(/"Pozisyona gelemiyorum" düğmesine dokunun\. Bu düğmeler bir onay daha ister\.$/);
     // Baş dönmesi işaretliyken "bir kez dokunun" hemen eylemin ardından.
     const y = sim('epley');
     send(y, { type: 'start' });
     y.t += 500;
     send(y, { type: 'vertigoToggle' });
     send(y, { type: 'pause' });
-    expect(speakCues(y.cues).pop()!.text).toBe(
-      'Duraklatıldı. Devam için ekrana iki saniye basılı tutun. Baş dönmesi geçtiyse ekrana bir kez dokunun. ' + PAUSE_SAFE_P
-    );
+    expect(speakCues(y.cues).pop()!.text).toBe(PAUSE_HEAD_P + ' Baş dönmesi geçtiyse ekrana bir kez dokunun. ' + PAUSE_SAFE_P);
     expect(pauseSpeech(y.cfg, true, true)).toMatch(
-      /^Duraklatıldı\. Devam için ekrana iki saniye basılı tutun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Kusacak/
+      /^Duraklatıldı\. Devam etmek için ekrandaki Devam et düğmesine dokunun\. Baş dönmesi geçtiyse ekrana bir kez dokunun\. Kendinizi kötü/
     );
   });
 
@@ -1717,15 +1717,15 @@ describe('tur 4 G1-4: sesli metin, duraklatma sesi, kısa seste seyrekleşme, y�
     const x = sim('epley');
     send(x, { type: 'start' });
     send(x, { type: 'pause' });
-    expect(speakCues(x.cues).pop()!.text).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. ' + PAUSE_SAFE_P);
-    expect(pauseSpeech(x.cfg, false, false)).toBe('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. ' + PAUSE_SAFE_P);
+    expect(speakCues(x.cues).pop()!.text).toBe(PAUSE_HEAD_P + ' ' + PAUSE_SAFE_P);
+    expect(pauseSpeech(x.cfg, false, false)).toBe(PAUSE_HEAD_P + ' ' + PAUSE_SAFE_P);
     // Telefon alındayken "Tekrar dinle" görülemez: boyun ve kusma güvenlik cümleleri ve "kötüyüm" yolu kısa seste de kalır
     // (k07, tur 5; y07, yeni kullanıcı turu 1).
     expect(pauseSpeech({ ...x.cfg, helper: true }, false, false)).toMatch(
-      /Hasta kusacak gibiyse başını kaldırıp yana çevirin ya da oturtun; boynu ağrıyorsa da onu yavaşça oturtun\. Hasta kendini kötü hissediyorsa "Hasta kendini kötü hissediyor" düğmesine dokunun\.$/
+      /Hasta kendini kötü hissediyorsa, durdurmak için ekrana iki saniye basılı tutun\. Hasta kusacak gibiyse başını kaldırıp yana çevirin ya da oturtun; boynu ağrıyorsa da onu yavaşça oturtun\.$/
     );
-    expect(pauseSpeech(x.cfg, false, true).startsWith('Duraklatıldı. Devam için ekrana iki saniye basılı tutun. ' + PAUSE_SAFE_P)).toBe(true);
-    expect(pauseSpeech({ ...x.cfg, helper: true }, false, true)).toMatch(/"Bu pozisyona gelemiyor" düğmesine dokunun\. Bu iki düğme bir onay daha ister\.$/);
+    expect(pauseSpeech(x.cfg, false, true).startsWith(PAUSE_HEAD_P + ' ' + PAUSE_SAFE_P)).toBe(true);
+    expect(pauseSpeech({ ...x.cfg, helper: true }, false, true)).toMatch(/"Bu pozisyona gelemiyor" düğmesine dokunun\. Bu düğmeler bir onay daha ister\.$/);
     const c = sim('epley', 'clinician');
     expect(pauseSpeech(c.cfg, true, true)).toBe('Duraklatıldı.');
   });
@@ -2058,11 +2058,14 @@ describe('güvenlik uyarısı (safetyHold): 2 dk baş dönmesi ve 60 s pozisyon'
     expect(x.s.stopReason).toBeNull();
     expect(safetyHoldText(x.s)).toBe(SAFETY_HOLD_TEXT.VERTIGO_TOO_LONG);
     expect(SAFETY_HOLD_TEXT.VERTIGO_TOO_LONG).toMatch(/112/);
-    // Ekrana bakmadan seçim: önerilen "Durdur" iki saniye basılı tutmak; "Devam et" düğmeyle; kusma güvenliği (y07).
+    // Ekrana bakmadan seçim: önerilen "Durdur" iki saniye basılı tutmak — ilk cümle (N2-4; y07); "Devam et" düğmeyle;
+    // kusma güvenliği (y07).
     const said = spoken(x)[spoken(x).length - 1]!;
+    expect(said).toBe(VERTIGO_HOLD_SPOKEN.patient);
+    expect(said.startsWith('Durdurmak için ekrana iki saniye basılı tutun. ')).toBe(true);
     expect(said).toMatch(/2 dakikadan uzun/);
     expect(said).toMatch(/Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun\./);
-    expect(said).toMatch(/durdurmak için ekrana iki saniye basılı tutun\. Devam etmek isterseniz ekrandaki Devam et düğmesine dokunun\.$/);
+    expect(said).toMatch(/Devam etmek için Devam et düğmesine dokunun\.$/);
     expect(said).not.toMatch(/Telefonu alıp/);
     expect(hapticsOf(x.cues)).toContain('alarm');
     const frozen = { step: x.s.stepIndex, hold: x.s.holdSec, records: x.s.records };
@@ -2409,21 +2412,46 @@ describe('yeni kullanıcı turu 1 — y02: titreyen elle çift dokunuş ve açı
 });
 
 describe('yeni kullanıcı turu 2 (M2): yürütücü sesi', () => {
-  it('M2-4: duraklatma sesi "kendimi kötü" yolunu ekrana bakmadan söyler (iki kez dokunma); sesli onay 2 s basılı tutmayı söyler', () => {
+  it('N2-1 (M2-4 yerine): duraklatma sesi tek kuralı söyler — "Devam et"e dokun = devam, iki saniye basılı = durdur; çift dokunuş ve "devam için basılı tutun" yok', () => {
     const x = sim('epley');
-    expect(pauseSpeech(x.cfg, false, false)).toMatch(/Kendinizi kötü hissediyorsanız ekrana iki kez hızlıca dokunun\.$/);
-    expect(pauseSpeech(x.cfg, false, false)).not.toMatch(/düğmesine dokunun/);
-    expect(blindUnwellPrompt(x.cfg)).toBe(
-      'Kendinizi kötü hissettiğinizi anladım. Manevrayı durdurmak için ekrana iki saniye basılı tutun. Vazgeçmek için bir şey yapmayın.'
-    );
-    expect(blindUnwellPrompt({ ...x.cfg, helper: true })).toMatch(/^Hastanın kendini kötü hissettiğini anladım\./);
+    for (const v of [false, true]) {
+      for (const full of [false, true]) {
+        for (const cfg of [x.cfg, { ...x.cfg, helper: true }]) {
+          const t = pauseSpeech(cfg, v, full);
+          expect(t).toMatch(/^Duraklatıldı\. Devam etmek için ekrandaki Devam et düğmesine dokunun\./);
+          expect(t).toMatch(/durdurmak için ekrana iki saniye basılı tutun\./);
+          expect(t).not.toMatch(/iki kez/);
+          expect(t).not.toMatch(/Devam için ekrana|devam etmek için ekrana|ya da ekrana iki saniye/i);
+        }
+      }
+    }
     // Klinisyen duraklatma sesi değişmez.
     expect(pauseSpeech(sim('epley', 'clinician').cfg, false, false)).toBe('Duraklatıldı.');
   });
 
-  it('M2-3: sayfaya dönüşte kısa tekrar ("Devam et" ve basılı tutma ikisi de söylenir); baş dönmesi işaretliyse tek dokunuş; klinisyende yok', () => {
+  it('N2-1: "Devam et" baş dönmesi işaretliyken de sürdürür; işaret açık kalır ve nasıl kapatılacağı söylenir', () => {
     const x = sim('epley');
-    expect(pauseReturnSpeech(x.cfg, false)).toBe('Duraklatıldı. Devam etmek için Devam et düğmesine dokunun ya da ekrana iki saniye basılı tutun.');
+    send(x, { type: 'start' });
+    x.t += 500;
+    send(x, { type: 'vertigoToggle' });
+    send(x, { type: 'pause' });
+    x.t += 2000;
+    const n = x.cues.length;
+    send(x, { type: 'resume' });
+    expect(x.s.phase).not.toBe('paused');
+    expect(x.s.vertigoActive).toBe(true);
+    expect(speakCues(x.cues.slice(n)).pop()!.text).toBe('Devam ediyoruz. Baş dönmesi geçince ekrana dokunun.');
+    // İşaret yokken kısa.
+    const y = sim('epley');
+    send(y, { type: 'start' });
+    send(y, { type: 'pause' });
+    send(y, { type: 'resume' });
+    expect(speakCues(y.cues).pop()!.text).toBe('Devam ediyoruz.');
+  });
+
+  it('M2-3: sayfaya dönüşte kısa tekrar ("Devam et" = devam, basılı tutma = durdur; N2-1); baş dönmesi işaretliyse tek dokunuş; klinisyende yok', () => {
+    const x = sim('epley');
+    expect(pauseReturnSpeech(x.cfg, false)).toBe('Duraklatıldı. Devam etmek için Devam et düğmesine dokunun. Durdurmak için ekrana iki saniye basılı tutun.');
     expect(pauseReturnSpeech(x.cfg, true)).toMatch(/Baş dönmesi geçtiyse ekrana bir kez dokunun\.$/);
     expect(pauseReturnSpeech({ ...x.cfg, helper: true }, true)).toMatch(/Hastanın baş dönmesi geçtiyse/);
     expect(pauseReturnSpeech(sim('epley', 'clinician').cfg, false)).toBeNull();

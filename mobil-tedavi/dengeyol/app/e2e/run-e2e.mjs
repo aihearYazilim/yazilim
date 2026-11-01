@@ -2108,9 +2108,14 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   await page.mouse.up();
   await page.waitForTimeout(300);
   if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('1 s basış seçim yaptı');
+  // N2-1: 2 s basılı tutma durdurmayı başlatır; 5 s geri sayım (geri alınabilir) dolunca durur. Sayım sürerken uyarı yerinde.
   await page.mouse.down();
   await page.waitForTimeout(2300);
   await page.mouse.up();
+  await page.getByTestId('runner-stopping').waitFor({ timeout: 2000 });
+  await page.waitForTimeout(1500);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('geri sayım dolmadan durdu');
+  await snap(page, 'guvenlik-uyarisi-geri-sayim');
   await page.getByTestId('end-safety').waitFor({ timeout: 15000 });
   await page.getByTestId('end-retry').waitFor();
   ep = (await storeOf(page)).episodes[0];
@@ -2132,7 +2137,7 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   await ctx.close();
 });
 
-await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift dokunuş baş dönmesi işaretlemez (tur 2, M2-4: çift dokunuş ekrana bakmadan "kötüyüm"ü kurar, kayıt açmaz; tek "Devam et" sürdürür); hızlı çift dokunuş işareti açık bırakmaz; tek dokunuş işaretler', async () => {
+await step('Yeni kullanıcı turu 1 kilidi + tur 3 N2-1 (y06): duraklatmadan "Devam et"e hızlı çift dokunuş devam eder, "kötüyüm" kurmaz ve baş dönmesi işaretlemez; hızlı çift dokunuş işareti açık bırakmaz; tek dokunuş işaretler', async () => {
   // ×4: Epley sarkık baş adımı (45 s) gerçek ~11 s; çift dokunuş ve 1 s bekleme adım içinde kalır.
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 4 }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
   await startManeuver(page);
@@ -2140,17 +2145,15 @@ await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift doku
   await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
   await page.getByTestId('runner-pause').press('Enter');
   await waitPhase(page, ['paused']);
+  // y06: alışkanlıkla hızlı çift dokunuş. İlki hemen devam eder (400 ms bekleme yok); ikincisi baş dönmesi işaretlemez.
+  const t0 = Date.now();
   await page.getByTestId('runner-resume').dblclick();
-  // Çift dokunuş (kör ya da istemsiz) "Kendimi kötü hissediyorum"u kurar; manevra sürmez, durmaz, kayıt açılmaz (M2-4).
-  await page.locator('[data-testid="runner-armed-unwell"][data-blind]').waitFor({ timeout: 3000 });
-  await page.waitForTimeout(600);
-  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('çift dokunuştan sonra duraklatma kalktı');
-  if ((await storeOf(page)).episodes[0].maneuvers.length) throw new Error('çift dokunuş kayıt açtı');
-  // Tek "Devam et" (kurulu seçim varken hemen) sürdürür; ardından baş dönmesi işaretlenmez.
-  await page.getByTestId('runner-resume').click();
-  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused');
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused', null, { timeout: 1500 });
+  if (Date.now() - t0 > 1500) throw new Error('"Devam et" gecikmeli işlendi');
+  if (await page.locator('[data-testid^="runner-armed-"]').count()) throw new Error('çift dokunuş bir seçim kurdu');
   await page.waitForTimeout(300);
   if ((await page.getByTestId('vertigo-pad').getAttribute('aria-pressed')) === 'true') throw new Error('"Devam et"e çift dokunuşun ikincisi baş dönmesi işaretledi');
+  if ((await storeOf(page)).episodes[0].maneuvers.length) throw new Error('çift dokunuş kayıt açtı');
   await page.waitForTimeout(1200);
   // Titreyen elle hızlı çift dokunuş (y02): başlatma işareti geri alınır, baş dönmesi "açık" kalmaz.
   await page.getByTestId('vertigo-pad').dblclick();
@@ -2405,7 +2408,7 @@ await step('Yeni kullanıcı turu 2 (M2-1, M2-6; y05): acil uyarısı aşılınc
   await ctx.close();
 });
 
-await step('Yeni kullanıcı turu 2 (M2-2, M2-3, M2-4, M2-6; y01, y03, y06, y07): hasta yürütücüsünde gündelik başlık ve "SAĞINIZ"; demo modunda yerleştirme sesli; gizliyken duraklatınca dönüşte kısa tekrar; çift dokunuş + 2 s basılı tutma "Kendimi kötü hissediyorum"', async () => {
+await step('Yeni kullanıcı turu 2–3 (M2-2, M2-3, M2-6, N2-1, N2-3; y01, y03, y06, y07): hasta yürütücüsünde gündelik başlık, "SAĞINIZ" ve derecesiz gösterge; demo modunda yerleştirme sesli; gizliyken duraklatınca dönüşte kısa tekrar; duraklatma sesi tek kuralı söyler; iki dokunuş + 30 s sonra 2 s basılı tutma sesli geri sayımla durdurur', async () => {
   const cal = { sign: 1, facing: 'outward', matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], mountTiltDeg: 0, createdAt: '2026-01-01T00:00:00.000Z' };
   const { ctx, page, errors } = await newPage(
     seed({ settings: { role: 'patient', speech: true, timeScale: 10 }, data: { patient: { ...PATIENT_OK, calibration: cal }, episodes: [readyEpisode()] } }),
@@ -2433,6 +2436,11 @@ await step('Yeni kullanıcı turu 2 (M2-2, M2-3, M2-4, M2-6; y01, y03, y06, y07)
   await holdAtStep(page, 1, 30000);
   if (!(await page.locator('svg text', { hasText: 'SAĞINIZ' }).count())) throw new Error('göstergede "SAĞINIZ" yok');
   if (await page.locator('svg text', { hasText: 'HASTANIN' }).count()) throw new Error('hasta göstergesinde "HASTANIN" var');
+  // N2-3: göstergede derece yok; baş öne/geriye çubuğu gündelik.
+  const turnTxt = await page.getByTestId('gauge-turn').textContent();
+  if (/°|\d/.test(turnTxt ?? '')) throw new Error('hasta göstergesinde derece var: ' + turnTxt);
+  const hang = await page.getByTestId('hang-bar').innerText();
+  if (!/Baş geride/.test(hang) || /sarkıklığı|Çene göğse/.test(hang)) throw new Error('baş çubuğu yazıları: ' + hang);
   await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
   await snap(page, 'yurutucu-gundelik-baslik');
   // M2-3: sayfa gizliyken duraklatıldı; dönüşte kısa tekrar söylenir.
@@ -2441,22 +2449,147 @@ await step('Yeni kullanıcı turu 2 (M2-2, M2-3, M2-4, M2-6; y01, y03, y06, y07)
   const n0 = (await speechLog(page)).length;
   await setHidden(page, false);
   await page.waitForFunction((n) => window.speechSynthesis.__log().slice(n).some((r) => r.text.startsWith('Duraklatıldı. Devam etmek için Devam et düğmesine dokunun')), n0, { timeout: 3000 });
-  // M2-4: ekrana bakmadan iki kez hızlı dokunuş "Kendimi kötü hissediyorum"u kurar; sesli onay; 2 s basılı tutma onaylar.
+  // N2-1: duraklatma sesi tek kuralı söyler ("Devam et"e dokunun = devam; iki saniye basılı = durdur); eski cümleler yok.
+  const pauseSaid = (await speechLog(page)).filter((r) => r.text.startsWith('Duraklatıldı.')).map((r) => r.text);
+  if (!pauseSaid.some((t) => /Devam etmek için ekrandaki Devam et düğmesine dokunun\./.test(t) && /durdurmak için ekrana iki saniye basılı tutun/.test(t))) {
+    throw new Error('duraklatma sesi kuralı söylemiyor: ' + JSON.stringify(pauseSaid));
+  }
+  if (pauseSaid.some((t) => /Devam için ekrana|iki kez hızlıca|ya da ekrana iki saniye/.test(t))) throw new Error('eski duraklatma cümlesi: ' + JSON.stringify(pauseSaid));
+  // y07 G: ekrana bakmadan iki dokunuş (boş yere), sonra kusmaya gitti; 30 s sonra 2 s basılı tutma DURDURUR.
   const sheet = page.getByTestId('runner-paused');
-  await sheet.dblclick({ position: { x: 20, y: 80 } });
-  await page.locator('[data-testid="runner-armed-unwell"][data-blind]').waitFor({ timeout: 3000 });
-  await page.waitForFunction(() => window.speechSynthesis.__log().some((r) => r.text.startsWith('Kendinizi kötü hissettiğinizi anladım')), null, { timeout: 3000 });
-  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('çift dokunuş duraklatmayı kaldırdı');
-  await snap(page, 'duraklatma-kor-kotuyum');
+  await sheet.click({ position: { x: 20, y: 80 } });
+  await page.waitForTimeout(150);
+  await sheet.click({ position: { x: 20, y: 80 } });
+  await page.waitForTimeout(400);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('kör dokunuşlar duraklatmayı kaldırdı');
+  if (await page.locator('[data-testid^="runner-armed-"]').count()) throw new Error('kör dokunuşlar bir seçim kurdu');
+  await page.waitForTimeout(30000);
+  const n1 = (await speechLog(page)).length;
   const box = await sheet.boundingBox();
   await page.mouse.move(box.x + 20, box.y + 80);
   await page.mouse.down();
   await page.waitForTimeout(2300);
   await page.mouse.up();
+  await page.getByTestId('runner-stopping').waitFor({ timeout: 2000 });
+  await snap(page, 'duraklatma-durduruluyor');
+  // Sesli: "Durduruyorum. Yanlışsa …" ve ardından 5'ten geriye sayım; süre dolunca "kendini iyi hissetmedi" kaydı.
   await page.waitForFunction(() => {
     const d = JSON.parse(localStorage.getItem('dengeyol:v1'));
     return d.episodes[0].maneuvers.some((m) => m.stopReason === 'USER_FEELS_UNWELL');
-  }, null, { timeout: 5000 });
+  }, null, { timeout: 12000 });
+  await page.waitForTimeout(400);
+  const said = (await speechLog(page)).slice(n1).map((r) => r.text);
+  const iP = said.indexOf("Durduruyorum. Yanlışsa ekrandaki Devam et'e dokunun.");
+  if (iP < 0) throw new Error('geri alma cümlesi söylenmedi: ' + JSON.stringify(said));
+  const counts = said.slice(iP + 1).filter((t) => ['Beş', 'Dört', 'Üç', 'İki', 'Bir'].includes(t));
+  if (counts.join(',') !== 'Beş,Dört,Üç,İki,Bir') throw new Error('sesli geri sayım: ' + JSON.stringify(said));
+  if (!said.some((t) => t.startsWith('Durduruldu.'))) throw new Error('durdurma sözü yok: ' + JSON.stringify(said));
+  if (said.some((t) => t.startsWith('Devam ediyoruz'))) throw new Error('basılı tutma devam ettirdi');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 3 (N2-1; y06, y07): basılı tutunca başlayan durdurma 5 s içinde "Devam et" ile geri alınır — duraklatmada devam eder, uzun baş dönmesi uyarısında "Devam et" kaydıyla sürer; geri sayım dolmadan kayıt yok', async () => {
+  // ×4: geri sayımdan sonraki bekleme (5,5 s) manevranın aynı adımında kalır.
+  let { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 4 }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await startManeuver(page);
+  await holdAtStep(page, 1, 60000);
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  // a) Duraklatma: "Devam et"in üstünde 2 s basılı tutmak da devam DEĞİL, durdurmadır (uzun basış düğmeyi seçmez).
+  await page.getByTestId('runner-pause').press('Enter');
+  await waitPhase(page, ['paused']);
+  const rb = await page.getByTestId('runner-resume').boundingBox();
+  await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(2300);
+  await page.mouse.up();
+  await page.getByTestId('runner-stopping').waitFor({ timeout: 2000 });
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('"Devam et" üstünde basılı tutma devam ettirdi');
+  // Sayım sürerken boş yere kısa dokunuş bir şey yapmaz; "Devam et" geri alır ve devam eder.
+  await page.getByTestId('runner-paused').click({ position: { x: 20, y: 20 } });
+  await page.waitForTimeout(800);
+  if (!(await page.getByTestId('runner-stopping').count())) throw new Error('kısa dokunuş geri sayımı bozdu');
+  await page.getByTestId('runner-resume').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused', null, { timeout: 1500 });
+  await page.waitForTimeout(5500);
+  if ((await storeOf(page)).episodes[0].maneuvers.length) throw new Error('geri alınan durdurma kayda geçti');
+  if (['aborted', 'gone'].includes((await page.getByTestId('runner').getAttribute('data-phase').catch(() => 'gone')) ?? 'gone')) throw new Error('geri alınan durdurma manevrayı bitirdi');
+  noErrors(errors);
+  await ctx.close();
+  // b) Uzun baş dönmesi uyarısı (×20: 2 dakikalık sınır gerçek 6 s): basılı tutma geri sayımı başlatır; "Devam et" geri alır
+  // ve aşma kaydıyla sürer.
+  ({ ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } })));
+  await startManeuver(page);
+  await holdAtStep(page, 1);
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  await page.getByTestId('vertigo-pad').click();
+  const hold = page.getByTestId('runner-safety-hold');
+  await hold.waitFor({ timeout: 20000 });
+  await unlocked(page);
+  const tb = await page.getByTestId('runner-safety-hold-text').boundingBox();
+  await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(2300);
+  await page.mouse.up();
+  await page.getByTestId('runner-stopping').waitFor({ timeout: 2000 });
+  await page.waitForTimeout(1000);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'safetyHold') throw new Error('geri sayım dolmadan durdu');
+  await page.getByTestId('runner-hold-continue').click();
+  await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'safetyHold', null, { timeout: 1500 });
+  // Geri sayımın dolacağı an geçer (baş dönmesi sınırı bir tam sınır uzadı: yeniden uyarı en erken 6 s sonra).
+  await page.waitForTimeout(4500);
+  const ep = (await storeOf(page)).episodes[0];
+  if (ep.maneuvers.length) throw new Error('geri alınan güvenlik durdurması kayda geçti: ' + JSON.stringify(ep.maneuvers.map((m) => m.stopReason)));
+  if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Devam et" aşma kaydı yazmadı: ' + kindsOf(ep).join(', '));
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 3 (N2-2; y07): bu oturumda tavana bakışlı ölçüm yapıldıysa sonraki yerleştirmede baş geriye yatırılmaz (yalnız dik duruş)', async () => {
+  const cal = { sign: 1, facing: 'outward', matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], mountTiltDeg: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+  const { ctx, page, errors } = await newPage(
+    seed({ settings: { role: 'patient', speech: true, timeScale: 10 }, data: { patient: { ...PATIENT_OK, calibration: cal }, episodes: [readyEpisode()] } }),
+    { speechMs: 300 }
+  );
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('prep-ready').click();
+  await page.getByTestId('runner').waitFor({ timeout: 30000 });
+  // Bu oturumdaki ilk yerleştirme: tavana bakış ölçülür (kayıtlı tanıtma eski oturumdan).
+  if (!(await speechLog(page)).some((r) => /rahat olduğunuz kadar geriye yatırın/.test(r.text))) throw new Error('ilk yerleştirmede tavana bakış yok');
+  await holdAtStep(page, 1, 30000);
+  // Aynı sekmede sayfa yenilenir (oturum sürer): yarım manevra baştan, yerleştirme yeniden.
+  page.on('dialog', (d) => void d.accept().catch(() => undefined));
+  await page.reload();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('dengeyol:v1')).episodes[0].maneuvers.length > 0, null, { timeout: 15000 });
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('resume-ask').waitFor({ timeout: 15000 });
+  await page.getByTestId('resume-restart').click();
+  await page.getByTestId('runner-start').click({ timeout: 15000 });
+  await page.getByTestId('runner').waitFor({ timeout: 30000 });
+  const log = (await speechLog(page)).map((r) => r.text);
+  if (!log.some((t) => t.startsWith('Telefonun arkasını alnınıza yaslayın'))) throw new Error('yerleştirme yapılmadı: ' + JSON.stringify(log));
+  if (log.some((t) => /geriye yatırın|tavana bakın/.test(t))) throw new Error('bu oturumda yine tavana bakma istendi: ' + JSON.stringify(log));
+  if (!log.includes('Tamam. Telefonu alnınızda tutun.')) throw new Error('kısa yerleştirme onayı yok: ' + JSON.stringify(log));
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 3 (N2-5; y05): klinisyende "Kalibrasyon tamam." "Devam" ve "Başlat" ile kesilmez', async () => {
+  // Gerçek hız (×1): başlangıçtaki 3 s'lik sayım ilk yönergeyi gerçekteki gibi geciktirir.
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician', speech: true, clinicianVoice: 'short', timeScale: 1 }, data: { clinician: { name: 'Dr. Test' } } }), { speechMs: 1000 });
+  await newExam(page, 'S-5');
+  await page.getByTestId('exam-safety').waitFor();
+  await page.getByTestId('test-run-dhR').click();
+  await page.getByTestId('cal-start').click();
+  await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
+  await page.getByTestId('cal-continue').click();
+  await page.getByTestId('runner-start').click();
+  await page.waitForFunction(() => window.speechSynthesis.__log().some((r) => r.text === 'Başlıyoruz.' && r.end), null, { timeout: 15000 });
+  const log = await speechLog(page);
+  const ok = log.find((r) => r.text === 'Kalibrasyon tamam.');
+  if (!ok || ok.end !== 'ended') throw new Error('"Kalibrasyon tamam." kesildi: ' + JSON.stringify(log.slice(-4)));
   noErrors(errors);
   await ctx.close();
 });

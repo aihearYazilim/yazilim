@@ -39,6 +39,40 @@ export const CAL_INTRO_SPOKEN =
 export const CAL_LOOKUP_SPOKEN = 'Şimdi başınızı yavaşça, zorlamadan, rahat olduğunuz kadar geriye yatırın ve tavana bakın. Öyle kalın.';
 export const CAL_LOOKUP_TEXT = 'Başınızı yavaşça, rahat olduğunuz kadar geriye yatırın; zorlamayın.';
 
+/**
+ * Bu oturumda (bu sekmede, son SESSION_CAL_MAX_MS içinde) tam tanıtma ya da tavana bakışlı yerleştirme yapıldı mı (N2-2; y07)?
+ * Yapıldıysa test/manevra başındaki yerleştirmede baş geriye yatırılmaz: yalnız dik duruş ölçülür ve telefon kayıtlı yerinde
+ * sayılırsa (dik duruşta sapma küçükse) kayıtlı tanıtma kullanılır. Bulantılı hastada her başlangıçta tavana bakma
+ * istenmesin. Bilgi sekme oturumunda (sessionStorage) tutulur; erişilemezse yalnız bellekte.
+ */
+export const SESSION_CAL_MAX_MS = 3 * 60 * 60 * 1000;
+const SESSION_CAL_KEY = 'dengeyol:calSession';
+let sessionCalAt: number | null = null;
+
+/** Bu oturumda tam ölçüm (tavana bakışlı) yapıldığını kaydeder. */
+export function noteSessionCalibration(at: number = Date.now()): void {
+  sessionCalAt = at;
+  try {
+    sessionStorage.setItem(SESSION_CAL_KEY, String(at));
+  } catch {
+    /* depolama yok: bellekte kalır */
+  }
+}
+
+/** Bu oturumda (son SESSION_CAL_MAX_MS içinde) tam ölçüm yapıldı mı? */
+export function calibratedThisSession(now: number = Date.now()): boolean {
+  let at = sessionCalAt;
+  if (at === null) {
+    try {
+      const v = Number(sessionStorage.getItem(SESSION_CAL_KEY));
+      at = Number.isFinite(v) && v > 0 ? v : null;
+    } catch {
+      at = null;
+    }
+  }
+  return at !== null && now >= at && now - at < SESSION_CAL_MAX_MS;
+}
+
 type Stage = 'intro' | 'place' | 'upright' | 'lookup' | 'done' | 'error' | 'nosensor';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -71,6 +105,8 @@ export function Calibrate({
   const [exitAsk, setExitAsk] = useState(false);
   const flipped = !!useData().settings.screenFlip;
   const alive = useRef(true);
+  /** Tanıtma tamamlandı (onDone çağrıldı). */
+  const finished = useRef(false);
   /** Her "Başla" yeni bir ölçüm kuşağı açar; geri tuşu kuşağı geçersiz kılarak süren ölçümü durdurur. */
   const runGen = useRef(0);
   const stageRef = useRef<Stage>('intro');
@@ -80,7 +116,8 @@ export function Calibrate({
     alive.current = true;
     return () => {
       alive.current = false;
-      speech.cancel();
+      // Tamamlanınca son onay ("Kalibrasyon tamam.") ekran kapanırken kesilmez (N2-5; y05); yarıda kapanınca susar.
+      if (!finished.current) speech.cancel();
     };
   }, []);
 
@@ -122,10 +159,10 @@ export function Calibrate({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const finished = useRef(false);
   const finish = (c: Calibration) => {
     if (finished.current) return;
     finished.current = true;
+    noteSessionCalibration();
     onDone(c);
   };
   const say = (t: string) => speech.speak(t, 'high');
@@ -305,7 +342,7 @@ export function Calibrate({
                   <p>Telefonu elinizde normal tutup "Başla"ya dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.</p>
                 ) : (
                   <ol className="stack" style={{ margin: 0, paddingLeft: 20 }}>
-                    <li>Telefonu elinizde normal tutup "Başla"ya dokunun (cihazın yön kuralı ölçülür).</li>
+                    <li>Telefonu elinizde normal tutup "Başla"ya dokunun (telefonun nasıl tutulduğunu öğrenir).</li>
                     <li>Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın; hasta dik oturup karşıya baksın.</li>
                     <li>Ardından hastanın başını geriye yatırıp tavana baktırın.</li>
                   </ol>
@@ -376,7 +413,8 @@ export function Calibrate({
               <p className="small">Ekran içe dönük olduğu için yanınızdaki kişi ekranı göremez; sesli yönergeler yeterlidir.</p>
             )}
           </div>
-          <button className="btn primary block xl" onClick={() => finish(result)} data-testid="cal-continue">
+          {/* Klinisyende "Kalibrasyon tamam." bu dokunuşla kesilmesin (N2-5; y05): ekran değişimi sesi susturmaz. */}
+          <button className="btn primary block xl" onClick={() => finish(result)} data-testid="cal-continue" data-keep-speech>
             Devam
           </button>
         </>

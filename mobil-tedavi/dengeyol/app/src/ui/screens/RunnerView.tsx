@@ -15,7 +15,6 @@ import {
   estimateSpeechSec,
   initialRunnerState,
   PATIENT_FIRST_HINT_DELAY_SEC,
-  blindUnwellPrompt,
   pauseReturnSpeech,
   pauseSpeech,
   type RunnerConfig,
@@ -32,15 +31,21 @@ import {
   confirmDeadline,
   confirmPromptSpoken,
   CONFIRM_PROMPT,
-  deferSheetTap,
-  DOUBLE_TAP_MS,
   initialPauseSheet,
   type PauseChoice,
   type PauseSheetState,
-  pauseSheetDoubleTap,
   pauseSheetHold,
+  pauseSheetStopSpoken,
   pauseSheetTap,
-  type SheetTarget
+  type SheetTarget,
+  startStopCountdown,
+  STOP_COUNT_WORDS,
+  STOP_UNDO_PROMPT,
+  type StopCountdown,
+  stopCountSchedule,
+  stopDeadline,
+  stopPromptSpoken,
+  stopSecondsLeft
 } from '../../core/pauseSheet';
 import { applySettings, playCues, unlockAudio } from '../../platform/feedback';
 import { useMotion } from '../../platform/MotionContext';
@@ -56,12 +61,15 @@ import { HangBar, HeadGauge, HoldRing } from '../components/Gauges';
 import { Icon } from '../components/Icon';
 import { publishSimTarget, useSimAuto } from '../components/SimPanel';
 import { BedSetup } from './Illustrations';
-import { CAL_LOOKUP_SPOKEN } from './Calibrate';
+import { CAL_LOOKUP_SPOKEN, calibratedThisSession, noteSessionCalibration } from './Calibrate';
 
 
 /** Zincirde telefonun yerinde sayılması için dik duruşta kayıtlı yerleşime göre en fazla sapma (°). */
 export const CHAIN_MOUNT_TOLERANCE_DEG = 12;
-/** Hasta modunda ekrana bu kadar basılı tutmak duraklatır / duraklatmadayken devam ettirir (ms). Sesle söylenir: "iki saniye". */
+/**
+ * Hasta modunda ekrana bu kadar basılı tutmak (ms; sesle "iki saniye"): manevra sürerken duraklatır; duraklatma sayfasında ve
+ * güvenlik uyarısında HER ZAMAN durdurur (5 s içinde "Devam et" geri alır; N2-1). Hiçbir ekranda "devam" anlamına gelmez.
+ */
 export const LONG_PRESS_MS = 2000;
 /**
  * Duraklatma sayfasındaki düğmeler yalnız kısa dokunuşla çalışır: bu kadar (ms) ya da daha uzun basış hiçbir düğmeyi
@@ -444,10 +452,14 @@ export function RunnerView({
 
   /**
    * Hasta modu başlangıç yerleştirmesi (her manevra/test başında, ~15 s): telefon kalibrasyondan sonra alından alınıp
-   * yeniden takılmış, hatta ekranı içe dönük takılmış olabilir. Bu yüzden dik duruş + "tavana bak" her seferinde ölçülür
-   * (yalnız dik duruş, içe/dışa dönüklüğü ayırt edemez → sağ/sol karışabilir). İşaret kuralı cihaza özgüdür, kayıtlı olan kullanılır.
+   * yeniden takılmış, hatta ekranı içe dönük takılmış olabilir. Bu yüzden dik duruş + "tavana bak" ölçülür (yalnız dik duruş,
+   * içe/dışa dönüklüğü ayırt edemez → sağ/sol karışabilir). İşaret kuralı cihaza özgüdür, kayıtlı olan kullanılır.
+   * Bu oturumda tam ölçüm yapıldıysa (N2-2; y07: bulantılı hastada her başlangıçta tavana bakma tetikliyordu) yalnız dik duruş
+   * ölçülür: telefon kayıtlı yerinde sayılırsa (dik duruşta sapma ≤ CHAIN_MOUNT_TOLERANCE_DEG; zincirdeki kontrolle aynı ölçüt)
+   * kayıtlı tanıtma kullanılır ve baş geriye yatırılmaz; yer değişmişse tavana bakışla tam ölçüme geçilir.
    */
   async function placePhone(c: Calibration): Promise<Calibration | null> {
+    const uprightOnly = calibratedThisSession();
     const fail = (text: string, sensor = false) => {
       setPrep(null);
       setAutoFailed(true);
@@ -471,6 +483,13 @@ export function RunnerView({
     const up = await collectSamples(source, Math.max(400, scaled(1500)));
     if (!alive.current) return null;
     if (!up || up.maxDevDeg > 6) return fail('Telefon ölçüm sırasında kıpırdadı. Tamamen hareketsiz kalıp yeniden Başlat\'a basın.');
+    if (uprightOnly && residualUprightDeg(up.mean, c) <= CHAIN_MOUNT_TOLERANCE_DEG) {
+      haptics.play('reached');
+      tones.play('reached');
+      await sayAndWait('Tamam. Telefonu alnınızda tutun.', 500);
+      setPrep(null);
+      return c;
+    }
     haptics.play('move');
     tones.play('move');
     setPrep('lookup');
@@ -486,6 +505,7 @@ export function RunnerView({
     if (!res.ok) return fail(CALIBRATION_ERROR_TEXT[res.error]);
     haptics.play('reached');
     tones.play('reached');
+    noteSessionCalibration();
     await sayAndWait('Tamam. Başınızı düzeltip karşıya bakın. Telefonu alnınızda tutun.', 500);
     setPrep(null);
     return res.calibration;
@@ -535,7 +555,10 @@ export function RunnerView({
         setCaption(startText);
         await speech.speakAsync(startText, estimateSpeechSec(startText, settings.speechRate) * 2000 + 2000);
         if (!alive.current) return;
-      } else speech.speak(startText, 'high');
+      } else {
+        // Klinisyende "Başlıyoruz." kuyruğa girer: kalibrasyonun "Kalibrasyon tamam." onayı kesilmesin (N2-5; y05).
+        speech.speak(startText, P ? 'high' : 'normal');
+      }
     }
     for (let i = 3; i > 0; i--) {
       setPreCount(i);
@@ -558,8 +581,9 @@ export function RunnerView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Ekrana bakmadan duraklatma/devam: ekranın herhangi bir yerine 2 s basılı tutmak (hasta modu). Tek dokunuş baş dönmesi
-  // işaretidir; uzun basıştan sonra parmak kalkınca gelen "click" işaret sayılmaz.
+  // Ekrana bakmadan: ekranın herhangi bir yerine 2 s basılı tutmak (hasta modu) manevra sürerken duraklatır; duraklatma
+  // sayfasında ve güvenlik uyarısında geri alınabilir durdurmayı başlatır (N2-1). Tek dokunuş baş dönmesi işaretidir; uzun
+  // basıştan sonra parmak kalkınca gelen "click" işaret sayılmaz.
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressClick = useRef(false);
   const cancelPress = () => {
@@ -613,9 +637,9 @@ export function RunnerView({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sheet.armed, sheet.armedAt, sheet.promptDoneAt]);
-  // Duraklatmadan çıkınca kurulmuş onay kalkar (bir sonraki duraklatma temiz açılır).
+  // Duraklatmadan çıkınca kurulmuş onay ve geri sayım kalkar (bir sonraki duraklatma temiz açılır).
   useEffect(() => {
-    if (state.phase !== 'paused' && sheetRef.current.armed !== null) setSheet(initialPauseSheet());
+    if (state.phase !== 'paused' && (sheetRef.current.armed !== null || sheetRef.current.stopping)) setSheet(initialPauseSheet());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.phase]);
   /** Duraklatma sayfasında bir kısa dokunuşu işler (kural: core/pauseSheet). */
@@ -658,64 +682,113 @@ export function RunnerView({
     const reason = choice === 'unwell' ? 'USER_FEELS_UNWELL' : choice === 'unreachable' ? 'POSITION_UNREACHABLE' : 'USER_ABORT';
     dispatch({ type: 'abort', now: now(), reason });
   };
-  /** Son kısa dokunuşun anı (performance.now) ve çift dokunuş beklenerek ertelenen tek dokunuş (M2-4). */
-  const lastSheetTapAt = useRef<number | null>(null);
-  const pendingSheetTap = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const clearPendingSheetTap = () => {
-    if (pendingSheetTap.current) clearTimeout(pendingSheetTap.current);
-    pendingSheetTap.current = null;
-  };
-  useEffect(() => clearPendingSheetTap, []);
-  useEffect(() => {
-    if (state.phase === 'paused') return;
-    clearPendingSheetTap();
-    lastSheetTapAt.current = null;
-  }, [state.phase]);
   /**
-   * Duraklatma sayfasında kısa dokunuş. Hasta modunda iki kez hızlı dokunuş "Kendimi kötü hissediyorum"u ekrana bakmadan
-   * kurar ve sesli onay söylenir (M2-4; y07, tur 2); bu yüzden tek dokunuş, ikinci dokunuş beklenerek DOUBLE_TAP_MS sonra
-   * işlenir (kör çift dokunuşun ilki "Devam et"e denk gelse de manevra sürmez). Baş dönmesi işaretliyken ya da kurulu seçim
-   * varken tek dokunuş hemen işlenir. Klinisyende değişiklik yok.
+   * Basılı tutmayla başlayan, geri alınabilir durdurma (N2-1): "Durduruyorum. Yanlışsa ekrandaki Devam et'e dokunun." ve
+   * cümle bitince 5'ten geriye sesli sayım; süre dolunca `commit` çalışır. Duraklatma sayfasında sayfa durumunun içinde
+   * (sheet.stopping), güvenlik uyarısında ayrı (holdStopping) tutulur; söyleme ve sayma ikisinde de aynı.
    */
-  const sheetShortTap = (target: SheetTarget) => {
-    const t = performance.now();
-    const prev = lastSheetTapAt.current;
-    // Baş dönmesi işaretliyken ilk dokunuş "geçti"dir (hemen); çift dokunuşun ilki sayılmaz (titreyen elin çift dokunuşu
-    // "geçti" + "kötüyüm" olmasın).
-    lastSheetTapAt.current = P && sRef.current.vertigoActive ? null : t;
-    if (P && prev !== null && t - prev <= DOUBLE_TAP_MS) {
-      const speaking = settings.speech && speech.usable();
-      const prompt = blindUnwellPrompt(cfg);
-      const r = pauseSheetDoubleTap(sheetRef.current, {
-        now: t,
-        patient: P,
-        promptMs: speaking ? estimateSpeechSec(prompt, settings.speechRate) * 2000 + 2000 : 0
-      });
-      if (r.action.kind === 'arm') {
-        clearPendingSheetTap();
-        lastSheetTapAt.current = null;
-        setSheet(r.state);
-        announceArm(prompt, r.state.armedAt);
-        return;
-      }
-    }
-    if (deferSheetTap(sheetRef.current, { now: t, vertigoActive: sRef.current.vertigoActive, patient: P })) {
-      clearPendingSheetTap();
-      pendingSheetTap.current = setTimeout(() => {
-        pendingSheetTap.current = null;
-        if (alive.current && sRef.current.phase === 'paused') onSheetTap(target);
-      }, DOUBLE_TAP_MS);
-    } else onSheetTap(target);
+  const stopPromptMs = () =>
+    settings.speech && speech.usable() ? estimateSpeechSec(STOP_UNDO_PROMPT, settings.speechRate) * 2000 + 2000 : 0;
+  /** Söylenen son geri sayım sayısı (aynı sayı iki kez söylenmesin); geri sayım başlangıcına bağlı. */
+  const spokenCount = useRef<{ at: number; n: number } | null>(null);
+  const announceStop = (at: number, onSpoken: (at: number, now: number) => void) => {
+    haptics.play('alarm');
+    spokenCount.current = { at, n: 6 };
+    speech.speak(STOP_UNDO_PROMPT, 'high', () => {
+      if (alive.current) onSpoken(at, performance.now());
+    });
+    setCaption(STOP_UNDO_PROMPT);
   };
-  /** Duraklatma sayfasında ekrana 2 s basılı tutmak: devam; ekrana bakmadan kurulmuş seçim varsa onu onaylar (M2-4). */
+  /** Geri sayımı yürütür: sayıları söyler, süre dolunca `onDue` (iptal işlevi döner). */
+  const runCountdown = (c: StopCountdown, isCurrent: () => boolean, onDue: () => void) => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const t = performance.now();
+    for (const { n, at } of stopCountSchedule(c)) {
+      timers.push(
+        setTimeout(() => {
+          if (!alive.current || !isCurrent()) return;
+          const last = spokenCount.current;
+          if (last && last.at === c.at && last.n <= n) return;
+          spokenCount.current = { at: c.at, n };
+          tones.play('countdown');
+          const word = STOP_COUNT_WORDS[n] ?? String(n);
+          speech.speak(word, 'high');
+          setCaption(`${STOP_UNDO_PROMPT} ${word}…`);
+        }, Math.max(0, at - t))
+      );
+    }
+    timers.push(
+      setTimeout(() => {
+        if (alive.current && isCurrent()) onDue();
+      }, Math.max(0, stopDeadline(c) - t))
+    );
+    return () => timers.forEach(clearTimeout);
+  };
+  // Duraklatma sayfasındaki geri sayım: süre dolunca "kendini iyi hissetmedi" nedeniyle durur.
+  useEffect(() => {
+    const c = sheet.stopping;
+    if (!c || state.phase !== 'paused') return;
+    return runCountdown(
+      c,
+      () => sheetRef.current.stopping?.at === c.at && sRef.current.phase === 'paused',
+      () => {
+        setSheet(initialPauseSheet());
+        commitChoice('unwell');
+      }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet.stopping?.at, sheet.stopping?.promptDoneAt, state.phase]);
+  /** Duraklatma sayfasında ekrana 2 s basılı tutmak: HER ZAMAN geri alınabilir durdurma (N2-1; bkz. core/pauseSheet). */
   const onSheetHold = () => {
     if (sRef.current.phase !== 'paused') return;
-    clearPendingSheetTap();
-    const r = pauseSheetHold(sheetRef.current, performance.now());
+    const r = pauseSheetHold(sheetRef.current, { now: performance.now(), patient: P, promptMs: stopPromptMs() });
+    if (r.action.kind !== 'stopStart' || !r.state.stopping) return;
     setSheet(r.state);
-    if (r.action.kind === 'commit') commitChoice(r.action.choice);
-    else resumeNow();
+    announceStop(r.state.stopping.at, (at, now) => {
+      const next = pauseSheetStopSpoken(sheetRef.current, at, now);
+      if (next !== sheetRef.current) setSheet(next);
+    });
   };
+  /** Güvenlik uyarısında basılı tutmayla başlayan, geri alınabilir durdurma (N2-1). */
+  const [holdStopping, setHoldStoppingState] = useState<StopCountdown | null>(null);
+  const holdStoppingRef = useRef<StopCountdown | null>(null);
+  const setHoldStopping = (c: StopCountdown | null) => {
+    holdStoppingRef.current = c;
+    setHoldStoppingState(c);
+  };
+  useEffect(() => {
+    if (state.phase !== 'safetyHold' && holdStoppingRef.current) setHoldStopping(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.phase]);
+  // Güvenlik uyarısındaki geri sayım: süre dolunca "Durdur" (bugünkü durdurma sonucu; uzun baş dönmesinde VERTIGO_TOO_LONG).
+  useEffect(() => {
+    const c = holdStopping;
+    if (!c || state.phase !== 'safetyHold') return;
+    return runCountdown(
+      c,
+      () => holdStoppingRef.current?.at === c.at && sRef.current.phase === 'safetyHold',
+      () => {
+        setHoldStopping(null);
+        cancelPress();
+        dispatch({ type: 'safetyChoice', now: now(), choice: 'stop' });
+      }
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [holdStopping?.at, holdStopping?.promptDoneAt, state.phase]);
+  /** Güvenlik uyarısında ekrana 2 s basılı tutmak: geri alınabilir durdurma başlar (süren sayımı yeniden başlatmaz). */
+  const onSafetyHoldPress = () => {
+    if (!P || sRef.current.phase !== 'safetyHold' || holdStoppingRef.current) return;
+    const c = startStopCountdown(performance.now(), stopPromptMs());
+    setHoldStopping(c);
+    announceStop(c.at, (at, t) => {
+      const cur = holdStoppingRef.current;
+      if (!cur) return;
+      const next = stopPromptSpoken(cur, at, t);
+      if (next !== cur) setHoldStopping(next);
+    });
+  };
+  /** Duraklatma sayfasında kısa dokunuş: hemen işlenir (bekleme ve çift dokunuş anlamı yok; N2-1). */
+  const sheetShortTap = (target: SheetTarget) => onSheetTap(target);
   const sheetButton = (target: SheetTarget) => (e: React.MouseEvent) => {
     e.stopPropagation();
     if (sheetTap(e)) sheetShortTap(target);
@@ -963,6 +1036,8 @@ export function RunnerView({
     const cur = sRef.current;
     if (cur.phase !== 'safetyHold' || !cur.safetyHold || holdLocked) return;
     cancelPress();
+    // Geri sayım sürerken "Devam et" durdurmayı geri alır ve devam eder; "Durdur" hemen durdurur (N2-1).
+    if (holdStoppingRef.current) setHoldStopping(null);
     if (choice === 'continue') {
       unlockAudio();
       void keepAwake();
@@ -992,15 +1067,21 @@ export function RunnerView({
   /** Kurulan seçimin yerinde dokunulamayan not durur (aynı yere ikinci kör dokunuş onaylamaz); diğerleri düğmedir. */
   const sheetChoice = (choice: PauseChoice, btn: React.ReactNode) =>
     armed === choice ? (
-      <div className="sheet-armed" role="status" data-testid={`runner-armed-${choice}`} data-blind={sheet.blind || undefined} key={choice}>
-        {sheet.blind
-          ? 'Onaylamak için ekrana 2 saniye basılı tutun ya da yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.'
-          : 'Onaylamak için yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.'}
+      <div className="sheet-armed" role="status" data-testid={`runner-armed-${choice}`} key={choice}>
+        Onaylamak için yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.
       </div>
     ) : (
       btn
     );
   const observeDone = !P && step?.observe !== false && !state.vertigoActive && state.vertigoEndedAt !== null;
+  /** Basılı tutmayla başlayan durdurma sürüyorsa ekranda kalan saniye ve uyarı şeridi (N2-1). */
+  const stopping = state.phase === 'paused' ? (sheet.stopping ?? null) : holding ? holdStopping : null;
+  const stopBanner = stopping && (
+    <div className="notice danger stack" role="alert" aria-live="assertive" data-testid="runner-stopping" data-left={stopSecondsLeft(stopping, performance.now())}>
+      <strong>Durduruluyor… {stopSecondsLeft(stopping, performance.now())}</strong>
+      <span className="small">Yanlışsa aşağıdaki "Devam et"e dokunun.</span>
+    </div>
+  );
 
   return (
     <div
@@ -1169,7 +1250,7 @@ export function RunnerView({
             <HoldRing value={ringVal} max={ringMax} label={ringLabel} sub={ringSub} />
           </div>
         )}
-        {!manual && step && state.phase !== 'between' && <HangBar target={step.target} pose={pose} />}
+        {!manual && step && state.phase !== 'between' && <HangBar target={step.target} pose={pose} self={P && !helperVoice} />}
 
         {caption && !clinicianSilent(cfg) && caption !== instrText && !(guiding && ev?.hint && caption.includes(hintTexts[ev.hint])) && (
           <p className="caption" aria-live="polite" data-testid="runner-caption">
@@ -1232,7 +1313,7 @@ export function RunnerView({
           onPointerDown={(e) => {
             e.stopPropagation();
             if (!P || holdLocked) return;
-            startPress(() => chooseSafety('stop'));
+            startPress(onSafetyHoldPress);
           }}
           onPointerUp={cancelPress}
           onPointerLeave={cancelPress}
@@ -1240,13 +1321,14 @@ export function RunnerView({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="sheet" data-locked={holdLocked || undefined} style={holdLocked ? { opacity: 0.85 } : undefined}>
+            {stopBanner}
             <h2>{state.safetyHold.reason === 'VERTIGO_TOO_LONG' ? 'Baş dönmesi uzun sürdü' : 'Pozisyona gelinemedi'}</h2>
             <p data-testid="runner-safety-hold-text">{safetyHoldText(state)}</p>
             <p className="small muted">Manevra bekliyor; siz seçmeden devam etmez.</p>
             {P && (
               <p className="small" data-testid="runner-safety-hold-hint">
-                Ekrana bakmadan: durdurmak için ekranın herhangi bir yerine 2 saniye basılı tutun. Devam etmek için alttaki
-                "Devam et" düğmesine dokunun.
+                Ekrana bakmadan: durdurmak için ekranın herhangi bir yerine 2 saniye basılı tutun (5 saniye içinde "Devam et"e
+                dokunursanız durmaz). Devam etmek için alttaki "Devam et" düğmesine dokunun.
               </p>
             )}
             {P && settings.speech && (
@@ -1304,8 +1386,9 @@ export function RunnerView({
           aria-modal="true"
           aria-label="Duraklatıldı"
           data-testid="runner-paused"
-          // Ekrana bakmadan: NERESİ olursa olsun (düğmenin üstü de) 2 s basılı tutmak devam ettirir; uzun basış hiçbir düğmeyi
-          // seçmez (k01, tur 2). Baş dönmesi işaretliyken ilk kısa dokunuş, nereye denk gelirse gelsin "geçti"dir (k01, tur 3).
+          // Tek ve sabit kural (N2-1): NERESİ olursa olsun (düğmenin üstü de) 2 s basılı tutmak durdurur (5 s içinde "Devam et"
+          // geri alır); uzun basış hiçbir düğmeyi seçmez (k01, tur 2). "Devam et"e kısa dokunuş hemen devam eder. Baş dönmesi
+          // işaretliyken "Devam et" dışındaki ilk kısa dokunuş, nereye denk gelirse gelsin "geçti"dir (k01, tur 3).
           onPointerDownCapture={() => {
             sheetDownAt.current = performance.now();
           }}
@@ -1324,9 +1407,10 @@ export function RunnerView({
             sheetShortTap('background');
           }}
         >
-          <div className="sheet" data-armed={armed ?? undefined}>
+          <div className="sheet" data-armed={armed ?? undefined} data-stopping={stopping ? true : undefined}>
+            {stopBanner}
             {/* Onay düğmesi seçim düğmelerinden uzakta, sayfanın üstünde: aynı yere ikinci kör dokunuş onaylamaz. */}
-            {armed && (
+            {armed && !stopping && (
               <button
                 className="btn danger block sheet-confirm"
                 onClick={sheetButton('confirm')}
@@ -1346,10 +1430,13 @@ export function RunnerView({
             </p>
             {P && (
               <p className="small" data-testid="runner-paused-hint">
-                Ekrana bakmadan: devam etmek için ekranın herhangi bir yerine 2 saniye basılı tutun.
-                {helperVoice ? ' Hasta kötüyse iki kez hızlıca dokunun.' : ' Kendinizi kötü hissediyorsanız iki kez hızlıca dokunun.'}
+                Devam etmek için "Devam et"e dokunun.
+                {helperVoice
+                  ? ' Hasta kötüyse durdurmak için ekranın herhangi bir yerine 2 saniye basılı tutun'
+                  : ' Kendinizi kötü hissediyorsanız durdurmak için ekranın herhangi bir yerine 2 saniye basılı tutun'}
+                {' (5 saniye içinde "Devam et"e dokunursanız durmaz).'}
                 {state.vertigoActive
-                  ? ' Baş dönmesi geçtiyse bir kez dokunun; bu ilk dokunuş hiçbir düğmeyi seçmez.'
+                  ? ' Baş dönmesi geçtiyse boş bir yere bir kez dokunun; bu ilk dokunuş hiçbir düğmeyi seçmez.'
                   : ' Aşağıdaki kırmızı ve gri düğmeler bir onay daha ister.'}
               </p>
             )}

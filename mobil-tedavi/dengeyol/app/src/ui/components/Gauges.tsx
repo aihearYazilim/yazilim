@@ -27,6 +27,37 @@ function arcPath(from: number, to: number, r: number) {
   return `M ${C} ${C} L ${p1.x} ${p1.y} A ${r} ${r} 0 ${large} 1 ${p2.x} ${p2.y} Z`;
 }
 
+/** Klinisyen/yardımcı göstergesinde dönüş: "düz", "sağa 45°". */
+export function turnDegText(t: number): string {
+  return Math.abs(t) <= 3 ? 'düz' : `${t > 0 ? 'sağa' : 'sola'} ${Math.round(Math.abs(t))}°`;
+}
+
+/**
+ * Hasta kendisi yapıyorken dönüşün gündelik sözü (derece yok; yeni kullanıcı turu 3, N2-3; y01, y03): yatarken baş/vücut
+ * dönüşü θ (0 = yüz tavana, ±90 = yan, ±180 = yüz yere). `dir` boşsa tek söz ("düz", "yüz yere").
+ */
+export function turnPlainWords(t: number): { dir: string; amount: string } {
+  const a = Math.abs(t);
+  const dir = t > 0 ? 'sağa' : 'sola';
+  if (a <= 10) return { dir: '', amount: 'düz' };
+  if (a < 30) return { dir, amount: 'biraz' };
+  if (a < 70) return { dir, amount: 'yarıya kadar' };
+  if (a < 115) return { dir, amount: 'tam yana' };
+  if (a < 165) return { dir, amount: 'yüz yere doğru' };
+  return { dir: '', amount: 'yüz yere' };
+}
+
+/** `turnPlainWords` tek satır: "sağa yarıya kadar", "düz". */
+export function turnPlainText(t: number): string {
+  const w = turnPlainWords(t);
+  return w.dir ? `${w.dir} ${w.amount}` : w.amount;
+}
+
+/** Baş öne/geriye çubuğunun yazıları: hasta kendisi yapıyorsa gündelik (N2-3; y03), değilse teknik. */
+export function hangBarLabels(self: boolean): [string, string, string] {
+  return self ? ['Baş önde', 'Düz', 'Baş geride'] : ['Çene göğse', 'Baş sarkıklığı', 'Geriye sarkık'];
+}
+
 export function HeadGauge({
   target,
   pose,
@@ -59,7 +90,9 @@ export function HeadGauge({
   const earR = theta !== null ? polar(theta + 90, R_HEAD) : null;
   const earL = theta !== null ? polar(theta - 90, R_HEAD) : null;
   const tgtMark = polar(k * target.theta, R_TARGET + 4);
-  const turn = (t: number) => (Math.abs(t) <= 3 ? 'düz' : `${t > 0 ? 'sağa' : 'sola'} ${Math.round(Math.abs(t))}°`);
+  // Hasta kendisi yapıyorsa gündelik söz ("sağa yarıya kadar"); yardımcı ve klinisyende derece (N2-3).
+  const turn = self ? turnPlainText : turnDegText;
+  const plain = rawTheta !== null && self ? turnPlainWords(rawTheta) : null;
   const rightX = flipped ? 232 : 8;
   const leftX = flipped ? 8 : 232;
   return (
@@ -97,9 +130,19 @@ export function HeadGauge({
             d={`M ${noseL.x} ${noseL.y} L ${nose.x} ${nose.y} L ${noseR.x} ${noseR.y} Z`}
             fill={inRange ? 'var(--ok)' : 'var(--warn)'}
           />
-          <text x={C} y={C + 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)">
-            {turn(rawTheta!)}
-          </text>
+          {plain ? (
+            // İki satır: yön ve miktar (baş dairesinin içine sığsın).
+            <text x={C} y={plain.dir ? C - 2 : C + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill="var(--text)" data-testid="gauge-turn">
+              {plain.dir && <tspan x={C}>{plain.dir}</tspan>}
+              <tspan x={C} dy={plain.dir ? 15 : 0}>
+                {plain.amount}
+              </tspan>
+            </text>
+          ) : (
+            <text x={C} y={C + 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="var(--text)" data-testid="gauge-turn">
+              {turn(rawTheta!)}
+            </text>
+          )}
         </g>
       ) : (
         <g>
@@ -144,20 +187,24 @@ function SittingGauge({ target, pose, inRange }: { target: Extract<Target, { kin
   );
 }
 
-/** Sarkıklık (ekstansiyon) çubuğu: −60° (çene göğse) … +60° (baş sarkık). */
-export function HangBar({ target, pose }: { target: Target; pose: HeadPose | null }) {
+/**
+ * Sarkıklık (ekstansiyon) çubuğu: −60° (çene göğse) … +60° (baş sarkık). `self`: hasta kendisi yapıyor — yazılar gündelik
+ * ("Baş önde / Düz / Baş geride"; N2-3).
+ */
+export function HangBar({ target, pose, self = false }: { target: Target; pose: HeadPose | null; self?: boolean }) {
   if (target.kind !== 'lying') return null;
   const lo = -60;
   const hi = 60;
   const pct = (v: number) => ((Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo)) * 100;
   const phi = pose && pose.tiltFromUpright >= 45 ? pose.phi : null;
   const inBand = phi !== null && phi >= target.phiMin && phi <= target.phiMax;
+  const labels = hangBarLabels(self);
   return (
-    <div role="img" aria-label="Baş sarkıklığı göstergesi" style={{ width: '100%' }}>
+    <div role="img" aria-label={self ? 'Başın öne ya da geriye durumu' : 'Baş sarkıklığı göstergesi'} style={{ width: '100%' }} data-testid="hang-bar">
       <div className="row small muted" style={{ justifyContent: 'space-between' }}>
-        <span>Çene göğse</span>
-        <span>Baş sarkıklığı</span>
-        <span>Geriye sarkık</span>
+        {labels.map((l) => (
+          <span key={l}>{l}</span>
+        ))}
       </div>
       <div style={{ position: 'relative', height: 16, background: 'var(--gauge-bg)', borderRadius: 999, marginTop: 4 }}>
         <div

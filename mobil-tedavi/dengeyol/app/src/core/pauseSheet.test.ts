@@ -1,18 +1,27 @@
 import { describe, expect, it } from 'vitest';
+import * as pauseSheetModule from './pauseSheet';
 import {
   armedChoice,
   confirmDeadline,
   confirmPromptSpoken,
   CONFIRM_PROMPT,
   CONFIRM_WINDOW_MS,
-  deferSheetTap,
-  DOUBLE_TAP_MS,
   initialPauseSheet,
   type PauseSheetState,
-  pauseSheetDoubleTap,
   pauseSheetHold,
+  pauseSheetStopSpoken,
   pauseSheetTap,
-  type SheetTarget
+  type SheetTarget,
+  startStopCountdown,
+  STOP_COUNT_WORDS,
+  STOP_UNDO_MS,
+  STOP_UNDO_PROMPT,
+  stopCountdownTap,
+  stopCountSchedule,
+  stopDeadline,
+  stopDue,
+  stopPromptSpoken,
+  stopSecondsLeft
 } from './pauseSheet';
 
 const patient = (now: number, vertigoActive = false) => ({ now, vertigoActive, patient: true });
@@ -28,8 +37,9 @@ function taps(seq: { target: SheetTarget; at: number; vertigo?: boolean }[]) {
 }
 
 describe('tur 3 F1-1: duraklatma sayfasında kalıcı sonuçlu düğmeler onay ister (k01)', () => {
-  it('baş dönmesi işaretliyken ilk dokunuş nereye denk gelirse gelsin "geçti"dir; düğme çalışmaz', () => {
-    for (const target of ['unreachable', 'unwell', 'abort', 'resume', 'background', 'vertigoEnd', 'confirm'] as SheetTarget[]) {
+  it('baş dönmesi işaretliyken ilk dokunuş ("Devam et" dışında) nereye denk gelirse gelsin "geçti"dir; düğme çalışmaz', () => {
+    // "Devam et" her zaman devam eder (yeni kullanıcı turu 3, N2-1); bkz. aşağıdaki N2-1 testleri.
+    for (const target of ['unreachable', 'unwell', 'abort', 'background', 'vertigoEnd', 'confirm'] as SheetTarget[]) {
       const r = pauseSheetTap(initialPauseSheet(), target, patient(0, true));
       expect(r.action, target).toEqual({ kind: 'vertigoEnd' });
       expect(r.state.armed).toBeNull();
@@ -178,37 +188,114 @@ describe('tur 4 G1-1: onay penceresi onay cümlesi bittikten sonra başlar ve en
   });
 });
 
-describe('yeni kullanıcı turu 2 (M2-4, y07): "Kendimi kötü hissediyorum" ekrana bakmadan', () => {
-  it('iki kez hızlı dokunuş seçimi kurar (ekrana bakmadan); 2 s basılı tutma onaylar, "Evet" de onaylar', () => {
-    const r = pauseSheetDoubleTap(initialPauseSheet(), { now: 1000, patient: true, promptMs: 4000 });
-    expect(r.action).toEqual({ kind: 'arm', choice: 'unwell' });
-    expect(r.state).toMatchObject({ armed: 'unwell', armedAt: 1000, blind: true });
-    expect(pauseSheetHold(r.state, 3000).action).toEqual({ kind: 'commit', choice: 'unwell' });
-    expect(pauseSheetHold(r.state, 3000).state.armed).toBeNull();
-    expect(pauseSheetTap(r.state, 'confirm', patient(3000)).action).toEqual({ kind: 'commit', choice: 'unwell' });
+describe('yeni kullanıcı turu 3 (N2-1; y06, y07): tek ve sabit dokunuş kuralı', () => {
+  const hold = (st: PauseSheetState, now: number, promptMs = 0) => pauseSheetHold(st, { now, patient: true, promptMs });
+
+  it('"Devam et"e tek dokunuş hemen devam eder; çift dokunuşun ikincisi de "kötüyüm" kurmaz (çift dokunuş anlamı ve bekleme yok)', () => {
+    const one = pauseSheetTap(initialPauseSheet(), 'resume', patient(0));
+    expect(one.action).toEqual({ kind: 'resume' });
+    // y06: hızlı çift dokunuş. İlki devam eder (sayfa kapanır); sayfa açık kalsa bile ikincisi yine devamdır.
+    const a = taps([
+      { target: 'resume', at: 0 },
+      { target: 'resume', at: 150 }
+    ]);
+    expect(a).toEqual([{ kind: 'resume' }, { kind: 'resume' }]);
+    // Eski çift dokunuş/erteleme yolları kaldırıldı.
+    expect('pauseSheetDoubleTap' in pauseSheetModule).toBe(false);
+    expect('deferSheetTap' in pauseSheetModule).toBe(false);
+    expect('DOUBLE_TAP_MS' in pauseSheetModule).toBe(false);
   });
 
-  it('onay süresi dolunca basılı tutma yine "devam"dır; düğmeyle kurulan seçimde de basılı tutma "devam"dır', () => {
-    const blind = pauseSheetDoubleTap(initialPauseSheet(), { now: 0, patient: true, promptMs: 4000 }).state;
-    expect(pauseSheetHold(blind, 4000 + CONFIRM_WINDOW_MS).action).toEqual({ kind: 'resume' });
-    const viaButton = pauseSheetTap(initialPauseSheet(), 'unwell', patient(0)).state;
-    expect(viaButton.blind).toBeFalsy();
-    expect(pauseSheetHold(viaButton, 100).action).toEqual({ kind: 'resume' });
-    expect(pauseSheetHold(initialPauseSheet(), 100).action).toEqual({ kind: 'resume' });
+  it('baş dönmesi işaretliyken de "Devam et" devam eder; başka yere ilk dokunuş "geçti"', () => {
+    expect(pauseSheetTap(initialPauseSheet(), 'resume', patient(0, true)).action).toEqual({ kind: 'resume' });
+    expect(pauseSheetTap(initialPauseSheet(), 'background', patient(0, true)).action).toEqual({ kind: 'vertigoEnd' });
   });
 
-  it('kurulu seçim varken ya da klinisyende çift dokunuş bir şey kurmaz', () => {
+  it('boş yere kısa kör dokunuşlar (tek, çift, art arda) hiçbir şey seçmez', () => {
+    const a = taps([
+      { target: 'background', at: 0 },
+      { target: 'background', at: 120 },
+      { target: 'background', at: 900 }
+    ]);
+    expect(a.every((x) => x.kind === 'none')).toBe(true);
+  });
+
+  it('2 s basılı tutma HER ZAMAN geri alınabilir durdurma başlatır (kurulu seçim yokken, varken, baş dönmesi işaretliyken)', () => {
+    const fresh = hold(initialPauseSheet(), 1000);
+    expect(fresh.action).toEqual({ kind: 'stopStart' });
+    expect(fresh.state.stopping).toEqual({ at: 1000, promptDoneAt: null, promptMs: 0 });
+    // Düğmeyle kurulan seçim varken de durdurur; kurulu seçim kalkar.
     const armed = pauseSheetTap(initialPauseSheet(), 'abort', patient(0)).state;
-    expect(pauseSheetDoubleTap(armed, { now: 100, patient: true }).action).toEqual({ kind: 'none' });
-    expect(pauseSheetDoubleTap(initialPauseSheet(), { now: 0, patient: false }).action).toEqual({ kind: 'none' });
+    const r = hold(armed, 500);
+    expect(r.action).toEqual({ kind: 'stopStart' });
+    expect(r.state.armed).toBeNull();
+    // Süren geri sayımı yeniden başlatmaz.
+    expect(hold(fresh.state, 1500)).toEqual({ state: fresh.state, action: { kind: 'none' } });
+    // Klinisyende basılı tutma yok.
+    expect(pauseSheetHold(initialPauseSheet(), { now: 0, patient: false }).action).toEqual({ kind: 'none' });
   });
 
-  it('tek dokunuş hasta modunda çift dokunuş beklenerek ertelenir; baş dönmesi işaretliyken, kurulu seçim varken ve klinisyende hemen', () => {
-    expect(DOUBLE_TAP_MS).toBeGreaterThanOrEqual(300);
-    expect(DOUBLE_TAP_MS).toBeLessThanOrEqual(500);
-    expect(deferSheetTap(initialPauseSheet(), patient(0))).toBe(true);
-    expect(deferSheetTap(initialPauseSheet(), patient(0, true))).toBe(false);
-    expect(deferSheetTap(pauseSheetTap(initialPauseSheet(), 'abort', patient(0)).state, patient(100))).toBe(false);
-    expect(deferSheetTap(initialPauseSheet(), { now: 0, vertigoActive: false, patient: false })).toBe(false);
+  it('y07 senaryosu: iki dokunuş, 30 s sonra 2 s basılı tutma → durdurur (sessizce dolan onay yok, "devam" sayılmaz)', () => {
+    let st: PauseSheetState = initialPauseSheet();
+    for (const at of [0, 180]) st = pauseSheetTap(st, 'background', patient(at)).state;
+    expect(st.armed).toBeNull();
+    const r = hold(st, 30180);
+    expect(r.action).toEqual({ kind: 'stopStart' });
+    expect(stopDue(r.state.stopping, 30180 + STOP_UNDO_MS - 1)).toBe(false);
+    expect(stopDue(r.state.stopping, 30180 + STOP_UNDO_MS)).toBe(true);
+    // Basılı tutma hiçbir durumda "devam" eylemi vermez.
+    expect(r.action.kind).not.toBe('resume');
+  });
+
+  it('geri sayım sürerken yalnız "Devam et" geri alır (ve devam eder); başka dokunuş hiçbir şey yapmaz', () => {
+    const st = hold(initialPauseSheet(), 0).state;
+    for (const target of ['background', 'unwell', 'unreachable', 'abort', 'confirm', 'replay', 'vertigoEnd'] as SheetTarget[]) {
+      const r = pauseSheetTap(st, target, patient(1000, target === 'vertigoEnd'));
+      expect(r.action, target).toEqual({ kind: 'none' });
+      expect(r.state).toBe(st);
+    }
+    const undo = pauseSheetTap(st, 'resume', patient(4000));
+    expect(undo.action).toEqual({ kind: 'resume' });
+    expect(undo.state.stopping).toBeNull();
+    expect(stopCountdownTap('resume')).toBe('undo');
+    expect(stopCountdownTap('other')).toBe('none');
+  });
+
+  it('geri sayım geri alma cümlesi bittikten sonra başlar, 5 s sürer; saniyede bir sayı (Beş … Bir)', () => {
+    expect(STOP_UNDO_MS).toBe(5000);
+    expect(STOP_UNDO_PROMPT).toBe("Durduruyorum. Yanlışsa ekrandaki Devam et'e dokunun.");
+    let st = hold(initialPauseSheet(), 1000, 9000).state;
+    const c0 = st.stopping!;
+    // Bitiş olayı gelmezse tahmin: 1000 + 9000 + 5000.
+    expect(stopDeadline(c0)).toBe(15000);
+    expect(stopSecondsLeft(c0, 2000)).toBe(5);
+    // Cümle 4,2 s'de bitti: sayım oradan başlar.
+    st = pauseSheetStopSpoken(st, 1000, 4200);
+    const c = st.stopping!;
+    expect(stopDeadline(c)).toBe(4200 + STOP_UNDO_MS);
+    expect(stopCountSchedule(c)).toEqual([
+      { n: 5, at: 4200 },
+      { n: 4, at: 5200 },
+      { n: 3, at: 6200 },
+      { n: 2, at: 7200 },
+      { n: 1, at: 8200 }
+    ]);
+    expect([5, 4, 3, 2, 1].map((n) => STOP_COUNT_WORDS[n])).toEqual(['Beş', 'Dört', 'Üç', 'İki', 'Bir']);
+    expect(stopSecondsLeft(c, 4200)).toBe(5);
+    expect(stopSecondsLeft(c, 8300)).toBe(1);
+    expect(stopSecondsLeft(c, 9200)).toBe(0);
+    // İkinci ya da başka sayıma ait bitiş olayı değişiklik yapmaz; süresi dolmuşa da işlemez.
+    expect(pauseSheetStopSpoken(st, 1000, 6000)).toBe(st);
+    expect(stopPromptSpoken(c0, 999, 3000)).toBe(c0);
+    const silent = startStopCountdown(0, 0);
+    expect(stopPromptSpoken(silent, 0, STOP_UNDO_MS + 1)).toBe(silent);
+    expect(stopDeadline(silent)).toBe(STOP_UNDO_MS);
+  });
+
+  it('klinisyende dokunuş davranışı değişmedi: "Devam et" devam, seçim tek dokunuşla', () => {
+    const c = { now: 0, vertigoActive: false, patient: false };
+    expect(pauseSheetTap(initialPauseSheet(), 'resume', c).action).toEqual({ kind: 'resume' });
+    expect(pauseSheetTap(initialPauseSheet(), 'unwell', c).action).toEqual({ kind: 'commit', choice: 'unwell' });
+    expect(pauseSheetTap(initialPauseSheet(), 'background', c).action).toEqual({ kind: 'none' });
   });
 });

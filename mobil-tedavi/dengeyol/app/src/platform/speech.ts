@@ -23,7 +23,8 @@ export const SPEECH_SAMPLE =
  * - sözcükler arasındaki "/" → " ya da " ("aspirin/Coraspin" → "aspirin ya da Coraspin"); sayı/sayı (1/15) ve adresler korunur,
  * - ayraçlar virgüllü duraklamaya çevrilir ("(hangi kulağınız alttayken)" → ", hangi kulağınız alttayken,"),
  * - oklar ve köşeli ayraç işaretleri ("[←]", "→") atılır; "·" virgül olur; "~" → "yaklaşık ",
- * - yaygın kısaltmalar açılır (kullanıcı turu 3, k07: ses "ör." için "ör" diyordu): bkz. expandAbbreviations.
+ * - yaygın kısaltmalar açılır (kullanıcı turu 3, k07: ses "ör." için "ör" diyordu): bkz. expandAbbreviations,
+ * - birleştirilen cümlelerdeki çift nokta ("ağrısı..") tek noktaya iner (yeni kullanıcı turu 3, N2-5; y05).
  */
 export function speechText(text: string): string {
   return (
@@ -42,6 +43,9 @@ export function speechText(text: string): string {
       // Art arda noktalama ve boşluk temizliği
       .replace(/\s+([.,;:!?])/g, '$1')
       .replace(/,\s*([.,;:!?])/g, '$1')
+      // Birleştirilen cümlelerde çift nokta ("baş ağrısı.." ya da "?.") tek işarete iner (N2-5; y05).
+      .replace(/\.{2,}/g, '.')
+      .replace(/([!?…])\./g, '$1')
       .replace(/^[\s,]+/, '')
       .replace(/\s{2,}/g, ' ')
       .trim()
