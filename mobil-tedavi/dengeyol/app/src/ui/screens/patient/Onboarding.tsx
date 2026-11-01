@@ -70,6 +70,8 @@ function ConsentScreen() {
   const [helperBoxOpen] = useState(helperSetup);
   /** Soluk "Başla"ya dokunuldu: hemen üstündeki onay kutusu kısa süre yanıp söner. */
   const [flash, setFlash] = useState(0);
+  /** Klinik çalışma katılımcı numarası (isteğe bağlı, katlanır kutuda; M1-11, y04: yalnız Ayarlar'daydı, unutuluyordu). */
+  const [studyId, setStudyId] = useState(d.patient?.studyId ?? '');
   useEffect(() => {
     window.scrollTo(0, 0);
     // Kısa sesli özet (L5-6; y02, y07: kurulum sessizdi). Onamı yeniden okuyan (önceden onaylamış) kişiye okunmaz.
@@ -106,7 +108,8 @@ function ConsentScreen() {
           ...(prev ?? {}),
           consentAt: new Date().toISOString(),
           consentVersion: CONSENT_VERSION,
-          consentBy: helperSetup ? 'helper' : 'self'
+          consentBy: helperSetup ? 'helper' : 'self',
+          ...(studyId.trim() ? { studyId: studyId.trim() } : {})
         }
       };
     });
@@ -199,6 +202,23 @@ function ConsentScreen() {
       <div className="card soft small" data-testid="ob-consent-text">
         <p style={{ margin: 0 }}>{consentStatement(helperSetup)}</p>
       </div>
+      {/* Klinik çalışma katılımcı no: isteğe bağlı, katlanır (M1-11; y04). Ayarlar → Klinik çalışma'dan da değiştirilir. */}
+      <details className="card soft small" data-testid="ob-study-box" open={!!d.patient?.studyId}>
+        <summary>Çalışma katılımcı no (isteğe bağlı)</summary>
+        <div className="field" style={{ marginTop: 10 }}>
+          <label htmlFor="ob-study-id">Araştırma ekibinin verdiği numara</label>
+          <input
+            id="ob-study-id"
+            className="input"
+            value={studyId}
+            maxLength={30}
+            autoComplete="off"
+            placeholder="Ör. DY-014"
+            onChange={(e) => setStudyId(e.target.value.replace(/[\u0000-\u001f]/g, ''))}
+            data-testid="ob-study-id"
+          />
+        </div>
+      </details>
       {/* Yakını kurulumu onaydan açıkça ayrı ve katlanır (y03: iki benzer kutu karıştırılıyordu). */}
       <details className="card soft small" data-testid="ob-helper-box" open={helperBoxOpen}>
         <summary>Hasta adına bir yakını mı kuruyor?</summary>

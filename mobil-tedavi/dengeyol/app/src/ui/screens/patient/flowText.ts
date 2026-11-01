@@ -15,6 +15,12 @@ const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci',
 /** "/" bazı seslerde "bölü" okunur: "ya da". */
 const sayable = (s: string) => s.replace(/\s*\/\s*/g, ' ya da ');
 
+/** Cümle noktalamayla bitmiyorsa nokta ekler (seste cümleler birbirine karışmasın). */
+export function endSentence(t: string): string {
+  const x = t.trim();
+  return /[.?!:;…]$/.test(x) ? x : `${x}.`;
+}
+
 function ordinalList(title: string, options: string[]): string {
   return [title, ...options.map((o, i) => `${ORDINALS[i] ?? `${i + 1}.`}: ${o.replace(/\.+$/, '')}.`)].join(' ');
 }
@@ -45,7 +51,8 @@ export function choiceSpeechParts(
   q: { title: string; spokenTitle?: string; lead?: string; spokenLead?: string; prefix?: string },
   options: SpokenOption[]
 ): { short: string; full: string } {
-  const head = (title: string, lead?: string) => [q.prefix, title, lead].filter(Boolean).join(' ');
+  // Her parça noktalamayla biter (y02, y05: "Testte baş dönmesi başlamadı Test baş dönmesi yapmadı" noktasız okunuyordu).
+  const head = (title: string, lead?: string) => [q.prefix, title, lead].filter((x): x is string => !!x).map(endSentence).join(' ');
   const shortOptions = options.map((o) => {
     const name = o.spokenLabel ?? o.label;
     return sayable(o.sub && o.subAlways ? `${name}: ${o.sub}` : name);
@@ -390,6 +397,36 @@ export const RED_FLAGS_TITLE = 'Bunlardan biri var mı?';
 /** Ekran açılınca okunan kısa hâl (≤ ~8 s); maddeler ekranda ve "Listeyi dinle"de. */
 export const RED_FLAGS_SPOKEN = 'Güvenlik soruları. Listedekilerden biri varsa işaretleyin. Hiçbiri yoksa, Hiçbiri yok düğmesine dokunun.';
 
+/**
+ * Güvenlik maddelerinin seste kısa adları (M1-9; y07: varsayılan ses maddeleri hiç okumuyordu, tam liste 66–90 s). Ekranda
+ * tam metin kalır; "Listeyi dinle" tam metni okur.
+ */
+export const RED_FLAG_SHORT: Record<string, string> = {
+  continuous: 'sürekli dönme',
+  neuro: 'çift görme, konuşma bozukluğu',
+  neuroWeak: 'güçsüzlük, uyuşma',
+  neuroGait: 'yürüyememe',
+  headache: 'şiddetli baş ağrısı',
+  cardiac: 'göğüs ağrısı, bayılma',
+  orthostatic: 'kalkınca kararma',
+  anticoag: 'kan sulandırıcı',
+  spontaneous: 'kendiliğinden dönme',
+  headTrauma: 'başı çarpma',
+  ear: 'kulakta yeni sorun',
+  neck: 'boyun incinmesi',
+  fever: 'ateş, çok kusma',
+  same: 'farklı baş dönmesi'
+};
+
+/** Kısa sesli listenin hedef üst sınırı (karakter): normal hızda ~20 s (≈ 15 karakter/s). */
+export const RED_FLAGS_SHORT_MAX_CHARS = 340;
+
+/** Güvenlik listesi açılınca okunan kısa ses: maddelerin kısa adları ve ne yapılacağı (M1-9). */
+export function redFlagsSpokenShort(qs: Pick<RedFlagQuestion, 'id' | 'label'>[]): string {
+  const names = qs.map((q) => RED_FLAG_SHORT[q.id] ?? q.label.trim());
+  return `Güvenlik soruları: ${names.join(', ')}. Varsa işaretleyin, yoksa Hiçbiri yok düğmesine dokunun.`;
+}
+
 /** "Listeyi dinle": bütün maddeler. */
 export function redFlagsSpokenFull(qs: Pick<RedFlagQuestion, 'id' | 'label'>[]): string {
   return withoutBppv(`${RED_FLAGS_TITLE} ${qs.map((q) => `${redFlagCheckText(q).replace(/"/g, '')}.`).join(' ')} Hiçbiri yoksa, Hiçbiri yok düğmesine dokunun.`);
@@ -451,6 +488,15 @@ export const NEURO_END_TEXT =
   "Manevradan sonra başlayan konuşma bozukluğu, yüzde ya da kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı kristal oynamasına bağlı değildir; inme gibi acil bir durumun işareti olabilir. Hemen 112'yi arayın. Yalnız kalmayın, araç kullanmayın; bugün yeniden manevra yapmayın.";
 
 export const NEURO_END_SPOKEN = "Yeni belirti bildirdiniz. Hemen 112'yi arayın. Yalnız kalmayın.";
+
+/**
+ * Yeni nörolojik belirtiden sonra (şerit sürerken) yeniden "Başım dönüyor" (M1-5; y05: "Tekrar testi … Yine de manevra
+ * yap" çıkıyor, ana ekranla çelişiyordu). Kilit yok: "Yine de manevra yap" ikincil; aşma `NEURO_ALERT`.
+ */
+export const NEURO_START_TITLE = 'Yeni belirti bildirdiniz: manevra önerilmiyor';
+export const NEURO_START_TEXT =
+  "Manevradan sonra yeni bir nörolojik belirti (konuşma bozukluğu, güçsüzlük, çift görme ya da şiddetli baş ağrısı) bildirdiniz. Önce 112'yi arayın ya da hekime başvurun. Bu belirti kristal oynamasına bağlı değildir; manevra şimdilik önerilmiyor.";
+export const NEURO_START_SPOKEN = "Yeni belirti bildirdiniz: manevra önerilmiyor. Önce 112'yi arayın ya da hekime başvurun.";
 
 /** Akışta ve ana ekranda kalıcı kırmızı şerit. */
 export const NEURO_STRIP_TEXT = "Yeni nörolojik belirti bildirdiniz. Hemen 112'yi arayın.";
@@ -531,6 +577,34 @@ export function resumeManeuverNote(side: Side): string {
   return `Kaldığınız yerden: yarıda kalan ${SIDE_NAME[side]} taraf manevrasını baştan yapıyoruz.`;
 }
 
+/** Yarıda kalan manevra: açılıştaki soru (M1-7; y01: neden baştan başladığı söylenmiyordu). step: yarıda kalınan adım. */
+export function resumeAskText(step: number, side: Side): { title: string; text: string } {
+  return {
+    title: `Manevra ${step}. adımda yarıda kaldı`,
+    text: `${cap(SIDE_NAME[side])} taraf manevrasını baştan yapalım mı? Hazırlık yeniden sorulmaz; telefonu alnınıza yerleştirip başlarız. Kendinizi iyi hissetmiyorsanız bugünlük bitirin.`
+  };
+}
+
+export const RESUME_STOP_TITLE = 'Bugünlük bitirdik';
+export const RESUME_STOP_TEXT =
+  'Yarıda kalan manevra kaydedildi. Dinlenin; baş dönmeniz sürerse ya da yeniden başlarsa ana ekrandan yeniden başlayabilirsiniz.';
+
+/**
+ * Ana ekranda ve manevra bitişinde tek satır sonraki adım; saat yalnız burada yazılır (M1-8; y01, y03). night: test saati
+ * geceye düşüyor ("uyanınca").
+ */
+export function nextStepLine(kind: 'early-retest' | 'morning-retest', time: string, night: boolean): string {
+  const what = kind === 'early-retest' ? 'Tekrar testi' : 'Sabah testi';
+  return `${what} ${time} — ${night || kind === 'morning-retest' ? 'uyanınca' : 'saati gelince'} "Başım dönüyor"a basın`;
+}
+
+/** Belirti şiddeti sorusu (araştırma, isteğe bağlı; M1-11). */
+export function vasText(when: 'before' | 'after'): { title: string; spoken: string } {
+  const title = when === 'before' ? 'Baş dönmeniz şu an ne kadar şiddetli?' : 'Manevradan sonra baş dönmeniz ne kadar şiddetli?';
+  return { title, spoken: `${title} Sıfır yok, on en kötü. Bir sayıya dokunun ya da Geç'e basın.` };
+}
+export const VAS_SCALE_TEXT = '0 = hiç yok, 10 = olabilecek en kötü. İsteğe bağlı (araştırma).';
+
 /** Bilinen hekim tanısında yalnız o tarafın testi (L5-7). */
 export function singleSideNote(side: Side): string {
   return `Hekiminizin dediği ${SIDE_NAME[side]} tarafı test ediyoruz.`;
@@ -605,6 +679,26 @@ export interface DecisionScreen {
   spokenLead: string;
   /** primary: uygulamanın önerdiği yol; büyük dolu düğme olarak gösterilir (L2-2; y01). */
   options: ({ value: DecisionChoice; testid: string; primary?: boolean } & SpokenOption)[];
+  /**
+   * Önerilen yol varsa ekran açılınca okunan kısa ses; "Önerim: …" ile başlar (yeni kullanıcı turu 2, M1-3; y01: "ekrana
+   * bakın"dan sonra ne önerildiği söylenmiyordu). Seçenekler tek tek okunmaz (M1-6: diğerleri "Başka seçenekler" altında
+   * katlı); tam liste "Tekrar dinle"de. Önerilen yol yoksa (atipik süre, taraf çelişkisi) yok: seçenekler sırayla okunur.
+   */
+  spoken?: string;
+  /** Önerilen yolun kısa adı ("iki tarafa sırayla manevra"); "Telefonu alın" cümlesinin ardına da eklenir. */
+  recommendation?: string;
+  /** Önerilen düğme tek ve büyük, diğer seçenekler "Başka seçenekler" altında katlı (M1-6; y02: 6 seçenek okunuyordu). */
+  fold?: boolean;
+}
+
+/** Karar ekranının "Önerim: …" sesi. */
+export function decisionSpoken(recommendation: string, lead?: string): string {
+  return [`Önerim: ${recommendation}.`, lead, 'Büyük düğmeye dokunun; başka seçenekler altta.'].filter(Boolean).join(' ');
+}
+
+/** Önerilen yolu olan karar ekranına "Önerim" sesi, kısa adı ve katlama ekler (uyarılı kararlar; M1-3, M1-6). */
+function withRecommendation(sc: DecisionScreen, recommendation: string, fold = true): DecisionScreen {
+  return { ...sc, recommendation, spoken: decisionSpoken(recommendation, sc.spokenLead), fold };
 }
 
 /** Testin tetiklemediği kararın açıklaması (L2-7; y05): "BPPV olmayabilir" ve sürekli baş dönmesinde hekim/112. */
@@ -646,7 +740,7 @@ export function decisionScreen(d: BoldDecision, opts: { otherSide?: Side } = {})
     return {
       title: 'Başka bir seçenek',
       lead: `${d.reason} Uygulamanın önerisi: ${SIDE_NAME[d.side]} taraf ${manOf}.`,
-      spokenLead: `Önerimiz ${SIDE_NAME[d.side]} taraf.`,
+      spokenLead: `Önerim: ${SIDE_NAME[d.side]} taraf.`,
       options: [...withPrimary(sideOptions(d.side, (s) => `Öneriyle devam: ${SIDE_NAME[s]} taraf ${manOf}`)), ...(hc ? [] : [both]), otherTest, stop]
     };
   }
@@ -673,39 +767,62 @@ export function decisionScreen(d: BoldDecision, opts: { otherSide?: Side } = {})
       };
     }
     case 'NOT_TRIGGERED': {
-      // Önerilen yol tek büyük düğme (y01): bilinen taraf varsa o tarafa, yoksa (arka kanalda) iki tarafa sırayla manevra.
       const end = { value: 'end' as const, label: 'Bugünlük bitir (sabah yeniden test)', testid: 'decision-stop' };
-      // Yalnız hekimin dediği taraf test edildi (L5-7): öbür tarafın testi de seçenek.
-      const testOther = opts.otherSide && !hc ? [{ value: 'test:other' as const, label: `${cap(SIDE_NAME[opts.otherSide])} tarafı da test et`, testid: 'decision-test-other' }] : [];
-      if (!d.side && !hc) {
-        return {
-          title: 'Testte baş dönmesi başlamadı',
-          lead: `${NOT_TRIGGERED_NOTE} Baş dönmeniz sürüyorsa ve hangi yan olduğunu bilmiyorsanız iki tarafa sırayla manevra yapabiliriz.`,
-          spokenLead: 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Önerimiz: iki tarafa sırayla manevra.',
-          options: [
-            { ...both, label: 'Hangi yan bilmiyorum: iki tarafa sırayla manevra', spokenLabel: 'İki tarafa sırayla manevra', primary: true },
-            ...sideOptions(null, () => ''),
-            otherTest,
-            end
-          ]
-        };
+      // Yalnız hekimin dediği taraf test edildi ve tetiklemedi (L5-7; M1-2, y02): önerilen tek büyük düğme öbür tarafın
+      // testi; bilinen tarafa manevra ikincil ("Yine de …"). Yanlış dokunuşla girilen taraf yanlış tarafa manevraya götürmesin.
+      const testOtherSide = !hc ? (d.testOther ?? opts.otherSide) : undefined;
+      if (testOtherSide) {
+        const known = d.side ?? otherSideOf(testOtherSide);
+        return withRecommendation(
+          {
+            title: 'Testte baş dönmesi başlamadı',
+            lead: `${cap(SIDE_NAME[known])} tarafta baş dönmesi başlamadı. Önce ${SIDE_NAME[testOtherSide]} tarafı da test edelim: baş dönmeniz o taraftan olabilir. ${NOT_TRIGGERED_NOTE}`,
+            spokenLead: `${cap(SIDE_NAME[known])} tarafta baş dönmesi başlamadı.`,
+            options: [
+              { value: 'test:other', label: `${cap(SIDE_NAME[testOtherSide])} tarafı da test et`, testid: 'decision-test-other', primary: true },
+              { value: go(known), label: `Yine de ${SIDE_NAME[known]} tarafa ${man} yap`, testid: 'decision-continue' },
+              { value: go(testOtherSide), label: `${cap(SIDE_NAME[testOtherSide])} taraf ${manOf}`, testid: 'decision-other' },
+              both,
+              otherTest,
+              end
+            ]
+          },
+          `${SIDE_NAME[testOtherSide]} tarafı da test etmek`
+        );
       }
-      return {
+      // Önerilen yol tek büyük düğme (y01): bilinen taraf varsa o tarafa, yoksa (arka kanalda) iki tarafa sırayla manevra.
+      if (!d.side && !hc) {
+        return withRecommendation(
+          {
+            title: 'Testte baş dönmesi başlamadı',
+            lead: `${NOT_TRIGGERED_NOTE} Baş dönmeniz sürüyorsa ve hangi yan olduğunu bilmiyorsanız iki tarafa sırayla manevra yapabiliriz.`,
+            spokenLead: 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir.',
+            options: [
+              { ...both, label: 'Hangi yan bilmiyorum: iki tarafa sırayla manevra', spokenLabel: 'İki tarafa sırayla manevra', primary: true },
+              ...sideOptions(null, () => ''),
+              otherTest,
+              end
+            ]
+          },
+          'iki tarafa sırayla manevra'
+        );
+      }
+      const sc: DecisionScreen = {
         title: 'Testte baş dönmesi başlamadı',
         lead: d.side
           ? `${NOT_TRIGGERED_NOTE} Baş dönmeniz sürüyorsa yine de ${SIDE_NAME[d.side]} tarafa ${man} yapabiliriz.`
           : `${NOT_TRIGGERED_NOTE} Baş dönmesi hangi yana çevirince oluyorsa o tarafa ${man} yapabiliriz.`,
         spokenLead: d.side
-          ? `Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Önerimiz: ${SIDE_NAME[d.side]} tarafa ${man}.`
+          ? 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir.'
           : 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Hangi yanda oluyorsa o tarafa manevra yapabiliriz.',
         options: [
           ...sideOptions(d.side, (s) => `${cap(SIDE_NAME[s])} tarafa ${man} yap`).map((o, i) => (d.side && i === 0 ? { ...o, primary: true } : o)),
-          ...testOther,
           ...(hc ? [] : [both]),
           otherTest,
           end
         ]
       };
+      return d.side ? withRecommendation(sc, `${SIDE_NAME[d.side]} tarafa ${man}`) : sc;
     }
     default: {
       // İki taraf (arka kanalda) ya da tarafı belirlenemeyen yatay kanal.
@@ -717,12 +834,13 @@ export function decisionScreen(d: BoldDecision, opts: { otherSide?: Side } = {})
       const options: DecisionScreen['options'] = d.both
         ? [{ ...both, testid: 'decision-continue', label: 'Devam et: iki tarafa sırayla', primary: true }, ...sideOptions(null, () => ''), otherTest, stop]
         : [...(d.side ? withPrimary : (o: DecisionScreen['options']) => o)(sideOptions(d.side, (s) => `Devam et: ${SIDE_NAME[s]} taraf ${manOf}`)), ...(hc ? [] : [both]), otherTest, stop];
-      return {
+      const sc: DecisionScreen = {
         title: hc && !d.side ? 'Taraf belirlenemedi' : 'İki tarafta da baş dönmesi oldu',
         lead,
-        spokenLead: d.both ? 'İki tarafa sırayla manevra öneriyoruz.' : d.side ? `${cap(SIDE_NAME[d.side])} tarafa ${man} öneriyoruz.` : 'Tarafı seçin.',
+        spokenLead: d.both || d.side ? 'İki tarafta da baş dönmesi oldu.' : 'Tarafı seçin.',
         options
       };
+      return d.both ? withRecommendation(sc, 'iki tarafa sırayla manevra') : d.side ? withRecommendation(sc, `${SIDE_NAME[d.side]} tarafa ${man}`) : sc;
     }
   }
 }

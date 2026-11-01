@@ -172,6 +172,25 @@ export function episodeDose(
   return st;
 }
 
+/**
+ * Bugünkü manevraların ana ekrandaki sayımı (M1-8; y07: kötü hissedip durdurulan ve yarıda kalan manevralar "2 / 3"
+ * diye tamamlanmış gibi görünüyordu): tamamlanan ve yarıda kalan (en az bir pozisyon adımına geçilmiş) ayrı. Önerilen
+ * sınır (doseFor) yarıda kalanları da sayar; ekranda bu açıkça yazılır. Deneme manevraları sayılmaz.
+ */
+export function todayManeuverCounts(episodes: Episode[], now: number): { completed: number; partial: number } {
+  const today = localDayKey(now);
+  let completed = 0;
+  let partial = 0;
+  for (const e of episodes) {
+    for (const m of e.maneuvers) {
+      if (m.at > now || localDayKey(m.at) !== today) continue;
+      if (m.completed) completed += 1;
+      else if (m.records.length > 1) partial += 1;
+    }
+  }
+  return { completed, partial };
+}
+
 /** Uygulama verisiyle doz: tüm ataklar ve deneme manevraları. */
 export function doseFor(d: AppData, e: Episode, now: number): DoseStatus {
   return episodeDose(e, d.patient, now, d.episodes, d.practiceLog ?? []);
@@ -471,6 +490,15 @@ export function vomitPause(d: Pick<AppData, 'episodes'>, now: number): { at: num
 /** Araştırma kaydı kodu: kusma bildirilen günde manevra uyarısı aşıldı. */
 export const VOMITING_OVERRIDE_KIND = 'VOMITING';
 
+/** Araştırma kaydı kodu: manevra sonrası yeni nörolojik belirtiden sonra "manevra önerilmiyor" uyarısı aşıldı (M1-5). */
+export const NEURO_ALERT_OVERRIDE_KIND = 'NEURO_ALERT';
+
+/**
+ * Bilgi kaydı kodu: 112 dışı güvenlik sorusundaki işaret uyarı ekranında "Yanlış dokundum, listeye dön" ile geri alındı
+ * (M1-4; y02). Yanıt kaydı silinir; rapor "düzeltildi" yazar (aşma sayılmaz).
+ */
+export const RED_FLAG_UNDO_KIND = 'RED_FLAG_UNDO';
+
 /**
  * Atağın son "kötü anı" (L5-2; y07): "Kendimi kötü hissediyorum" ile durdurulan manevra ya da test, ya da uzun baş dönmesi
  * uyarısında "Durdur" ile biten manevra. Sonrasında taraf testi, manevra ya da tekrar testi yapıldıysa ya da kullanıcı
@@ -535,7 +563,8 @@ export const RESUME_VALID_MS = 30 * 60 * 1000;
  */
 export type ResumeTarget =
   | { kind: 'side'; at: number; order: Side[]; results: NonNullable<Episode['sideProgress']>['results'] }
-  | { kind: 'maneuver'; at: number; side: Side; protocolId: Episode['maneuvers'][number]['protocolId'] };
+  /** step: yarıda kalınan adım (1'den; kayıttaki adım sayısı, en az 1). */
+  | { kind: 'maneuver'; at: number; side: Side; protocolId: Episode['maneuvers'][number]['protocolId']; step: number };
 
 export function resumeTarget(e: Episode | null | undefined, now: number): ResumeTarget | null {
   if (!e) return null;
@@ -543,7 +572,7 @@ export function resumeTarget(e: Episode | null | undefined, now: number): Resume
   const last = [...e.maneuvers].sort((a, b) => a.at - b.at)[e.maneuvers.length - 1];
   if (last && !last.completed && last.stopReason === 'INTERRUPTED' && last.side && fresh(last.at)) {
     const later = [...e.sideTests, ...e.retests].some((x) => x.at > last.at);
-    if (!later) return { kind: 'maneuver', at: last.at, side: last.side, protocolId: last.protocolId };
+    if (!later) return { kind: 'maneuver', at: last.at, side: last.side, protocolId: last.protocolId, step: Math.max(1, last.records.length) };
   }
   const p = e.sideProgress;
   if (p && fresh(p.at) && p.results.length > 0 && p.results.length < p.order.length && !e.sideTests.some((t) => t.at >= p.at)) {

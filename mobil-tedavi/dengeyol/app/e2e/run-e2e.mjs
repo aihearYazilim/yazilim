@@ -1429,7 +1429,8 @@ await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden aç�
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('active-episode').waitFor();
   if (await page.getByTestId('do-retest').count()) throw new Error('1 saat dolmadan tekrar testi açıldı');
-  if (!(await page.getByTestId('active-episode').innerText()).includes('Test saati')) throw new Error('tekrar testi saati yok');
+  // Yeni kullanıcı turu 2 (M1-8): saat tek satırda, büyük düğmenin altında ("Tekrar testi 15:03 — …").
+  if (!/Tekrar testi \d\d:\d\d — /.test(await page.getByTestId('start-episode').innerText())) throw new Error('tekrar testi saati yok');
   // Adresle "treat"/"start": manevra ya da test kendiliğinden açılmaz, önce uyarı.
   for (const mode of ['treat', 'start']) {
     await page.goto(BASE + '#/hasta/atak/' + mode);
@@ -1732,6 +1733,11 @@ await step('Yeni kullanıcı 1 (L2-7, y01): test tetiklemedi → tek büyük ön
   const first = page.locator('[data-testid="decision"] [role="radio"]').first();
   if ((await first.getAttribute('data-testid')) !== 'decision-both' || !/\bprimary\b/.test((await first.getAttribute('class')) ?? '')) throw new Error('önerilen "iki tarafa sırayla" büyük dolu düğme değil');
   if ((await page.locator('[data-testid="decision"] .choice.primary').count()) !== 1) throw new Error('birden çok önerilen düğme');
+  // Yeni kullanıcı turu 2 (M1-6): diğer seçenekler "Başka seçenekler" altında katlı (görünmez), açılınca seçilebilir.
+  if (await page.getByTestId('decision-R').isVisible()) throw new Error('diğer seçenekler katlı değil');
+  await page.getByTestId('choice-more').locator('summary').click();
+  await page.getByTestId('decision-R').waitFor();
+  await page.getByTestId('choice-more').locator('summary').click();
   await snap(page, 'tetiklenmedi-karar');
   await unlocked(page);
   await first.click();
@@ -1740,7 +1746,9 @@ await step('Yeni kullanıcı 1 (L2-7, y01): test tetiklemedi → tek büyük ön
   if (await page.getByTestId('runner-start').isVisible().catch(() => false)) throw new Error('seçimden sonra "Başlat" ekranı geldi');
   if (await page.getByTestId('runner-assist').count()) throw new Error('"Kim yapıyor" yeniden soruldu');
   const ep = (await storeOf(page)).episodes.at(-1);
-  if (!(ep.overrides ?? []).some((o) => o.kind === 'REFER_NOT_TRIGGERED' && /İki tarafa sırayla/.test(o.detail ?? ''))) throw new Error('seçim kaydı yok: ' + JSON.stringify(ep.overrides));
+  // Yeni kullanıcı turu 2 (M1-3; y01): önerilen düğmeye basmak "uyarı aşma" değildir; seçim kaydı USER_CHOICE.
+  if (!(ep.overrides ?? []).some((o) => o.kind === 'USER_CHOICE' && /^Uygulamanın önerisi seçildi — İki tarafa sırayla/.test(o.detail ?? ''))) throw new Error('seçim kaydı yok: ' + JSON.stringify(ep.overrides));
+  if ((ep.overrides ?? []).some((o) => /^REFER_/.test(o.kind))) throw new Error('önerilen yol aşma diye kaydedildi: ' + JSON.stringify(ep.overrides));
   noErrors(errors);
   await ctx.close();
 });
@@ -1941,6 +1949,11 @@ await step('Yeni kullanıcı turu 1 (y01 #6): manevra sürerken sayfa yenileninc
   // L5-3 (y07, y01): "Başım dönüyor" hazırlığı yeniden göstermez; manevra kaldığınız yerden (baştan) "Başlat" ekranında.
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('start-episode').click();
+  // Yeni kullanıcı turu 2 (M1-7; y01): önce "n. adımda yarıda kaldı. Baştan yapalım mı? / Bugünlük bitir".
+  await page.getByTestId('resume-ask').waitFor({ timeout: 15000 });
+  if (!/Manevra \d+\. adımda yarıda kaldı/.test(await page.getByTestId('resume-ask').innerText())) throw new Error('yarıda kalan manevra sorusu yok');
+  if (await page.getByTestId('prep').count()) throw new Error('soru yerine hazırlık geldi');
+  await page.getByTestId('resume-restart').click();
   await page.getByTestId('run-note').waitFor({ timeout: 15000 });
   if (!/Kaldığınız yerden: yarıda kalan sağ taraf manevrasını baştan/.test(await page.getByTestId('run-note').innerText())) throw new Error('kaldığınız yerden notu yok');
   if (await page.getByTestId('prep').count()) throw new Error('hazırlık yeniden geldi');
@@ -2105,7 +2118,7 @@ await step('Yeni kullanıcı turu 1 (L5-1, y07): kusma bildirilince ana ekran do
   await card.waitFor();
   const home = await page.getByTestId('active-episode').innerText();
   if (/Son testte baş dönmesi gelmedi/.test(home)) throw new Error('ana ekran "son testte baş dönmesi gelmedi" diyor');
-  if (!/1 \/ 3 manevra/.test(home) || /sınır doldu/.test(home)) throw new Error('bugünkü manevra sayısı yanlış: ' + home.slice(0, 300));
+  if (!/1 manevra tamamlandı · önerilen en fazla 3/.test(home) || /sınır doldu/.test(home)) throw new Error('bugünkü manevra sayısı yanlış: ' + home.slice(0, 300));
   const when = (await card.innerText()).match(/\d{1,2} \S+ \d\d:\d\d/)?.[0];
   if (!when) throw new Error('ana ekranda sabah testi zamanı yok');
   await snap(page, 'kusma-ana-ekran');
@@ -2235,23 +2248,48 @@ await step('Yeni kullanıcı turu 1 (L5-5, L5-6, y02): "Klinisyenim"e yanlış d
   await ctx.close();
 });
 
-await step('Yeni kullanıcı turu 1 (L5-7, y02): hekim tanısı tarafı ana ekrandan tek dokunuşla girilir; yalnız o taraf test edilir', async () => {
+await step('Yeni kullanıcı turu 2 (M1-1, M1-2; y02, y06): kulak "Doktorum tanı koydu" arkasında ve sesli onaylı; tek taraf testi tetiklemezse önerilen yol öbür tarafın testi', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' } } }));
   await page.goto(BASE + '#/hasta');
+  await page.getByTestId('home-no-dx').waitFor();
+  if (await page.getByTestId('home-dx-R').count()) throw new Error('kulak düğmeleri kapalı bağlantının arkasında değil');
+  if (/Tanı girilmedi|tanısı girilmedi/.test(await page.locator('main').innerText())) throw new Error('"Tanı girilmedi" cümlesi duruyor');
+  await page.getByTestId('home-dx-open').click();
+  // Yanlış dokunuş: onaysız kayıt yok; "Hayır" geri döner.
+  await page.getByTestId('home-dx-L').click();
+  await page.getByTestId('home-dx-confirm').waitFor();
+  if ((await storeOf(page)).patient.diagnosedByDoctor) throw new Error('kulak onaysız kaydedildi');
+  await unlocked(page);
+  await page.getByTestId('home-dx-no').click();
   await page.getByTestId('home-dx-R').click();
+  await unlocked(page);
+  await page.getByTestId('home-dx-yes').click();
   await page.getByTestId('home-dx-side').waitFor();
+  const prof = (await storeOf(page)).patient;
+  if (!prof.diagnosedByDoctor || prof.side !== 'R') throw new Error('onaylı kulak kaydı: ' + JSON.stringify(prof));
   await page.getByTestId('start-episode').click();
   await answerRedFlags(page);
   await answerSubtype(page);
   await page.getByTestId('prep').waitFor();
   await calibrate(page);
   await driveRunner(page);
-  // Tetiklemedi: önerilen sağ taraf manevrası, "Sol tarafı da test et" seçeneği; ikinci test yapılmadı.
+  // Tetiklemedi: önerilen tek büyük düğme "Sol tarafı da test et" (M1-2); bilinen sağ tarafa manevra katlı ikincil seçenek.
   await page.getByTestId('decision').waitFor({ timeout: 15000 });
-  await page.getByTestId('decision-test-other').waitFor();
+  const first = page.locator('[data-testid="decision"] [role="radio"]').first();
+  if ((await first.getAttribute('data-testid')) !== 'decision-test-other' || !/\bprimary\b/.test((await first.getAttribute('class')) ?? '')) throw new Error('önerilen yol "öbür tarafı da test et" değil');
+  if (await page.getByTestId('decision-continue').isVisible()) throw new Error('bilinen tarafa manevra katlı değil');
   if (await page.getByTestId('rest-continue').count()) throw new Error('ikinci taraf da test edildi');
-  const ep = (await storeOf(page)).episodes[0];
+  let ep = (await storeOf(page)).episodes[0];
   if (ep.sideTests[0].results.length !== 1 || ep.sideTests[0].results[0].side !== 'R') throw new Error('tek taraf testi kaydı: ' + JSON.stringify(ep.sideTests[0].results));
+  if (!(ep.overrides ?? []).some((o) => o.kind === 'APP_DECISION' && /önce sol taraf da test edilsin/.test(o.detail ?? ''))) throw new Error('uygulamanın kararı: ' + JSON.stringify(ep.overrides));
+  await unlocked(page);
+  await first.click();
+  // Öbür taraf test edilir (telefon alında; hazırlık yok); önerilen yol aşma sayılmaz (M1-3).
+  await page.locator('[data-testid="runner"], [data-testid="runner-start"]').first().waitFor({ timeout: 30000 });
+  if (await page.getByTestId('prep').count()) throw new Error('öbür taraf testinden önce hazırlık geldi');
+  ep = (await storeOf(page)).episodes[0];
+  if (!(ep.overrides ?? []).some((o) => o.kind === 'USER_CHOICE' && /^Uygulamanın önerisi seçildi — .*sol taraf da test edildi/.test(o.detail ?? ''))) throw new Error('seçim kaydı: ' + JSON.stringify(ep.overrides));
+  if ((ep.overrides ?? []).some((o) => /^REFER_/.test(o.kind))) throw new Error('önerilen yol aşma diye kaydedildi');
   noErrors(errors);
   await ctx.close();
 });

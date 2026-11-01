@@ -34,6 +34,11 @@ export interface Settings {
    * çift dokunuş kilidi her zaman kalır. Sorular yine her atakta sorulur.
    */
   answeredQuestions?: Record<string, string>;
+  /**
+   * Araştırma (isteğe bağlı; yeni kullanıcı turu 2, M1-11, y04): açıksa atak başında ve manevradan sonra belirti şiddeti
+   * (0–10) tek satırla sorulur (`Episode.vas`). Varsayılan kapalı; kapalıyken hiç görünmez. Ayarlar → Klinik çalışma.
+   */
+  askVas?: boolean;
 }
 
 export interface PatientProfile {
@@ -203,6 +208,11 @@ export interface Episode {
    * yanıta ya da 24 saate dek görünür (state/neuroAlert.ts). Eski kayıtlarda yok.
    */
   neuroAlertAck?: { at: number; by: 'ok' | 'called112' };
+  /**
+   * Araştırma: belirti şiddeti 0 (yok) – 10 (en kötü), settings.askVas açıkken (M1-11; y04). before: atak başında (bir kez),
+   * after: son manevradan sonra. "Geç" denirse yazılmaz. Eski kayıtlarda ve ayar kapalıyken yok.
+   */
+  vas?: { before?: number; after?: number };
 }
 
 export interface ClinicPatient {

@@ -41,6 +41,12 @@ export interface BoldDecision {
   ask?: boolean;
   /** Hekimin (reçete ya da kurulumdaki tanı) dediği taraf testle çelişiyorsa o taraf. */
   doctorSide?: Side;
+  /**
+   * Yalnız bir taraf test edildi ve baş dönmesi başlamadı (hekimin dediği taraf; L5-7): uygulamanın önerisi önce bu tarafı da
+   * test etmektir, bilinen tarafa körlemesine manevra önerilmez (yeni kullanıcı turu 2, M1-2; y02: yanlışlıkla "Sol kulak"a
+   * dokunan kişi sol tarafa manevraya yönlendiriliyordu). `side` bilinen taraf olarak kalır (ikincil seçenek).
+   */
+  testOther?: Side;
   /** Kararın tek cümlelik gerekçesi (ekranda, seste ve kayıtta). */
   reason: string;
 }
@@ -57,6 +63,7 @@ export interface DecisionContext {
 const NAME: Record<Side, string> = { R: 'sağ', L: 'sol' };
 const DATIVE: Record<Side, string> = { R: 'sağa', L: 'sola' };
 const otherOf = (s: Side): Side => (s === 'R' ? 'L' : 'R');
+const cap = (t: string) => t.charAt(0).toLocaleUpperCase('tr-TR') + t.slice(1);
 
 /** Temiz karar mı (uyarı yok, soru yok, tek taraf): telefon alında kalır, tek dokunuşla manevraya geçilir. */
 export function isClean(d: BoldDecision): boolean {
@@ -116,8 +123,15 @@ export function decidePosterior(results: SideTestResult[], ctx: DecisionContext 
   const r0 = results.find((x) => x.side === 'R');
   const l0 = results.find((x) => x.side === 'L');
   const d = decideTwoSides('PC', r0 ?? blank('R'), l0 ?? blank('L'), ctx);
+  if (r0 && l0) return d;
+  const tested = r0 ?? l0;
+  if (tested && d.warn === 'NOT_TRIGGERED' && !tested.safetyStopped) {
+    // Tek taraf testi tetiklemedi (M1-2): önerilen yol öbür tarafın testi.
+    const other = otherOf(tested.side);
+    return { ...d, testOther: other, reason: `${cap(NAME[tested.side])} tarafta baş dönmesi başlamadı; ${NAME[other]} taraf henüz test edilmedi.` };
+  }
   // Uzun baş dönmesiyle durdurulup öbür taraf test edilmediyse gerekçede söylenir.
-  return r0 && l0 ? d : { ...d, reason: `${d.reason} Öbür taraf test edilmedi.` };
+  return { ...d, reason: `${d.reason} Öbür taraf test edilmedi.` };
 }
 
 /**
@@ -169,7 +183,7 @@ function decideTwoSides(canal: HomeCanal, r: SideTestResult, l: SideTestResult, 
           : !side
             ? 'BOTH_SIDES'
             : null;
-  const cap = why.charAt(0).toLocaleUpperCase('tr-TR') + why.slice(1);
+  const whyCap = cap(why);
   return {
     canal,
     side,
@@ -177,7 +191,7 @@ function decideTwoSides(canal: HomeCanal, r: SideTestResult, l: SideTestResult, 
     ...(ask ? { ask } : {}),
     ...(doctorSide ? { doctorSide } : {}),
     warn,
-    reason: `${cap}.${canal === 'HC' && side ? assume : ''}`
+    reason: `${whyCap}.${canal === 'HC' && side ? assume : ''}`
   };
 }
 
@@ -230,6 +244,7 @@ export function sideOrder(known: Side | null | undefined): Side[] {
 export function decisionLogDetail(d: BoldDecision): string {
   // Önerilecek taraf yoksa bu kayıt uygulamanın kararıdır; kullanıcının seçtiği taraf ayrı kayıtta (USER_CHOICE / REFER_…) ve
   // manevra kaydındadır (yeni kullanıcı turu 1, y01 #5: "taraf seçilmedi" kullanıcının seçmediği sanılıyordu).
+  if (d.testOther) return `Uygulamanın kararı: önce ${NAME[d.testOther]} taraf da test edilsin (bilinen tarafa testsiz manevra önerilmedi). ${d.reason}`;
   const what = d.both ? 'iki tarafa sırayla' : d.side ? `${NAME[d.side]} taraf` : 'önerilen taraf yok (taraf seçimi kullanıcıya bırakıldı)';
   const man = d.canal === 'HC' ? 'BBQ roll (yatay kanal, geotropik varsayım)' : 'arka kanal manevrası';
   return `Uygulamanın kararı: ${what}, ${man}. ${d.reason}`;

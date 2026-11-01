@@ -14,6 +14,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { encodePrescription } from '../../../core/prescription';
 import { store } from '../../../state/store';
+import { speech } from '../../../platform/speech';
 import { emptyData, type Episode } from '../../../state/types';
 import { PeriodReport } from './History';
 import { PatientHome } from './PatientHome';
@@ -62,6 +63,24 @@ const byTestId = (id: string) => host!.querySelector<HTMLElement>(`[data-testid=
 const click = (el: HTMLElement | null | undefined) => act(() => el!.click());
 
 describe('kurulum (kullanıcı turu 4)', () => {
+  it('katlanır "Çalışma katılımcı no" (isteğe bağlı) kurulumda girilir ve profile yazılır (M1-11; y04)', () => {
+    const d = emptyData();
+    d.settings = { ...d.settings, role: 'patient', speech: false };
+    store.update(() => d);
+    mount('/hasta/kurulum');
+    const box = byTestId('ob-study-box') as HTMLDetailsElement;
+    expect(box.tagName).toBe('DETAILS');
+    expect(box.open).toBe(false);
+    const input = byTestId('ob-study-id') as HTMLInputElement;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, ' DY-014 ');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    click(byTestId('ob-consent'));
+    click(byTestId('ob-start'));
+    expect(store.get().patient?.studyId).toBe('DY-014');
+  });
+
   it('yakını seçilince "başucunda duracağım (ekranı çevir)" sunulur; seçim kaldırılınca çevirme de kalkar (k02)', () => {
     const d = emptyData();
     d.settings = { ...d.settings, role: 'patient', speech: false };
@@ -361,7 +380,7 @@ describe('ana ekran: kötü an sonrası durum (yeni kullanıcı turu 1, L5)', ()
     expect(card.textContent).toMatch(/Bugün kusma bildirdiniz: bugün manevra yok/);
     expect(card.textContent).toMatch(/1 Kasım 06:00/);
     expect(host!.textContent).not.toMatch(/Son testte baş dönmesi gelmedi/);
-    expect(host!.textContent).toMatch(/1 \/ 3 manevra/);
+    expect(byTestId('home-today-count')!.textContent).toBe('1 manevra tamamlandı · önerilen en fazla 3');
     expect(host!.textContent).not.toMatch(/önerilen sınır doldu/);
     expect(byTestId('home-dose-limit')).toBeNull();
   });
@@ -398,16 +417,74 @@ describe('ana ekran: kötü an sonrası durum (yeni kullanıcı turu 1, L5)', ()
     expect(byTestId('home-unwell-stop')!.textContent).toMatch(/^Son manevra, siz kötü hissettiğiniz için durdu/);
   });
 
-  it('hekim tanısı tarafı ana ekrandan tek dokunuşla girilir; sonra "yalnız sağ taraf test edilecek" (L5-7)', () => {
+  it('hekim tanısı tarafı "Doktorum tanı koydu" arkasında; seçim sesli onaysız kaydedilmez; "Doktor söylemedi" kartı kapatır (M1-1; L5-7)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    onTestFinished(() => void vi.useRealTimers());
+    const spoken: string[] = [];
+    const sp = vi.spyOn(speech, 'speak').mockImplementation((t: string) => void spoken.push(t));
+    onTestFinished(() => sp.mockRestore());
     seedHome({ diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
     mount('/hasta');
+    // Kapalıyken yalnız tek satır bağlantı: kulak düğmeleri ve "Tanı girilmedi" cümlesi yok.
+    expect(byTestId('home-no-dx')!.textContent).toMatch(/Doktorum tanı koydu/);
+    expect(byTestId('home-dx-R')).toBeNull();
+    expect(host!.textContent).not.toMatch(/Tanı girilmedi|Hekim tanısı girilmedi/);
+    // "Doktor söylemedi" kartı kapatır (Ayarlar'a götürmez).
+    click(byTestId('home-dx-open'));
     expect(byTestId('home-no-dx')!.textContent).toMatch(/Doktorunuz hangi kulak dedi\?/);
-    expect(byTestId('home-dx-side')).toBeNull();
+    click(byTestId('home-dx-none'));
+    expect(byTestId('home-dx-R')).toBeNull();
+    expect(byTestId('home-dx-open')).not.toBeNull();
+    // Yanlış dokunuş: "Sol kulak" sesli sorulur; "Hayır" hiçbir şey kaydetmez.
+    click(byTestId('home-dx-open'));
+    click(byTestId('home-dx-L'));
+    expect(spoken[spoken.length - 1]).toMatch(/^Sol kulak dediniz, doğru mu\?/);
+    expect(store.get().patient!.diagnosedByDoctor).toBe(false);
+    // Seçim dokunuşunun ikincisi onay vermez (kısa kilit).
+    click(byTestId('home-dx-yes'));
+    expect(store.get().patient!.diagnosedByDoctor).toBe(false);
+    act(() => void vi.advanceTimersByTime(1000));
+    click(byTestId('home-dx-no'));
+    expect(store.get().patient!.side).toBe('unknown');
+    // Doğru seçim "Evet" ile kaydedilir.
     click(byTestId('home-dx-R'));
+    expect(spoken[spoken.length - 1]).toMatch(/^Sağ kulak dediniz, doğru mu\?/);
+    act(() => void vi.advanceTimersByTime(1000));
+    click(byTestId('home-dx-yes'));
     const p = store.get().patient!;
     expect(p.diagnosedByDoctor).toBe(true);
     expect(p.side).toBe('R');
     expect(byTestId('home-no-dx')).toBeNull();
     expect(byTestId('home-dx-side')!.textContent).toMatch(/Yalnız sağ taraf test edilecek/);
+    expect(byTestId('home-dx-change')!.className).toMatch(/\bbtn\b/);
+  });
+
+  it('bugünkü manevralar: yarıda kalan ve kötü hissedip durdurulan "tamamlandı" sayılmaz, ayrı yazılır (M1-8; y07)', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+    onTestFinished(() => void vi.useRealTimers());
+    const now = Date.now();
+    const rec = [{ stepId: 'a' }, { stepId: 'b' }] as unknown as Episode['maneuvers'][number]['records'];
+    seedHome({}, [
+      base({
+        maneuvers: [
+          { id: 'u', at: now - 50 * 60_000, protocolId: 'epley', side: 'R', completed: false, stopReason: 'USER_FEELS_UNWELL', records: rec, manual: false },
+          { id: 'i', at: now - 40 * 60_000, protocolId: 'epley', side: 'R', completed: false, stopReason: 'INTERRUPTED', recovered: true, records: rec, manual: false }
+        ]
+      })
+    ]);
+    mount('/hasta');
+    expect(byTestId('home-today-count')!.textContent).toBe('0 manevra tamamlandı, 2 yarıda kaldı · önerilen en fazla 3');
+    expect(host!.textContent).not.toMatch(/2 \/ 3/);
+  });
+
+  it('manevradan sonra ana ekranda tek satır sonraki adım; saat bir kez (M1-8; y01)', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+    onTestFinished(() => void vi.useRealTimers());
+    const now = Date.now();
+    seedHome({}, [base({ maneuvers: [{ id: 'm', at: now - 10 * 60_000, protocolId: 'epley', side: 'R', completed: true, stopReason: null, records: [], manual: false }] })]);
+    mount('/hasta');
+    expect(byTestId('start-episode')!.textContent).toMatch(/Tekrar testi 14:50 — saati gelince "Başım dönüyor"a basın/);
+    expect(host!.textContent).not.toMatch(/sıradaki adımı gösterilir/);
+    expect(host!.textContent!.split('14:50').length - 1).toBe(1);
   });
 });
