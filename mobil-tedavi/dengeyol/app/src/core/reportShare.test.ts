@@ -6,6 +6,7 @@ import {
   buildHomeReport,
   compactOverrideDetail,
   homeReportHasResearch,
+  OVERRIDE_DETAIL_FULL_MAX,
   OVERRIDE_DETAIL_MAX,
   redFlagContinuedIn,
   decodeHomeReport,
@@ -596,8 +597,8 @@ describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı 
     expect(token.length).toBeLessThanOrEqual(REPORT_TOKEN_BUDGET);
     const w = wireOf(token);
     expect(w.v).toBe(3);
-    // QR makul kalır: araştırma kaydıyla da tek atak ~660 karakter (bütçe REPORT_TOKEN_BUDGET).
-    expect(token.length).toBeLessThan(800);
+    // QR makul kalır: araştırma kaydıyla (kısaltılmamış gerekçeyle) de tek atak ~830 karakter (bütçe REPORT_TOKEN_BUDGET).
+    expect(token.length).toBeLessThan(900);
     expect(w.i).toBe('DY-014');
     expect(w.k).toBe('neck,spine');
     const r = decodeHomeReport(token);
@@ -614,10 +615,13 @@ describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı 
     expect(e.maneuvers[0]!.protocolId).toBe('bbq-roll');
     expect(e.redFlags).toEqual([{ at: T0 + MIN, ids: ['neuro'], continued: true }]);
     expect(e.overrides!.map((o) => o.kind)).toEqual(['RED_FLAG', 'SUBTYPE', 'APP_DECISION', 'NO_DIAGNOSIS', 'XYZ_YENI_KOD']);
-    // Uygulamanın kararında önek atılır, uzun gerekçe cümle sınırında kısalır; sabit açıklamalar (tanısız kullanım) yazılmaz.
+    // Uygulamanın kararında önek atılır; gerekçe kısaltılmadan taşınır (yeni kullanıcı turu 2, y04 #4); sabit açıklamalar
+    // (tanısız kullanım) yazılmaz.
     const dec = e.overrides![2]!.detail!;
-    expect(dec.startsWith('sağ taraf, BBQ roll')).toBe(true);
-    expect(dec.length).toBeLessThanOrEqual(OVERRIDE_DETAIL_MAX);
+    expect(dec).toBe(
+      'sağ taraf, BBQ roll (yatay kanal, geotropik varsayım). Sağ tarafta baş dönmesi daha uzun sürdü. Yatay kanalda daha şiddetli taraf etkilenen taraf kabul edilir (en sık biçim).'
+    );
+    expect(dec.length).toBeGreaterThan(OVERRIDE_DETAIL_MAX);
     expect(e.overrides![3]!.detail).toBeUndefined();
     // Atağın sürümü raporunkiyle aynıysa atakta ayrıca yazılmaz.
     expect(e.appVersion).toBeUndefined();
@@ -748,5 +752,51 @@ describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı 
     expect(compactOverrideDetail('NO_DIAGNOSIS', 'Hekim tanısı olmadan kullanım')).toBeUndefined();
     expect(compactOverrideDetail('APP_DECISION', 'Uygulamanın kararı: sol taraf, Epley. Gerekçe çok uzun bir cümle burada.', 30)).toBe('sol taraf, Epley.');
     expect(compactOverrideDetail('X_Y', 'bir iki üç dört beş altı yedi sekiz dokuz on', 20)).toBe('bir iki üç dört beş…');
+  });
+
+  it('belirti şiddeti (VAS 0–10, önce/sonra) v3 ile taşınır; tek değer de yeter; geçersiz değer yazılmaz', () => {
+    const ep = episode(T0, { vas: { before: 7, after: 2 }, rxShortcut: undefined });
+    const rep = buildHomeReport(data([ep], false), { now: T0 + 60 * MIN, episodes: [ep] });
+    expect(rep.v).toBe(3);
+    expect(rep.episodes[0]!.vas).toEqual({ before: 7, after: 2 });
+    const { token, report } = encodeHomeReport(rep);
+    expect(wireOf(token).e).toEqual([expect.objectContaining({ v: [7, 2] })]);
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(report);
+    const only = buildHomeReport(data([{ ...ep, vas: { after: 0 } }], false), { now: T0 + 60 * MIN, episodes: [{ ...ep, vas: { after: 0 } }] });
+    const r2 = decodeHomeReport(encodeHomeReport(only).token);
+    expect(r2.ok && r2.value.episodes[0]!.vas).toEqual({ after: 0 });
+    const bad = buildHomeReport(data([{ ...ep, vas: { before: 11 } }], false), { now: T0 + 60 * MIN, episodes: [{ ...ep, vas: { before: 11 } }] });
+    expect(bad.episodes[0]!.vas).toBeUndefined();
+  });
+
+  it('VAS: eski v3 bağlantısı (alan yok) okunur; geçersiz alan reddedilir; v1/v2 bağlantısında yok sayılır', () => {
+    const m = Math.floor(T0 / MIN);
+    const t = (v: number, ep: Record<string, unknown>) => decodeHomeReport(tokenOf({ v, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', ...ep }] }));
+    const old = t(3, { S: 1 });
+    expect(old.ok && old.value.episodes[0]!.vas).toBeUndefined();
+    expect(t(3, { v: [11, null] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(t(3, { v: [null, null] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(t(3, { v: [3] })).toEqual({ ok: false, error: 'FIELDS' });
+    const v2 = t(2, { v: [3, 1] });
+    expect(v2.ok && v2.value.episodes[0]!.vas).toBeUndefined();
+  });
+
+  it('uzun gerekçe bütçeyi aşarsa önce 90 karaktere kısalır; çözücü uzun açıklamayı OVERRIDE_DETAIL_FULL_MAX\'ta keser', () => {
+    const long = 'Uygulamanın kararı: ' + 'gerekçe sözcükleri burada. '.repeat(10);
+    const ep = p4(T0, { overrides: [{ at: T0 + 2 * MIN, kind: 'APP_DECISION', detail: long }] });
+    const rep = buildHomeReport(d3([ep]), { now: T0 + 60 * MIN });
+    const full = rep.episodes[0]!.overrides![0]!.detail!;
+    expect(full.length).toBeGreaterThan(OVERRIDE_DETAIL_MAX);
+    expect(full.length).toBeLessThanOrEqual(OVERRIDE_DETAIL_FULL_MAX);
+    // Bol bütçede tam; dar bütçede (adım ayrıntısı çıktıktan sonra) 90 karaktere iner, kod kalır.
+    expect(encodeHomeReport(rep).report.episodes[0]!.overrides![0]!.detail).toBe(full);
+    const tight = encodeHomeReport(rep, encodeHomeReportRaw({ ...rep, stepsDropped: true, episodes: rep.episodes.map((e) => ({ ...e, maneuvers: e.maneuvers.map((x) => ({ ...x, steps: null })) })) }).length - 20);
+    const d = tight.report.episodes[0]!.overrides![0]!;
+    expect(d.kind).toBe('APP_DECISION');
+    expect((d.detail ?? '').length).toBeLessThanOrEqual(OVERRIDE_DETAIL_MAX);
+    const m = Math.floor(T0 / MIN);
+    const r = decodeHomeReport(tokenOf({ v: 3, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', o: [[1, 'D', 'x'.repeat(400)]] }] }));
+    expect(r.ok && r.value.episodes[0]!.overrides![0]!.detail!.length).toBe(OVERRIDE_DETAIL_FULL_MAX);
   });
 });

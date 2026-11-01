@@ -21,6 +21,9 @@ import {
   homeOverrideCount,
   homeRedFlagText,
   homeReportAdvice,
+  homeReportAlert,
+  homeListSummary,
+  homeVasText,
   homeResearchEntries,
   homeResearchNote,
   homeSideTestText,
@@ -48,6 +51,11 @@ import {
   RX_REASON_MIN,
   RX_WARN_PATIENT_LABEL,
   rxValidityText,
+  rxDoseText,
+  RX_SHORTCUT_HELP,
+  safetyCheckText,
+  safetyWarnings,
+  testFindingInitial,
   shortDate,
   stepFlagLabels,
   stepLines
@@ -384,7 +392,9 @@ describe('HBYS notu (kısa)', () => {
     const rxLines = lines.filter((l) => l.startsWith('Ev reçetesi:'));
     expect(rxLines).toHaveLength(1);
     expect(rxLines[0]).toMatch(/reçete kodu [0-9a-f]{8}/);
-    expect(rxLines[0]).toContain(`Geçerlilik: ${RX_VALID_DAYS} gün, ${shortDate(rxLastValidDay('2026-10-30')!)} dahil`);
+    // Geçerlilik gün sayısı değil son geçerli gün olarak (tedavi gün sayısıyla karışmasın; yeni kullanıcı turu 2, y08 #6).
+    expect(rxLines[0]).toContain(`Reçete ${shortDate(rxLastValidDay('2026-10-30')!)} tarihine kadar (dahil) geçerli`);
+    expect(rxLines[0]).not.toMatch(/Geçerlilik: \d+ gün/);
     expect(rxLines[0]).toMatch(/testsiz kısa yol/);
     expect(lines[lines.length - 1]).toBe('Dr. Test');
   });
@@ -455,7 +465,11 @@ describe('yardımcılar', () => {
       expect(last.getTime()).toBeLessThan(until);
       expect(nextDay).toBeGreaterThanOrEqual(until);
     }
-    expect(rxValidityText('2026-10-30')).toMatch(/^Geçerlilik: 14 gün, \d\d\.\d\d\.2026 dahil\. Testsiz kısa yol/);
+    expect(rxValidityText('2026-10-30')).toMatch(/^Reçete \d\d\.\d\d\.2026 tarihine kadar \(dahil\) geçerli\.$/);
+    // Reçete formunda tek süre satırı: tedavi gün sayısı ve son geçerli gün adıyla; kısa yol açıklaması ayrı (katlanır).
+    expect(rxDoseText(3, 5, '2026-10-30')).toBe(`5 gün, günde en çok 3 manevra. ${rxValidityText('2026-10-30')}`);
+    expect(rxDoseText(3, 5, '2026-10-30')).not.toMatch(/kısa yol|14 gün/);
+    expect(RX_SHORTCUT_HELP).toMatch(/taraf testi yapmadan/);
     expect(rxLastValidDay('bozuk')).toBeNull();
   });
 
@@ -761,7 +775,8 @@ describe('ev raporunun araştırma kaydı ve klinik öneri (yeni kullanıcı tur
   });
 
   it('tek cümle öneri: demo, acil belirti, atipik süre, tekrar testi yok, yanıtsızlık, düzelme', () => {
-    expect(homeReportAdvice(rep({}, { simulation: true }))).toMatch(/^Bu rapor demo modunda/);
+    // Demo kaydında da klinik öneri, demo notuyla (yeni kullanıcı turu 2, y08 #5).
+    expect(homeReportAdvice(rep({}, { simulation: true }))).toMatch(/^Bu rapor demo modunda .*öneri: Manevra sonrası tekrar testi yapılmamış: .*sevk/);
     expect(homeReportAdvice(rep({}, { redFlags: [{ at: S, ids: ['neuro'], continued: true }] }))).toMatch(/^Evde acil \(nörolojik\) belirti/);
     expect(homeReportAdvice(rep({}, { maneuvers: [{ ...ep().maneuvers[0]!, afterSymptoms: 'neuro' }] }))).toMatch(/^Evde acil/);
     const long = ep().sideTests[0]!;
@@ -776,5 +791,61 @@ describe('ev raporunun araştırma kaydı ve klinik öneri (yeni kullanıcı tur
     expect(homeReportAdvice(rep({}, { retests: [{ ...pos, kind: 'morning', vertigo: false, latencySec: null, durationSec: null }] }))).toMatch(/^Sabah testi negatif/);
     const nt = { ...long, R: { vertigo: false, latencySec: null, durationSec: null, safetyStopped: false }, L: null, decision: { kind: 'NOT_TRIGGERED' as const } };
     expect(homeReportAdvice(rep({}, { sideTests: [nt], maneuvers: [] }))).toMatch(/^Evde test baş dönmesi başlatmadı/);
+  });
+
+  it('ilk satır alarmı (yeni kullanıcı turu 2, y05 #3): yeni nörolojik belirti, aşılan kırmızı bayrak, acil belirtiyle durdurma', () => {
+    const neuro = { ...ep().maneuvers[0]!, afterSymptoms: 'neuro' as const };
+    const a = rep({}, { maneuvers: [neuro] });
+    expect(homeReportAlert(a)).toMatch(/^Manevra sonrası yeni nörolojik belirti bildirildi \(\d\d\.\d\d\); 112 uyarısına yanıt yok$/);
+    expect(homeReportHeadline(a)).toMatch(/^Manevra sonrası yeni nörolojik belirti bildirildi .* · Son atak/);
+    // Ekran alarmı ayrı satırda gösterir: başlıkta yinelenmez.
+    expect(homeReportHeadline(a, { alert: false })).toMatch(/^Son atak/);
+    expect(homeReportNoteLine(a)).toMatch(/^Ev dönemi \(.*\): Manevra sonrası yeni nörolojik belirti/);
+    expect(homeReportAlert(rep({}, { maneuvers: [neuro], neuroAck: { at: S + 40 * MIN, by: 'called112' } }))).toMatch(/kişi "112'yi aradım" dedi$/);
+    const passed = rep({}, { simulation: true, redFlags: [{ at: S, ids: ['neuro'], continued: true }] });
+    expect(homeReportAlert(passed)).toMatch(/^Kırmızı bayrak aşıldı: çift görme, konuşma ya da yutma bozukluğu işaretlendi, uyarıya rağmen devam edildi \(\d\d\.\d\d\) \(demo kaydı\)$/);
+    const stopped = rep({}, { status: 'emergency', redFlags: [{ at: S, ids: ['neuro'], continued: false }] });
+    expect(homeReportAlert(stopped)).toMatch(/^Acil belirti işaretlendi: çift görme.*; atak durduruldu/);
+    expect(homeReportAlert(rep())).toBeNull();
+    expect(homeReportHeadline(rep())).toMatch(/^Son atak/);
+  });
+
+  it('muayene listesi: ev döneminin manevra ve aşma sayısı (yeni kullanıcı turu 2, y04 #5)', () => {
+    const r = rep({}, { overrides: [{ at: S, kind: 'DOSE', detail: 'x' }, { at: S + MIN, kind: 'VERTIGO_TOO_LONG' }] });
+    const token = encodeHomeReport(r).token;
+    expect(homeListSummary({ homeReports: [{ id: 'a', token, importedAt: S }] })).toBe(`ev: ${r.episodes[0]!.maneuvers.length} manevra, ${homeOverrideCount(r)} aşma`);
+    expect(homeListSummary({ homeReports: [{ id: 'b', token: 'x.00000000', importedAt: S }] })).toBeNull();
+    expect(homeListSummary({})).toBeNull();
+    // Eski uygulamanın raporu (araştırma kaydı yok): aşma sayısı yazılmaz.
+    const old = encodeHomeReport(rep({ v: 1, appVersion: undefined, rulesVersion: undefined }, { sideTests: [{ ...ep().sideTests[0]!, canal: undefined }] })).token;
+    expect(homeListSummary({ homeReports: [{ id: 'c', token: old, importedAt: S }] })).toMatch(/^ev: \d+ manevra$/);
+  });
+
+  it('test sonrası bulgu formu: işaret varsa "Hasta baş dönmesi bildirdi" işaretli, gecikme/süre işaretlerden (yeni kullanıcı turu 2, y08 #2)', () => {
+    const marked = rec({ stepId: 'dh-1', firstInRangeAt: 1000, reachedAt: 1000, startedAt: 0, vertigoMarks: [{ start: 4, end: 16 }] });
+    const i = testFindingInitial(marked);
+    expect(i.vertigo).toBe(true);
+    expect(i.nystagmusUnset).toBe(true);
+    expect([i.latencySec, i.durationSec]).toEqual([3, 12]);
+    const none = testFindingInitial(rec({ stepId: 'dh-1' }));
+    expect([none.vertigo, none.latencySec, none.durationSec]).toEqual([false, null, null]);
+    expect(testFindingInitial(undefined).vertigo).toBe(false);
+  });
+
+  it('teste başlamadan kontrol (yeni kullanıcı turu 2, y08 #3): uyarılar, rapor metni, HBYS satırı', () => {
+    expect(safetyCheckText(undefined)).toBeNull();
+    expect(safetyCheckText({ at: T0 })).toBeNull();
+    expect(safetyCheckText({ at: T0, spontaneous: false, neuro: true })).toBe('spontan nistagmus yok, nörolojik bulgu VAR, boyun sorunu değerlendirilmedi');
+    expect(safetyWarnings({ at: T0, spontaneous: false, neuro: true, neck: true }).map((w) => w.split(':')[0])).toEqual(['Nörolojik bulgu', 'Boyun sorunu']);
+    expect(safetyWarnings({ at: T0, spontaneous: false, neuro: false, neck: false })).toEqual([]);
+    const note = examNoteText(exam({}, undefined, { safetyCheck: { at: T0, spontaneous: false, neuro: false, neck: true } }), 'K-1', {});
+    expect(note.split('\n')).toContain('Teste başlamadan kontrol: spontan nistagmus yok, nörolojik bulgu yok, boyun sorunu VAR.');
+    expect(examNoteText(exam({}), 'K-1', {})).not.toMatch(/Teste başlamadan/);
+  });
+
+  it('belirti şiddeti (VAS) ev atağında okunur metin', () => {
+    expect(homeVasText({ vas: { before: 7, after: 3 } })).toBe('başta 7, manevradan sonra 3');
+    expect(homeVasText({ vas: { after: 0 } })).toBe('manevradan sonra 0');
+    expect(homeVasText({})).toBeNull();
   });
 });

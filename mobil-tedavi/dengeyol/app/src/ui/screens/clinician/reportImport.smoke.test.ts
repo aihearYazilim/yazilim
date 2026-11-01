@@ -110,7 +110,12 @@ describe('ev raporu içe aktarma: biçim v3 araştırma kaydı (yeni kullanıcı
     expect(text).toContain('BBQ roll (yatakta dönme manevrası) sağ: tamamlandı');
     expect(text).not.toContain('Dix-Hallpike');
     expect(byTestId('hr-report-study-id')!.textContent).toBe('DY-014');
-    expect(byTestId('hr-report-advice')!.textContent).toMatch(/^Öneri: Bu rapor demo modunda/);
+    // Demo kaydında da klinik öneri (demo notuyla); aşılan kırmızı bayrak ilk satırda (yeni kullanıcı turu 2, y08 #5, y05 #3).
+    expect(byTestId('hr-report-advice')!.textContent).toMatch(/^Öneri: Bu rapor demo modunda .*öneri: Evde acil \(nörolojik\) belirti/);
+    expect(byTestId('hr-report-alert')!.textContent).toMatch(/^Kırmızı bayrak aşıldı: çift görme.*uyarıya rağmen devam edildi .*\(demo kaydı\)$/);
+    expect(byTestId('hr-report-headline')!.textContent).not.toMatch(/Kırmızı bayrak/);
+    const first = byTestId('hr-report')!.querySelector('h3')!.nextElementSibling;
+    expect(first?.getAttribute('data-testid')).toBe('hr-report-alert');
     expect(byTestId('hr-report-version')!.textContent).toBe('Kayıt: DengeYol 0.1.0 · karar kuralları k1');
     expect(byTestId('hr-report-demo')!.textContent).toMatch(/DEMO MODU/);
     expect(byTestId('hr-report-redflag')!.textContent).toMatch(/uyarı gösterildi, devam edildi$/);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type Finding, NYSTAGMUS_LABEL, type NystagmusType, type ObservationMethod } from '../../../core/diagnosis';
 import type { Side } from '../../../core/protocols';
 import { Choice, Segmented } from '../../components/Controls';
@@ -38,12 +38,61 @@ type TriState = 'yes' | 'no' | 'unset';
 const toTri = (b: boolean | undefined): TriState => (b === undefined ? 'unset' : b ? 'yes' : 'no');
 const fromTri = (t: TriState): boolean | undefined => (t === 'unset' ? undefined : t === 'yes');
 
+/**
+ * Formun kaydedilmemiş taslağı (yeni kullanıcı turu 2, y08 #1): test sonrası form açıkken sayfa yenilenirse girilenler
+ * kaybolmasın. sessionStorage'da tutulur (sekme kapanınca biter); "Kaydet"te silinir.
+ */
+export interface FindingDraft {
+  nys: NystagmusType | null;
+  lat: string;
+  dur: string;
+  intensity: 1 | 2 | 3 | null;
+  vertigo: boolean;
+  torsion: Side | 'unset';
+  fatigue: TriState;
+  reversal: TriState;
+  method: ObservationMethod | null;
+  note: string;
+}
+
+export const findingDraftKey = (examId: string, target: string, key: string) => `dengeyol:findingDraft:${examId}:${target}:${key}`;
+
+export function readFindingDraft(key: string): FindingDraft | null {
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    const d = raw ? (JSON.parse(raw) as Partial<FindingDraft>) : null;
+    if (!d || typeof d !== 'object') return null;
+    if (d.nys !== null && !ORDER.includes(d.nys as NystagmusType)) return null;
+    if (typeof d.lat !== 'string' || typeof d.dur !== 'string' || typeof d.vertigo !== 'boolean' || typeof d.note !== 'string') return null;
+    return d as FindingDraft;
+  } catch {
+    return null;
+  }
+}
+
+function writeFindingDraft(key: string, d: FindingDraft) {
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(d));
+  } catch {
+    /* yazılamadı: taslak yok */
+  }
+}
+
+export function removeFindingDraft(key: string) {
+  try {
+    window.sessionStorage.removeItem(key);
+  } catch {
+    /* yok say */
+  }
+}
+
 export function FindingForm({
   title,
   initial,
   showIntensity,
   dixHallpike,
   defaultMethod,
+  draftKey,
   onSave,
   onCancel
 }: {
@@ -54,20 +103,27 @@ export function FindingForm({
   dixHallpike?: boolean;
   /** Bu muayenede daha önce seçilen gözlem yöntemi (her testte yeniden seçilmesin). */
   defaultMethod?: ObservationMethod;
+  /** Verilirse kaydedilmemiş giriş bu anahtarla taslak olarak saklanır ve form yeniden açılınca geri yüklenir. */
+  draftKey?: string;
   onSave: (f: Finding) => void;
   onCancel?: () => void;
 }) {
-  const [nys, setNys] = useState<NystagmusType | null>(initial.nystagmusUnset ? null : initial.nystagmus);
-  const [lat, setLat] = useState(initial.latencySec?.toString() ?? '');
-  const [dur, setDur] = useState(initial.durationSec?.toString() ?? '');
+  // Kaydedilmemiş taslak varsa (sayfa yenilendi) form onunla açılır.
+  const [draft] = useState<FindingDraft | null>(() => (draftKey ? readFindingDraft(draftKey) : null));
+  const [nys, setNys] = useState<NystagmusType | null>(draft ? draft.nys : initial.nystagmusUnset ? null : initial.nystagmus);
+  const [lat, setLat] = useState(draft ? draft.lat : (initial.latencySec?.toString() ?? ''));
+  const [dur, setDur] = useState(draft ? draft.dur : (initial.durationSec?.toString() ?? ''));
   // Şiddet yatay kanalda tarafı belirler: nistagmus varken boş bırakılamaz (unutulan 0, apogeotropikte yanlış taraf seçtirirdi).
-  const [intensity, setIntensity] = useState<1 | 2 | 3 | null>(initial.intensity === 0 ? null : initial.intensity);
-  const [vertigo, setVertigo] = useState(initial.vertigo);
-  const [torsion, setTorsion] = useState<Side | 'unset'>(initial.torsionToward ?? 'unset');
-  const [fatigue, setFatigue] = useState<TriState>(toTri(initial.fatigue));
-  const [reversal, setReversal] = useState<TriState>(toTri(initial.reversalOnSitting));
-  const [method, setMethod] = useState<ObservationMethod | null>(initial.method ?? defaultMethod ?? null);
-  const [note, setNote] = useState(initial.note ?? '');
+  const [intensity, setIntensity] = useState<1 | 2 | 3 | null>(draft ? (draft.intensity ?? null) : initial.intensity === 0 ? null : initial.intensity);
+  const [vertigo, setVertigo] = useState(draft ? draft.vertigo : initial.vertigo);
+  const [torsion, setTorsion] = useState<Side | 'unset'>(draft?.torsion ?? initial.torsionToward ?? 'unset');
+  const [fatigue, setFatigue] = useState<TriState>(draft?.fatigue ?? toTri(initial.fatigue));
+  const [reversal, setReversal] = useState<TriState>(draft?.reversal ?? toTri(initial.reversalOnSitting));
+  const [method, setMethod] = useState<ObservationMethod | null>(draft ? (draft.method ?? null) : (initial.method ?? defaultMethod ?? null));
+  const [note, setNote] = useState(draft ? draft.note : (initial.note ?? ''));
+  useEffect(() => {
+    if (draftKey) writeFindingDraft(draftKey, { nys, lat, dur, intensity, vertigo, torsion, fatigue, reversal, method, note });
+  }, [draftKey, nys, lat, dur, intensity, vertigo, torsion, fatigue, reversal, method, note]);
   const naked = (initial.method ?? defaultMethod) === 'çıplak göz';
   /** "Emin değilim, baş dönmesi var": nistagmus yok + baş dönmesi var + not (y08: çıplak gözle torsiyon/tip seçilemedi). */
   const markUnsure = () => {
@@ -117,6 +173,7 @@ export function FindingForm({
     if (method) f.method = method;
     const n = note.trim().slice(0, NOTE_MAX);
     if (n) f.note = n;
+    if (draftKey) removeFindingDraft(draftKey);
     onSave(f);
   };
 

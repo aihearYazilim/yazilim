@@ -209,8 +209,9 @@ export interface Episode {
    */
   neuroAlertAck?: { at: number; by: 'ok' | 'called112' };
   /**
-   * Araştırma: belirti şiddeti 0 (yok) – 10 (en kötü), settings.askVas açıkken (M1-11; y04). before: atak başında (bir kez),
-   * after: son manevradan sonra. "Geç" denirse yazılmaz. Eski kayıtlarda ve ayar kapalıyken yok.
+   * Belirti şiddeti 0 (yok) – 10 (en kötü), isteğe bağlı (yeni kullanıcı turu 2, M1-11; y04 #2): settings.askVas açıkken
+   * atak başında (before, bir kez) ve son manevradan sonra (after) sorulur; "Geç" denirse yazılmaz. Ev raporu v3'te taşınır,
+   * çalışma CSV'sine yazılır. Eski kayıtlarda ve ayar kapalıyken yok.
    */
   vas?: { before?: number; after?: number };
 }
@@ -263,6 +264,11 @@ export interface ClinicExam {
    * içindedir; bağlantı (token) aynen saklanır, ekranda ve HBYS notunda her seferinde çözülür. Eski kayıtlarda yok.
    */
   homeReports?: HomeReportRecord[];
+  /**
+   * Teste başlamadan güvenlik kontrolü (yeni kullanıcı turu 2, y08 #3, y05 #4): spontan nistagmus, nörolojik bulgu, boyun
+   * sorunu. Uyarıdır, testleri engellemez; rapora ve HBYS notuna yazılır. Yanıtlanmayan maddenin alanı yoktur. Eski kayıtlarda yok.
+   */
+  safetyCheck?: { at: number; spontaneous?: boolean; neuro?: boolean; neck?: boolean };
 }
 
 /** Muayeneye eklenmiş ev dönemi raporu. */

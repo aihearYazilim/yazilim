@@ -96,6 +96,10 @@ describe('tanı önerisi', () => {
     const r = suggestDiagnosis({ dhR: f({ vertigo: true }), dhL: f({}) });
     expect(r.suggestions[0]!.label).toMatch(/Nistagmussuz/);
     expect(r.suggestions[0]!.side).toBe('R');
+    // Türkçe ve tek öneri (yeni kullanıcı turu 2, y08 #7): İngilizce kategori adı ve "siz belirleyin" yok.
+    const text = [r.suggestions[0]!.label, ...r.suggestions[0]!.rationale].join(' ');
+    expect(text).not.toMatch(/probable|possible|subjektif|siz belirleyin/);
+    expect(text).toMatch(/Öneri: baş dönmesinin olduğu sağ tarafa deneme manevrası/);
   });
 
   it('tamamen negatif', () => {
