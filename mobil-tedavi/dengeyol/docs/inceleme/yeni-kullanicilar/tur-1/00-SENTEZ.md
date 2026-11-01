@@ -1,7 +1,7 @@
 # Yeni kullanıcı turu 1 — sentez ve düzeltmeler
 
-Puanlar (sezgisellik / memnuniyet): y01 ilk atak gece 6/7 · y03 Türkçesi zayıf 5/6 · y04 araştırma hemşiresi 7/4 · y05 acil hekimi 7/5 ·
-y06 okumayan genç 6/6 · y08 aile hekimi 7/7. (y02, y07 kullanım sınırı nedeniyle sonradan; raporları gelince eklenir.)
+Puanlar (sezgisellik / memnuniyet): y01 ilk atak gece 6/7 · y07 bulantılı 5/5 · y03 Türkçesi zayıf 5/6 · y04 araştırma hemşiresi 7/4 · y05 acil hekimi 7/5 ·
+y06 okumayan genç 6/6 · y08 aile hekimi 7/7. (y02 kullanım sınırı nedeniyle sonradan; raporları gelince eklenir.)
 
 Ortak bulgular (birden çok kişi): rapor yanlış test/manevra adı yazıyor (y04, y06); talimat pozisyona varınca kesiliyor,
 "dokunun" duyulmuyor (y03, y06, y08); uyarılarda dolu renkli düğme "Yine de …" (y03, y05, y06); kurulumda "Başla"
@@ -16,6 +16,10 @@ kapalıyken etkin görünüyor (y03, y06); araştırma kaydı yanlış/ham kodlu
 | 2 | Yüksek | Duraklatma sonrası "Devam et"ten ~1 s içinde baş dönmesi dokunuşu sayılmasın (çift dokunuş sahte kayıt) | y06 |
 | 3 | Orta | Klinisyen testinde "Oturuş, baş sağa 45°" adımı hasta zaten oturuyorken "Pozisyon doğru" ile 0,3 s'de kesilmesin; baş çevirme komutu bitsin | y08 |
 | 4 | Orta | Güvenlik bekleme ekranında (uzun baş dönmesi) "Durdur" birincil, "Devam et" ikincil | y03, y05 |
+
+## L1 ek (y07)
+| 5 | Kritik | Duraklatma ve uzun baş dönmesi uyarısında "Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun." | y07 |
+| 6 | Yüksek | Uzun baş dönmesi uyarısı ve duraklatmada ekrana bakmadan seçim (2 sn basılı tut = Durdur), sesle anlatılır; "Kendimi kötü hissediyorum" seste de | y07 |
 
 ## L2 — Hasta akışı ve ekranlar (EpisodeFlow.tsx, Onboarding.tsx, PatientHome.tsx, flowText.ts, onboardingText.ts, Controls.tsx)
 | # | Önem | İstek | Kaynak |
@@ -51,3 +55,11 @@ kapalıyken etkin görünüyor (y03, y06); araştırma kaydı yanlış/ham kodlu
 | 4 | Orta | Bulgu formunda kısa "nasıl görünür" yardımı, "Emin değilim, baş dönmesi var" seçeneği; kanalolitiazis/kupulolitiazis açıklaması; supine roll formunda "Şiddet" açıklaması ve "Kaydet" neden kapalı | y08 |
 | 5 | Orta | Reçete ekranında iPhone için "Önce Ana Ekrana Ekle, sonra bağlantıyı açın" talimatı | y04, y08 |
 | 6 | Düşük | Aynı oturumda kalibrasyon yeni muayenede yeniden kullanılabilsin ("Önceki kalibrasyonu kullan") | y05 |
+
+## L5 — Kötü an sonrası durum (L2 birleşince; PatientHome.tsx, EpisodeFlow.tsx)
+| # | Önem | İstek | Kaynak |
+|---|---|---|---|
+| 1 | Yüksek | Kusma bildiriminden sonra ana ekran doğru: "Bugün kusma bildirdiniz; manevra yok, sabah kısa test"; yanlış "son testte baş dönmesi gelmedi" ve "3/3 manevra" kalkar; tek tutarlı sabah saati; yeniden deneme uyarısının gerekçesi kusma, kayıt türü ayrı (`VOMITING`), `DOSE:DAILY_LIMIT` değil | y07 |
+| 2 | Yüksek | "Kendimi kötü hissediyorum" ile durduktan ve "Durdur"dan sonra ana ekranda not; yeniden başlarken "Kusma/kötü hissetme geçti mi?" | y07 |
+| 3 | Orta | Atak sırasında uygulamadan çıkıp dönünce yapılmış taraf testi kaybolmasın; manevra yarıda kaldıysa hazırlık baştan gelmesin, "kaldığınız yerden" | y07, y01 |
+| 4 | Orta | Hazırlıktaki "Hazırım" ve kalibrasyondaki "Başla" için ekranın her yerine dokunmak yeterli (telefon alında); güvenlik listesinin sesli kısa okunuşu, kusma maddesi gündelik dille | y07 |
