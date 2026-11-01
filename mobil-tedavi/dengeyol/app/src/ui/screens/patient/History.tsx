@@ -37,6 +37,7 @@ import {
   rxHeaderLine,
   rxShortcutText,
   rxShortcutUsed,
+  vasReportText,
   rxValidityText,
   sideCellLabel,
   sideCellText,
@@ -220,6 +221,7 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
   const studyId = studyIdLine(p);
   const source = recordSourceText(e);
   const neuro = neuroAlertText(e);
+  const vas = vasReportText(e);
   const research = researchEntries(e);
   // Büyük yazıda sağdan taşmasın: tablolar yerine satır satır liste (uzun sözcükler de kırılır).
   const wrap = { overflowWrap: 'anywhere' as const };
@@ -304,6 +306,12 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
             <>
               <dt>Onam</dt>
               <dd data-testid="report-consent">{consent}</dd>
+            </>
+          )}
+          {vas && (
+            <>
+              <dt>Belirti şiddeti (0–10)</dt>
+              <dd data-testid="report-vas">{vas}</dd>
             </>
           )}
           {neuro && (

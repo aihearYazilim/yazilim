@@ -398,7 +398,8 @@ export function nightNote(t: number): string | null {
 export function needsRedFlags(e: Episode | null, now: number): boolean {
   if (!e) return true;
   const last = e.redFlags[e.redFlags.length - 1];
-  return !last || last.stopped || now - last.at > REDFLAG_VALID_MS;
+  // Uyarısı aşılan (continued) yanıt da bir sonraki girişte yeniden sorulur (eskiden `stopped: true` kalırdı; N1-8).
+  return !last || last.stopped || !!last.continued || now - last.at > REDFLAG_VALID_MS;
 }
 
 export type NextAction =
@@ -569,6 +570,13 @@ export type ResumeTarget =
 export function resumeTarget(e: Episode | null | undefined, now: number): ResumeTarget | null {
   if (!e) return null;
   const fresh = (t: number) => t <= now && now - t <= RESUME_VALID_MS;
+  // Yeni kullanıcı turu 3 (N1-4; y01): manevra sayfası doğrudan yenilenince akış, açılıştaki kurtarmadan
+  // (`recoverInterruptedManeuvers`, App) önce kurulur; ara kayıt henüz manevra kaydına çevrilmemiştir. Ara kayıt da yarıda
+  // kalan manevra sayılır (kurtarma aynı kaydı aynı zaman ve adımla yazar).
+  const p0 = e.pendingManeuver;
+  if (p0 && p0.side && p0.records.length > 0 && fresh(p0.at) && ![...e.sideTests, ...e.retests].some((x) => x.at > p0.at)) {
+    return { kind: 'maneuver', at: p0.at, side: p0.side, protocolId: p0.protocolId, step: Math.max(1, p0.records.length) };
+  }
   const last = [...e.maneuvers].sort((a, b) => a.at - b.at)[e.maneuvers.length - 1];
   if (last && !last.completed && last.stopReason === 'INTERRUPTED' && last.side && fresh(last.at)) {
     const later = [...e.sideTests, ...e.retests].some((x) => x.at > last.at);
@@ -734,6 +742,16 @@ export function saveManeuverCheckpoint(
   const prev = ep.pendingManeuver;
   const at = prev && prev.protocolId === cp.protocolId && prev.side === cp.side && prev.records.length <= cp.records.length ? prev.at : now;
   return { ...d, episodes: d.episodes.map((e) => (e.id === ep.id ? { ...e, pendingManeuver: { at, ...cp } } : e)) };
+}
+
+/**
+ * Manevradan sonra sorulan belirti şiddetini (0–10) atağın en son manevrasına yazar (yeni kullanıcı turu 3, N1-8; y04: iki
+ * manevralı atakta atak başına tek `vas.after` ikinci yanıtla eziliyordu). Manevra yoksa atak aynen döner.
+ */
+export function withLastManeuverVas(e: Episode, v: number): Episode {
+  if (e.maneuvers.length === 0) return e;
+  const i = e.maneuvers.reduce((best, m, j) => (m.at >= e.maneuvers[best]!.at ? j : best), 0);
+  return { ...e, maneuvers: e.maneuvers.map((m, j) => (j === i ? { ...m, vasAfter: v } : m)) };
 }
 
 /** Ara kaydı silinmiş atak (manevra olağan biçimde kaydedilince). */

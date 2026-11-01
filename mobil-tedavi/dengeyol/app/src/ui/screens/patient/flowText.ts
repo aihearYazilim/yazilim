@@ -354,7 +354,7 @@ export const RED_FLAG_CHECK_SUB: Record<string, string> = {
   continuous: 'Ataktan sonra kalan hafif sersemlik sayılmaz.',
   orthostatic: 'Yataktan kalkarken etrafın dönmesi sayılmaz.',
   anticoag: 'Coraspin, Plavix, Coumadin, Xarelto, Eliquis, Lixiana, Pradaxa gibi.',
-  ear: 'Uzun süredir değişmeyen çınlama sayılmaz; KBB hekiminin baktığı ve artmayan belirti de sayılmaz.',
+  ear: 'Uzun süredir değişmeyen çınlama sayılmaz; kulak doktorunun baktığı ve artmayan belirti de sayılmaz.',
   // y01: midesi bulanan kişi tereddüt etmesin.
   fever: 'Bulantı ve bir iki kez kusma bu baş dönmesinde olağandır; sayılmaz.'
 };
@@ -421,11 +421,46 @@ export const RED_FLAG_SHORT: Record<string, string> = {
 /** Kısa sesli listenin hedef üst sınırı (karakter): normal hızda ~20 s (≈ 15 karakter/s). */
 export const RED_FLAGS_SHORT_MAX_CHARS = 340;
 
+/** Güvenlik maddesinin seste kısa adı ("boyun incinmesi"); liste dışı soruda kısa ad (label). */
+export function redFlagShortName(q: Pick<RedFlagQuestion, 'id' | 'label'>): string {
+  return RED_FLAG_SHORT[q.id] ?? q.label.trim();
+}
+
 /** Güvenlik listesi açılınca okunan kısa ses: maddelerin kısa adları ve ne yapılacağı (M1-9). */
 export function redFlagsSpokenShort(qs: Pick<RedFlagQuestion, 'id' | 'label'>[]): string {
-  const names = qs.map((q) => RED_FLAG_SHORT[q.id] ?? q.label.trim());
+  const names = qs.map(redFlagShortName);
   return `Güvenlik soruları: ${names.join(', ')}. Varsa işaretleyin, yoksa Hiçbiri yok düğmesine dokunun.`;
 }
+
+/**
+ * Güvenlik listesinin açılış sesi (yeni kullanıcı turu 3, N1-2; y01, y07: maddeleri sayan açılış 24–33 s sürüyordu): tek
+ * cümle (~6 s). Maddeler ekranda ve "Listeyi dinle"de.
+ */
+export const RED_FLAGS_OPEN_SPOKEN = "Şu an bunlardan biri varsa işaretleyin; yoksa Hiçbiri yok'a dokunun. Maddeleri dinlemek için Listeyi dinle'ye dokunun.";
+
+/**
+ * Açılış sesi; `withNames` (konuşma hızı yavaş ya da yazı büyük: okuması zor kişi; y02) ise maddelerin kısa adları da
+ * okunur ("Maddeler: sürekli dönme, …").
+ */
+export function redFlagsSpokenOpen(qs: Pick<RedFlagQuestion, 'id' | 'label'>[], withNames: boolean): string {
+  if (!withNames) return RED_FLAGS_OPEN_SPOKEN;
+  return `Şu an bunlardan biri varsa işaretleyin. Maddeler: ${qs.map(redFlagShortName).join(', ')}. Hiçbiri yoksa Hiçbiri yok'a dokunun.`;
+}
+
+/** Açılışta maddelerin kısa adları da okunsun mu: konuşma hızı Normal'den yavaş ya da yazı büyük (N1-2; y02). */
+export function redFlagsNamesAloud(s: { speechRate: number; fontScale: 'normal' | 'large' | 'xlarge' }): boolean {
+  return s.speechRate < 1 || s.fontScale !== 'normal';
+}
+
+/** "Yanlış dokundum, listeye dön"den sonra (açılış sesi baştan okunmaz; N1-2, y02). */
+export const RED_FLAGS_CORRECTED_SPOKEN = "Düzeltildi. Başka yoksa Hiçbiri yok'a dokunun.";
+
+/**
+ * İşaretleme sesi sürerken büyük düğmenin kilidi (N1-2; y02: "İşaretlendi: …" büyük düğmeye basınca 0,5 s'de kesiliyordu):
+ * cümle bitene dek, en az `RED_FLAG_TOGGLE_LOCK_MIN_MS`, en çok `RED_FLAG_TOGGLE_LOCK_MAX_MS` (ms).
+ */
+export const RED_FLAG_TOGGLE_LOCK_MIN_MS = 1500;
+export const RED_FLAG_TOGGLE_LOCK_MAX_MS = 4000;
 
 /** "Listeyi dinle": bütün maddeler. */
 export function redFlagsSpokenFull(qs: Pick<RedFlagQuestion, 'id' | 'label'>[]): string {
@@ -456,6 +491,28 @@ export const RED_FLAG_WARN_TITLE: Record<StopAction, string> = {
   emergency: 'Acil belirti: hemen yardım isteyin',
   doctor: 'Önce hekime görünmeniz önerilir'
 };
+
+/**
+ * Uyarı ekranının en üstündeki tek kısa cümle: ne yapılacağı (N1-7; y03: kulak uyarısı 70 sözcüktü). Gerekçe ve ayrıntı
+ * katlı "Neden? Ayrıntı"da ve "Ayrıntıyı dinle"de.
+ */
+export const RED_FLAG_HEADLINE: Record<string, string> = {
+  orthostatic: 'Birkaç gün içinde aile hekiminize gidin.',
+  spontaneous: 'Hekiminize başvurun.',
+  headTrauma: 'Hekiminize başvurun.',
+  ear: 'Kulak doktoruna gidin: işitme azaldıysa ya da kulak tıkandıysa bugün.',
+  neck: 'Manevradan önce hekiminize danışın.',
+  fever: 'Bugün hekiminize ya da acil servise gidin.',
+  same: 'Hekiminize ya da odyoloğunuza görünün.'
+};
+
+/** Uyarı ekranının üst cümlesi: acilde 112; hekim uyarısında maddenin cümlesi (birden çoksa "bugün" diyen öne). */
+export function redFlagStopHeadline(action: StopAction, triggered: Pick<RedFlagQuestion, 'id' | 'action'>[]): string {
+  if (action === 'emergency' || triggered.length === 0) return "Hemen 112'yi arayın.";
+  const lines = [...new Set(triggered.filter((q) => q.action === 'doctor').map((q) => RED_FLAG_HEADLINE[q.id] ?? 'Hekiminize başvurun.'))];
+  if (lines.length === 1) return lines[0]!;
+  return lines.find((l) => /bugün/i.test(l)) ?? 'Hekiminize başvurun.';
+}
 
 /**
  * Kırmızı bayrak uyarısının kısa sesi: başlık, ilk belirtinin kısa nedeni ve (acilde) 112. `fallback`: soru yoksa (manevra
@@ -589,14 +646,62 @@ export const RESUME_STOP_TITLE = 'Bugünlük bitirdik';
 export const RESUME_STOP_TEXT =
   'Yarıda kalan manevra kaydedildi. Dinlenin; baş dönmeniz sürerse ya da yeniden başlarsa ana ekrandan yeniden başlayabilirsiniz.';
 
+/** Sayının okunuşundaki son sözcüğe göre bulunma eki: 1 bir→de, 3 üç→te, 6 altı→da, 40 kırk→ta, 0 sıfır→da. */
+function numberLocative(n: number): string {
+  const units = ['da', 'de', 'de', 'te', 'te', 'te', 'da', 'de', 'de', 'da'];
+  const tens = ['da', 'da', 'de', 'da', 'ta', 'de'];
+  if (n === 0) return 'da';
+  if (n % 10 !== 0) return units[n % 10]!;
+  return tens[Math.floor(n / 10) % 10] ?? 'de';
+}
+
+/**
+ * Saate bulunma eki (N1-5; y03): "23:14" → "23:14'te", "06:00" → "06:00'da", "1 Kasım 06:00" → "1 Kasım 06:00'da". Ek,
+ * okunuştaki son sayıya göre (dakika sıfırsa saate göre). Saat bulunamazsa metin olduğu gibi döner.
+ */
+export function timeLocative(time: string): string {
+  const m = /(\d{1,2})[:.](\d{2})\s*$/.exec(time);
+  if (!m) return time;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  return `${time}'${numberLocative(min === 0 ? h : min)}`;
+}
+
 /**
  * Ana ekranda ve manevra bitişinde tek satır sonraki adım; saat yalnız burada yazılır (M1-8; y01, y03). night: test saati
- * geceye düşüyor ("uyanınca").
+ * geceye düşüyor. Yeni kullanıcı turu 3 (N1-5; y03): yalnız "uyanınca" uyanık olanı sabaha bekletebiliyordu: "23:14'te
+ * (uyuyorsanız uyanınca)".
  */
 export function nextStepLine(kind: 'early-retest' | 'morning-retest', time: string, night: boolean): string {
   const what = kind === 'early-retest' ? 'Tekrar testi' : 'Sabah testi';
-  return `${what} ${time} — ${night || kind === 'morning-retest' ? 'uyanınca' : 'saati gelince'} "Başım dönüyor"a basın`;
+  const when = kind === 'morning-retest' ? ' (uyanınca)' : night ? ' (uyuyorsanız uyanınca)' : '';
+  return `${what} ${timeLocative(time)}${when}: "Başım dönüyor"a basın`;
 }
+
+/**
+ * Ana ekrandaki atak kartında "Bugün" satırı, sıradaki adım bir test iken (N1-5; y03: "1 manevra tamamlandı · önerilen en
+ * fazla 3" ile "1. gün (önerilen en fazla 3)" alt alta duruyordu, bugün yine yapması gerektiğini sandı). Gün ve doz sayıları
+ * raporda.
+ */
+export function homeTodayWaitText(kind: 'early-retest' | 'morning-retest'): string {
+  return kind === 'early-retest' ? 'Şimdilik başka manevra yok; önce tekrar testi' : 'Bugün başka manevra yok; önce sabah testi';
+}
+
+/** Ana ekran açılınca bir kez okunan kısa ses (N1-1; y02, y06: ana ekran konuşmayan tek ekrandı). */
+export const HOME_INTRO_SPOKEN = 'Başınız dönüyorsa üstteki büyük düğmeye dokunun.';
+
+/** Tanı girilmemişse (altta "Doktorum tanı koydu" görünür) ek kısa cümle (y02); tanı varsa ek cümle yok. */
+export const HOME_INTRO_DX_SPOKEN = "Doktorunuz bir kulak söylediyse önce alttaki Doktorum tanı koydu'ya dokunun.";
+
+export function homeIntroSpoken(askDx: boolean): string {
+  return askDx ? `${HOME_INTRO_SPOKEN} ${HOME_INTRO_DX_SPOKEN}` : HOME_INTRO_SPOKEN;
+}
+
+/**
+ * Manevra bitiş ekranının üstündeki iki kısa satır (N1-7; y01, y03: üstte ~400 harflik paragraf vardı). Paragrafın tamamı
+ * katlı "Ayrıntı"da ve "Ayrıntıyı dinle"de.
+ */
+export const MANEUVER_DONE_LINES: readonly string[] = ['10 dakika oturun.', 'Kalkarken tutunun.'];
 
 /** Belirti şiddeti sorusu (araştırma, isteğe bağlı; M1-11). */
 export function vasText(when: 'before' | 'after'): { title: string; spoken: string } {
@@ -670,7 +775,8 @@ export const SUBTYPE_OPTIONS: ({ value: SubtypeAnswer; testid: string } & Spoken
 
 /** Karar ekranının seçenek değerleri: manevra tarafı, iki tarafa sırayla, öbür kanalın testi, durdur. */
 /** 'test:other': yalnız hekimin dediği taraf test edildiyse öbür tarafı da test et (L5-7). */
-export type DecisionChoice = 'go:R' | 'go:L' | 'both' | 'test:PC' | 'test:HC' | 'test:other' | 'end';
+/** 'fix:dx': taraf çelişkisinde hekim tanısı yanlış girilmişti; kayıt test tarafına düzeltilir, o tarafa devam (N1-3). */
+export type DecisionChoice = 'go:R' | 'go:L' | 'both' | 'test:PC' | 'test:HC' | 'test:other' | 'fix:dx' | 'end';
 
 export interface DecisionScreen {
   title: string;
@@ -701,9 +807,11 @@ function withRecommendation(sc: DecisionScreen, recommendation: string, fold = t
   return { ...sc, recommendation, spoken: decisionSpoken(recommendation, sc.spokenLead), fold };
 }
 
+/** Test tetiklemediğinde güvenlik cümlesi: sürekli baş dönmesinde hekim, inme belirtisinde 112. */
+export const NOT_TRIGGERED_SAFETY = "Baş dönmesi sürekliyse ya da yürüyemiyorsanız hekime başvurun; inme belirtisinde 112'yi arayın.";
+
 /** Testin tetiklemediği kararın açıklaması (L2-7; y05): "BPPV olmayabilir" ve sürekli baş dönmesinde hekim/112. */
-export const NOT_TRIGGERED_NOTE =
-  "Test baş dönmesi yapmadı; baş dönmeniz kristal oynamasından olmayabilir. Baş dönmesi sürekliyse ya da yürüyemiyorsanız hekime başvurun; inme belirtisinde 112'yi arayın.";
+export const NOT_TRIGGERED_NOTE = `Test baş dönmesi yapmadı; baş dönmeniz kristal oynamasından olmayabilir. ${NOT_TRIGGERED_SAFETY}`;
 
 const go = (s: Side): DecisionChoice => (s === 'R' ? 'go:R' : 'go:L');
 
@@ -753,18 +861,31 @@ export function decisionScreen(d: BoldDecision, opts: { otherSide?: Side } = {})
         options: [...sideOptions(d.side, (s) => `Yine de devam et: ${SIDE_NAME[s]} taraf ${manOf}`), stop]
       };
     case 'SIDE_CONFLICT': {
+      // Yeni kullanıcı turu 3 (N1-3; y02): önerilen yol test tarafı (büyük dolu düğme, ilk ses "Önerim: …"); tanı yanlış
+      // girildiyse kaydı düzeltme seçeneği (kayıt düzelir, test tarafına devam edilir). Seçenekler katlanmaz: düzeltme görünsün.
       const t = d.side!;
       const dr = d.doctorSide ?? otherSideOf(t);
-      return {
-        title: 'Taraf hekiminizin dediğinden farklı',
-        lead: `Test ${SIDE_NAME[t]} tarafı gösterdi; hekiminiz ${SIDE_NAME[dr]} demişti. Hangisine devam edelim?`,
-        spokenLead: `Test ${SIDE_NAME[t]}, hekiminiz ${SIDE_NAME[dr]} demişti.`,
-        options: [
-          { value: go(t), label: `Test tarafına devam (${SIDE_NAME[t]})`, testid: 'decision-test-side' },
-          { value: go(dr), label: `Hekimin dediği tarafa devam (${SIDE_NAME[dr]})`, testid: 'decision-doctor-side' },
-          stop
-        ]
-      };
+      return withRecommendation(
+        {
+          title: 'Taraf hekiminizin dediğinden farklı',
+          lead: `Test ${SIDE_NAME[t]} tarafı gösterdi; hekiminiz ${SIDE_NAME[dr]} demişti. Hangisine devam edelim?`,
+          spokenLead: `Test ${SIDE_NAME[t]}, hekiminiz ${SIDE_NAME[dr]} demişti.`,
+          options: [
+            { value: go(t), label: `Test tarafına devam (${SIDE_NAME[t]})`, testid: 'decision-test-side', primary: true },
+            {
+              value: 'fix:dx',
+              label: `Yanlış girmişim, doktor ${SIDE_NAME[t]} dedi: kaydı düzelt`,
+              spokenLabel: 'Yanlış girmişim: kaydı düzelt',
+              sub: `Hekim tanısı ${SIDE_NAME[t]} kulak olarak kaydedilir; ${SIDE_NAME[t]} tarafa devam edilir.`,
+              testid: 'decision-fix-dx'
+            },
+            { value: go(dr), label: `Hekimin dediği tarafa devam (${SIDE_NAME[dr]})`, testid: 'decision-doctor-side' },
+            stop
+          ]
+        },
+        'test tarafına devam',
+        false
+      );
     }
     case 'NOT_TRIGGERED': {
       const end = { value: 'end' as const, label: 'Bugünlük bitir (sabah yeniden test)', testid: 'decision-stop' };
@@ -776,7 +897,9 @@ export function decisionScreen(d: BoldDecision, opts: { otherSide?: Side } = {})
         return withRecommendation(
           {
             title: 'Testte baş dönmesi başlamadı',
-            lead: `${cap(SIDE_NAME[known])} tarafta baş dönmesi başlamadı. Önce ${SIDE_NAME[testOtherSide]} tarafı da test edelim: baş dönmeniz o taraftan olabilir. ${NOT_TRIGGERED_NOTE}`,
+            // Tek taraf testinden sonra "kristal oynamasından olmayabilir" denmez (N1-7; y02: "öbür tarafı test edelim" ile
+            // çelişiyordu); o cümle iki taraf da tetiklemeyince gösterilir. Güvenlik cümlesi kalır.
+            lead: `${cap(SIDE_NAME[known])} tarafta baş dönmesi başlamadı. Önce ${SIDE_NAME[testOtherSide]} tarafı da test edelim: baş dönmeniz o taraftan olabilir. ${NOT_TRIGGERED_SAFETY}`,
             spokenLead: `${cap(SIDE_NAME[known])} tarafta baş dönmesi başlamadı.`,
             options: [
               { value: 'test:other', label: `${cap(SIDE_NAME[testOtherSide])} tarafı da test et`, testid: 'decision-test-other', primary: true },

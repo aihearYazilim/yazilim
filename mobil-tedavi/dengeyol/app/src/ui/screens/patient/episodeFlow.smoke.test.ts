@@ -12,7 +12,9 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { RED_FLAGS } from '../../../core/safety';
 import { firstReadLockNeeded } from '../../../state/episodes';
 import { store } from '../../../state/store';
-import { emptyData, type AppData } from '../../../state/types';
+import { emptyData, type AppData, type Episode } from '../../../state/types';
+import { speech } from '../../../platform/speech';
+import { RED_FLAGS_CORRECTED_SPOKEN, RED_FLAGS_OPEN_SPOKEN } from './flowText';
 import { MotionProvider } from '../../../platform/MotionContext';
 import { EpisodeFlow } from './EpisodeFlow';
 import { PatientHome } from './PatientHome';
@@ -157,10 +159,14 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     expect(byTestId('call-112')!.getAttribute('href')).toBe('tel:112');
     expect(ep()!.redFlags[0]!.answers.neuro).toBe('yes');
     expect(ep()!.redFlags[0]!.stopped).toBe(true);
+    // Üstte tek kısa cümle (N1-7).
+    expect(byTestId('stop-headline')!.textContent).toBe("Hemen 112'yi arayın.");
     await click('redflag-override');
     expect(kinds()).toContain('RED_FLAG');
     expect(ep()!.overrides!.find((o) => o.kind === 'RED_FLAG')!.detail).toBe('neuro');
     expect(ep()!.status).toBe('active');
+    // N1-8 (y04): devam edilen yanıt "durdu" görünmez.
+    expect(ep()!.redFlags[0]).toMatchObject({ stopped: false, continued: true });
     expect(byTestId('prep-ready')).not.toBeNull();
   });
 
@@ -214,6 +220,72 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     await click('redflags-none');
     expect(ep()!.redFlags).toHaveLength(1);
     expect(ep()!.redFlags[0]!.stopped).toBe(false);
+  });
+
+  it('güvenlik listesi: açılış sesi tek cümle; "İşaretlendi" sürerken büyük düğme kilitli; "Yanlış dokundum"dan sonra yalnız "Düzeltildi" (N1-2)', async () => {
+    vi.useRealTimers().useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+    seed();
+    const spoken: string[] = [];
+    const ends: (() => void)[] = [];
+    const sp = vi.spyOn(speech, 'speak').mockImplementation((t: string, _p?: unknown, onDone?: () => void) => {
+      spoken.push(t);
+      if (onDone) ends.push(onDone);
+    });
+    onTestFinished(() => sp.mockRestore());
+    mount();
+    expect(spoken).toEqual([RED_FLAGS_OPEN_SPOKEN]);
+    await waitUnlocked();
+    const locked = () => !!host!.querySelector('.sticky-actions[data-locked]');
+    // İşaretle: kısa adıyla söylenir; cümle bitene dek büyük düğme kilitli, dokunuş geçmez.
+    act(() => byTestId('rf-neck')!.click());
+    expect(spoken[spoken.length - 1]).toMatch(/^İşaretlendi: boyun incinmesi\./);
+    expect(locked()).toBe(true);
+    act(() => byTestId('redflags-continue')!.click());
+    expect(byTestId('stop-doctor')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    // Cümle hâlâ sürüyor (bitiş gelmedi): kilit kalır; bitince açılır.
+    expect(locked()).toBe(true);
+    act(() => ends[ends.length - 1]!());
+    expect(locked()).toBe(false);
+    // Kısa cümle hemen bitse de en az ~1,5 s kilitli; bitiş hiç gelmese de en geç 4 s'de açılır.
+    act(() => byTestId('rf-fever')!.click());
+    act(() => ends[ends.length - 1]!());
+    expect(locked()).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(locked()).toBe(false);
+    act(() => byTestId('rf-fever')!.click());
+    act(() => {
+      vi.advanceTimersByTime(3900);
+    });
+    expect(locked()).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+    expect(locked()).toBe(false);
+    act(() => byTestId('redflags-continue')!.click());
+    expect(byTestId('stop-doctor')).not.toBeNull();
+    // Üstte tek kısa cümle; gerekçe katlı (N1-7).
+    expect(byTestId('stop-headline')!.textContent).toBe('Manevradan önce hekiminize danışın.');
+    expect((byTestId('stop-details') as HTMLDetailsElement).open).toBe(false);
+    spoken.length = 0;
+    act(() => byTestId('redflag-wrong-tap')!.click());
+    expect(byTestId('redflags')).not.toBeNull();
+    expect(spoken).toContain(RED_FLAGS_CORRECTED_SPOKEN);
+    expect(spoken).not.toContain(RED_FLAGS_OPEN_SPOKEN);
+  });
+
+  it('yavaş seste güvenlik listesinin açılışında maddelerin kısa adları da okunur (N1-2; y02)', () => {
+    seed();
+    store.update((d) => ({ ...d, settings: { ...d.settings, speechRate: 0.8 } }));
+    const spoken: string[] = [];
+    const sp = vi.spyOn(speech, 'speak').mockImplementation((t: string) => void spoken.push(t));
+    onTestFinished(() => sp.mockRestore());
+    mount();
+    expect(spoken[0]).toMatch(/Maddeler: sürekli dönme, .*boyun incinmesi/);
   });
 
   it('acil uyarısında "Yanlış dokundum, listeye dön" yok (onay zaten soruldu)', async () => {
@@ -536,6 +608,16 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
     expect(byTestId('end-resume-stop')).not.toBeNull();
     expect(byTestId('runner-start')).toBeNull();
     expect(ep()!.maneuvers).toHaveLength(1);
+  });
+
+  it('manevra sayfası doğrudan yenilenince (ara kayıt henüz kurtarılmadan) de "n. adımda yarıda kaldı" sorusu; hazırlık gelmez (N1-4; y01)', async () => {
+    seed();
+    const now = Date.now();
+    const records = [{ stepId: 'a' }, { stepId: 'b' }, { stepId: 'c' }] as unknown as Episode['maneuvers'][number]['records'];
+    store.update((d) => ({ ...d, episodes: [activeEp({ pendingManeuver: { at: now - 60_000, protocolId: 'epley', side: 'R', records } })] }));
+    mount();
+    expect(byTestId('prep')).toBeNull();
+    expect(byTestId('resume-ask')!.textContent).toMatch(/Manevra 3\. adımda yarıda kaldı/);
   });
 
   it('bilinen hekim tanısı (tarihsiz, sağ): hazırlıkta tek test süresi; tanısızda iki test (L5-7)', async () => {

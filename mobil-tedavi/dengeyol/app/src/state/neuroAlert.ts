@@ -47,5 +47,5 @@ export function emergencyOverridden(ep: Episode | null | undefined): boolean {
   const overrides = (ep.overrides ?? []).filter((o) => o.kind === 'RED_FLAG');
   if (overrides.length === 0) return false;
   if (ep.maneuvers.some((m) => m.afterSymptoms === 'neuro')) return true;
-  return ep.redFlags.some((r) => r.stopped && evaluateRedFlags(r.answers).action === 'emergency' && overrides.some((o) => o.at >= r.at));
+  return ep.redFlags.some((r) => (r.stopped || r.continued) && evaluateRedFlags(r.answers).action === 'emergency' && overrides.some((o) => o.at >= r.at));
 }

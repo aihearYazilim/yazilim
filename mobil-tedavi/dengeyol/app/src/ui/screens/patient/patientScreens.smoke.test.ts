@@ -17,7 +17,7 @@ import { store } from '../../../state/store';
 import { speech } from '../../../platform/speech';
 import { emptyData, type Episode } from '../../../state/types';
 import { PeriodReport } from './History';
-import { PatientHome } from './PatientHome';
+import { PatientHome, resetHomeIntro } from './PatientHome';
 import { Onboarding } from './Onboarding';
 import { PrescriptionImport, rxCardSpeech } from './PrescriptionImport';
 
@@ -380,8 +380,9 @@ describe('ana ekran: kötü an sonrası durum (yeni kullanıcı turu 1, L5)', ()
     expect(card.textContent).toMatch(/Bugün kusma bildirdiniz: bugün manevra yok/);
     expect(card.textContent).toMatch(/1 Kasım 06:00/);
     expect(host!.textContent).not.toMatch(/Son testte baş dönmesi gelmedi/);
-    expect(byTestId('home-today-count')!.textContent).toBe('1 manevra tamamlandı · önerilen en fazla 3');
-    expect(host!.textContent).not.toMatch(/önerilen sınır doldu/);
+    // N1-5 (y03): sıradaki adım sabah testi: tek satır "başka manevra yok"; "önerilen en fazla 3" satırları yok.
+    expect(byTestId('home-today-count')!.textContent).toBe('Bugün başka manevra yok; önce sabah testi');
+    expect(host!.textContent).not.toMatch(/önerilen en fazla|önerilen sınır doldu|\d\. gün/);
     expect(byTestId('home-dose-limit')).toBeNull();
   });
 
@@ -473,7 +474,7 @@ describe('ana ekran: kötü an sonrası durum (yeni kullanıcı turu 1, L5)', ()
       })
     ]);
     mount('/hasta');
-    expect(byTestId('home-today-count')!.textContent).toBe('0 manevra tamamlandı, 2 yarıda kaldı · önerilen en fazla 3');
+    expect(byTestId('home-today-count')!.textContent).toBe('0 manevra tamamlandı, 2 yarıda kaldı');
     expect(host!.textContent).not.toMatch(/2 \/ 3/);
   });
 
@@ -483,8 +484,53 @@ describe('ana ekran: kötü an sonrası durum (yeni kullanıcı turu 1, L5)', ()
     const now = Date.now();
     seedHome({}, [base({ maneuvers: [{ id: 'm', at: now - 10 * 60_000, protocolId: 'epley', side: 'R', completed: true, stopReason: null, records: [], manual: false }] })]);
     mount('/hasta');
-    expect(byTestId('start-episode')!.textContent).toMatch(/Tekrar testi 14:50 — saati gelince "Başım dönüyor"a basın/);
+    expect(byTestId('start-episode')!.textContent).toMatch(/Tekrar testi 14:50'de: "Başım dönüyor"a basın/);
     expect(host!.textContent).not.toMatch(/sıradaki adımı gösterilir/);
     expect(host!.textContent!.split('14:50').length - 1).toBe(1);
+    // N1-5 (y03, y01): tek satır "başka manevra yok"; tekrar testi kartı tekrarı yok, yalnız hatırlatıcı düğmesi.
+    expect(byTestId('home-today-count')!.textContent).toBe('Şimdilik başka manevra yok; önce tekrar testi');
+    expect(host!.textContent).not.toMatch(/önerilen en fazla|saati yukarıda|\d\. gün/);
+    expect(byTestId('add-reminder')).not.toBeNull();
+  });
+
+  it('ana ekran açılınca bir kez kısa konuşur; tanı girilmemişse "Doktorum tanı koydu" cümlesi; dokununca susar (N1-1)', () => {
+    resetHomeIntro();
+    const spoken: string[] = [];
+    let cancels = 0;
+    const sp = vi.spyOn(speech, 'speak').mockImplementation((t: string) => void spoken.push(t));
+    const sc = vi.spyOn(speech, 'cancel').mockImplementation(() => void cancels++);
+    onTestFinished(() => {
+      sp.mockRestore();
+      sc.mockRestore();
+    });
+    seedHome({ diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    mount('/hasta');
+    expect(spoken).toEqual(['Başınız dönüyorsa üstteki büyük düğmeye dokunun. ' + "Doktorunuz bir kulak söylediyse önce alttaki Doktorum tanı koydu'ya dokunun."]);
+    // Ekranın herhangi bir yerine dokunuş susturur.
+    act(() => void document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+    expect(cancels).toBe(1);
+    // Bir kez: ana ekrana yeniden gelince okunmaz.
+    act(() => root?.unmount());
+    host?.remove();
+    mount('/hasta');
+    expect(spoken).toHaveLength(1);
+    // Tanı varsa ek cümle yok.
+    resetHomeIntro();
+    act(() => root?.unmount());
+    host?.remove();
+    seedHome();
+    mount('/hasta');
+    expect(spoken[1]).toBe('Başınız dönüyorsa üstteki büyük düğmeye dokunun.');
+  });
+
+  it('kulak onayında "Evet" ve "Hayır" eşit görünümde (N1-7; y06)', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    onTestFinished(() => void vi.useRealTimers());
+    seedHome({ diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    mount('/hasta');
+    click(byTestId('home-dx-open'));
+    click(byTestId('home-dx-R'));
+    expect(byTestId('home-dx-yes')!.className).toBe(byTestId('home-dx-no')!.className);
+    expect(byTestId('home-dx-yes')!.className).not.toMatch(/\bprimary\b/);
   });
 });
