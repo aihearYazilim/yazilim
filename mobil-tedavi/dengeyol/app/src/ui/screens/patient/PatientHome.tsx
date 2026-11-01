@@ -1,4 +1,4 @@
-import { rxValidityLabel } from '../../../core/prescription';
+import { rxManeuverName, rxValidityLabel } from '../../../core/prescription';
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { contraDoctorQuestions, contraindicationsFor, gateWarnings, GATE_TEXT, redFlagDoctorAsk } from '../../../core/safety';
@@ -178,9 +178,10 @@ export function PatientHome() {
 
       {!ep && p.prescription && rxActive(p, now) && (
         <p className="small" data-testid="home-rx">
-          <strong>Reçete:</strong> {sideName(p.prescription.side)} taraf, {p.prescription.maneuver === 'epley' ? 'Epley' : 'Semont'}, günde en fazla{' '}
+          <strong>Reçete:</strong> {sideName(p.prescription.side)} taraf, {rxManeuverName(p.prescription)}, günde en fazla{' '}
           {p.prescription.perDay}
           {p.prescription.by ? ` · ${p.prescription.by}` : ''}. {rxValidityLabel(p.prescription)} geçerli.
+          {p.prescription.ov ? <strong data-testid="home-rx-ov"> Hekim uyarıya rağmen verdi: {p.prescription.ov}.</strong> : null}
         </p>
       )}
 
