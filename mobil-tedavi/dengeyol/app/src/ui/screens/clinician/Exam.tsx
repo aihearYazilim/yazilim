@@ -5,8 +5,27 @@ import QRCode from 'qrcode';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import type { Calibration } from '../../../core/calibration';
-import { type Finding, type Findings, keyLabel, rxFindingWarning, suggestDiagnosis } from '../../../core/diagnosis';
-import { decodePrescription, encodePrescription, type Prescription } from '../../../core/prescription';
+import {
+  centralFindings,
+  centralWarningText,
+  type Finding,
+  type Findings,
+  keyLabel,
+  rxFindingWarning,
+  suggestDiagnosis
+} from '../../../core/diagnosis';
+import {
+  decodePrescription,
+  encodePrescription,
+  type Prescription,
+  type RxCanal,
+  rxCanalName,
+  rxCanalOf,
+  type RxManeuver,
+  rxManeuverName,
+  type RxPcManeuver,
+  rxPcManeuver
+} from '../../../core/prescription';
 import { decodeHomeReport } from '../../../core/reportShare';
 import {
   type Canal,
@@ -42,8 +61,11 @@ import {
   rxBlockReason,
   rxCode,
   rxCurrent,
+  rxDxCanal,
   rxOverrideCovers,
   rxOverrideLine,
+  RX_REASON_MIN,
+  RX_WARN_PATIENT_LABEL,
   rxValidityText,
   rxWarning,
   stepLines
@@ -62,6 +84,37 @@ interface RunReq {
 }
 
 let runCounter = 0;
+
+/**
+ * Bu oturumdaki son klinisyen kalibrasyonu (kullanıcı turu yeni-1, L4-6): yeni muayenede ve sayfa yenilenince "Önceki
+ * kalibrasyonu kullan" ile tek dokunuşta yeniden kullanılır. Telefon aynı hastanın alnına aynı biçimde yerleştirilmeli;
+ * kalıcı kayda yazılmaz (sekme kapanınca biter). sessionStorage yoksa ya da erişilemezse yalnız bellekte tutulur.
+ */
+const CAL_KEY = 'dengeyol:clinCal';
+let sessionCal: Calibration | null = null;
+function lastCalibration(): Calibration | null {
+  if (sessionCal) return sessionCal;
+  try {
+    const raw = window.sessionStorage.getItem(CAL_KEY);
+    const c = raw ? (JSON.parse(raw) as Calibration) : null;
+    if (c && Array.isArray(c.matrix) && (c.sign === 1 || c.sign === -1)) sessionCal = c;
+  } catch {
+    /* okunamadı: yok say */
+  }
+  return sessionCal;
+}
+function rememberCalibration(c: Calibration) {
+  sessionCal = c;
+  try {
+    window.sessionStorage.setItem(CAL_KEY, JSON.stringify(c));
+  } catch {
+    /* yazılamadı: bellekte kalır */
+  }
+}
+const calTime = (c: Calibration) => {
+  const t = new Date(c.createdAt);
+  return Number.isFinite(t.getTime()) ? t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
+};
 
 const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | null; keys: FindingKey[] }[] = [
   { id: 'dhR', label: 'Sağ Dix-Hallpike', protocolId: 'dix-hallpike', side: 'R', keys: ['dhR'] },
@@ -197,8 +250,29 @@ export function Exam() {
   }
 
   if (needCal) {
+    const prevCal = lastCalibration();
     return (
       <Screen title="Sensör kalibrasyonu" onBack={cancelCal}>
+        {prevCal && (
+          <button
+            className="btn primary block"
+            onClick={() => {
+              setCal(prevCal);
+              setNeedCal(false);
+              if (pendingRun) setRun(pendingRun);
+              setPendingRun(null);
+            }}
+            data-testid="cal-reuse"
+          >
+            Önceki kalibrasyonu kullan{calTime(prevCal) ? ` (${calTime(prevCal)})` : ''}
+          </button>
+        )}
+        {prevCal && (
+          <p className="small muted" data-testid="cal-reuse-hint">
+            Telefon hastanın alnına önceki gibi (ekran size bakacak, dik) yerleştirildiyse yeniden kalibrasyon gerekmez. Yerleşim değiştiyse aşağıdan yeniden
+            kalibre edin.
+          </p>
+        )}
         <button
           className="btn secondary block"
           onClick={() => {
@@ -214,6 +288,7 @@ export function Exam() {
           audience="clinician"
           onDone={(c) => {
             setCal(c);
+            rememberCalibration(c);
             setNeedCal(false);
             if (pendingRun) setRun(pendingRun);
             setPendingRun(null);
@@ -333,11 +408,12 @@ export function Exam() {
           sensorless={sensorless && !cal}
           onRun={(t) => startRun({ protocolId: t.protocolId, side: t.side, purpose: 'test' })}
           onManual={setManualEdit}
+          onGoDx={() => setTab('dx')}
         />
       )}
       {tab === 'dx' && <DxTab exam={exam} onGoTreat={() => setTab('treat')} />}
       {tab === 'treat' && <TreatTab exam={exam} onRun={startRun} />}
-      {tab === 'rx' && <RxTab exam={exam} />}
+      {tab === 'rx' && <RxTab exam={exam} onGoDx={() => setTab('dx')} />}
       {tab === 'report' && <ExamReport exam={exam} />}
 
 
@@ -349,19 +425,34 @@ function TestsTab({
   exam,
   sensorless,
   onRun,
-  onManual
+  onManual,
+  onGoDx
 }: {
   exam: ClinicExam;
   sensorless: boolean;
   onRun: (t: (typeof TESTS)[number]) => void;
   onManual: (k: FindingKey) => void;
+  onGoDx: () => void;
 }) {
   // Sıradaki yapılmamış test: tek dokunuşla devam.
   const next = TESTS.find((t) => t.keys.some((k) => !exam.findings[k]));
   const anyDone = TESTS.some((t) => t.keys.some((k) => exam.findings[k]));
+  // Tipik bulgu (ör. iki Dix-Hallpike yapılmış, tek taraf tipik arka kanal, uyarı yok) varsa sıradaki adım Tanı'dır; kalan
+  // test isteğe bağlı (kullanıcı turu yeni-1, L4-3).
+  const typical = useMemo(() => suggestDiagnosis(exam.findings).suggestions.some((x) => x.confidence === 'tipik'), [exam.findings]);
   return (
     <div className="stack">
-      {anyDone && next && (
+      {anyDone && (typical || !next) && (
+        <button className="btn primary block" onClick={onGoDx} data-testid="test-next-dx">
+          <Icon name="check" /> Sıradaki: Tanı
+        </button>
+      )}
+      {anyDone && next && typical && (
+        <button className="btn secondary block" onClick={() => onRun(next)} data-testid="test-next">
+          <Icon name="play" /> {next.label} (isteğe bağlı)
+        </button>
+      )}
+      {anyDone && next && !typical && (
         <button className="btn primary block" onClick={() => onRun(next)} data-testid="test-next">
           <Icon name="play" /> Sıradaki: {next.label}
         </button>
@@ -512,6 +603,10 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
               { value: 'unknown', label: 'Bilinmiyor' }
             ]}
           />
+          <p className="small muted" data-testid="dx-mech-help">
+            Kanalolitiazis: serbest kristal; nistagmus gecikmeyle başlar ve 1 dakikadan kısa sürede söner. Kupulolitiazis: kristal kanal zarına (kupula) yapışık;
+            nistagmus 1 dakika ya da daha uzun sürer (yatay kanalda çoğunlukla tavana doğru, apogeotropik). Süreyi ölçemediyseniz "Bilinmiyor".
+          </p>
           {canal === 'PC' && findingLock && (
             <div className="notice danger" role="alert" data-testid="dx-manual-warn">
               <Icon name="alert" />
@@ -564,9 +659,20 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
     if (valid && dx?.side) setSide(dx.side);
   }, [valid, dx?.side]);
   const list = showAll ? MANEUVER_IDS : suggested.length ? suggested : MANEUVER_IDS;
+  // Santral örüntü (saf aşağı vuran, atipik, ≥1 dk): uyarı bulguyu adıyla söyler; manevra yine yapılabilir ama önerilen yol
+  // nörolojik değerlendirmedir, manevra düğmeleri ikincil görünür (kullanıcı turu yeni-1, L4-2).
+  const central = centralWarningText(centralFindings(exam.findings, exam.retestFindings));
 
   return (
     <div className="stack">
+      {central && (
+        <div className="notice danger" role="alert" data-testid="treat-central">
+          <Icon name="alert" />
+          <span>
+            <strong>{central}</strong> Manevrayı yine de yapabilirsiniz; kararınızı muayene notuna yazın.
+          </span>
+        </div>
+      )}
       {!dx && <div className="notice info">Tanı onaylanmadı. Manevrayı yine de seçebilirsiniz.</div>}
       {dx && !valid && <div className="notice">Bulgular değişti; tanıyı yeniden onaylayın.</div>}
       {dx && valid && (
@@ -611,7 +717,7 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
               ))}
             </details>
             <button
-              className={`btn ${suggested[0] === id || suggested.length === 0 ? 'primary' : 'secondary'}`}
+              className={`btn ${!central && (suggested[0] === id || suggested.length === 0) ? 'primary' : 'secondary'}`}
               disabled={p.sided && !side}
               onClick={() => onRun({ protocolId: id, side: p.sided ? side : null, purpose: 'maneuver' })}
               data-testid={`treat-run-${id}`}
@@ -662,7 +768,14 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
   );
 }
 
-function RxTab({ exam }: { exam: ClinicExam }) {
+/** iPhone'da reçeteyi ana ekrandaki uygulamaya almanın adımları (hekim hastaya söyler; kullanıcı turu yeni-1, L4-5). */
+export const RX_IOS_STEPS = [
+  "QR kodu kamerayla okutun; bağlantı Safari'de açılır.",
+  'Safari\'de Paylaş düğmesine, sonra "Ana Ekrana Ekle"ye dokunun.',
+  "DengeYol'u ana ekrandaki simgeden açın ve reçete bağlantısını orada yapıştırın (bağlantıyı WhatsApp ile de gönderebilirsiniz)."
+];
+
+function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
   const d = useData();
   const dx = exam.diagnosis;
   // Daha önce oluşturulan reçete varsa form onunla açılır (QR ile form her zaman aynı bilgiyi göstersin).
@@ -671,14 +784,21 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     const r = decodePrescription(exam.prescriptionToken);
     return r.ok ? r.value : null;
   }, [exam.prescriptionToken]);
-  const [maneuver, setManeuver] = useState<'epley' | 'semont'>(issued?.maneuver ?? 'epley');
+  // Kanal onaylı tanıdan gelir (arka/yatay); tanı yoksa ya da ön kanal/belirsizse uyarıyla klinisyen seçer.
+  const dxCanal = rxDxCanal(dx);
+  const [pickedCanal, setPickedCanal] = useState<RxCanal>(issued ? rxCanalOf(issued) : 'PC');
+  const canal: RxCanal = dxCanal ?? pickedCanal;
+  const [pcManeuver, setPcManeuver] = useState<RxPcManeuver>(rxPcManeuver(issued));
+  // Yatay kanalda ev manevrası BBQ roll (hasta modu yatay kanalı geotropik varsayımla BBQ roll ile tedavi eder).
+  const maneuver: RxManeuver = canal === 'HC' ? 'bbq-roll' : pcManeuver;
   const [perDay, setPerDay] = useState(issued?.perDay ?? 3);
   const [days, setDays] = useState(issued?.days ?? 3);
   const [note, setNote] = useState(issued?.note ?? '');
   const [svg, setSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  // Reçete uyarısı (eskiden kilit): tanısızlık, taraf yok, ≥1 dk yanıt, çok kanal, kupulolitiazis. "Yine de reçete yaz" ile
-  // gerekçe yazılır; gerekçe muayeneye (rxOverride) ve HBYS notuna "Uyarıya rağmen reçete: …" olarak geçer.
+  // Reçete uyarısı (eskiden kilit): santral örüntü, tanısızlık, taraf yok, ≥1 dk yanıt, çok kanal, kupulolitiazis, ön
+  // kanal/belirsiz kanal. "Yine de reçete yaz" ile gerekçe yazılır; gerekçe muayeneye (rxOverride) ve HBYS notuna "Uyarıya
+  // rağmen reçete: …" olarak, hastanın reçete kartına "Hekim uyarıya rağmen verdi: …" olarak geçer.
   const warn = rxWarning(exam);
   const covered = rxOverrideCovers(exam, warn);
   const [overriding, setOverriding] = useState(covered);
@@ -687,6 +807,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
   // klinisyen seçer.
   const [pickedSide, setPickedSide] = useState<Side | null>(dx?.side ? null : (issued?.side ?? null));
   const side: Side | null = dx?.side ?? pickedSide;
+  const ov = warn ? RX_WARN_PATIENT_LABEL[warn.code] : undefined;
   const stale =
     !!issued &&
     (issued.side !== side ||
@@ -694,6 +815,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       issued.perDay !== perDay ||
       issued.days !== days ||
       (issued.note ?? '') !== note.trim() ||
+      issued.ov !== ov ||
       (!!warn && covered && exam.rxOverride!.reason.trim() !== reason.trim()));
   const [ack, setAck] = useState(false);
   // Reçete oluşturulunca QR görünür alana kaydırılır (hastaya göstermek için aşağı kaydırmak gerekmesin).
@@ -720,13 +842,29 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     setJustMade(false);
   }, [justMade, svg]);
 
-  // Kesin engel yalnız tutarlılık şartı: bayat tanı (yeniden onay) ve arka kanal dışı tanı (reçete biçimi Epley/Semont).
+  // Tek kesin şart: bulgular onaydan sonra değiştiyse tanı yeniden onaylanır (burada tek dokunuş ya da Tanı sekmesi).
   const rxBlock = rxBlockReason(exam);
-  if (rxBlock) {
+  if (rxBlock && dx) {
+    const reconfirm = () =>
+      updateExam(exam.id, (e) => {
+        if (!e.diagnosis) return e;
+        const ws = suggestDiagnosis(e.findings).warnings;
+        return { ...e, diagnosis: { ...e.diagnosis, warnings: ws.length ? ws : undefined, findingsKey: findingsKeyOf(e.findings) } };
+      });
     return (
-      <div className="notice info" data-testid="rx-blocked">
-        <Icon name="info" />
-        <span>{rxBlock}</span>
+      <div className="stack">
+        <div className="notice info" data-testid="rx-blocked">
+          <Icon name="info" />
+          <span>
+            {rxBlock} Onaylı tanı: <strong>{dxText(dx)}</strong>.
+          </span>
+        </div>
+        <button className="btn primary block" onClick={reconfirm} data-testid="rx-reconfirm">
+          <Icon name="check" /> Bu tanıyı güncel bulgularla yeniden onayla
+        </button>
+        <button className="btn ghost" onClick={onGoDx}>
+          Tanı sekmesine git (öneriyi gör, tanıyı değiştir)
+        </button>
       </div>
     );
   }
@@ -734,7 +872,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     <div className="card tint-warn stack" data-testid="rx-warning" data-kind={warn.kind}>
       <div className="card-title">
         <Icon name="alert" />
-        <h3>Ev reçetesi önerilmiyor</h3>
+        <h3>{warn.title}</h3>
       </div>
       <p className="small">{warn.message}</p>
     </div>
@@ -761,7 +899,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     const p: Prescription = {
       v: 1,
       side,
-      canal: 'PC',
+      canal,
       maneuver,
       // Yerel tarih (UTC değil): gece yarısından sonraki muayene önceki güne yazılmasın.
       date: localDayKey(exam.at),
@@ -770,7 +908,8 @@ function RxTab({ exam }: { exam: ClinicExam }) {
       perDay,
       days,
       note: note.trim() || undefined,
-      pid
+      pid,
+      ov
     };
     const token = encodePrescription(p);
     updateExam(exam.id, (e) => ({
@@ -783,20 +922,22 @@ function RxTab({ exam }: { exam: ClinicExam }) {
     }));
     setJustMade(true);
   };
-  const needReason = !!warn && !reason.trim();
+  const reasonShort = !!warn && reason.trim().length < RX_REASON_MIN;
+  const capName = (t: string) => t.charAt(0).toLocaleUpperCase('tr-TR') + t.slice(1);
+  const why = [!side ? 'tarafı seçin' : null, reasonShort ? `gerekçeyi en az ${RX_REASON_MIN} karakterle yazın` : null].filter(Boolean).join(', ');
 
   return (
     <div className="stack">
       <div className="card stack">
         <h3>Ev manevrası reçetesi</h3>
         <p className="small muted">
-          Hasta bağlantıyı açtığında (ya da QR kodu telefon kamerasıyla okuttuğunda) taraf, manevra ve doz otomatik yüklenir. Hasta her seansta yine güvenlik
-          sorularını yanıtlar.
+          Hasta bağlantıyı açtığında (ya da QR kodu telefon kamerasıyla okuttuğunda) kanal, taraf, manevra ve doz otomatik yüklenir. Hasta her seansta yine
+          güvenlik sorularını yanıtlar.
         </p>
         {warnCard}
         {warn && (
           <div className="field">
-            <label htmlFor="rxreason">Gerekçe (HBYS notuna "Uyarıya rağmen reçete" olarak yazılır)</label>
+            <label htmlFor="rxreason">Gerekçe (en az {RX_REASON_MIN} karakter; HBYS notuna "Uyarıya rağmen reçete" olarak yazılır)</label>
             <textarea
               id="rxreason"
               className="input"
@@ -806,14 +947,36 @@ function RxTab({ exam }: { exam: ClinicExam }) {
               onChange={(e) => setReason(e.target.value)}
               data-testid="rx-override-reason"
             />
+            <p className="small muted" data-testid="rx-override-patient">
+              Hastanın reçete kartında: "Hekim uyarıya rağmen verdi: {ov}."
+            </p>
           </div>
         )}
+        <div className="field">
+          <label>Kanal</label>
+          {dxCanal ? (
+            <p data-testid="rx-canal">
+              <strong>{capName(rxCanalName({ maneuver }))}</strong> <span className="small muted">(onaylı tanıdan)</span>
+            </p>
+          ) : (
+            <div data-testid="rx-canal-pick">
+              <Segmented
+                label="Reçete kanalı"
+                value={pickedCanal}
+                onChange={setPickedCanal}
+                options={[
+                  { value: 'PC' as RxCanal, label: 'Arka kanal' },
+                  { value: 'HC' as RxCanal, label: 'Yatay kanal' }
+                ]}
+              />
+            </div>
+          )}
+        </div>
         <div className="field">
           <label>Taraf</label>
           {dx?.side ? (
             <p data-testid="rx-side">
-              <strong>{sideName(dx.side).charAt(0).toLocaleUpperCase('tr-TR') + sideName(dx.side).slice(1)}</strong>{' '}
-              <span className="small muted">(onaylı tanıdan; değişecekse tanıyı yeniden onaylayın)</span>
+              <strong>{capName(sideName(dx.side))}</strong> <span className="small muted">(onaylı tanıdan; değişecekse tanıyı yeniden onaylayın)</span>
             </p>
           ) : (
             <div data-testid="rx-side-pick">
@@ -832,15 +995,27 @@ function RxTab({ exam }: { exam: ClinicExam }) {
         </div>
         <div className="field">
           <label>Manevra</label>
-          <Segmented
-            label="Manevra"
-            value={maneuver}
-            onChange={setManeuver}
-            options={[
-              { value: 'epley', label: 'Epley' },
-              { value: 'semont', label: 'Semont' }
-            ]}
-          />
+          {canal === 'HC' ? (
+            <>
+              <p data-testid="rx-maneuver-hc">
+                <strong>BBQ roll</strong> <span className="small muted">(yatay kanal; Lempert)</span>
+              </p>
+              <p className="small muted">
+                Hasta evde reçetedeki tarafa BBQ roll yapar (geotropik biçim varsayılır). Baş dönmesi geçip yeniden başlarsa uygulama önce sırtüstü baş çevirme
+                testi yaptırır. Gufoni evde sunulmaz.
+              </p>
+            </>
+          ) : (
+            <Segmented
+              label="Manevra"
+              value={pcManeuver}
+              onChange={setPcManeuver}
+              options={[
+                { value: 'epley' as RxPcManeuver, label: 'Epley' },
+                { value: 'semont' as RxPcManeuver, label: 'Semont' }
+              ]}
+            />
+          )}
         </div>
         <div className="row">
           <div className="field grow">
@@ -869,10 +1044,14 @@ function RxTab({ exam }: { exam: ClinicExam }) {
             </span>
           </label>
         )}
-        <button className="btn primary" onClick={make} disabled={!side || (needAck && !ack) || needReason} data-testid="rx-make">
+        <button className="btn primary" onClick={make} disabled={!side || (needAck && !ack) || reasonShort} data-testid="rx-make">
           <Icon name="qr" /> {issued ? 'Reçeteyi güncelle' : warn ? 'Uyarıya rağmen reçete oluştur' : 'Reçete oluştur'}
         </button>
-        {needReason && <p className="small muted">Reçete için kısa bir gerekçe yazın.</p>}
+        {why && (
+          <p className="small muted" data-testid="rx-make-why">
+            Reçete için {why}.
+          </p>
+        )}
       </div>
 
       {url && !stale && !rxCurrent(exam) && (
@@ -893,7 +1072,7 @@ function RxTab({ exam }: { exam: ClinicExam }) {
           <h3>Hastaya gösterin</h3>
           <p className="small" data-testid="rx-summary">
             <strong>
-              {sideName(issued.side).toLocaleUpperCase('tr-TR')} arka kanal · {issued.maneuver === 'epley' ? 'Epley' : 'Semont'}
+              {sideName(issued.side).toLocaleUpperCase('tr-TR')} {rxCanalName(issued)} · {rxManeuverName(issued)}
             </strong>{' '}
             · günde en fazla {issued.perDay}, {issued.days} gün
           </p>
@@ -905,8 +1084,25 @@ function RxTab({ exam }: { exam: ClinicExam }) {
               {rxOverrideLine(exam)}
             </p>
           )}
+          {issued.ov && (
+            <p className="small" data-testid="rx-output-ov">
+              Hastanın kartında: "Hekim uyarıya rağmen verdi: {issued.ov}."
+            </p>
+          )}
           {svg && <div className="qr" dangerouslySetInnerHTML={{ __html: svg }} aria-label="Reçete QR kodu" />}
           <p className="small muted">Hasta telefon kamerasıyla bu kodu okutur.</p>
+          <div className="notice info small" style={{ textAlign: 'left' }} data-testid="rx-ios-tip">
+            <Icon name="phone" />
+            <span>
+              <strong>Hastaya söyleyin (iPhone): önce Ana Ekrana Ekle, sonra bağlantıyı açın.</strong>
+              <ol style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                {RX_IOS_STEPS.map((t, i) => (
+                  <li key={i}>{t}</li>
+                ))}
+              </ol>
+              Android'de bu adım gerekmez: bağlantı açılınca reçete kabul edilir.
+            </span>
+          </div>
           <div className="row wrap" style={{ justifyContent: 'center' }}>
             <button
               className="btn secondary"
@@ -1147,7 +1343,7 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
           <div className="card stack clin-rx">
             <h3>Ev manevrası reçetesi{rxOk ? '' : ' (güncel tanıya dayanmıyor)'}</h3>
             <p>
-              {sideName(rx.value.side).toLocaleUpperCase('tr-TR')} arka kanal · {rx.value.maneuver === 'epley' ? 'Epley' : 'Semont'} · günde en fazla{' '}
+              {sideName(rx.value.side).toLocaleUpperCase('tr-TR')} {rxCanalName(rx.value)} · {rxManeuverName(rx.value)} · günde en fazla{' '}
               {rx.value.perDay}, {rx.value.days} gün{rx.value.note ? ` · Not: ${rx.value.note}` : ''}
             </p>
             <p className="small" data-testid="report-rx-validity">
@@ -1158,7 +1354,8 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
                 {rxOverrideLine(exam)}
               </p>
             )}
-            <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz sınırları uygulamada uygulanır.</p>
+            {rx.value.ov && <p className="small">Hastanın reçete kartında: "Hekim uyarıya rağmen verdi: {rx.value.ov}."</p>}
+            <p className="small muted">Hasta, DengeYol uygulamasında her seans güvenlik sorularını yanıtlar; doz uyarıları uygulamada gösterilir.</p>
             {qr && (
               <div className="row clin-rx-qr" style={{ alignItems: 'center' }}>
                 <div className="qr" style={{ width: 120 }} dangerouslySetInnerHTML={{ __html: qr }} aria-label="Reçete QR kodu" />

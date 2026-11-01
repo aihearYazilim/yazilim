@@ -1,6 +1,17 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { decodePrescription, DECODE_ERROR_TEXT, type Prescription, rxIssuedAt, rxValidityLabel, rxValidUntil, RX_VALID_DAYS } from '../../../core/prescription';
+import {
+  decodePrescription,
+  DECODE_ERROR_TEXT,
+  type Prescription,
+  rxCanalName,
+  rxCanalOf,
+  rxIssuedAt,
+  rxManeuverName,
+  rxValidityLabel,
+  rxValidUntil,
+  RX_VALID_DAYS
+} from '../../../core/prescription';
 import { sideName } from '../../../core/protocols';
 import { contraindicationsFor } from '../../../core/safety';
 import { isIos, isStandalone } from '../../../platform/reminders';
@@ -17,17 +28,30 @@ const RX_TRUST_TEXT =
   'Bu reçeteyi yalnız hekiminiz ya da odyoloğunuz size ya da yakınınıza kendisi verdiyse (QR kod ya da bağlantı) kabul edin. Uygulama reçeteyi kimin hazırladığını denetleyemez; başka yerden gelen bir reçeteyi kabul etmeyin.';
 
 /** Reçete kartındaki tanı satırı; sesli metinle aynı sözcükler ("kristal oynaması"), taraf büyük harfle. */
-export function rxDiagnosisText(p: Pick<Prescription, 'side'>): string {
-  return `${sideName(p.side).toLocaleUpperCase('tr-TR')} kulak — arka kanal kristal oynaması (BPPV)`;
+export function rxDiagnosisText(p: Pick<Prescription, 'side'> & Partial<Pick<Prescription, 'maneuver'>>): string {
+  return `${sideName(p.side).toLocaleUpperCase('tr-TR')} kulak — ${p.maneuver ? rxCanalName({ maneuver: p.maneuver }) : 'arka kanal'} kristal oynaması (BPPV)`;
 }
+
+/**
+ * Hekim reçeteyi bir uyarıya rağmen verdiyse kartta ve seste okunan satır (kullanıcı turu yeni-1, L4-2; y05). Uyarı yoksa null.
+ */
+export function rxOverrideText(p: Pick<Prescription, 'ov'>): string | null {
+  return p.ov ? `Hekim uyarıya rağmen verdi: ${p.ov}.` : null;
+}
+
+/** Uyarılı reçetede hastaya yönelik ek cümle (kartta ve seste). */
+export const RX_OVERRIDE_ADVICE =
+  'Baş dönmeniz düzelmezse ya da konuşma bozukluğu, güçsüzlük, çift görme, yürüyememe gibi yeni bir belirti olursa hemen hekime başvurun ya da 112\'yi arayın.';
 
 /** Reçete kartının sesli metni (açılınca bir kez okunur; "Tekrar dinle" ile yeniden). */
 export function rxCardSpeech(p: Prescription, o: { expired: boolean; future: boolean; contraLabels: string[] }): string {
   const parts = [
     'Ev manevrası reçetesi.',
-    `Tanı: ${sideName(p.side)} kulak, arka kanal kristal oynaması.`,
-    `Manevra: ${p.maneuver === 'epley' ? 'Epley' : 'Semont'}. Günde en çok ${p.perDay} kez, en çok ${p.days} gün.`
+    `Tanı: ${sideName(p.side)} kulak, ${rxCanalName(p)} kristal oynaması.`,
+    `Manevra: ${rxManeuverName(p)}. Günde en çok ${p.perDay} kez, en çok ${p.days} gün.`
   ];
+  const ov = rxOverrideText(p);
+  if (ov) parts.push(ov, RX_OVERRIDE_ADVICE);
   const label = rxValidityLabel(p);
   if (o.future) parts.push('Reçetenin tarihi ileride görünüyor; telefonunuzun tarihini kontrol edin ya da hekiminize sorun.');
   else if (o.expired) parts.push('Bu reçetenin süresi doldu; kabul ederseniz yalnız tanı bilgisi olarak kullanılır.');
@@ -82,7 +106,9 @@ export function PrescriptionImport() {
         contraindications: x.patient?.contraindications ?? [],
         ...x.patient,
         diagnosedByDoctor: true,
-        canal: 'PC',
+        // Reçetenin kanalı: yatay kanalda hasta akışı sırtüstü baş çevirme testi ve BBQ roll'a gider (reçeteli kısa yolda
+        // doğrudan BBQ roll).
+        canal: rxCanalOf(p),
         side: p.side,
         dxDate: p.date,
         dxWhen: 'date',
@@ -117,7 +143,7 @@ export function PrescriptionImport() {
           {/* Ekran da sesle aynı sözcükleri kullanır (kullanıcı turu 4, k05): "SAĞ kulak — arka kanal kristal oynaması (BPPV)". */}
           <dd data-testid="rx-dx">{rxDiagnosisText(p)}</dd>
           <dt>Manevra</dt>
-          <dd>{p.maneuver === 'epley' ? 'Epley' : 'Semont'}</dd>
+          <dd data-testid="rx-maneuver">{rxManeuverName(p)}</dd>
           <dt>Doz</dt>
           <dd>
             Günde en fazla {p.perDay} kez, en fazla {p.days} gün
@@ -151,6 +177,14 @@ export function PrescriptionImport() {
             </>
           )}
         </dl>
+        {p.ov && (
+          <div className="notice danger small" role="note" data-testid="rx-override-line">
+            <Icon name="alert" />
+            <span>
+              <strong>{rxOverrideText(p)}</strong> {RX_OVERRIDE_ADVICE}
+            </span>
+          </div>
+        )}
       </div>
       <ListenAgain text={say} testid="rx-listen" />
       {expired && (

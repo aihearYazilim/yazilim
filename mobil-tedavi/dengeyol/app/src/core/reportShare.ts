@@ -22,7 +22,7 @@
  * okumaya devam eder. v2'ye özgü bilgi varsa eski sürüm "uygulamayı güncelleyin" der; bu, bilginin sessizce kaybolmasından
  * iyidir (k09 #4). Bu sürüm v1 ve v2'yi okur.
  */
-import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidUntil } from './prescription';
+import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxManeuverFromWire, rxManeuverWire, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
 import { type StepRecord, type StopReason, vertigoSummary } from './runner';
 import type { SideDecision, SideTestResult } from './safety';
@@ -396,7 +396,7 @@ interface Wire {
   g: number;
   p?: string;
   c?: string;
-  r?: [string, Side, 'e' | 's', number, number];
+  r?: [string, Side, 'e' | 's' | 'b', number, number];
   a: number;
   b: number;
   e: WireEpisode[];
@@ -465,7 +465,7 @@ function toWire(r: HomeReport): Wire {
   const w: Wire = { v: homeReportVersion(r), g: toMin(r.generatedAt), a: toMin(r.period.from), b: toMin(r.period.to), e: [] };
   if (r.pid) w.p = r.pid.slice(0, PID_MAX_LEN);
   if (r.rxCode) w.c = r.rxCode;
-  if (r.rx) w.r = [r.rx.date, r.rx.side, r.rx.maneuver === 'epley' ? 'e' : 's', r.rx.perDay, r.rx.days];
+  if (r.rx) w.r = [r.rx.date, r.rx.side, rxManeuverWire(r.rx.maneuver), r.rx.perDay, r.rx.days];
   w.e = r.episodes.map((e) => wireEpisode(e, !r.stepsDropped));
   if (r.stepsDropped) w.x = 1;
   if (r.episodesOmitted > 0) w.o = r.episodesOmitted;
@@ -759,7 +759,7 @@ function readWire(o: Record<string, unknown>): HomeReport {
     const a = o.r as unknown[];
     if (typeof a[0] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(a[0])) fail();
     if (a[2] !== 'e' && a[2] !== 's') fail();
-    out.rx = { date: a[0] as string, side: side(a[1]), maneuver: a[2] === 'e' ? 'epley' : 'semont', perDay: int(a[3], 1, 9), days: int(a[4], 1, 99) };
+    out.rx = { date: a[0] as string, side: side(a[1]), maneuver: rxManeuverFromWire(a[2]), perDay: int(a[3], 1, 9), days: int(a[4], 1, 99) };
   }
   return out;
 }
