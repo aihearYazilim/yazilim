@@ -8,6 +8,7 @@ import type { ClinicExam, ClinicPatient } from '../../../state/types';
 import { Segmented } from '../../components/Controls';
 import { Icon, Logo } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
+import { homeListSummary } from './examReport';
 import { ReportPaste } from './ReportImport';
 import { studyCsv, studyRows } from './studyCsv';
 
@@ -276,7 +277,8 @@ export function ClinicianHome() {
           <strong>Çalışma verisi</strong>
           <span className="small muted">
             Eklenen {homeReportCount} ev raporundan katılımcı başına satır satır olaylar (atak, güvenlik sorusu, test, manevra, tekrar testi, aşılan
-            uyarı, uygulama kararı). {studyRowCount} satır; ayırıcı noktalı virgül (Excel).
+            uyarı, uygulama kararı). Gecikme, süre, adım, tamamlanma, durma nedeni ve VAS ayrı sütunlarda; zaman ISO 8601 (saat dilimiyle).{' '}
+            {studyRowCount} satır; ayırıcı noktalı virgül (Excel).
           </span>
           <button className="btn secondary" onClick={() => downloadStudyCsv(d)} data-testid="clin-study-csv">
             <Icon name="share" /> Çalışma verisini dışa aktar (CSV)
@@ -302,12 +304,15 @@ export function ClinicianHome() {
         <div className="list">
           {exams.slice(0, 50).map((e) => {
             const p = patientOf(e.patientId);
+            // Ev dönemi eklenmiş muayenede evdeki manevra ve aşma sayısı da yazılır (yeni kullanıcı turu 2, y04 #5).
+            const home = homeListSummary(e);
             return (
               <button key={e.id} className="list-item" onClick={() => nav(`/odyolog/muayene/${e.id}`)}>
                 <div className="grow">
                   <strong>{p?.code ?? '—'}</strong>
                   <div className="sub">
                     {formatDateTime(e.at)} · {e.diagnosis?.label ?? 'tanı girilmedi'} · {e.maneuvers.filter((m) => m.completed).length} manevra
+                    {home ? <span data-testid="clin-exam-home"> · {home}</span> : null}
                   </div>
                 </div>
                 {e.homeReports?.length ? <span className="chip">ev dönemi</span> : null}

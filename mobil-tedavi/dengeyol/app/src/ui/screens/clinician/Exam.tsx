@@ -36,7 +36,6 @@ import {
   type Side,
   sideName
 } from '../../../core/protocols';
-import { vertigoSummary } from '../../../core/runner';
 import { formatDateTime } from '../../../state/episodes';
 import { localDayKey } from '../../../core/safety';
 import { store, uid, useData } from '../../../state/store';
@@ -65,12 +64,19 @@ import {
   rxOverrideCovers,
   rxOverrideLine,
   RX_REASON_MIN,
+  RX_SHORTCUT_HELP,
   RX_WARN_PATIENT_LABEL,
+  rxDoseText,
   rxValidityText,
   rxWarning,
-  stepLines
+  SAFETY_CHECK,
+  SAFETY_ITEMS,
+  safetyCheckText,
+  safetyWarnings,
+  stepLines,
+  testFindingInitial
 } from './examReport';
-import { emptyFinding, FindingForm } from './FindingForm';
+import { emptyFinding, FindingForm, findingDraftKey, removeFindingDraft } from './FindingForm';
 import { HomeReportView } from './HomeReportView';
 
 type Tab = 'tests' | 'dx' | 'treat' | 'rx' | 'report';
@@ -115,6 +121,37 @@ const calTime = (c: Calibration) => {
   const t = new Date(c.createdAt);
   return Number.isFinite(t.getTime()) ? t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
 };
+
+type QueueItem = { key: FindingKey; initial: Finding & { nystagmusUnset?: boolean }; target: 'findings' | 'retestFindings' };
+
+/**
+ * Test sonrası bulgu formu kuyruğunun taslağı (yeni kullanıcı turu 2, y08 #1): biten testin ölçümü (gecikme/süre) bulgu
+ * kaydedilmeden sayfa yenilenirse kaybolmasın; muayene yeniden açılınca form aynı ölçümle gelir. sessionStorage'da (sekme
+ * kapanınca biter; kalıcı kayda yazılmaz). Formda girilenler ayrı taslakta (FindingForm `draftKey`).
+ */
+const queueKey = (examId: string) => `dengeyol:examQueue:${examId}`;
+function loadQueue(examId: string | undefined): QueueItem[] {
+  if (!examId) return [];
+  try {
+    const raw = window.sessionStorage.getItem(queueKey(examId));
+    const q = raw ? (JSON.parse(raw) as unknown) : null;
+    if (!Array.isArray(q)) return [];
+    return q.filter(
+      (x): x is QueueItem =>
+        !!x && typeof x === 'object' && typeof x.key === 'string' && (x.target === 'findings' || x.target === 'retestFindings') && !!x.initial && typeof x.initial === 'object'
+    );
+  } catch {
+    return [];
+  }
+}
+function saveQueue(examId: string, q: QueueItem[]) {
+  try {
+    if (q.length) window.sessionStorage.setItem(queueKey(examId), JSON.stringify(q));
+    else window.sessionStorage.removeItem(queueKey(examId));
+  } catch {
+    /* yazılamadı: yalnız bellekte */
+  }
+}
 
 const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | null; keys: FindingKey[] }[] = [
   { id: 'dhR', label: 'Sağ Dix-Hallpike', protocolId: 'dix-hallpike', side: 'R', keys: ['dhR'] },
@@ -163,7 +200,10 @@ export function Exam() {
   const [pendingRun, setPendingRun] = useState<RunReq | null>(null);
   const [run, setRun] = useState<RunReq | null>(null);
   const [needCal, setNeedCal] = useState(false);
-  const [editQueue, setEditQueue] = useState<{ key: FindingKey; initial: Finding & { nystagmusUnset?: boolean }; target: 'findings' | 'retestFindings' }[]>([]);
+  const [editQueue, setEditQueue] = useState<QueueItem[]>(() => loadQueue(id));
+  useEffect(() => {
+    if (id) saveQueue(id, editQueue);
+  }, [id, editQueue]);
   const [manualEdit, setManualEdit] = useState<FindingKey | null>(null);
   const cancelCal = () => {
     setNeedCal(false);
@@ -214,24 +254,17 @@ export function Exam() {
     }
     if (o.phase === 'aborted' && o.state.records.length === 0) return;
     // Bulgu adımlarını düzenleme kuyruğuna al
-    const queue = o.protocol.steps
+    const queue: QueueItem[] = o.protocol.steps
       .map((st, i) => ({ st, rec: o.state.records[i] }))
       .filter((x) => x.st.finding && x.rec)
-      .map(({ st, rec }) => {
-        const v = rec ? vertigoSummary(rec) : null;
-        return {
-          key: st.finding!,
-          target: (r.purpose === 'retest' ? 'retestFindings' : 'findings') as 'findings' | 'retestFindings',
-          initial: {
-            ...emptyFinding(),
-            latencySec: v?.latencySec ?? null,
-            durationSec: v?.durationSec ?? null,
-            vertigo: false,
-            // Nistagmus tipi her zaman bilinçli seçilir ("Yok" önceden seçili gelmez: tek dokunuşla yanlış negatif olmasın).
-            nystagmusUnset: true
-          }
-        };
-      });
+      .map(({ st, rec }) => ({
+        key: st.finding!,
+        target: r.purpose === 'retest' ? 'retestFindings' : 'findings',
+        // Gecikme/süre işaretlerden; işaret varsa "Hasta baş dönmesi bildirdi" işaretli; nistagmus tipi bilinçli seçilir.
+        initial: testFindingInitial(rec)
+      }));
+    // Yeni ölçüm: aynı bulgunun eski form taslağı (kaydedilmeden kalmışsa) yeni formu doldurmasın.
+    for (const q of queue) removeFindingDraft(findingDraftKey(exam.id, q.target, q.key));
     setEditQueue(queue);
   };
 
@@ -284,6 +317,7 @@ export function Exam() {
         >
           Sensörsüz devam et (yalnız zamanlayıcı)
         </button>
+        <PhoneHoldTip />
         <Calibrate
           audience="clinician"
           onDone={(c) => {
@@ -315,6 +349,7 @@ export function Exam() {
           key={`${cur.key}-${editQueue.length}`}
           title={keyLabel(cur.key)}
           initial={cur.initial}
+          draftKey={findingDraftKey(exam.id, cur.target, cur.key)}
           showIntensity={showIntensity}
           dixHallpike={cur.key === 'dhR' || cur.key === 'dhL'}
           defaultMethod={defaultObservationMethod(exam, d.clinician.method, d.clinicExams)}
@@ -442,6 +477,7 @@ function TestsTab({
   const typical = useMemo(() => suggestDiagnosis(exam.findings).suggestions.some((x) => x.confidence === 'tipik'), [exam.findings]);
   return (
     <div className="stack">
+      <SafetyCheckCard exam={exam} />
       {anyDone && (typical || !next) && (
         <button className="btn primary block" onClick={onGoDx} data-testid="test-next-dx">
           <Icon name="check" /> Sıradaki: Tanı
@@ -462,6 +498,7 @@ function TestsTab({
           ? 'Sensörsüz (VNG/Frenzel) mod: telefon zamanlayıcı olarak kullanılır, alna yaslanmaz. Pozisyonu elle onaylayın; nistagmusu ekrana dokunarak işaretleyin ya da test sonunda VNG değerlerini bulgu formuna yazın.'
           : 'Telefonu ekranı size bakacak şekilde hastanın alnına yaslayın. Nistagmusun başlangıç ve bitişini ekranın herhangi bir yerine dokunarak işaretleyin; test sonunda bulgu formu açılır.'}
       </p>
+      {!sensorless && <PhoneHoldTip />}
       {TESTS.map((t) => (
         <div key={t.id} className="card stack">
           <div className="row">
@@ -482,6 +519,113 @@ function TestsTab({
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Telefonun alında tutuluşu ve iki eli hastanın başındayken işaretin nasıl konacağı (yeni kullanıcı turu 2, y08 #4).
+ * Kalibrasyon ekranında ve Testler sekmesinde katlanır bölüm.
+ */
+function PhoneHoldTip() {
+  return (
+    <details className="card soft small" data-testid="exam-hold-tip">
+      <summary>
+        <strong>Telefon alında nasıl durur, işareti nasıl koyarım?</strong>
+      </summary>
+      <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+        <li>Telefonu dik, ekranı size bakacak biçimde alnın ortasına yaslayın. Bir yardımcı tutsun ya da saç bandı / elastik bantla sabitleyin.</li>
+        <li>Testin sonuna dek telefon alında aynı yerde kalsın; kayarsa sensör sonucu bozulur, kalibrasyonu yenileyin.</li>
+        <li>İki eliniz hastanın başındayken işareti ekranın herhangi bir yerine parmak boğumu ya da bilekle dokunarak koyun; yardımcı da dokunabilir.</li>
+        <li>İşaret koyamadıysanız sorun değil: test sonunda gecikme ve süreyi bulgu formuna kendiniz yazın.</li>
+      </ul>
+    </details>
+  );
+}
+
+/**
+ * Teste başlamadan 3 maddelik güvenlik kontrolü (yeni kullanıcı turu 2, y08 #3, y05 #4): spontan nistagmus, nörolojik
+ * bulgu, boyun sorunu. Uyarıdır, kilit değil: testler her durumda başlatılabilir. Yanıtlar muayeneye (safetyCheck) yazılır;
+ * rapora ve HBYS notuna geçer. Üç madde de yanıtlanınca kart tek satıra iner.
+ */
+function SafetyCheckCard({ exam }: { exam: ClinicExam }) {
+  const c = exam.safetyCheck;
+  const answered = SAFETY_ITEMS.every((k) => c?.[k] !== undefined);
+  const [editing, setEditing] = useState(!answered);
+  const warns = safetyWarnings(c);
+  const set = (patch: Partial<NonNullable<ClinicExam['safetyCheck']>>) =>
+    updateExam(exam.id, (e) => ({ ...e, safetyCheck: { ...e.safetyCheck, ...patch, at: Date.now() } }));
+  const warnBox = warns.length > 0 && (
+    <div className="notice danger" role="alert" data-testid="exam-safety-warn">
+      <Icon name="alert" />
+      <span>
+        {warns.map((w, i) => (
+          <span key={i} style={{ display: 'block' }}>
+            {w}
+          </span>
+        ))}
+        <span className="small" style={{ display: 'block' }}>
+          Testlere yine de devam edebilirsiniz; kararınızı muayene notuna yazın.
+        </span>
+      </span>
+    </div>
+  );
+  if (answered && !editing) {
+    return (
+      <div className="stack" style={{ gap: 6 }}>
+        <div className="row small" data-testid="exam-safety-done">
+          <Icon name={warns.length ? 'alert' : 'check'} />
+          <span className="grow">Teste başlamadan kontrol: {safetyCheckText(c)}</span>
+          <button className="btn ghost" onClick={() => setEditing(true)} data-testid="exam-safety-edit">
+            Düzenle
+          </button>
+        </div>
+        {warnBox}
+      </div>
+    );
+  }
+  return (
+    <div className="card stack" data-testid="exam-safety">
+      <div>
+        <h3>Teste başlamadan</h3>
+        <p className="small muted" style={{ margin: 0 }}>
+          Üç kısa kontrol. Uyarıdır; testleri engellemez. Yanıtlar rapora yazılır.
+        </p>
+      </div>
+      {SAFETY_ITEMS.map((k) => (
+        <div key={k} className="field" data-testid={`exam-safety-${k}`}>
+          <label>{SAFETY_CHECK[k].q}</label>
+          <Segmented
+            label={SAFETY_CHECK[k].name}
+            value={c?.[k] === undefined ? null : c[k] ? 'yes' : 'no'}
+            onChange={(v) => set({ [k]: v === 'yes' })}
+            options={[
+              { value: 'no', label: 'Yok' },
+              { value: 'yes', label: 'Var' }
+            ]}
+          />
+        </div>
+      ))}
+      {warnBox}
+      <div className="row wrap">
+        {!warns.length && (
+          <button
+            className="btn secondary grow"
+            onClick={() => {
+              set({ spontaneous: c?.spontaneous ?? false, neuro: c?.neuro ?? false, neck: c?.neck ?? false });
+              setEditing(false);
+            }}
+            data-testid="exam-safety-none"
+          >
+            <Icon name="check" /> {SAFETY_ITEMS.some((k) => c?.[k] !== undefined) ? 'Kalanlar yok, tamam' : 'Üçü de yok'}
+          </button>
+        )}
+        {answered && (
+          <button className="btn ghost" onClick={() => setEditing(false)} data-testid="exam-safety-close">
+            Tamam
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -542,15 +686,27 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
             ))}
           </ul>
           {s.maneuvers.length > 0 && <p className="small muted">Önerilen: {s.maneuvers.map((m) => PROTOCOLS[m].shortName).join(', ')}</p>}
-          <button
-            className={`btn ${hasWarnings ? 'warn' : 'secondary'}`}
-            onClick={() =>
-              confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true, confidence: s.confidence })
-            }
-            data-testid="dx-confirm"
-          >
-            <Icon name="check" /> {hasWarnings ? 'Uyarıları okudum, yine de onayla' : 'Bu tanıyı onayla'}
-          </button>
+          {valid && exam.diagnosis?.fromSuggestion && exam.diagnosis.label === s.label ? (
+            // Onaydan sonra düğme durumu söyler (yeni kullanıcı turu 2, y08 #8, y05 #7); "Geri al" onayı kaldırır.
+            <div className="row">
+              <button className="btn secondary grow" disabled data-testid="dx-confirm" data-confirmed="true">
+                Onaylandı ✓
+              </button>
+              <button className="btn ghost" onClick={() => updateExam(exam.id, (e) => ({ ...e, diagnosis: undefined }))} data-testid="dx-unconfirm">
+                Geri al
+              </button>
+            </div>
+          ) : (
+            <button
+              className={`btn ${hasWarnings ? 'warn' : 'secondary'}`}
+              onClick={() =>
+                confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true, confidence: s.confidence })
+              }
+              data-testid="dx-confirm"
+            >
+              <Icon name="check" /> {hasWarnings ? 'Uyarıları okudum, yine de onayla' : 'Bu tanıyı onayla'}
+            </button>
+          )}
         </div>
       ))}
       <details className="card soft small" data-testid="dx-limits">
@@ -710,7 +866,8 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
               <summary>Açıklama, kanıt ve uyarılar</summary>
               <p>{p.summary}</p>
               <p className="muted">{p.evidenceNote}</p>
-              {p.cautions.map((c, i) => (
+              {/* Klinisyen ekranında hasta modu notları gösterilmez (yeni kullanıcı turu 2, y08 #9). */}
+              {p.cautions.filter((c) => !/^Hasta modunda/.test(c)).map((c, i) => (
                 <p key={i} style={{ color: 'var(--warn)' }}>
                   {c}
                 </p>
@@ -1031,9 +1188,14 @@ function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
           <label htmlFor="rxnote">Not (isteğe bağlı, en fazla 80 karakter)</label>
           <input id="rxnote" className="input" value={note} maxLength={80} onChange={(e) => setNote(e.target.value)} />
         </div>
+        {/* Tek süre satırı: tedavi gün sayısı ve reçetenin son geçerli günü ayrı ayrı adıyla (yeni kullanıcı turu 2, y08 #6). */}
         <p className="small" data-testid="rx-validity">
-          {rxValidityText(localDayKey(exam.at))}
+          {rxDoseText(perDay, days, localDayKey(exam.at))}
         </p>
+        <details className="small" data-testid="rx-shortcut-help">
+          <summary>Testsiz kısa yol nedir?</summary>
+          <p style={{ margin: '6px 0 0' }}>{RX_SHORTCUT_HELP}</p>
+        </details>
         {needAck && (
           <label className="row notice danger" style={{ alignItems: 'flex-start' }}>
             <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="check-lg" data-testid="rx-ack" />
@@ -1192,6 +1354,12 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             <>
               <dt>Gözlem yöntemi</dt>
               <dd>{methods.join(', ')}</dd>
+            </>
+          )}
+          {safetyCheckText(exam.safetyCheck) && (
+            <>
+              <dt>Teste başlamadan kontrol</dt>
+              <dd data-testid="report-safety">{safetyCheckText(exam.safetyCheck)}</dd>
             </>
           )}
           <dt>Tanı</dt>
