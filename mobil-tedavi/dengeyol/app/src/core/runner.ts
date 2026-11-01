@@ -343,6 +343,8 @@ export interface StepRecord {
   endedEarly?: boolean;
   /** Bu adımda kaç kez duraklatıldı. */
   pauses?: number;
+  /** Hızlı çift dokunuşla geri alınan baş dönmesi başlatma işaretleri (y02, yeni kullanıcı turu 1). */
+  vertigoTapCancels?: number;
   /** Semont: hasta "Şimdi!" komutundan önce yeni yana yattı (sayım iptal edildi). */
   movedBeforeCommand?: boolean;
   /** Semont: geçişte oturuştan geçilmedi (ör. sırtüstü yuvarlanma); hastaya da söylendi. */
@@ -475,6 +477,11 @@ export interface RunnerState {
    * Adım başında ve yeni baş dönmesi işaretinde sıfırlanır.
    */
   vertigoGraceSec: number;
+  /**
+   * Duraklatmadan ya da güvenlik uyarısından "Devam et" ile dönülünce baş dönmesi dokunuşu bu ana (ms) dek yok sayılır:
+   * "Devam et"e hızlı çift dokunuşun ikincisi yürütücüye düşüp sahte baş dönmesi kaydı açmasın (y06, yeni kullanıcı turu 1).
+   */
+  tapGuardUntil: number | null;
 }
 
 export type RunnerEvent =
@@ -583,6 +590,7 @@ export function initialRunnerState(): RunnerState {
     utterSeq: 0,
     safetyHold: null,
     vertigoGraceSec: 0,
+    tapGuardUntil: null,
     ...stepScratch()
   };
 }
@@ -642,6 +650,12 @@ function voice(cfg: RunnerConfig): Voice {
 }
 const pick = (cfg: RunnerConfig, t: Record<Voice, string>): string => t[voice(cfg)];
 
+/** Güvenlik uyarısında ekrana bakmadan seçim (y07): önerilen "Durdur" iki saniye basılı tutmak; "Devam et" düğmeyle. */
+export const HOLD_CHOICE_PATIENT =
+  'Durdurmanızı öneririm: durdurmak için ekrana iki saniye basılı tutun. Devam etmek isterseniz ekrandaki Devam et düğmesine dokunun.';
+export const HOLD_CHOICE_HELPER =
+  'Durdurmanızı öneririm: durdurmak için ekrana iki saniye basılı tutun. Devam etmek isterseniz Devam et düğmesine dokunun.';
+
 const TXT = {
   stopped: {
     patient: 'Durduruldu. Yavaşça oturun ve dinlenin.',
@@ -650,11 +664,21 @@ const TXT = {
   },
   reached: { patient: 'Tamam, böyle kalın.', helper: 'Tamam, böyle tutun.', clinician: 'Pozisyon doğru.' },
   reachedManual: { patient: 'Tamam, böyle kalın.', helper: 'Tamam, böyle tutun.', clinician: 'Pozisyon elle onaylandı.' },
+  /** Gözlem adımında pozisyona varınca kısa hatırlatma (talimat adımın başında söylendi; y03, y06). */
+  tapRemind: { patient: 'Baş dönerse ekrana dokunun.', helper: 'Hasta "dönüyor" derse ekrana dokunun.', clinician: '' },
+  /** Klinisyen, oturuş adımı: oturuş doğrulandı; baş çevirmesi ölçülemez (y08). */
+  reachedSitClinician: 'Oturuş doğru.',
   recovered: { patient: 'Tamam, böyle kalın.', helper: 'Tamam, böyle tutun.', clinician: 'Pozisyon düzeldi.' },
   shock: {
     patient: 'Telefon yerinden oynadı. Telefonu alnınıza geri yaslayın.',
     helper: 'Telefon yerinden oynadı. Telefonu hastanın alnına geri yaslayın.',
     clinician: 'Telefon yerinden oynadı; alına geri yerleştirin.'
+  },
+  /** Hızlı çift dokunuş başlatma işaretini geri aldı (y02). */
+  markCancelled: {
+    patient: 'İki kez dokundunuz; işaret kaldırıldı. Baş dönmesi varsa ekrana bir kez dokunun.',
+    helper: 'İki kez dokundunuz; işaret kaldırıldı. Hasta "dönüyor" derse ekrana bir kez dokunun.',
+    clinician: 'İşaret kaldırıldı.'
   },
   markOn: {
     patient: 'Baş dönmesi işaretlendi. Gözlerinizi açık tutmaya çalışın ve pozisyonu bozmayın. Geçince ekrana tekrar dokunun.',
@@ -718,23 +742,23 @@ const TXT = {
     clinician: 'Yanlış taraf; doğru yana gelinemedi, durduruldu.'
   },
   /**
-   * Güvenlik uyarısı (safetyHold) başlarken: ne olduğu ve telefona bakılması gerektiği. Seçim ekrandan yapılır; yürütücü
-   * kendiliğinden devam etmez.
+   * Güvenlik uyarısı (safetyHold) başlarken: ne olduğu ve ekrana bakmadan nasıl seçileceği (y07, yeni kullanıcı turu 1):
+   * önerilen yol "Durdur" ekrana iki saniye basılı tutmaktır; "Devam et" ekrandaki düğmeyle. Kısa kör dokunuş hiçbir şey
+   * seçmez; yürütücü kendiliğinden devam etmez. Uzun baş dönmesinde kusma güvenliği cümlesi de söylenir.
    */
   vertigoHold: {
-    patient: 'Baş dönmesi 2 dakikadan uzun sürdü. Manevrayı duraklattım. Telefonu alıp ekrandan seçin: devam ya da durdur.',
-    helper: 'Baş dönmesi 2 dakikadan uzun sürdü. Manevrayı duraklattım. Ekrandan seçin: devam ya da durdur.',
+    patient: `Baş dönmesi 2 dakikadan uzun sürdü; manevrayı duraklattım. Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun. ${HOLD_CHOICE_PATIENT}`,
+    helper: `Baş dönmesi 2 dakikadan uzun sürdü; manevrayı duraklattım. Hasta kusacak gibiyse başını kaldırıp yana çevirin ya da oturtun. ${HOLD_CHOICE_HELPER}`,
     clinician: ''
   },
   unreachableHold: {
-    patient: 'Bu pozisyona gelinemedi. Zorlamayın. Manevrayı duraklattım. Telefonu alıp ekrandan seçin: devam ya da durdur.',
-    helper: 'Hasta bu pozisyona gelemedi. Zorlamayın. Manevrayı duraklattım. Ekrandan seçin: devam ya da durdur.',
+    patient: `Bu pozisyona gelinemedi. Zorlamayın; manevrayı duraklattım. ${HOLD_CHOICE_PATIENT}`,
+    helper: `Hasta bu pozisyona gelemedi. Zorlamayın; manevrayı duraklattım. ${HOLD_CHOICE_HELPER}`,
     clinician: ''
   },
   unreachableWrongSideHold: {
-    patient:
-      'Yanlış taraftan doğru yana gelinemedi. Önce sırtüstüne dönün. Manevrayı duraklattım. Telefonu alıp ekrandan seçin: devam ya da durdur.',
-    helper: 'Hasta yanlış taraftan doğru yana gelemedi. Önce sırtüstüne getirin. Manevrayı duraklattım. Ekrandan seçin: devam ya da durdur.',
+    patient: `Yanlış taraftan doğru yana gelinemedi. Önce sırtüstüne dönün; manevrayı duraklattım. ${HOLD_CHOICE_PATIENT}`,
+    helper: `Hasta yanlış taraftan doğru yana gelemedi. Önce sırtüstüne getirin; manevrayı duraklattım. ${HOLD_CHOICE_HELPER}`,
     clinician: ''
   },
   /** Uyarıdan sonra "Devam et" seçildi. */
@@ -785,6 +809,9 @@ export function introEndSec(cfg: RunnerConfig, s: RunnerState, step: StepDef): n
   return Math.min(cap, Math.max(est * 0.6, sec(s.introSpokenAt - s.stepStartedAt)));
 }
 
+/** Klinisyen oturuş adımında komut cümlesinden sonra başı çevirmek için tanınan süre (s). */
+export const CLINICIAN_TURN_SEC = 2;
+
 /** Hasta modunda hızlı geçiş adımı: yönergeden sonra "Üç, iki, bir, şimdi!" sayılır. */
 function hasGoCount(cfg: RunnerConfig, step: StepDef): boolean {
   return cfg.mode === 'patient' && step.fastTransitionSec !== undefined;
@@ -792,7 +819,12 @@ function hasGoCount(cfg: RunnerConfig, step: StepDef): boolean {
 
 /** Pozisyonun "tamam" sayılabileceği en erken an (adım başından saniye): yönerge (+ varsa sayım) bitmiş olmalı. */
 function readySec(cfg: RunnerConfig, s: RunnerState, step: StepDef): number {
-  const base = introEndSec(cfg, s, step) + (hasGoCount(cfg, step) ? GO_COUNT_SEC : 0);
+  let base = introEndSec(cfg, s, step) + (hasGoCount(cfg, step) ? GO_COUNT_SEC : 0);
+  // Klinisyen, otururken baş çevirme: hasta zaten oturduğundan oturuş hemen doğrudur. "Oturuş doğru" komut cümlesini
+  // kesmesin; baş çevirmeye de zaman kalsın (y08, yeni kullanıcı turu 1).
+  if (cfg.mode === 'clinician' && step.unverifiable) {
+    base = Math.max(base, estimateSpeechSec(stepSpeech(cfg, step)) + CLINICIAN_TURN_SEC);
+  }
   // Komuttan önce yeni yana yatan hasta (sayım iptal) yönerge sonunu beklemez: zaten yatıyor.
   return s.earlyMoveAt !== null ? Math.min(base, sec(s.earlyMoveAt - s.stepStartedAt)) : base;
 }
@@ -860,21 +892,25 @@ export function startSpeechText(cfg: RunnerConfig, startNote?: string): string |
 
 /**
  * Duraklatma sesi. Hasta ekranı göremez: önce asıl eylem, devam yolu söylenir (ekrana basılı tutmak; k04, tur 3); baş dönmesi
- * işaretliyse "bir kez dokunun" hemen ardından (tek dokunuş baş dönmesi bitişidir). Varsayılan (`full` false) yalnız bu ilk
- * iki cümle (+ baş dönmesi notu): yatarken uzun gelmesin (k04, tur 4). Ayrıntı — boynu ağrıyan hastaya "olduğunuz yerde
- * kalın" denmez, "Pozisyona gelemiyorum" yolu söylenir (k07, tur 2); bu düğme ekranın üstündeki "Evet" ile onaylanır
- * (k01, tur 3) — duraklatma sayfasındaki "Tekrar dinle"de (`full` true).
+ * işaretliyse "bir kez dokunun" hemen ardından (tek dokunuş baş dönmesi bitişidir). Varsayılan (`full` false): bu cümleler,
+ * kusma/boyun güvenlik cümlesi ve "Kendimi kötü hissediyorum" yolu (y07, yeni kullanıcı turu 1); yatarken uzun gelmesin diye
+ * başka ayrıntı yok (k04, tur 4). Ayrıntı — boynu ağrıyan hastaya "olduğunuz yerde kalın" denmez, "Pozisyona gelemiyorum"
+ * yolu söylenir (k07, tur 2); bu düğmeler ekranın üstündeki "Evet" ile onaylanır (k01, tur 3) — duraklatma sayfasındaki
+ * "Tekrar dinle"de (`full` true).
  */
 export function pauseSpeech(cfg: RunnerConfig, vertigoActive: boolean, full: boolean): string {
   const vNote = vertigoActive ? ' Baş dönmesi geçtiyse ekrana bir kez dokunun.' : '';
   const head = `Duraklatıldı. Devam için ekrana iki saniye basılı tutun.${vNote}`;
-  // Kısa seste de güvenlik cümlesi kalır: telefon alındayken "Tekrar dinle" görülemez (k07, tur 5).
-  const neckP = ' Boynunuz ağrıyorsa yavaşça oturun.';
-  const neckH = ' Hastanın boynu ağrıyorsa onu yavaşça oturtun.';
-  if (!full) return pick(cfg, { patient: head + neckP, helper: head + neckH, clinician: 'Duraklatıldı.' });
+  // Kısa seste de güvenlik cümleleri kalır: telefon alındayken "Tekrar dinle" görülemez (k07, tur 5). Yatarken ya da baş
+  // sarkıkken kusma tehlikelidir: ne yapılacağı ve "Kendimi kötü hissediyorum" yolu da söylenir (y07, yeni kullanıcı turu 1).
+  const safeP = ' Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun.';
+  const safeH = ' Hasta kusacak gibiyse başını kaldırıp yana çevirin ya da oturtun; boynu ağrıyorsa da onu yavaşça oturtun.';
+  const unwellP = ' Kendinizi kötü hissediyorsanız ekrandaki "Kendimi kötü hissediyorum" düğmesine dokunun.';
+  const unwellH = ' Hasta kendini kötü hissediyorsa "Hasta kendini kötü hissediyor" düğmesine dokunun.';
+  if (!full) return pick(cfg, { patient: head + safeP + unwellP, helper: head + safeH + unwellH, clinician: 'Duraklatıldı.' });
   return pick(cfg, {
-    patient: `${head} Boynunuz ağrıyorsa yavaşça oturabilirsiniz. Bu pozisyona gelemiyorsanız telefonu alıp "Pozisyona gelemiyorum" düğmesine dokunun ve onaylayın.`,
-    helper: `${head} Hastanın boynu ağrıyorsa onu yavaşça oturtabilirsiniz. Hasta bu pozisyona gelemiyorsa "Bu pozisyona gelemiyor" düğmesine dokunun ve onaylayın.`,
+    patient: `${head}${safeP}${unwellP} Bu pozisyona gelemiyorsanız "Pozisyona gelemiyorum" düğmesine dokunun. Bu iki düğme bir onay daha ister.`,
+    helper: `${head}${safeH}${unwellH} Hasta bu pozisyona gelemiyorsa "Bu pozisyona gelemiyor" düğmesine dokunun. Bu iki düğme bir onay daha ister.`,
     clinician: 'Duraklatıldı.'
   });
 }
@@ -899,12 +935,24 @@ export function effectiveMinHoldSec(cfg: RunnerConfig, step: StepDef): number {
   return step.minHoldSec;
 }
 
+/**
+ * Adım yönergesi "baş dönmesi başlarsa ekrana dokunun" diyor mu (gözlem adımı). Bu adımlarda dokunma talimatı yönergenin
+ * başındadır ve pozisyona varınca kısaca yinelenir: hızla yatan hasta talimatın sonunu beklemeden pozisyona gelir
+ * (y03, y06; yeni kullanıcı turu 1).
+ */
+export function stepAsksTap(cfg: RunnerConfig, step: StepDef): boolean {
+  return cfg.mode === 'patient' && step.observe !== false && /ekrana (siz )?dokunun/.test(stepSpeech(cfg, step));
+}
+
 /** Pozisyon doğrulanınca söylenen söz. Doğrulanamayan (otururken baş çevirme) adımda dürüst cümle. */
 function reachedText(cfg: RunnerConfig, step: StepDef, manual: boolean): string {
   if (cfg.mode === 'patient' && step.unverifiable && step.reachedSay) {
     return cfg.helper && step.helperReachedSay ? step.helperReachedSay : step.reachedSay;
   }
-  return pick(cfg, manual ? TXT.reachedManual : TXT.reached);
+  // Klinisyen, otururken baş çevirme (doğrulanamaz): yalnız oturuş doğru; baş çevrildi denmez (y08, yeni kullanıcı turu 1).
+  if (cfg.mode === 'clinician' && step.unverifiable && !manual) return TXT.reachedSitClinician;
+  const base = pick(cfg, manual ? TXT.reachedManual : TXT.reached);
+  return stepAsksTap(cfg, step) ? `${base} ${pick(cfg, TXT.tapRemind)}` : base;
 }
 
 /** Zorlama ipucu mu (boyun yükü): daha fazla sarkma ve baş dönüşü. */
@@ -1135,7 +1183,9 @@ function resumedState(s: RunnerState, from: Phase, now: number, pausedMs: number
     reachBuf: [],
     reachRunStart: null,
     supineSince: null,
-    lastLyingTheta: null
+    lastLyingTheta: null,
+    // "Devam et"e çift dokunuşun ikincisi baş dönmesi işareti sayılmaz.
+    tapGuardUntil: now + RESUME_TAP_GUARD_SEC * 1000
   };
 }
 
@@ -1164,6 +1214,10 @@ function targetSatisfiedLoose(pose: HeadPose, target: Target): boolean {
 
 /** Baş dönmesi dokunuşları arasında en az süre (s). */
 export const VERTIGO_DEBOUNCE_SEC = 1;
+/** Baş dönmesini başlatan dokunuştan sonra bu kadar (s) içinde gelen ikinci dokunuş işareti geri alır (çift dokunuş). */
+export const VERTIGO_CANCEL_SEC = 0.5;
+/** "Devam et"ten (duraklatma ya da güvenlik uyarısı) sonra baş dönmesi dokunuşunun sayılmadığı süre (s). */
+export const RESUME_TAP_GUARD_SEC = 1;
 /** Baş dönmesi işaretliyken ilk "geçtiyse dokunun" hatırlatması (s; hasta modu). Kazara dokunuş erken fark edilsin. */
 export const VERTIGO_FIRST_REMIND_SEC = 15;
 /** Sonraki hatırlatmaların aralığı (s). */
@@ -1300,6 +1354,28 @@ function runnerStepInner(cfg: RunnerConfig, s: RunnerState, ev: RunnerEvent): St
       if (s.phase === 'paused' && !s.vertigoActive) return { state: s, cues };
       const step = currentStep(cfg, s);
       if (!step) return { state: s, cues };
+      // "Devam et"e çift dokunuşun ikincisi baş dönmesi sayılmaz (y06, yeni kullanıcı turu 1).
+      if (s.tapGuardUntil !== null && now < s.tapGuardUntil) return { state: s, cues };
+      // Titreyen elle hızlı çift dokunuş (≤ VERTIGO_CANCEL_SEC) az önce açılan baş dönmesi işaretini geri alır: işaret
+      // "açık" kalıp dönmesi olmayan tarafta sahte pozitif ve 2 dk güvenlik uyarısı doğmasın (y02, yeni kullanıcı turu 1).
+      // Sesle söylenir; gerçekten dönüyorsa hasta bir kez dokunur. (Bitiş yönünde çift dokunuş yok sayılır: bitiş güvenli.)
+      if (
+        s.vertigoActive &&
+        s.lastVertigoToggleAt !== null &&
+        s.vertigoSince === s.lastVertigoToggleAt &&
+        sec(now - s.lastVertigoToggleAt) <= VERTIGO_CANCEL_SEC
+      ) {
+        cues.push({ kind: 'haptic', pattern: 'markOff' });
+        cues.push({ kind: 'tone', pattern: 'markOff' });
+        cues.push({ kind: 'speak', text: pick(cfg, TXT.markCancelled), priority: 'high' });
+        const st = updateRecord(s, (r) => {
+          const marks = r.vertigoMarks.slice();
+          const last = marks[marks.length - 1];
+          if (last && last.end === null) marks.pop();
+          return { ...r, vertigoMarks: marks, vertigoTapCancels: (r.vertigoTapCancels ?? 0) + 1 };
+        });
+        return { state: { ...st, vertigoActive: false, vertigoSince: null, lastVertigoToggleAt: now }, cues };
+      }
       // Alındaki telefona körlemesine yapılan kazara çift dokunuşu yok say.
       if (s.lastVertigoToggleAt !== null && sec(now - s.lastVertigoToggleAt) < VERTIGO_DEBOUNCE_SEC) return { state: s, cues };
       s = { ...s, lastVertigoToggleAt: now };
@@ -1360,9 +1436,10 @@ function vertigoReminderText(cfg: RunnerConfig, atSec: number, leftSec: number |
       ? 'Hasta "geçti" dediyse şimdi ekrana dokunun. Bir dakikayı geçerse hekime danışmak gerekir.'
       : 'Baş dönmesi geçtiyse şimdi ekrana dokunun. Bir dakikayı geçerse hekime danışmak gerekir.';
   }
+  // İlk hatırlatma soru biçiminde: istemsiz (ya da çift dokunuşta kalan) işaret erken fark edilsin (y02, yeni kullanıcı turu 1).
   return h
-    ? 'Hasta "geçti" deyince ekrana dokunun; sürüyorsa böyle tutun.'
-    : 'Baş dönmesi geçince ekrana dokunun; sürüyorsa böyle kalın.';
+    ? 'Hastanın baş dönmesi sürüyor mu? Hasta "geçti" derse ekrana dokunun; sürüyorsa böyle tutun.'
+    : 'Baş dönmesi sürüyor mu? Geçtiyse ekrana dokunun; sürüyorsa böyle kalın.';
 }
 
 /**
@@ -1379,10 +1456,11 @@ export function vertigoReminderPlan(
   if (!isFinal || limit === null) {
     return { atSec: next, text: vertigoReminderText(cfg, next, limit !== null ? Math.round(limit - next) : null) };
   }
+  // Güvenlik uyarısından önceki son hatırlatma da soru biçiminde (y02, yeni kullanıcı turu 1).
   const finalText = (left: number) =>
     cfg.helper
-      ? `Hasta "geçti" dediyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.`
-      : `Baş dönmesi geçtiyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.`;
+      ? `Baş dönmesi sürüyor mu? Hasta "geçti" dediyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.`
+      : `Baş dönmesi sürüyor mu? Geçtiyse hemen ekrana dokunun. ${left} saniye içinde dokunulmazsa manevrayı duraklatıp soracağım.`;
   const est = cfg.introSecFor(finalText(Math.round(limit - next)));
   const atSec = Math.max(prevMark + 1, Math.min(next, Math.floor(limit - est - 2)));
   return { atSec, text: finalText(Math.round(limit - atSec)) };
@@ -1669,7 +1747,8 @@ function tick(cfg: RunnerConfig, s0: RunnerState, now: number, pose: HeadPose | 
           // Kuyrukta bekleyen eski düzeltme ipuçları "Tamam"ı geciktirmesin (k01, k04; tur 2): ipucu verildiyse ya da yönerge
           // bittiği biliniyorsa keser. Yalnız yönerge hâlâ okunuyor olabilirse kuyruğa girer ("doğru" bilgisi titreşimle hemen).
           // "Zaten yattınız" ayrı söylendiyse (doğrulama gecikti) onu kesmez, ardına girer.
-          priority: s.earlyMoveSaid
+          // Klinisyen oturuş adımı: komut cümlesinin arkasına girer, kesmez (y08).
+          priority: s.earlyMoveSaid || (cfg.mode === 'clinician' && !!step.unverifiable)
             ? 'normal'
             : cfg.mode !== 'patient' || s.lastHintAt !== null || s.earlyMoveAt !== null || (!!cfg.awaitSpeechEnd && s.introSpokenAt !== null)
               ? 'high'

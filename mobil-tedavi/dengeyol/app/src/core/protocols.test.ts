@@ -131,10 +131,23 @@ describe('tur 2 (E1-10): hasta konuşma metinleri kısa ve derecesiz', () => {
       }
     }
   });
-  it('Epley yatış yönergesi kısa eylem cümlesiyle başlar', () => {
-    const first = resolveProtocol('epley', 'R').steps[1]!.say.split('.')[0]!;
-    expect(first.length).toBeLessThanOrEqual(50);
-    expect(first).toMatch(/yatın/);
+  it('Epley yatış yönergesi kısa dokunma talimatıyla, ardından kısa eylem cümlesiyle başlar', () => {
+    // Dokunma talimatı en başta (hızla yatan hasta yönergenin sonunu beklemez; y03, y06 — yeni kullanıcı turu 1).
+    const [first, second] = resolveProtocol('epley', 'R').steps[1]!.say.split('.');
+    expect(first!.length).toBeLessThanOrEqual(50);
+    expect(first).toMatch(/ekrana dokunun/);
+    expect(second!.trim().length).toBeLessThanOrEqual(60);
+    expect(second).toMatch(/^ Şimdi .*yatın/);
+  });
+  it('"ekrana dokunun" diyen her gözlem yönergesi bu talimatla başlar (hasta ve yardımcı)', () => {
+    for (const id of ['dix-hallpike', 'supine-roll', 'epley', 'semont', 'bbq-roll'] as const) {
+      for (const st of resolveProtocol(id, 'R').steps) {
+        for (const t of [st.say, st.helperSay]) {
+          if (!t || !/ekrana (siz )?dokunun/.test(t)) continue;
+          expect(t.split('.')[0], t).toMatch(/ekrana (siz )?dokunun/);
+        }
+      }
+    }
   });
 });
 
