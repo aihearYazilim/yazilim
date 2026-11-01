@@ -622,6 +622,7 @@ describe('gerçekte yapılan test ve manevra (yeni kullanıcı turu 1; y04 #2, y
     expect(redFlagLineText({ ...base, redFlags: [rf], appVersion: '0.1.0' }, rf)).toMatch(/\("doğru mu\?" sorusunda onaylandı\)$/);
     expect(redFlagLineText({ ...base, redFlags: [rf] }, rf)).not.toMatch(/doğru mu/);
     expect(overrideKindText('VOMITING')).toBe('kusmaya rağmen yeniden denendi');
+    expect(overrideKindText('STILL_UNWELL')).toBe('hâlâ kötü hissettiğini söylediği hâlde devam edildi');
   });
 
   it('kayıt satırı: sürüm ve demo modu; katılımcı no rapor başında (y04 #6–7)', () => {

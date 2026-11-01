@@ -49,7 +49,8 @@ export const OVERRIDE_KIND_TEXT: Record<string, string> = {
   POSITION_UNREACHABLE: 'pozisyona 1 dakikada gelinemeyince manevraya devam edildi',
   EARLY_REPEAT: 'önerilen tekrar testi beklenmeden yeniden manevraya geçildi',
   REFER_NOT_TRIGGERED: 'test baş dönmesi başlatmadığı hâlde manevraya geçildi',
-  VOMITING: 'kusmaya rağmen yeniden denendi'
+  VOMITING: 'kusmaya rağmen yeniden denendi',
+  STILL_UNWELL: 'hâlâ kötü hissettiğini söylediği hâlde devam edildi'
 };
 
 /** Uyarı gösterilmeden yazılan bilgi kayıtları ve kullanıcının seçimleri (aşma sayılmaz). */

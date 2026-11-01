@@ -848,7 +848,8 @@ export function overrideShortName(kind: string): string {
     SIDE_CONFLICT: 'taraf çelişkisi',
     REFERRAL: 'yönlendirmeden sonra yeni atak',
     REFER_NOT_TRIGGERED: 'test tetiklemeden manevra',
-    VOMITING: 'kusmaya rağmen yeniden deneme'
+    VOMITING: 'kusmaya rağmen yeniden deneme',
+    STILL_UNWELL: 'hâlâ kötü hissederken devam'
   };
   if (known[kind]) return known[kind]!;
   if (/^REFER_/.test(kind)) return 'yönlendirme önerisi';
