@@ -197,8 +197,14 @@ export interface ClinicExam {
   maneuvers: ManeuverLog[];
   retestFindings: Findings;
   prescriptionToken?: string;
-  /** Reçetenin dayandığı tanının bulgu imzası: tanı değişirse eski QR gösterilmez. */
+  /** Reçetenin dayandığı bulgu imzası (tanı varsa tanının imzası): bulgu/tanı değişirse eski QR gösterilmez. */
   prescriptionFindingsKey?: string;
+  /**
+   * Reçete uyarısına rağmen yazıldı (yeniden tasarım: klinisyende reçete kilidi yok). kind: `RX_<neden>` (ör.
+   * RX_NO_DIAGNOSIS, RX_LONG_RESPONSE); reason: klinisyenin gerekçesi. HBYS notuna ve rapora "Uyarıya rağmen reçete: …"
+   * olarak yazılır. Hasta tarafında atak (Episode) olmadığı için kayıt muayenededir.
+   */
+  rxOverride?: { at: number; kind: string; reason: string };
   notes?: string;
   /**
    * Hastanın QR/bağlantıyla getirdiği ev dönemi raporları (core/reportShare.ts; kullanıcı turu 3, F4). Veri bağlantının

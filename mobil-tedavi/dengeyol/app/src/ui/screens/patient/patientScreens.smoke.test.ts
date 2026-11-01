@@ -8,7 +8,7 @@
  * - dönem raporu önce son atağın sonucunu yazar ve QR kartını gösterir (k09);
  * - kullanıcı turu 6: dönem satırı adlandırılmış tarih dizisi (k09); testte "kötüyüm" durdurmasından sonra ana ekran notu (k01).
  */
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -236,6 +236,11 @@ describe('yeniden tasarım: kilit yok (kurulum tek ekran, ana ekranda her zaman 
   });
 
   it('kontrendikasyon, hekime yönlendirme ve dolu doz: yalnız bilgi satırları; "Başım dönüyor" yönlendirmeyi aşma olarak kaydeder', () => {
+    // Saat gün ortasına sabit: manevralar 1–3 saat önce; gece yarısından sonra koşulunca "bugün" sayımı bozulmasın.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     const now = Date.now();
     const d = emptyData();
     d.settings = { ...d.settings, role: 'patient', speech: false };

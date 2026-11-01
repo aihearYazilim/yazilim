@@ -389,19 +389,25 @@ export const MECHANISM_LABEL: Record<Mechanism, string> = {
   unknown: 'mekanizma belirsiz'
 };
 
-/** Ev reçetesini kilitleyen bulgu (tanı elle girilse de geçerli). */
-export interface RxFindingLock {
+/**
+ * Ev reçetesi için uyarı doğuran bulgu (tanı elle girilse de geçerli). Yeniden tasarım (BRIEF §1, son satır): eskiden
+ * reçeteyi kilitlerdi; artık uyarıdır, klinisyen gerekçe yazarak "Yine de reçete yaz" diyebilir (muayeneye `rxOverride`).
+ */
+export interface RxFindingWarning {
   code: 'long-response' | 'multi-canal';
   message: string;
 }
 
+/** Uyarının sonuna eklenen cümle: kilit değil, gerekçeyle aşılabilir. */
+export const RX_OVERRIDE_HINT = 'Gerekçe yazarak yine de reçete verebilirsiniz.';
+
 /**
- * Bulgulara dayanan ev reçetesi kilidi — onaylı tanının mekanizmasından BAĞIMSIZ. Elle girilen "kanalolitiazis" tanısı,
- * bulgularda ≥1 dk süren pozisyonel nistagmus varken kilidi açmaz: kupulolitiazis/santral nedenler düşünülür ve evde güvenlik
- * kuralı (2 dk) hastayı her manevrada hekime yönlendirir (Bárány 2015; AAO-HNSF 2017). Çok kanallı tutulumda da reçete yok.
+ * Bulgulara dayanan ev reçetesi uyarısı — onaylı tanının mekanizmasından BAĞIMSIZ. Elle girilen "kanalolitiazis" tanısı,
+ * bulgularda ≥1 dk süren pozisyonel nistagmus varken uyarıyı kaldırmaz: kupulolitiazis/santral nedenler düşünülür ve evde
+ * 2 dk güvenlik uyarısı her manevrada çıkabilir (Bárány 2015; AAO-HNSF 2017). Çok kanallı tutulumda da reçete önerilmez.
  * Tekrar test bulguları da denetlenir (manevradan sonra ortaya çıkan uzun yanıt).
  */
-export function rxFindingLock(findings: Findings, retestFindings: Findings = {}): RxFindingLock | null {
+export function rxFindingWarning(findings: Findings, retestFindings: Findings = {}): RxFindingWarning | null {
   for (const [src, fx] of [
     ['', findings],
     ['Tekrar test · ', retestFindings]
@@ -410,7 +416,7 @@ export function rxFindingLock(findings: Findings, retestFindings: Findings = {})
       if (f && f.nystagmus !== 'none' && isLong(f)) {
         return {
           code: 'long-response',
-          message: `${src}${keyLabel(k)}: nistagmus ${f.durationSec} s sürdü (≥1 dk). Kupulolitiazis ya da santral pozisyonel nistagmus düşünülür; evde güvenlik kuralı hastayı her manevrada hekime yönlendirir. Tanı elle değiştirilse de ev reçetesi verilmez; tedaviyi klinikte yapın.`
+          message: `${src}${keyLabel(k)}: nistagmus ${f.durationSec} s sürdü (≥1 dk). Kupulolitiazis ya da santral pozisyonel nistagmus düşünülür; evde 2 dakikalık güvenlik uyarısı her manevrada çıkabilir. Ev reçetesi önerilmez, tedaviyi klinikte yapmanız önerilir. ${RX_OVERRIDE_HINT}`
         };
       }
     }
@@ -418,8 +424,7 @@ export function rxFindingLock(findings: Findings, retestFindings: Findings = {})
   if (suggestDiagnosis(findings).multiCanal || (Object.keys(retestFindings).length > 0 && suggestDiagnosis(retestFindings).multiCanal)) {
     return {
       code: 'multi-canal',
-      message:
-        'Bulgular çok kanallı tutulumu düşündürüyor. Kendi kendine tedavi çalışmaları bu hastaları dışlamıştır; ev reçetesi verilmez, tedaviyi klinikte yapın.'
+      message: `Bulgular çok kanallı tutulumu düşündürüyor. Kendi kendine tedavi çalışmaları bu hastaları dışlamıştır; ev reçetesi önerilmez, tedaviyi klinikte yapmanız önerilir. ${RX_OVERRIDE_HINT}`
     };
   }
   return null;

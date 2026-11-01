@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Finding, rxFindingLock, suggestDiagnosis, torsionSide } from './diagnosis';
+import { type Finding, RX_OVERRIDE_HINT, rxFindingWarning, suggestDiagnosis, torsionSide } from './diagnosis';
 
 const f = (p: Partial<Finding>): Finding => ({
   nystagmus: 'none',
@@ -223,26 +223,28 @@ describe('iki taraflı Dix-Hallpike: torsiyonla taraf (Bárány 2015)', () => {
   });
 });
 
-describe('ev reçetesi bulgu kilidi (elle tanıdan bağımsız)', () => {
-  it('tipik kanalolitiazis bulgusunda kilit yok', () => {
+describe('ev reçetesi bulgu uyarısı (eski kilit; elle tanıdan bağımsız)', () => {
+  it('tipik kanalolitiazis bulgusunda uyarı yok', () => {
     expect(
-      rxFindingLock({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) })
+      rxFindingWarning({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) })
     ).toBeNull();
   });
 
-  it('Dix-Hallpike yanıtı ≥60 s → kilit (elle "kanalolitiazis" girilse de)', () => {
-    const lock = rxFindingLock({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 75 }), dhL: f({}) });
+  it('Dix-Hallpike yanıtı ≥60 s → uyarı (elle "kanalolitiazis" girilse de); gerekçeyle aşılabilir', () => {
+    const lock = rxFindingWarning({ dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 75 }), dhL: f({}) });
     expect(lock?.code).toBe('long-response');
     expect(lock?.message).toMatch(/Sağ Dix-Hallpike.*75 s/);
+    expect(lock?.message).toContain(RX_OVERRIDE_HINT);
+    expect(lock?.message).not.toMatch(/verilmez/);
   });
 
-  it('tam 60 s sınırı da kilitler; 59 s kilitlemez', () => {
-    expect(rxFindingLock({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 60 }) })?.code).toBe('long-response');
-    expect(rxFindingLock({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 59 }) })).toBeNull();
+  it('tam 60 s sınırı da uyarır; 59 s uyarmaz', () => {
+    expect(rxFindingWarning({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 60 }) })?.code).toBe('long-response');
+    expect(rxFindingWarning({ dhL: f({ nystagmus: 'upbeat-torsional', latencySec: 2, durationSec: 59 }) })).toBeNull();
   });
 
-  it('tekrar testte ≥1 dk yanıt da kilitler', () => {
-    const lock = rxFindingLock(
+  it('tekrar testte ≥1 dk yanıt da uyarır', () => {
+    const lock = rxFindingWarning(
       { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) },
       { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 90 }) }
     );
@@ -250,8 +252,8 @@ describe('ev reçetesi bulgu kilidi (elle tanıdan bağımsız)', () => {
     expect(lock?.message).toMatch(/^Tekrar test/);
   });
 
-  it('çok kanallı tutulum kilitler', () => {
-    const lock = rxFindingLock({
+  it('çok kanallı tutulum uyarır', () => {
+    const lock = rxFindingWarning({
       dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }),
       dhL: f({}),
       rollR: f({ nystagmus: 'horizontal-geotropic', intensity: 3, durationSec: 30 }),
@@ -260,8 +262,8 @@ describe('ev reçetesi bulgu kilidi (elle tanıdan bağımsız)', () => {
     expect(lock?.code).toBe('multi-canal');
   });
 
-  it('baş dönmesi var, nistagmus yok: süre olmadığı için kilit yok', () => {
-    expect(rxFindingLock({ dhR: f({ vertigo: true }) })).toBeNull();
+  it('baş dönmesi var, nistagmus yok: süre olmadığı için uyarı yok', () => {
+    expect(rxFindingWarning({ dhR: f({ vertigo: true }) })).toBeNull();
   });
 });
 
