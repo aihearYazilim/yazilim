@@ -54,7 +54,14 @@ import {
   rxDoseText,
   RX_SHORTCUT_HELP,
   safetyCheckText,
+  controlSummary,
+  dhiText,
+  examListDx,
+  isDhi,
+  safetyPatientLabel,
+  safetyRedLine,
   safetyWarnings,
+  dxWarningsOf,
   testFindingInitial,
   shortDate,
   stepFlagLabels,
@@ -232,7 +239,7 @@ describe('ev reçetesi uyarısı (eski kilit) bulguya da bakar', () => {
     e.prescriptionFindingsKey = e.diagnosis!.findingsKey;
     expect(rxWarning(e)).toBeNull();
     expect(rxCurrent(e)).toBe(true);
-    expect(examNoteText(e, undefined, {})).toMatch(/^Ev reçetesi: sağ BBQ roll \(yatay kanal\), günde en fazla 2, 3 gün/m);
+    expect(examNoteText(e, undefined, {})).toMatch(/^Ev reçetesi: sağ BBQ roll \(yatay kanal\) \(DengeYol, QR ile verildi; reçete kodu [0-9a-f]{8}\)\. 3 gün, günde en çok 2 manevra\./m);
     // Arka kanal reçetesi yatay kanal tanısına dayanmaz.
     const pc = exam(roll, dx, { prescriptionToken: token, prescriptionFindingsKey: findingsKeyOf(roll) });
     expect(rxCurrent(pc)).toBe(false);
@@ -395,7 +402,10 @@ describe('HBYS notu (kısa)', () => {
     // Geçerlilik gün sayısı değil son geçerli gün olarak (tedavi gün sayısıyla karışmasın; yeni kullanıcı turu 2, y08 #6).
     expect(rxLines[0]).toContain(`Reçete ${shortDate(rxLastValidDay('2026-10-30')!)} tarihine kadar (dahil) geçerli`);
     expect(rxLines[0]).not.toMatch(/Geçerlilik: \d+ gün/);
-    expect(rxLines[0]).toMatch(/testsiz kısa yol/);
+    // Süre, reçete ekranındaki tek cümleyle aynı; eski "testsiz kısa yol … sürerken" cümlesi yok (yeni kullanıcı turu 3, y05 #3).
+    expect(rxLines[0]).not.toMatch(/testsiz kısa yol/);
+    expect(rxLines[0]).toMatch(/ \(DengeYol, QR ile verildi; reçete kodu [0-9a-f]{8}\)\. \d gün, günde en çok \d manevra\. Reçete .* tarihine kadar \(dahil\) geçerli\.$/);
+    expect(rxLines[0]).toContain(rxDoseText(3, 3, '2026-10-30').replace(/^\d gün, günde en çok \d manevra\. /, ''));
     expect(lines[lines.length - 1]).toBe('Dr. Test');
   });
 
@@ -729,6 +739,52 @@ describe('ev raporunun araştırma kaydı ve klinik öneri (yeni kullanıcı tur
     );
   });
 
+  it('manevra başına belirti şiddeti manevra satırında (yeni kullanıcı turu 3, y04 #2)', () => {
+    expect(homeManeuverText({ ...ep().maneuvers[0]!, vasAfter: 3 })).toMatch(/ · belirti şiddeti sonra: 3\/10$/);
+    expect(homeManeuverText(ep().maneuvers[0]!)).not.toMatch(/belirti şiddeti/);
+  });
+
+  it('kontrol muayenesi özeti (yeni kullanıcı turu 3, y08 #2): önceki tanı ve reçete, ev dönemi, öneri; listede "kontrol · önceki tanı"', () => {
+    const typical: Findings = { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) };
+    const rxTok = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 5 });
+    const first: ClinicExam = {
+      ...exam(typical, manualPC('canalithiasis')),
+      id: 'e0',
+      at: S - 2 * 24 * 60 * MIN,
+      prescriptionToken: rxTok,
+      prescriptionFindingsKey: findingsKeyOf(typical)
+    };
+    const token = encodeHomeReport(rep({ rx: { date: '2026-10-30', side: 'R', maneuver: 'epley', perDay: 3, days: 5 } }, { retests: [] })).token;
+    const ctrl: ClinicExam = { id: 'e2', patientId: 'p1', at: S + 3 * 60 * MIN, findings: {}, maneuvers: [], retestFindings: {}, homeReports: [{ id: 'h', token, importedAt: S }] };
+    const c = controlSummary(ctrl, [first, ctrl])!;
+    expect(c.previous).toMatch(/^Önceki muayene \(\d\d\.\d\d\): Sağ arka kanal BPPV — kanalolitiazis \(elle\) · reçete: sağ Epley, 5 gün, günde en fazla 3$/);
+    expect(c.home).toMatch(/^Ev dönemi: .*1 atak · .* · tekrar testi yok$/);
+    expect(c.advice).toBe(homeReportAdvice(decodeHomeReport(token).ok ? (decodeHomeReport(token) as { value: HomeReport }).value : rep()));
+    expect(examListDx(ctrl, [first, ctrl])).toBe('kontrol · önceki tanı: Sağ arka kanal BPPV — kanalolitiazis (elle)');
+    // İlk muayenede özet yok; liste eski metni yazar.
+    expect(controlSummary(first, [first, ctrl])).toBeNull();
+    expect(examListDx({ ...first, diagnosis: undefined }, [first])).toBe('tanı girilmedi');
+    // Kontrolde kendi tanısı varsa "kontrol · <tanı>".
+    expect(examListDx({ ...ctrl, diagnosis: { ...manualPC('canalithiasis'), findingsKey: '[]' } }, [first, ctrl])).toMatch(/^kontrol · Sağ arka kanal/);
+    // Önceki muayene bu telefonda yoksa reçete bilgisi rapordan.
+    const fromReport = controlSummary(ctrl, [ctrl])!;
+    expect(fromReport.previous).toMatch(/^Reçete \(hastanın raporundan, \d\d\.\d\d\): sağ Epley, 5 gün, günde en fazla 3$/);
+    expect(examListDx(ctrl, [ctrl])).toBe('kontrol · önceki tanı: Sağ arka kanal (reçeteden)');
+    // Raporsuz kontrol: öneri ev raporunu ister.
+    const bare: ClinicExam = { ...ctrl, homeReports: undefined };
+    expect(controlSummary(bare, [first, bare])!.advice).toMatch(/^Ev raporu eklenmedi/);
+  });
+
+  it('DHI (0–100) HBYS notunda; geçersiz değer yazılmaz (yeni kullanıcı turu 3, y04 #3)', () => {
+    expect(isDhi(42)).toBe(true);
+    expect(isDhi(101)).toBe(false);
+    expect(isDhi(4.5)).toBe(false);
+    expect(dhiText(0)).toBe('DHI toplam puanı: 0/100');
+    expect(dhiText(undefined)).toBeNull();
+    expect(examNoteText(exam({}, undefined, { dhi: 42 }), 'K-1', {}).split('\n')).toContain('DHI toplam puanı: 42/100.');
+    expect(examNoteText(exam({}, undefined, { dhi: 140 }), 'K-1', {})).not.toMatch(/DHI/);
+  });
+
   it('HBYS satırında aşma sayısı (Türkçe adlarla), işaretlenen güvenlik sorusu, kontrendikasyon, demo, katılımcı no, sürüm', () => {
     const r = rep({ contraindications: ['neck'], studyId: 'DY-014' }, p4);
     expect(homeOverrideCount(r)).toBe(2);
@@ -841,6 +897,42 @@ describe('ev raporunun araştırma kaydı ve klinik öneri (yeni kullanıcı tur
     const note = examNoteText(exam({}, undefined, { safetyCheck: { at: T0, spontaneous: false, neuro: false, neck: true } }), 'K-1', {});
     expect(note.split('\n')).toContain('Teste başlamadan kontrol: spontan nistagmus yok, nörolojik bulgu yok, boyun sorunu VAR.');
     expect(examNoteText(exam({}), 'K-1', {})).not.toMatch(/Teste başlamadan/);
+  });
+
+  it('muayene başı kontrolde "Var" santral örüntü gibi davranır (yeni kullanıcı turu 3, y05 #1): Tanı/Tedavi kırmızı satırı, RX_SAFETY_CHECK, hasta kartı adı', () => {
+    const typical: Findings = { dhR: f({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: f({}) };
+    const sc = { at: T0, spontaneous: true, neuro: true, neck: false };
+    expect(safetyRedLine(undefined)).toBeNull();
+    expect(safetyRedLine({ at: T0, spontaneous: false, neuro: false, neck: false })).toBeNull();
+    expect(safetyRedLine(sc)).toMatch(/^Teste başlamadan kontrolde VAR: spontan nistagmus ve nörolojik bulgu\. Spontan nistagmus: .* Nörolojik bulgu: santral neden/);
+    // Tanı uyarısı: pozisyon bulgusu tipik olsa da kontrol uyarısı tanıya yazılır.
+    expect(dxWarningsOf(exam(typical))).toEqual([]);
+    expect(dxWarningsOf(exam(typical, undefined, { safetyCheck: sc }))).toEqual([safetyRedLine(sc)]);
+    // Reçete: tanı onaylı ve uyarısız bulguda bile RX_SAFETY_CHECK (santral örüntü önce gelir).
+    const e = exam(typical, manualPC('canalithiasis'), { safetyCheck: { at: T0, neuro: true } });
+    const w = rxWarning(e);
+    expect(w?.kind).toBe('RX_SAFETY_CHECK');
+    expect(w?.title).toBe('Teste başlamadan kontrol: nörolojik bulgu VAR — ev reçetesi önerilmiyor');
+    expect(w?.message).toMatch(/Ev reçetesi önerilmez\./);
+    expect(w?.label).toBe('muayene başı kontrolde nörolojik bulgu');
+    expect(w?.patient).toBe('muayenede nörolojik bulgu vardı; nörolojik değerlendirme önerildi');
+    expect(rxWarning(exam(typical, manualPC('canalithiasis')))).toBeNull();
+    const central: Findings = { dhR: f({ nystagmus: 'downbeat-pure', latencySec: 0, durationSec: 30 }) };
+    expect(rxWarning(exam(central, undefined, { safetyCheck: sc }))?.kind).toBe('RX_CENTRAL');
+    // Tanısız muayenede de güvenlik kontrolü uyarısı.
+    expect(rxWarning(exam(typical, undefined, { safetyCheck: { at: T0, neck: true } }))?.kind).toBe('RX_SAFETY_CHECK');
+    // Hasta kartı adı: boyun sorunu tek başına nörolojik değerlendirme önermez; üçü birden reçete notu sınırına sığar.
+    expect(safetyPatientLabel({ at: T0, neck: true })).toBe('muayenede boyun sorunu vardı');
+    const all = safetyPatientLabel({ at: T0, spontaneous: true, neuro: true, neck: true })!;
+    expect(all).toBe('muayenede spontan göz titremesi, nörolojik bulgu ve boyun sorunu vardı; nörolojik değerlendirme önerildi');
+    expect(all.length).toBeLessThanOrEqual(120);
+    // Gerekçeli reçete güncel sayılır ve HBYS satırı uyarıyı adıyla yazar.
+    const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 3, ov: w!.patient, ovk: w!.code });
+    const done = { ...e, prescriptionToken: token, prescriptionFindingsKey: e.diagnosis!.findingsKey, rxOverride: { at: T0, kind: 'RX_SAFETY_CHECK', reason: 'Nöroloji konsültasyonu normal' } };
+    expect(rxCurrent(done)).toBe(true);
+    expect(rxOverrideLine(done)).toBe('Uyarıya rağmen reçete: Nöroloji konsültasyonu normal (uyarı: muayene başı kontrolde nörolojik bulgu).');
+    // Gerekçe yoksa ya da başka bir uyarı için yazıldıysa reçete güncel değil.
+    expect(rxCurrent({ ...done, rxOverride: { at: T0, kind: 'RX_NO_DIAGNOSIS', reason: 'Nöroloji konsültasyonu normal' } })).toBe(false);
   });
 
   it('belirti şiddeti (VAS) ev atağında okunur metin', () => {

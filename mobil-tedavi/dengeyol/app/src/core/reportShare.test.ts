@@ -174,7 +174,7 @@ describe('ev dönemi raporu: gidiş-dönüş', () => {
     expect(r.value.episodes[1]!.endNote).toBe('ear');
   });
 
-  it('dakika altı zamanlar dakikaya yuvarlanır; Semont bayrakları ve yavaş geçiş korunur', () => {
+  it('olay zamanları saniyesiyle taşınır (saniye altı atılır; yeni kullanıcı turu 3, y04 #1); Semont bayrakları ve yavaş geçiş korunur', () => {
     const se = maneuver(T0 + 10 * MIN + 37_000, {
       protocolId: 'semont',
       records: [
@@ -187,8 +187,8 @@ describe('ev dönemi raporu: gidiş-dönüş', () => {
     const rep = buildHomeReport(d, { now: T0 + 60 * MIN });
     const r = decodeHomeReport(encodeHomeReport(rep).token);
     if (!r.ok) throw new Error(r.error);
-    expect(r.value.episodes[0]!.startedAt).toBe(T0);
-    expect(r.value.episodes[0]!.maneuvers[0]!.at).toBe(T0 + 10 * MIN);
+    expect(r.value.episodes[0]!.startedAt).toBe(T0 + 12_000);
+    expect(r.value.episodes[0]!.maneuvers[0]!.at).toBe(T0 + 10 * MIN + 37_000);
     const steps = r.value.episodes[0]!.maneuvers[0]!.steps!;
     expect(steps[1]!.flags).toEqual(['slowTransition', 'movedBeforeCommand']);
     expect(steps[1]!.transitionSec).toBe(4.1);
@@ -768,6 +768,62 @@ describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı 
     expect(r2.ok && r2.value.episodes[0]!.vas).toEqual({ after: 0 });
     const bad = buildHomeReport(data([{ ...ep, vas: { before: 11 } }], false), { now: T0 + 60 * MIN, episodes: [{ ...ep, vas: { before: 11 } }] });
     expect(bad.episodes[0]!.vas).toBeUndefined();
+  });
+
+  it('manevra başına VAS (ManeuverLog.vasAfter) v3 ile taşınır; eski bağlantı okunur; uzunluğu tutmayan alan reddedilir (yeni kullanıcı turu 3, y04 #2)', () => {
+    const ep = episode(T0, { vas: { before: 8 }, rxShortcut: undefined, maneuvers: [maneuver(T0 + 5 * MIN, { vasAfter: 4 }), maneuver(T0 + 30 * MIN), maneuver(T0 + 50 * MIN, { vasAfter: 11 })] });
+    const rep = buildHomeReport(data([ep], false), { now: T0 + 60 * MIN, episodes: [ep] });
+    expect(rep.v).toBe(3);
+    expect(rep.episodes[0]!.maneuvers.map((m) => m.vasAfter)).toEqual([4, undefined, undefined]);
+    const { token, report } = encodeHomeReport(rep);
+    expect(wireOf(token).e).toEqual([expect.objectContaining({ mv: [4, null, null] })]);
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(report);
+    expect(r.ok && r.value.episodes[0]!.maneuvers[0]!.vasAfter).toBe(4);
+    // Yalnız manevra VAS'ı da v3 ister (eski çözücü sessizce düşürmesin diye "güncelleyin" der).
+    const only = episode(T0, { rxShortcut: undefined, maneuvers: [maneuver(T0 + 5 * MIN, { vasAfter: 0 })] });
+    expect(homeReportVersion(buildHomeReport(data([only], false), { now: T0 + 60 * MIN, episodes: [only] }))).toBe(3);
+    const m = Math.floor(T0 / MIN);
+    const t = (ep: Record<string, unknown>) => decodeHomeReport(tokenOf({ v: 3, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', m: [[1, 'e', 'R', 'c', 0, 5]], ...ep }] }));
+    const old = t({});
+    expect(old.ok && old.value.episodes[0]!.maneuvers[0]!.vasAfter).toBeUndefined();
+    expect(t({ mv: [3, 1] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(t({ mv: [11] })).toEqual({ ok: false, error: 'FIELDS' });
+  });
+
+  it('olay saniyeleri (ss): aynı dakikadaki olayların sırası korunur; saniyesiz eski bağlantı dakikada kalır; bütçe aşılınca saniyeler çıkar (yeni kullanıcı turu 3, y04 #1)', () => {
+    const ep = p4(T0 + 5_000, {
+      overrides: [
+        { at: T0 + 2 * MIN + 41_000, kind: 'VERTIGO_TOO_LONG' },
+        { at: T0 + 2 * MIN + 3_000, kind: 'APP_DECISION', detail: 'Uygulamanın kararı: sağ taraf, Epley.' }
+      ],
+      maneuvers: [maneuver(T0 + 2 * MIN + 20_000)]
+    });
+    const rep = buildHomeReport(d3([ep]), { now: T0 + 60 * MIN });
+    const { token, report } = encodeHomeReport(rep);
+    const w = (wireOf(token).e as Record<string, unknown>[])[0]!;
+    expect(w.ss).toMatchObject({ s: 5, m: [20] });
+    const r = decodeHomeReport(token);
+    if (!r.ok) throw new Error(r.error);
+    expect(r.value).toEqual(report);
+    const e = r.value.episodes[0]!;
+    expect(e.startedAt).toBe(T0 + 5_000);
+    expect(e.maneuvers[0]!.at).toBe(T0 + 2 * MIN + 20_000);
+    expect(e.overrides!.map((o) => o.at - T0 - 2 * MIN)).toEqual([3_000, 41_000]);
+    // Saniyesiz (eski) bağlantı: zamanlar dakikada.
+    const m = Math.floor(T0 / MIN);
+    const old = decodeHomeReport(tokenOf({ v: 1, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', m: [[2, 'e', 'R', 'c', 0, 5]] }] }));
+    expect(old.ok && old.value.episodes[0]!.maneuvers[0]!.at).toBe(T0 + 2 * MIN);
+    // Uzunluğu tutmayan ya da aralık dışı saniye reddedilir.
+    expect(decodeHomeReport(tokenOf({ v: 1, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', m: [[2, 'e', 'R', 'c', 0, 5]], ss: { m: [1, 2] } }] }))).toEqual({ ok: false, error: 'FIELDS' });
+    expect(decodeHomeReport(tokenOf({ v: 1, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', ss: { s: 60 } }] }))).toEqual({ ok: false, error: 'FIELDS' });
+    // Dar bütçe: adım ayrıntısından sonra saniyeler çıkarılır, zamanlar dakikaya yuvarlanır.
+    const noSteps = encodeHomeReportRaw({ ...rep, stepsDropped: true, episodes: rep.episodes.map((x) => ({ ...x, maneuvers: x.maneuvers.map((y) => ({ ...y, steps: null })) })) });
+    const tight = encodeHomeReport(rep, noSteps.length - 5);
+    expect((wireOf(tight.token).e as Record<string, unknown>[])[0]!.ss).toBeUndefined();
+    expect(tight.report.episodes[0]!.startedAt).toBe(T0);
+    const rt = decodeHomeReport(tight.token);
+    expect(rt.ok && rt.value).toEqual(tight.report);
   });
 
   it('VAS: eski v3 bağlantısı (alan yok) okunur; geçersiz alan reddedilir; v1/v2 bağlantısında yok sayılır', () => {

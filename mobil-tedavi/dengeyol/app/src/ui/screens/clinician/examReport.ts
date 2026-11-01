@@ -11,9 +11,17 @@ import {
   type ObservationMethod,
   OBSERVATION_METHODS,
   rxFindingWarning,
-  RX_OVERRIDE_HINT
+  RX_OVERRIDE_HINT,
+  suggestDiagnosis
 } from '../../../core/diagnosis';
-import { decodePrescription, type Prescription, rxCanalOf, rxManeuverName, rxValidUntil as rxValidUntilMs } from '../../../core/prescription';
+import {
+  decodePrescription,
+  type Prescription,
+  rxCanalOf,
+  rxIssuedAt as rxIssuedAtMs,
+  rxManeuverName,
+  rxValidUntil as rxValidUntilMs
+} from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
 import { recordStats, type StepRecord, STOP_REASON_TEXT, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
 import {
@@ -72,20 +80,23 @@ export const SAFETY_ITEMS: SafetyItem[] = ['spontaneous', 'neuro', 'neck'];
  * Teste başlamadan 3 maddelik kontrol (yeni kullanıcı turu 2, y08 #3, y05 #4): soru, kısa ad ve "var" yanıtında gösterilen
  * uyarı. Uyarıdır, testleri engellemez.
  */
-export const SAFETY_CHECK: Record<SafetyItem, { q: string; name: string; warn: string }> = {
+export const SAFETY_CHECK: Record<SafetyItem, { q: string; name: string; warn: string; patient: string }> = {
   spontaneous: {
     q: 'Spontan nistagmus (oturur, düz bakarken)',
     name: 'spontan nistagmus',
+    patient: 'spontan göz titremesi',
     warn: 'Spontan nistagmus: pozisyonel bulguyu yorumlamak güçleşir; vestibüler nörit ve santral nedenleri (HINTS) değerlendirin.'
   },
   neuro: {
     q: 'Nörolojik bulgu (çift görme, konuşma bozukluğu, güçsüzlük, ataksi)',
     name: 'nörolojik bulgu',
+    patient: 'nörolojik bulgu',
     warn: 'Nörolojik bulgu: santral neden düşünün; acil nörolojik değerlendirme önerilir. Pozisyon testlerini ertelemeyi düşünün.'
   },
   neck: {
     q: 'Boyun sorunu (fıtık, travma, ileri hareket kısıtlılığı)',
     name: 'boyun sorunu',
+    patient: 'boyun sorunu',
     warn: 'Boyun sorunu: Dix-Hallpike\'ta başı geriye sarkıtmayın; yan yatış testi ya da sırtüstü baş çevirme ile değiştirin.'
   }
 };
@@ -93,6 +104,45 @@ export const SAFETY_CHECK: Record<SafetyItem, { q: string; name: string; warn: s
 /** Kontrolde "var" denen maddelerin uyarıları (yoksa boş). */
 export function safetyWarnings(c: ClinicExam['safetyCheck']): string[] {
   return SAFETY_ITEMS.filter((k) => c?.[k] === true).map((k) => SAFETY_CHECK[k].warn);
+}
+
+/** Kontrolde "var" denen maddeler (sabit sırada). */
+export function safetyFlagged(c: ClinicExam['safetyCheck']): SafetyItem[] {
+  return SAFETY_ITEMS.filter((k) => c?.[k] === true);
+}
+
+/** "a", "a ve b", "a, b ve c". */
+const andList = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} ve ${xs[xs.length - 1]}`);
+
+/**
+ * Muayene başı kontrolde "var" yanıtı Tanı ve Tedavi sekmelerinde santral örüntüdeki gibi kırmızı satır olur (yeni kullanıcı
+ * turu 3, y05 #1): "Teste başlamadan kontrolde VAR: nörolojik bulgu. Nörolojik bulgu: santral neden düşünün; …". Tanı onayında
+ * uyarı olarak kaydedilir (raporda "Uyarılar:"; ICD önerisi yazılmaz). "Var" yoksa null.
+ */
+export function safetyRedLine(c: ClinicExam['safetyCheck']): string | null {
+  const ks = safetyFlagged(c);
+  if (!ks.length) return null;
+  return `Teste başlamadan kontrolde VAR: ${andList(ks.map((k) => SAFETY_CHECK[k].name))}. ${ks.map((k) => SAFETY_CHECK[k].warn).join(' ')}`;
+}
+
+/**
+ * Hastanın reçete kartındaki uyarı adı (Prescription.ov): "muayenede nörolojik bulgu vardı; nörolojik değerlendirme
+ * önerildi". Kart "Hekim uyarıya rağmen verdi: …" diye okur. "Var" yoksa null.
+ */
+export function safetyPatientLabel(c: ClinicExam['safetyCheck']): string | null {
+  const ks = safetyFlagged(c);
+  if (!ks.length) return null;
+  const neuro = ks.includes('neuro') || ks.includes('spontaneous');
+  return `muayenede ${andList(ks.map((k) => SAFETY_CHECK[k].patient))} vardı${neuro ? '; nörolojik değerlendirme önerildi' : ''}`;
+}
+
+/**
+ * Tanı sekmesinin uyarıları: pozisyon bulgularından (suggestDiagnosis) ve muayene başı kontrolden. Onayda tanıya yazılır;
+ * reçetenin ek onay kutusu da bunlara bakar.
+ */
+export function dxWarningsOf(exam: Pick<ClinicExam, 'findings' | 'safetyCheck'>): string[] {
+  const safety = safetyRedLine(exam.safetyCheck);
+  return [...suggestDiagnosis(exam.findings).warnings, ...(safety ? [safety] : [])];
 }
 
 /**
@@ -177,7 +227,7 @@ export function rxBlockReason(exam: ClinicExam): string | null {
   return null;
 }
 
-export type RxWarnCode = 'NO_DIAGNOSIS' | 'NO_SIDE' | 'CENTRAL' | 'LONG_RESPONSE' | 'MULTI_CANAL' | 'CUPULOLITHIASIS' | 'CANAL';
+export type RxWarnCode = 'NO_DIAGNOSIS' | 'NO_SIDE' | 'CENTRAL' | 'SAFETY_CHECK' | 'LONG_RESPONSE' | 'MULTI_CANAL' | 'CUPULOLITHIASIS' | 'CANAL';
 
 export interface RxWarning {
   code: RxWarnCode;
@@ -188,12 +238,15 @@ export interface RxWarning {
   /** Kartın başlığı (santral örüntüde bulgunun adıyla). */
   title: string;
   message: string;
+  /** Hastanın reçete kartına giden kısa ad (Prescription.ov): "Hekim uyarıya rağmen verdi: …". */
+  patient: string;
 }
 
 const RX_WARN_LABEL: Record<RxWarnCode, string> = {
   NO_DIAGNOSIS: 'onaylı tanı yok',
   NO_SIDE: 'onaylı tanıda taraf yok',
   CENTRAL: 'santral örüntü',
+  SAFETY_CHECK: 'muayene başı kontrolde bulgu',
   LONG_RESPONSE: '≥1 dk nistagmus',
   MULTI_CANAL: 'çok kanallı tutulum',
   CUPULOLITHIASIS: 'kupulolitiazis',
@@ -208,6 +261,7 @@ export const RX_WARN_PATIENT_LABEL: Record<RxWarnCode, string> = {
   NO_DIAGNOSIS: 'tanı uygulamada onaylanmadan verildi',
   NO_SIDE: 'etkilenen kulak muayenede kesinleşmedi',
   CENTRAL: 'muayene bulgusu beyin kaynaklı baş dönmesini de düşündürüyor; nörolojik değerlendirme önerildi',
+  SAFETY_CHECK: 'muayenede güvenlik kontrolünde bulgu vardı',
   LONG_RESPONSE: 'muayenede göz titremesi 1 dakikadan uzun sürdü',
   MULTI_CANAL: 'birden çok kanal etkilenmiş olabilir',
   CUPULOLITHIASIS: 'kristaller kanal zarına yapışmış olabilir (kupulolitiazis)',
@@ -224,12 +278,14 @@ export const RX_REASON_MIN = 10;
  * vuran ya da atipik nistagmus) tanıdan da önce gelir ve bulguyu adıyla söyler (kullanıcı turu yeni-1, L4-2).
  */
 export function rxWarning(exam: ClinicExam): RxWarning | null {
-  const w = (code: RxWarnCode, message: string, title = 'Ev reçetesi önerilmiyor'): RxWarning => ({
+  const w = (code: RxWarnCode, message: string, title = 'Ev reçetesi önerilmiyor', more: Partial<Pick<RxWarning, 'label' | 'patient'>> = {}): RxWarning => ({
     code,
     kind: `RX_${code}`,
     label: RX_WARN_LABEL[code],
     title,
-    message
+    message,
+    patient: RX_WARN_PATIENT_LABEL[code],
+    ...more
   });
   const dx = exam.diagnosis;
   const central = centralFindings(exam.findings, exam.retestFindings).filter((c) => c.kind !== 'long');
@@ -239,6 +295,18 @@ export function rxWarning(exam: ClinicExam): RxWarning | null {
       'CENTRAL',
       `${names}. Santral pozisyonel nistagmus (serebellum/beyin sapı) dışlanmalı: nörolojik değerlendirme, gerekirse MR. Ev reçetesi önerilmez. Gerekçe yazarak yine de reçete verebilirsiniz; hastanın reçete kartında "Hekim uyarıya rağmen verdi" satırı görünür.`,
       `Santral örüntü: ${central[0]!.kind === 'downbeat-pure' ? 'saf aşağı vuran nistagmus' : 'atipik nistagmus'} — ev reçetesi önerilmiyor`
+    );
+  }
+  // Muayene başı güvenlik kontrolünde "var" (spontan nistagmus, nörolojik bulgu, boyun sorunu): santral örüntüdeki gibi
+  // uyarı, ≥10 karakter gerekçe ve hastanın kartında "Hekim uyarıya rağmen verdi: muayenede …" (yeni kullanıcı turu 3, y05 #1).
+  const flagged = safetyFlagged(exam.safetyCheck);
+  if (flagged.length) {
+    const names = andList(flagged.map((k) => SAFETY_CHECK[k].name));
+    return w(
+      'SAFETY_CHECK',
+      `Teste başlamadan kontrolde VAR: ${names}. ${flagged.map((k) => SAFETY_CHECK[k].warn).join(' ')} Ev reçetesi önerilmez. Gerekçe yazarak yine de reçete verebilirsiniz; hastanın reçete kartında "Hekim uyarıya rağmen verdi" satırı görünür.`,
+      `Teste başlamadan kontrol: ${names} VAR — ev reçetesi önerilmiyor`,
+      { label: `muayene başı kontrolde ${names}`, patient: safetyPatientLabel(exam.safetyCheck)! }
     );
   }
   if (!dx) return w('NO_DIAGNOSIS', 'Tanı sekmesinde onaylı tanı yok; ev reçetesi önerilmez. Kanalı ve tarafı seçip gerekçe yazarak yine de reçete verebilirsiniz.');
@@ -578,6 +646,8 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
   if (header) lines.push(header);
   const safety = safetyCheckText(exam.safetyCheck);
   if (safety) lines.push(`Teste başlamadan kontrol: ${safety}.`);
+  const dhi = dhiText(exam.dhi);
+  if (dhi) lines.push(`${dhi}.`);
   const keys = Object.keys(exam.findings) as FindingKey[];
   if (keys.length) {
     lines.push('Testler:');
@@ -615,7 +685,8 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
     const r = decodePrescription(exam.prescriptionToken);
     if (r.ok) {
       lines.push(
-        `Ev reçetesi: ${rxLineName(r.value)}, günde en fazla ${r.value.perDay}, ${r.value.days} gün (DengeYol, QR ile verildi; reçete kodu ${rxCode(exam.prescriptionToken)}). ${rxValidityShort(r.value.date)}; testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken.`
+        // Süre, reçete ekranındaki tek cümleyle aynı (rxDoseText); testsiz kısa yol notta ayrıca anlatılmaz (y05 #3).
+        `Ev reçetesi: ${rxLineName(r.value)} (DengeYol, QR ile verildi; reçete kodu ${rxCode(exam.prescriptionToken)}). ${rxDoseText(r.value.perDay, r.value.days, r.value.date)}`
       );
       const ov = rxOverrideLine(exam);
       if (ov) lines.push(ov);
@@ -745,6 +816,8 @@ export function homeManeuverText(m: HomeManeuver): string {
   if (m.manual) parts.push('sensörsüz');
   if (m.pauses > 0) parts.push(`${m.pauses} kez duraklatıldı`);
   if (m.afterSymptoms) parts.push(AFTER_TEXT[m.afterSymptoms]);
+  // Manevra başına belirti şiddeti (yeni kullanıcı turu 3, y04 #2).
+  if (m.vasAfter !== undefined) parts.push(`belirti şiddeti sonra: ${m.vasAfter}/10`);
   return parts.join(' · ');
 }
 
@@ -926,6 +999,98 @@ export function homeListSummary(exam: Pick<ClinicExam, 'homeReports'>): string |
   }
   // Araştırma kaydı taşımayan (eski uygulamanın) raporunda aşma sayısı bilinmez: yazılmaz.
   return any ? `ev: ${maneuvers} manevra${research ? `, ${overrides} aşma` : ''}` : null;
+}
+
+// ---- Kontrol muayenesi (yeni kullanıcı turu 3, y08 #2) ve DHI (y04 #3) ------------------------------------------
+
+/** DHI toplam puanı geçerli mi (0–100 tam sayı). */
+export function isDhi(x: unknown): x is number {
+  return typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 100;
+}
+
+/** "DHI toplam puanı: 42/100"; girilmediyse null. */
+export function dhiText(dhi: number | undefined): string | null {
+  return isDhi(dhi) ? `DHI toplam puanı: ${dhi}/100` : null;
+}
+
+/**
+ * Aynı hastanın bu muayeneden önceki son dolu muayenesi (bulgu, tanı ya da reçete taşıyan); yoksa undefined.
+ */
+export function previousExam(exam: Pick<ClinicExam, 'id' | 'patientId' | 'at'>, all: readonly ClinicExam[]): ClinicExam | undefined {
+  return all
+    .filter(
+      (e) =>
+        e.id !== exam.id &&
+        e.patientId === exam.patientId &&
+        e.at < exam.at &&
+        (!!e.diagnosis || !!e.prescriptionToken || Object.keys(e.findings).length > 0)
+    )
+    .sort((a, b) => b.at - a.at)[0];
+}
+
+/** Muayeneye eklenmiş ev raporlarından en son üretilen (okunabilen). */
+function latestHomeReport(exam: Pick<ClinicExam, 'homeReports'>): HomeReport | null {
+  let best: HomeReport | null = null;
+  for (const h of exam.homeReports ?? []) {
+    const r = decodeHomeReport(h.token);
+    if (r.ok && (!best || r.value.generatedAt >= best.generatedAt)) best = r.value;
+  }
+  return best;
+}
+
+export interface ControlSummary {
+  /** "Önceki muayene (01.11): Sağ arka kanal BPPV — kanalolitiazis · reçete: sağ Epley, 5 gün, günde en fazla 3". */
+  previous: string | null;
+  /** Önceki tanının kısa adı (liste satırı için); bilinmiyorsa null. */
+  previousDx: string | null;
+  /** "Ev dönemi: … · 1 atak · 1 manevra (1 tamamlandı) · tekrar testi yok"; ev raporu yoksa null. */
+  home: string | null;
+  /** Tek öneri cümlesi. */
+  advice: string;
+}
+
+/**
+ * Kontrol muayenesinin özet kartı (Testler sekmesinin üstünde): önceki tanı ve reçete, ev dönemi özeti, öneri cümlesi. Aynı
+ * hastanın önceki dolu muayenesi ya da eklenmiş ev raporu yoksa (ilk muayene) null.
+ */
+export function controlSummary(exam: ClinicExam, all: readonly ClinicExam[]): ControlSummary | null {
+  const prev = previousExam(exam, all);
+  const report = latestHomeReport(exam);
+  if (!prev && !report) return null;
+  let previous: string | null = null;
+  let previousDx: string | null = null;
+  if (prev) {
+    const dx = prev.diagnosis && dxValid(prev) ? prev.diagnosis : null;
+    previousDx = dx ? dxText(dx) : null;
+    const rx = prev.prescriptionToken && rxCurrent(prev) ? decodePrescription(prev.prescriptionToken) : null;
+    const rxPart = rx?.ok ? `reçete: ${rxLineName(rx.value)}, ${rx.value.days} gün, günde en fazla ${rx.value.perDay}` : 'reçete verilmedi';
+    previous = `Önceki muayene (${dayMonth(prev.at)}): ${previousDx ?? 'tanı girilmedi'} · ${rxPart}`;
+  } else if (report?.rx) {
+    // Muayene bu telefonda yok (başka cihazda ya da başka hekimce): reçete bilgisi rapordan.
+    const rx = report.rx;
+    previousDx = `${cap(sideName(rx.side))} ${rxCanalOf(rx) === 'HC' ? 'yatay' : 'arka'} kanal (reçeteden)`;
+    previous = `Reçete (hastanın raporundan, ${dayMonth(rxIssuedAtMs(rx.date) ?? report.generatedAt)}): ${rxLineName(rx)}, ${rx.days} gün, günde en fazla ${rx.perDay}`;
+  }
+  let home: string | null = null;
+  if (report) {
+    const retests = report.episodes.reduce((n, e) => n + e.retests.length, 0);
+    home = `Ev dönemi: ${homeReportHeadline(report)}${retests ? '' : ' · tekrar testi yok'}`;
+  }
+  const advice = report
+    ? homeReportAdvice(report)
+    : 'Ev raporu eklenmedi: hastanın uygulamasındaki rapor QR kodunu okutun; pozisyon testini tekrarlayın.';
+  return { previous, previousDx, home, advice };
+}
+
+/**
+ * Muayene listesindeki tanı parçası: kontrol muayenesinde "kontrol · önceki tanı: …" (kendi tanısı yoksa), ilk muayenede
+ * tanı ya da "tanı girilmedi".
+ */
+export function examListDx(exam: ClinicExam, all: readonly ClinicExam[]): string {
+  const c = controlSummary(exam, all);
+  if (exam.diagnosis) return `${c ? 'kontrol · ' : ''}${exam.diagnosis.label}`;
+  if (c) return `kontrol · önceki tanı: ${c.previousDx ?? 'girilmedi'}`;
+  return 'tanı girilmedi';
 }
 
 /** Atağın belirti şiddeti (VAS 0–10; biçim v3): "başta 7, manevradan sonra 3"; girilmediyse null. */

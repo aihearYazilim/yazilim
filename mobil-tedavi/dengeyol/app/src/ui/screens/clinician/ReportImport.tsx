@@ -15,7 +15,7 @@ import { store, uid, useData } from '../../../state/store';
 import type { ClinicExam, ClinicPatient, HomeReportRecord } from '../../../state/types';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
-import { homeMatchCode, looksLikeRxLink, reportPasteErrorText } from './examReport';
+import { examListDx, homeMatchCode, looksLikeRxLink, reportPasteErrorText } from './examReport';
 import { HomeReportView } from './HomeReportView';
 
 const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
@@ -232,7 +232,7 @@ export function ReportImport() {
                 <option value="new">Yeni kontrol muayenesi aç</option>
                 {exams.map((e) => (
                   <option key={e.id} value={e.id}>
-                    {formatDateTime(e.at)} · {e.diagnosis?.label ?? 'tanı girilmedi'}
+                    {formatDateTime(e.at)} · {examListDx(e, d.clinicExams)}
                     {rxExam?.id === e.id ? ' · bu reçeteyi veren muayene' : ''}
                   </option>
                 ))}
