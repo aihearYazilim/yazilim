@@ -87,3 +87,68 @@ describe('ev raporu içe aktarma: biçim v2 (kullanıcı turu 6)', () => {
     expect(byTestId('hr-error')!.textContent).toMatch(/Uygulamayı güncelleyin/);
   });
 });
+
+describe('ev raporu içe aktarma: biçim v3 araştırma kaydı (yeni kullanıcı turu 1)', () => {
+  /** P4: kırmızı bayrak işaretlenip devam edildi, sırtüstü baş çevirme testi, BBQ roll; demo; katılımcı no; kontrendikasyon. */
+  const p4 = {
+    s: m,
+    u: 'a',
+    d: 'R',
+    S: 1,
+    t: [[5, [1, 2, 30], [1, 2, 10], 'TR', 'H']],
+    m: [[15, 'bbq-roll', 'R', 'co', 0, 7]],
+    f: [[1, 'neuro', 1]],
+    o: [[2, 'R', 'neuro'], [3, 'T', 'Yatakta dönünce başlıyor'], [6, 'D', 'sağ taraf, BBQ roll (yatay kanal, geotropik varsayım).'], [7, 'N']]
+  };
+
+  it('araştırma bölümü, test türü, katılımcı no, tek cümle öneri; varsayılan yeni kontrol muayenesi', () => {
+    const token = tokenOf({ v: 3, g: m + 60, a: m, b: m + 60, i: 'DY-014', k: 'neck', w: ['0.1.0', 'k1'], e: [p4] });
+    mount(token);
+    expect(byTestId('hr-error')).toBeNull();
+    const text = byTestId('hr-report')!.textContent!;
+    expect(text).toContain('Sırtüstü baş çevirme testi (supine roll) — Başı sağa çevirince');
+    expect(text).toContain('BBQ roll (yatakta dönme manevrası) sağ: tamamlandı');
+    expect(text).not.toContain('Dix-Hallpike');
+    expect(byTestId('hr-report-study-id')!.textContent).toBe('DY-014');
+    expect(byTestId('hr-report-advice')!.textContent).toMatch(/^Öneri: Bu rapor demo modunda/);
+    expect(byTestId('hr-report-version')!.textContent).toBe('Kayıt: DengeYol 0.1.0 · karar kuralları k1');
+    expect(byTestId('hr-report-demo')!.textContent).toMatch(/DEMO MODU/);
+    expect(byTestId('hr-report-redflag')!.textContent).toMatch(/uyarı gösterildi, devam edildi$/);
+    expect(byTestId('hr-report-override-count')!.textContent).toBe('Uyarıya rağmen devam (kullanıcının aştığı uyarılar): 1');
+    expect(byTestId('hr-report-research-decision')!.textContent).toMatch(/Uygulamanın kararı: sağ taraf, BBQ roll/);
+    expect(byTestId('hr-report-research-info')!.textContent).toMatch(/hekim tanısı girilmeden kullanıldı/);
+    expect(byTestId('hr-report-research')!.textContent).not.toMatch(/RED_FLAG|APP_DECISION|NO_DIAGNOSIS|\bneuro\b/);
+    // Katılımcı no yeni hasta kodu olarak önerilir; muayene seçimi yok (yeni hasta → yeni kontrol muayenesi).
+    expect((byTestId('hr-code') as HTMLInputElement).value).toBe('DY-014');
+  });
+
+  it('eski (sürümsüz) rapor: araştırma kaydının bilinmediği yazılır', () => {
+    mount(tokenOf({ v: 1, g: m + 60, a: m, b: m + 60, e: [{ s: m, u: 'a' }] }));
+    expect(byTestId('hr-report-research-none')!.textContent).toMatch(/eski bir uygulama sürümüyle/);
+  });
+
+  it('kayıtlı hastanın eski muayenesi varken varsayılan "Yeni kontrol muayenesi aç" (y08 #3)', () => {
+    const token = tokenOf({ v: 3, g: m + 60, a: m, b: m + 60, i: 'DY-014', w: ['0.1.0', 'k1'], e: [p4] });
+    store.update(() => ({
+      ...emptyData(),
+      settings: { ...emptyData().settings, role: 'clinician' },
+      clinicPatients: [{ id: 'p1', code: 'DY-014', sex: '-', createdAt: Date.now() - 86400000 }],
+      // Bugün yapılmış ama dolu (bulgulu) ilk muayene: varsayılan olmamalı.
+      clinicExams: [{ id: 'x1', patientId: 'p1', at: Date.now() - 60000, findings: { dhR: { nystagmus: 'none' } as never }, maneuvers: [], retestFindings: {} }]
+    }));
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    act(() => {
+      root!.render(
+        createElement(
+          MemoryRouter,
+          { initialEntries: [`/odyolog/ev-raporu/${token}`], future: { v7_startTransition: true, v7_relativeSplatPath: true } },
+          createElement(Routes, null, createElement(Route, { path: '/odyolog/ev-raporu/:token', element: createElement(ReportImport) }))
+        )
+      );
+    });
+    expect((byTestId('hr-patient') as HTMLSelectElement).value).toBe('p1');
+    expect((byTestId('hr-exam') as HTMLSelectElement).value).toBe('new');
+  });
+});

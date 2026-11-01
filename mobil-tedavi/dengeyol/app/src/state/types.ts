@@ -63,6 +63,11 @@ export interface PatientProfile {
   consentVersion?: string;
   /** Kurulumu ve onamı kim yaptı: hastanın kendisi ya da hasta adına, onun bilgisiyle bir yakını. */
   consentBy?: 'self' | 'helper';
+  /**
+   * Klinik çalışma katılımcı numarası (isteğe bağlı; yeni kullanıcı turu 1, y04 #7). Reçetesiz katılımcının ev raporu
+   * klinisyende bu numarayla eşleşir; raporda ve QR'da (biçim v3) taşınır. Ayarlar'dan girilir.
+   */
+  studyId?: string;
 }
 
 export interface ManeuverLog {
@@ -80,6 +85,11 @@ export interface ManeuverLog {
   assisted?: boolean;
   /** Manevra sırasında kaç kez duraklatıldı (geri tuşu, duraklat düğmesi); kaydedilmediyse yok. */
   pauses?: number;
+  /**
+   * Uygulama manevra sürerken kapandı/yenilendi; kayıt yeniden açılışta ara kayıttan (Episode.pendingManeuver) kuruldu
+   * (yeni kullanıcı turu 1, y01 #6). stopReason 'INTERRUPTED'; `records.length` yarıda kalınan adımdır.
+   */
+  recovered?: boolean;
 }
 
 export interface SideTestLog {
@@ -112,7 +122,12 @@ export interface Episode {
   id: string;
   startedAt: number;
   side: Side | null;
-  protocolId: 'epley' | 'semont';
+  /**
+   * Atağın manevrası: açılışta planlanan (arka kanal: Epley/Semont), manevra yapılınca son yapılan manevra (yatay kanalda
+   * 'bbq-roll'; yeni kullanıcı turu 1, y04 #2). Eski kayıtlarda yalnız 'epley' | 'semont' ve yapılan manevradan bağımsızdır:
+   * rapor yapılan manevrayı manevra kayıtlarından yazar (maneuverHeadText).
+   */
+  protocolId: ProtocolId;
   redFlags: RedFlagLog[];
   sideTests: SideTestLog[];
   maneuvers: ManeuverLog[];
@@ -161,6 +176,17 @@ export interface Episode {
    * 'CONTRAINDICATION', 'VERTIGO_TOO_LONG', 'POSITION_UNREACHABLE'); detail: kısa açıklama.
    */
   overrides?: { at: number; kind: string; detail?: string }[];
+  /** Atak demo modunda (sanal sensör) yürütüldü (yeni kullanıcı turu 1, y04 #6): eğitim denemesi gerçek tedaviden ayrılsın. */
+  simulation?: boolean;
+  /** Atağı açan uygulamanın sürümü (package.json); eski kayıtlarda yok. */
+  appVersion?: string;
+  /** Atağı açan uygulamanın karar kuralları sürümü (DECISION_RULES_VERSION, state/episodes.ts); eski kayıtlarda yok. */
+  rulesVersion?: string;
+  /**
+   * Süren manevranın ara kaydı (yeni kullanıcı turu 1, y01 #6): yürütücü her adımda yazar, manevra bitince silinir. Uygulama
+   * manevra sürerken kapanırsa yeniden açılışta "yarıda kaldı (adım n)" manevra kaydına çevrilir (recoverInterruptedManeuvers).
+   */
+  pendingManeuver?: { at: number; protocolId: ProtocolId; side: Side | null; records: StepRecord[]; assisted?: boolean; manual?: boolean };
 }
 
 export interface ClinicPatient {

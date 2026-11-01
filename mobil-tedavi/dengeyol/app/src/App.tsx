@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { applySettings } from './platform/feedback';
 import { MotionProvider } from './platform/MotionContext';
-import { closeStaleEpisodes } from './state/episodes';
-import { store, useData } from './state/store';
+import { closeStaleEpisodes, recoverInterruptedManeuvers } from './state/episodes';
+import { store, uid, useData } from './state/store';
 import { ErrorBoundary } from './ui/components/ErrorBoundary';
 import { SimPanel } from './ui/components/SimPanel';
 import { SpeechHush } from './ui/components/SpeechHush';
@@ -31,6 +31,11 @@ export function App() {
 
   // Uzun süre işlem görmemiş aktif atağı kapat (açılışta ve uygulamaya her dönüşte).
   useEffect(() => {
+    // Açılışta (yalnız bir kez): manevra sürerken uygulama kapanmışsa yarım manevra "yarıda kaldı (adım n)" olarak atağa
+    // yazılır (yeni kullanıcı turu 1, y01 #6). Uygulamaya dönüşte yapılmaz: yürütücü o sırada duraklatılmış olabilir.
+    const cur0 = store.get();
+    const rec = recoverInterruptedManeuvers(cur0, uid);
+    if (rec !== cur0) store.update(() => rec);
     const tidy = () => {
       const cur = store.get();
       const next = closeStaleEpisodes(cur, Date.now());

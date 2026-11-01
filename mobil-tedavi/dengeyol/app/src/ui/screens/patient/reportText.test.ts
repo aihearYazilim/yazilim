@@ -9,8 +9,18 @@ import {
   doseSummaryText,
   endNoteText,
   maneuverPauses,
+  maneuverStatusText,
+  overrideCount,
   overrideKindText,
   overrideLines,
+  recordSourceText,
+  redFlagContinued,
+  redFlagLineText,
+  researchDetailText,
+  researchEntries,
+  researchLineText,
+  researchPlainLines,
+  sideTestDecisionText,
   profileRxCode,
   reachText,
   reportPlainText,
@@ -425,8 +435,19 @@ describe('adlandırılmış tarih dizisi (kullanıcı turu 6, k09)', () => {
   });
 });
 
-describe('araştırma kaydı (yeniden tasarım: aşılan uyarılar)', () => {
+describe('araştırma kaydı (yeniden tasarım; yeni kullanıcı turu 1: aşmalar, kararlar ve bilgi ayrı)', () => {
   const at = (s: string) => new Date(s).getTime();
+  const man = (t: string, p: Partial<Episode['maneuvers'][number]> = {}): Episode['maneuvers'][number] => ({
+    id: `m${t}`,
+    at: at(t),
+    protocolId: 'epley',
+    side: 'R',
+    completed: true,
+    stopReason: null,
+    records: [rec({ stepId: 'ep-sit' }), rec({ stepId: 'ep-1' })],
+    manual: false,
+    ...p
+  });
   const e: Episode = {
     id: 'o1',
     startedAt: at('2026-10-31T09:00:00'),
@@ -434,7 +455,7 @@ describe('araştırma kaydı (yeniden tasarım: aşılan uyarılar)', () => {
     protocolId: 'epley',
     redFlags: [],
     sideTests: [],
-    maneuvers: [],
+    maneuvers: [man('2026-10-31T09:15:00')],
     retests: [],
     status: 'active',
     overrides: [
@@ -446,7 +467,6 @@ describe('araştırma kaydı (yeniden tasarım: aşılan uyarılar)', () => {
   };
   it('kodlar Türkçeye çevrilir; ham kod yazılmaz; satırlar zamana göre', () => {
     expect(overrideKindText('POSITION_UNREACHABLE')).toBe('pozisyona 1 dakikada gelinemeyince manevraya devam edildi');
-    expect(overrideKindText('GATE_HORIZONTAL_CANAL')).toBe('yatay kanal uyarısına rağmen devam edildi');
     expect(overrideKindText('REFER_BOTH_SIDES')).toMatch(/^hekime yönlendirme önerisine rağmen devam edildi \(iki tarafa yatınca/);
     expect(overrideKindText('XYZ_BILINMEYEN')).toBe('bir uyarıya rağmen devam edildi');
     const lines = overrideLines(e);
@@ -454,13 +474,148 @@ describe('araştırma kaydı (yeniden tasarım: aşılan uyarılar)', () => {
     expect(lines[0]).toMatch(/09:05 — önerilen manevra sınırına rağmen devam edildi: günlük manevra sınırı doluydu \(2\. gün\)$/);
     expect(lines[3]).toMatch(/09:20 — baş dönmesi 2 dakikayı aşınca manevraya devam edildi: Epley · sağ, adım 2\/5/);
     for (const l of lines) expect(l).not.toMatch(/[A-Z]{3,}_[A-Z]/);
+    expect(overrideCount(e)).toBe(4);
   });
-  it('düz metin raporda "ARAŞTIRMA KAYDI" bölümü; kayıt yoksa bölüm de yok', () => {
+  it('düz metin raporda "ARAŞTIRMA KAYDI" bölümü (aşma sayısıyla); kayıt yoksa bölüm de yok', () => {
     const d = emptyData();
     d.episodes = [e];
     const t = reportPlainText(e, d, at('2026-10-31T12:00:00'));
-    expect(t).toMatch(/\nARAŞTIRMA KAYDI \(uyarıya rağmen devam edilenler\)\n- 31 Ekim 2026 09:05 — önerilen manevra sınırına/);
+    expect(t).toMatch(/\nARAŞTIRMA KAYDI\nUyarıya rağmen devam \(kullanıcının aştığı uyarılar\): 4\n- 31 Ekim 2026 09:05 — önerilen manevra sınırına/);
     const none = { ...e, overrides: undefined };
     expect(reportPlainText(none, { ...d, episodes: [none] }, at('2026-10-31T12:00:00'))).not.toMatch(/ARAŞTIRMA KAYDI/);
+  });
+  it('uygulamanın kararı ve uyarısız bilgi kayıtları "uyarıya rağmen" yazılmaz; aşma sayısına girmez (y04 #5, y06 #7)', () => {
+    const x: Episode = {
+      ...e,
+      maneuvers: [],
+      overrides: [
+        { at: at('2026-10-31T09:01:00'), kind: 'NO_DIAGNOSIS', detail: 'Hekim tanısı olmadan kullanım' },
+        { at: at('2026-10-31T09:02:00'), kind: 'SUBTYPE', detail: 'Yatakta dönünce başlıyor: yatay kanal testi ve BBQ roll' },
+        { at: at('2026-10-31T09:03:00'), kind: 'APP_DECISION', detail: 'Uygulamanın kararı: sağ taraf, BBQ roll (yatay kanal, geotropik varsayım). Gerekçe.' },
+        { at: at('2026-10-31T09:04:00'), kind: 'USER_CHOICE', detail: 'sol taraf (uygulamanın önerisi: sağ)' },
+        { at: at('2026-10-31T09:05:00'), kind: 'GATE_HORIZONTAL_CANAL', detail: 'Hekim tanısı yatay kanal; evde yatay kanal testi ve BBQ roll' }
+      ]
+    };
+    const all = researchEntries(x);
+    expect(all.map((y) => y.group)).toEqual(['info', 'info', 'decision', 'info', 'info']);
+    expect(overrideCount(x)).toBe(0);
+    for (const y of all) expect(y.text).not.toMatch(/rağmen/);
+    expect(all[0]!.text).toBe('hekim tanısı girilmeden kullanıldı');
+    expect(all[2]!.text).toBe('Uygulamanın kararı: sağ taraf, BBQ roll (yatay kanal, geotropik varsayım). Gerekçe.');
+    const plain = researchPlainLines(x);
+    expect(plain[0]).toBe('Uyarıya rağmen devam (kullanıcının aştığı uyarılar): yok');
+    expect(plain).toContain('Uygulamanın kararları:');
+    expect(plain).toContain('Seçimler ve bilgi kayıtları:');
+  });
+  it('manevraya girilmeden vazgeçilen erken tekrar aşma sayılmaz; iç adım adı Türkçe (y06 #7, y04 #4)', () => {
+    const x: Episode = { ...e, maneuvers: [], overrides: [{ at: at('2026-10-31T10:00:00'), kind: 'EARLY_REPEAT', detail: 'Sıradaki adım: early-retest (31 Ekim 10:15)' }] };
+    const [only] = researchEntries(x);
+    expect(only!.group).toBe('info');
+    expect(only!.text).toBe('önerilen tekrar testi beklenmeden yeniden manevraya geçildi: Sıradaki adım: 1. saat tekrar testi (31 Ekim 10:15) — manevraya girilmeden vazgeçildi (aşma sayılmadı)');
+    expect(overrideCount(x)).toBe(0);
+    // Ardından manevra yapıldıysa aşmadır.
+    const y = { ...x, maneuvers: [man('2026-10-31T10:12:00')] };
+    expect(researchEntries(y)[0]!.group).toBe('override');
+    expect(overrideCount(y)).toBe(1);
+  });
+  it('güvenlik sorusu kimliği, önceki atak durumu ve doz kodu Türkçe yazılır (y04 #4, y05 #7)', () => {
+    const neuro = RED_FLAGS.find((q) => q.id === 'neuro')!.label;
+    const weak = RED_FLAGS.find((q) => q.id === 'neuroWeak')!.label;
+    expect(researchDetailText('RED_FLAG', 'neuro, neuroWeak')).toBe(`${neuro}, ${weak}`);
+    expect(researchDetailText('RED_FLAG', 'Manevra sonrası yeni belirti')).toBe('Manevra sonrası yeni belirti');
+    expect(researchDetailText('DOSE', 'DAILY_LIMIT')).toBe('günlük manevra sınırı doluydu');
+    expect(researchDetailText('REFERRAL', 'Önceki atak: referred (ear)')).toMatch(/^önceki atak hekime yönlendirildi \(güvenlik sorusu yanıtı: "/);
+    expect(researchDetailText('REFERRAL', 'Önceki atak: emergency')).toBe('önceki atak acile yönlendirildi');
+    expect(researchDetailText('X', 'ATYPICAL_LONG')).toMatch(/^baş dönmesi bir dakikadan uzun/);
+  });
+  it('aynı kayıt tekrar ederse tek satır "(2 kez)"', () => {
+    const d = 'Uygulamanın kararı: sol taraf, arka kanal manevrası. Sol tarafta baş dönmesi daha uzun sürdü.';
+    const x: Episode = {
+      ...e,
+      overrides: [
+        { at: at('2026-10-31T09:01:00'), kind: 'APP_DECISION', detail: d },
+        { at: at('2026-10-31T09:31:00'), kind: 'APP_DECISION', detail: d }
+      ]
+    };
+    const all = researchEntries(x);
+    expect(all).toHaveLength(1);
+    expect(all[0]!.count).toBe(2);
+    expect(researchLineText(all[0]!)).toMatch(/\(2 kez\)$/);
+  });
+});
+
+describe('gerçekte yapılan test ve manevra (yeni kullanıcı turu 1; y04 #2, y06 #1, y01 #5–6)', () => {
+  const at = (s: string) => new Date(s).getTime();
+  const hcTest: Episode['sideTests'][number] = {
+    at: at('2026-10-31T09:05:00'),
+    results: [
+      { side: 'R', vertigo: true, latencySec: 2, durationSec: 30, safetyStopped: false },
+      { side: 'L', vertigo: true, latencySec: 2, durationSec: 10, safetyStopped: false }
+    ],
+    stronger: null,
+    decision: { kind: 'TREAT', side: 'R', note: null },
+    canal: 'HC'
+  };
+  const base: Episode = {
+    id: 'h1',
+    startedAt: at('2026-10-31T09:00:00'),
+    side: 'R',
+    // Eski kayıt: atak kaydında Epley kalmış (y06 #1).
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [hcTest],
+    maneuvers: [
+      { id: 'b1', at: at('2026-10-31T09:20:00'), protocolId: 'bbq-roll', side: 'R', completed: true, stopReason: null, records: [rec({ stepId: 'bbq-1', title: 'Sırtüstü' })], manual: false }
+    ],
+    retests: [],
+    status: 'active'
+  };
+  it('manevra satırı yapılan manevradan; test başlığı yapılan testten (supine roll / BBQ roll; Dix-Hallpike/Epley yazmaz)', () => {
+    expect(maneuverHeadText(base)).toBe('BBQ roll (yatakta dönme manevrası)');
+    expect(maneuverHeadText({ ...base, maneuvers: [] })).toBe('yapılmadı (planlanan: BBQ roll (yatakta dönme manevrası))');
+    const t = reportPlainText(base, { ...emptyData(), episodes: [base] }, at('2026-10-31T12:00:00'));
+    expect(t).toMatch(/\nManevra: BBQ roll \(yatakta dönme manevrası\)\n/);
+    expect(t).toMatch(/TARAF TESTLERİ\n- 31 Ekim 2026 09:05 — Sırtüstü baş çevirme testi \(supine roll\): Başı sağa çevirince: baş dönmesi/);
+    expect(t).toMatch(/1\) 31 Ekim 2026 09:20 — BBQ roll \(yatakta dönme manevrası\) sağ — tamamlandı/);
+    expect(t).not.toMatch(/Dix-Hallpike|Epley/);
+    // Arka kanal testi (eski kayıtta kanal yok) "Dix-Hallpike" yazar.
+    const pc = { ...base, sideTests: [{ ...hcTest, canal: undefined }], maneuvers: [] };
+    expect(reportPlainText(pc, { ...emptyData(), episodes: [pc] }, at('2026-10-31T12:00:00'))).toMatch(/— Dix-Hallpike \(belirtiyle\): Sağ: /);
+  });
+  it('test tetiklemeyip kullanıcı taraf seçtiyse karar satırı seçilen tarafı yazar (y01 #5)', () => {
+    const nt: Episode = {
+      ...base,
+      sideTests: [{ ...hcTest, canal: 'PC', results: [], decision: { kind: 'NOT_TRIGGERED' } }],
+      maneuvers: [{ ...base.maneuvers[0]!, protocolId: 'epley' }]
+    };
+    expect(sideTestDecisionText(nt, nt.sideTests[0]!)).toBe('baş dönmesi gelmedi; kullanıcı sağ tarafa manevrayı seçti');
+    expect(sideTestDecisionText({ ...nt, maneuvers: [] }, nt.sideTests[0]!)).toBe('baş dönmesi gelmedi');
+  });
+  it('kırmızı bayrak işaretlenip devam edildiyse "DURDURULDU" yazılmaz (y04 #3, y05 #7)', () => {
+    const rf = { at: at('2026-10-31T09:01:00'), answers: { neuro: 'yes' as const }, stopped: true };
+    const cont: Episode = { ...base, redFlags: [rf], overrides: [{ at: at('2026-10-31T09:02:00'), kind: 'RED_FLAG', detail: 'neuro' }] };
+    expect(redFlagContinued(cont, rf)).toBe(true);
+    expect(redFlagLineText(cont, rf)).toMatch(/^işaretlendi, uyarı gösterildi, devam edildi — /);
+    const stopped: Episode = { ...base, redFlags: [rf], sideTests: [], maneuvers: [], status: 'emergency', endedAt: at('2026-10-31T09:02:00'), endNote: 'neuro' };
+    expect(redFlagLineText(stopped, rf)).toMatch(/^işaretlendi, atak durduruldu/);
+    const t = reportPlainText(cont, { ...emptyData(), episodes: [cont] }, at('2026-10-31T12:00:00'));
+    expect(t).not.toMatch(/DURDURULDU/);
+    expect(t).not.toMatch(/\bneuro\b/);
+  });
+  it('uygulama kapanınca yarıda kalan manevra "yarıda kaldı (n. adımda …)" yazılır (y01 #6)', () => {
+    const m = { ...base.maneuvers[0]!, completed: false, stopReason: 'INTERRUPTED' as const, recovered: true, records: [rec(), rec(), rec()] };
+    expect(maneuverStatusText(m)).toBe('yarıda kaldı (3. adımda uygulama kapandı ya da yenilendi)');
+    const e = { ...base, maneuvers: [m] };
+    expect(reportPlainText(e, { ...emptyData(), episodes: [e] }, at('2026-10-31T12:00:00'))).toMatch(/— yarıda kaldı \(3\. adımda uygulama kapandı/);
+  });
+  it('kayıt satırı: sürüm ve demo modu; katılımcı no rapor başında (y04 #6–7)', () => {
+    const e = { ...base, appVersion: '0.1.0', rulesVersion: 'k1', simulation: true };
+    expect(recordSourceText(e)).toBe('DengeYol 0.1.0 · karar kuralları k1 · DEMO MODU (sanal sensör; eğitim/deneme kaydı, gerçek tedavi değil)');
+    expect(recordSourceText(base)).toBeNull();
+    const d = { ...emptyData(), episodes: [e], patient: { diagnosedByDoctor: false, canal: 'unknown' as const, side: 'unknown' as const, contraindications: [], studyId: 'DY-014' } };
+    const t = reportPlainText(e, d, at('2026-10-31T12:00:00'));
+    expect(t).toMatch(/\nÇalışma katılımcı no: DY-014\n/);
+    expect(t).toMatch(/\nKayıt: DengeYol 0\.1\.0 · karar kuralları k1 · DEMO MODU/);
+    expect(periodReportPlainText(d, at('2026-10-31T12:00:00'))).toMatch(/\nÇalışma katılımcı no: DY-014\n/);
   });
 });

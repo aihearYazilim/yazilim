@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Finding, Findings } from '../../../core/diagnosis';
 import { encodePrescription, rxCode, rxValidUntil } from '../../../core/prescription';
-import { decodeHomeReport, encodeHomeReport, type HomeReport } from '../../../core/reportShare';
+import { decodeHomeReport, encodeHomeReport, type HomeEpisode, type HomeReport } from '../../../core/reportShare';
 import type { StepRecord } from '../../../core/runner';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
@@ -14,7 +14,15 @@ import {
   maneuverLineText,
   maneuverStatus,
   manualDxLabel,
+  homeContraText,
   homeEpisodeTitle,
+  homeMatchCode,
+  homeOverrideCount,
+  homeRedFlagText,
+  homeReportAdvice,
+  homeResearchEntries,
+  homeResearchNote,
+  homeSideTestText,
   homeLastOutcomeText,
   homeManeuverFlags,
   homeManeuverText,
@@ -488,7 +496,8 @@ describe('ev dönemi raporu (klinisyen metinleri ve HBYS satırı)', () => {
     expect(home[0]).toMatch(/^Ev dönemi \(hastanın DengeYol raporu, QR ile aktarıldı\): Son atak \(31\.10\): düzeldi · 1 atak · 2 manevra \(1 tamamlandı\)/);
     expect(home[0]).toContain('· atak 31.10 · rapor 05.11 ·');
     expect(home[0]).not.toMatch(/son atak: /);
-    expect(home[0]).toMatch(/adım işaretleri: yavaş geçiş 4\.1 s, komuttan önce hareket, oturuştan geçilmedi\.$/);
+    // Araştırma kaydı taşımayan (sürümsüz, eski uygulama) rapor: kaydın bilinmediği yazılır (yeni kullanıcı turu 1, y04 #1).
+    expect(home[0]).toMatch(/adım işaretleri: yavaş geçiş 4\.1 s, komuttan önce hareket, oturuştan geçilmedi · araştırma kaydı yok \(raporu üreten uygulama eski sürüm\)\.$/);
     // Başka reçetenin raporu: eşleşme yazılmaz; bozuk kayıt nota girmez.
     expect(homeReportNoteLine(report({ rxCode: '00000000' }), rxCode(rxToken))).not.toMatch(/bu muayenenin/);
     const broken = exam({}, undefined, { homeReports: [{ id: 'y', token: token.slice(0, -1) + '0', importedAt: S }] });
@@ -596,5 +605,114 @@ describe('rapor yapıştırma alanı (tur 4, k09)', () => {
       expect(looksLikeRxLink(t)).toBe(false);
       expect(reportPasteErrorText(t)).toBe('Bu bir hasta raporu bağlantısına benzemiyor.');
     }
+  });
+});
+
+describe('ev raporunun araştırma kaydı ve klinik öneri (yeni kullanıcı turu 1; y04 #1, y05 #7, y08 #3)', () => {
+  const MIN = 60_000;
+  const S = new Date(2026, 9, 31, 9, 0).getTime();
+  const ep = (p: Partial<HomeEpisode> = {}): HomeEpisode => ({
+    startedAt: S,
+    status: 'active',
+    side: 'R',
+    sideTests: [
+      {
+        at: S + 5 * MIN,
+        R: { vertigo: true, latencySec: 2, durationSec: 30, safetyStopped: false },
+        L: { vertigo: true, latencySec: 2, durationSec: 10, safetyStopped: false },
+        decision: { kind: 'TREAT', side: 'R', note: null },
+        canal: 'HC'
+      }
+    ],
+    maneuvers: [
+      { at: S + 15 * MIN, protocolId: 'bbq-roll', side: 'R', completed: true, stopReason: null, pauses: 0, manual: false, stepCount: 7, steps: null }
+    ],
+    retests: [],
+    ...p
+  });
+  const rep = (p: Partial<HomeReport> = {}, e: Partial<HomeEpisode> = {}): HomeReport => ({
+    v: 3,
+    generatedAt: S + 2 * 60 * MIN,
+    period: { from: S, to: S + 2 * 60 * MIN },
+    episodes: [ep(e)],
+    stepsDropped: false,
+    episodesOmitted: 0,
+    maneuversOmitted: 0,
+    appVersion: '0.1.0',
+    rulesVersion: 'k1',
+    ...p
+  });
+  const p4: Partial<HomeEpisode> = {
+    simulation: true,
+    redFlags: [{ at: S + MIN, ids: ['neuro'], continued: true }],
+    overrides: [
+      { at: S + 2 * MIN, kind: 'RED_FLAG', detail: 'neuro' },
+      { at: S + 3 * MIN, kind: 'CONTRAINDICATION', detail: 'Boyun' },
+      { at: S + 6 * MIN, kind: 'APP_DECISION', detail: 'sağ taraf, BBQ roll (yatay kanal, geotropik varsayım).' },
+      { at: S + 7 * MIN, kind: 'NO_DIAGNOSIS' }
+    ]
+  };
+
+  it('taraf testi satırı test türünü yazar: sırtüstü baş çevirme (v3) ya da Dix-Hallpike', () => {
+    const t = ep().sideTests[0]!;
+    expect(homeSideTestText(t)).toMatch(/^Sırtüstü baş çevirme testi \(supine roll\) — Başı sağa çevirince: baş dönmesi/);
+    expect(homeSideTestText({ ...t, canal: undefined })).toMatch(/^Dix-Hallpike \(belirtiyle\) — Sağ: /);
+    expect(homeManeuverText(ep().maneuvers[0]!)).toMatch(/^BBQ roll \(yatakta dönme manevrası\) sağ: tamamlandı/);
+    // Uygulama kapanınca yarıda kalan manevra (y01 #6).
+    expect(homeManeuverText({ ...ep().maneuvers[0]!, completed: false, stopReason: 'INTERRUPTED', stepCount: 3 })).toMatch(
+      /yarıda kaldı: 3\. adımda uygulama kapandı ya da yenilendi \(3\/\d+ adım\)/
+    );
+  });
+
+  it('HBYS satırında aşma sayısı (Türkçe adlarla), işaretlenen güvenlik sorusu, kontrendikasyon, demo, katılımcı no, sürüm', () => {
+    const r = rep({ contraindications: ['neck'], studyId: 'DY-014' }, p4);
+    expect(homeOverrideCount(r)).toBe(2);
+    const note = homeResearchNote(r);
+    expect(note).toMatch(/^araştırma kaydı — uyarıya rağmen devam: 2 \(güvenlik sorusu \(kırmızı bayrak\), kontrendikasyon\)/);
+    expect(note).toMatch(/güvenlik sorusu işaretli: .+ \(devam edildi\)/);
+    expect(note).toMatch(/kontrendikasyon: /);
+    expect(note).toMatch(/uygulama kararı: 1/);
+    expect(note).toMatch(/DEMO MODU: 1 atak/);
+    expect(note).toMatch(/katılımcı no DY-014/);
+    expect(note).toMatch(/DengeYol 0\.1\.0 · karar kuralları k1$/);
+    expect(note).not.toMatch(/RED_FLAG|CONTRAINDICATION|APP_DECISION|NO_DIAGNOSIS|\bneuro\b/);
+    const line = homeReportNoteLine(r);
+    expect(line).toContain('araştırma kaydı — uyarıya rağmen devam: 2');
+    // Aşma yoksa "0" açıkça yazılır.
+    expect(homeResearchNote(rep())).toMatch(/^araştırma kaydı — uyarıya rağmen devam: 0;/);
+    // Eski uygulama (sürüm yok, v1/v2): kayıt bilinmiyor.
+    expect(homeResearchNote(rep({ v: 1, appVersion: undefined, rulesVersion: undefined }))).toBe('araştırma kaydı yok (raporu üreten uygulama eski sürüm)');
+  });
+
+  it('işaretlenen güvenlik sorusu ve kontrendikasyon adları Türkçe', () => {
+    expect(homeRedFlagText({ at: S, ids: ['neuro'], continued: true })).toMatch(/ — uyarı gösterildi, devam edildi$/);
+    expect(homeRedFlagText({ at: S, ids: ['neuro'], continued: false })).toMatch(/ — atak durduruldu/);
+    expect(homeContraText({ contraindications: ['neck', 'bilinmeyen'] })).toMatch(/, 1 tanınmayan madde$/);
+    expect(homeContraText({})).toBeNull();
+    expect(homeResearchEntries(ep(p4)).map((x) => x.group)).toEqual(['override', 'override', 'decision', 'info']);
+  });
+
+  it('eşleşme kodu: reçetedeki hasta kodu, yoksa katılımcı no', () => {
+    expect(homeMatchCode({ pid: 'NO-1', studyId: 'DY-2' })).toBe('NO-1');
+    expect(homeMatchCode({ studyId: 'DY-2' })).toBe('DY-2');
+    expect(homeMatchCode({})).toBeUndefined();
+  });
+
+  it('tek cümle öneri: demo, acil belirti, atipik süre, tekrar testi yok, yanıtsızlık, düzelme', () => {
+    expect(homeReportAdvice(rep({}, { simulation: true }))).toMatch(/^Bu rapor demo modunda/);
+    expect(homeReportAdvice(rep({}, { redFlags: [{ at: S, ids: ['neuro'], continued: true }] }))).toMatch(/^Evde acil \(nörolojik\) belirti/);
+    expect(homeReportAdvice(rep({}, { maneuvers: [{ ...ep().maneuvers[0]!, afterSymptoms: 'neuro' }] }))).toMatch(/^Evde acil/);
+    const long = ep().sideTests[0]!;
+    expect(homeReportAdvice(rep({}, { sideTests: [{ ...long, R: { ...long.R!, durationSec: 75 } }] }))).toMatch(/1 dakikadan uzun/);
+    // y08: manevra var, tekrar testi yok → testi tekrarla; 2–3 manevraya yanıtsızsa sevk.
+    expect(homeReportAdvice(rep())).toMatch(/^Manevra sonrası tekrar testi yapılmamış: .*sevk/);
+    const m = ep().maneuvers[0]!;
+    const three = [m, { ...m, at: S + 30 * MIN }, { ...m, at: S + 50 * MIN }];
+    const pos = { at: S + 120 * MIN, kind: 'early' as const, side: 'R' as const, vertigo: true, latencySec: 2, durationSec: 20 };
+    expect(homeReportAdvice(rep({}, { maneuvers: three, retests: [pos] }))).toMatch(/^3 manevraya karşın tekrar testi hâlâ pozitif/);
+    expect(homeReportAdvice(rep({}, { retests: [pos] }))).toMatch(/^Tekrar testi hâlâ pozitif/);
+    expect(homeReportAdvice(rep({}, { retests: [{ ...pos, kind: 'morning', vertigo: false, latencySec: null, durationSec: null }] }))).toMatch(/^Sabah testi negatif/);
+    const nt = { ...long, R: { vertigo: false, latencySec: null, durationSec: null, safetyStopped: false }, L: null, decision: { kind: 'NOT_TRIGGERED' as const } };
+    expect(homeReportAdvice(rep({}, { sideTests: [nt], maneuvers: [] }))).toMatch(/^Evde test baş dönmesi başlatmadı/);
   });
 });

@@ -4,6 +4,10 @@ import { encodePrescription, fnv1a, type Prescription, rxCode, rxIssuedAt, rxVal
 import {
   homeStepOf,
   buildHomeReport,
+  compactOverrideDetail,
+  homeReportHasResearch,
+  OVERRIDE_DETAIL_MAX,
+  redFlagContinuedIn,
   decodeHomeReport,
   encodeHomeReport,
   encodeHomeReportRaw,
@@ -20,6 +24,7 @@ import {
 } from './reportShare';
 import { PROTOCOLS } from './protocols';
 import type { StepRecord } from './runner';
+import { APP_VERSION, DECISION_RULES_VERSION } from './version';
 
 const b64u = (json: string) => {
   let bin = '';
@@ -534,5 +539,189 @@ describe('rapor tarihleri ayrı adlarla (kullanıcı turu 5, k09)', () => {
   it('yıl değişiyorsa bütün tarihler yıllı yazılır', () => {
     const r = { generatedAt: new Date(2027, 0, 3, 10, 0).getTime(), rx: { ...rx, date: '2026-12-28' }, episodes: [ep(2026, 11, 30), ep(2027, 0, 2)] };
     expect(homeReportDatesText(r)).toBe('reçete 28.12.2026 (geçerlilik 10.01.2027 dahil) · ataklar 30.12.2026–02.01.2027 · rapor 03.01.2027');
+  });
+});
+
+describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı turu 1; y04 #1–#7)', () => {
+  const wireOf = (token: string) => JSON.parse(unb64u(token.split('.')[0]!)) as Record<string, unknown>;
+  /** P4 benzeri atak: kırmızı bayrak işaretlendi ve devam edildi, yatakta dönünce → supine roll → BBQ roll. */
+  const p4 = (start: number, p: Partial<Episode> = {}): Episode =>
+    episode(start, {
+      status: 'active',
+      endedAt: undefined,
+      endNote: undefined,
+      rxShortcut: undefined,
+      simulation: true,
+      appVersion: APP_VERSION,
+      rulesVersion: DECISION_RULES_VERSION,
+      redFlags: [{ at: start + MIN, answers: { neuro: 'yes', ear: 'no' }, stopped: true }],
+      sideTests: [
+        {
+          at: start + 6 * MIN,
+          results: [
+            { side: 'R', vertigo: true, latencySec: 2, durationSec: 30, safetyStopped: false },
+            { side: 'L', vertigo: true, latencySec: 2, durationSec: 10, safetyStopped: false }
+          ],
+          stronger: null,
+          decision: { kind: 'TREAT', side: 'R', note: null },
+          canal: 'HC'
+        }
+      ],
+      maneuvers: [maneuver(start + 15 * MIN, { protocolId: 'bbq-roll', records: [rec('bbq-1'), rec('bbq-2')] })],
+      overrides: [
+        { at: start + 2 * MIN, kind: 'RED_FLAG', detail: 'neuro' },
+        { at: start + 3 * MIN, kind: 'SUBTYPE', detail: 'Yatakta dönünce başlıyor: yatay kanal testi ve BBQ roll' },
+        {
+          at: start + 7 * MIN,
+          kind: 'APP_DECISION',
+          detail:
+            'Uygulamanın kararı: sağ taraf, BBQ roll (yatay kanal, geotropik varsayım). Sağ tarafta baş dönmesi daha uzun sürdü. Yatay kanalda daha şiddetli taraf etkilenen taraf kabul edilir (en sık biçim).'
+        },
+        { at: start + 8 * MIN, kind: 'NO_DIAGNOSIS', detail: 'Hekim tanısı olmadan kullanım' },
+        { at: start + 9 * MIN, kind: 'XYZ_YENI_KOD', detail: 'yeni sürümün kodu' }
+      ],
+      ...p
+    });
+  const d3 = (eps: Episode[]) => {
+    const d = data(eps, false);
+    d.patient = { diagnosedByDoctor: false, canal: 'unknown', side: 'unknown', contraindications: ['neck', 'spine'], studyId: 'DY-014' };
+    return d;
+  };
+
+  it('aşmalar, işaretlenen güvenlik soruları, demo, test türü, kontrendikasyon, katılımcı no ve sürüm gidiş-dönüşte korunur', () => {
+    const rep = buildHomeReport(d3([p4(T0)]), { now: T0 + 60 * MIN });
+    expect(rep.v).toBe(3);
+    const { token, report, truncated } = encodeHomeReport(rep);
+    expect(truncated).toBe(false);
+    expect(token.length).toBeLessThanOrEqual(REPORT_TOKEN_BUDGET);
+    const w = wireOf(token);
+    expect(w.v).toBe(3);
+    // QR makul kalır: araştırma kaydıyla da tek atak ~660 karakter (bütçe REPORT_TOKEN_BUDGET).
+    expect(token.length).toBeLessThan(800);
+    expect(w.i).toBe('DY-014');
+    expect(w.k).toBe('neck,spine');
+    const r = decodeHomeReport(token);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value).toEqual(report);
+    expect(r.value.studyId).toBe('DY-014');
+    expect(r.value.contraindications).toEqual(['neck', 'spine']);
+    expect(r.value.appVersion).toBe(APP_VERSION);
+    expect(r.value.rulesVersion).toBe(DECISION_RULES_VERSION);
+    const e = r.value.episodes[0]!;
+    expect(e.simulation).toBe(true);
+    expect(e.sideTests[0]!.canal).toBe('HC');
+    expect(e.maneuvers[0]!.protocolId).toBe('bbq-roll');
+    expect(e.redFlags).toEqual([{ at: T0 + MIN, ids: ['neuro'], continued: true }]);
+    expect(e.overrides!.map((o) => o.kind)).toEqual(['RED_FLAG', 'SUBTYPE', 'APP_DECISION', 'NO_DIAGNOSIS', 'XYZ_YENI_KOD']);
+    // Uygulamanın kararında önek atılır, uzun gerekçe cümle sınırında kısalır; sabit açıklamalar (tanısız kullanım) yazılmaz.
+    const dec = e.overrides![2]!.detail!;
+    expect(dec.startsWith('sağ taraf, BBQ roll')).toBe(true);
+    expect(dec.length).toBeLessThanOrEqual(OVERRIDE_DETAIL_MAX);
+    expect(e.overrides![3]!.detail).toBeUndefined();
+    // Atağın sürümü raporunkiyle aynıysa atakta ayrıca yazılmaz.
+    expect(e.appVersion).toBeUndefined();
+    expect(homeReportHasResearch(r.value)).toBe(true);
+  });
+
+  it('kırmızı bayrakta durulduysa (sonrasında test/manevra/aşma yok) "devam edilmedi" taşınır', () => {
+    const ep = p4(T0, { sideTests: [], maneuvers: [], retests: [], overrides: [], status: 'emergency', endedAt: T0 + 2 * MIN, endNote: 'neuro' });
+    const rep = buildHomeReport(d3([ep]), { now: T0 + 60 * MIN });
+    expect(rep.episodes[0]!.redFlags).toEqual([{ at: T0 + MIN, ids: ['neuro'], continued: false }]);
+    // Manevra sonrası yeni belirti kaydı önceki güvenlik sorusunun devamı sayılmaz.
+    const after = { ...ep, overrides: [{ at: T0 + 5 * MIN, kind: 'RED_FLAG', detail: 'Manevra sonrası yeni belirti' }] };
+    expect(redFlagContinuedIn(after, after.redFlags[0]!)).toBe(false);
+  });
+
+  it('araştırma bilgisi yoksa eski sürüm yazılır (v1) ama uygulama sürümü yine bağlantıdadır; eski çözücü onu yok sayar', () => {
+    const d = data([episode(T0)]);
+    const rep = buildHomeReport(d, { now: T0 + 3 * 24 * 60 * MIN });
+    expect(rep.v).toBe(1);
+    const w = wireOf(encodeHomeReport(rep).token);
+    expect(w.v).toBe(1);
+    expect(w.w).toEqual([APP_VERSION, DECISION_RULES_VERSION]);
+    expect(homeReportHasResearch(rep)).toBe(true);
+  });
+
+  it('tek bir v3 bilgisi yeterli: aşma, demo, sırtüstü test, kontrendikasyon ya da katılımcı no', () => {
+    const base = buildHomeReport(data([episode(T0)]), { now: T0 + 3 * 24 * 60 * MIN });
+    const e0 = base.episodes[0]!;
+    expect(homeReportVersion({ ...base, episodes: [{ ...e0, overrides: [{ at: T0, kind: 'DOSE' }] }] })).toBe(3);
+    expect(homeReportVersion({ ...base, episodes: [{ ...e0, simulation: true }] })).toBe(3);
+    expect(homeReportVersion({ ...base, episodes: [{ ...e0, sideTests: [{ ...e0.sideTests[0]!, canal: 'HC' }] }] })).toBe(3);
+    expect(homeReportVersion({ ...base, contraindications: ['neck'] })).toBe(3);
+    expect(homeReportVersion({ ...base, studyId: 'S1' })).toBe(3);
+    expect(homeReportVersion(base)).toBe(1);
+  });
+
+  it('eski (sürümsüz) v1/v2 bağlantısı okunur; araştırma kaydı "bilinmiyor" sayılır', () => {
+    const m = Math.floor(T0 / MIN);
+    const r1 = decodeHomeReport(tokenOf({ v: 1, g: m + 60, a: m, b: m + 60, e: [{ s: m, u: 'a', t: [[5, [1, 3, 20], null, 'TR']] }] }));
+    expect(r1.ok).toBe(true);
+    if (!r1.ok) return;
+    expect(homeReportHasResearch(r1.value)).toBe(false);
+    expect(r1.value.episodes[0]!.sideTests[0]!.canal).toBeUndefined();
+    const r2 = decodeHomeReport(tokenOf({ v: 2, g: m + 60, a: m, b: m + 60, e: [{ s: m, u: 'a', y: [[2, 's', 'L', 'U']] }] }));
+    expect(r2.ok && homeReportHasResearch(r2.value)).toBe(false);
+  });
+
+  it('v1/v2 bağlantısında v3 alanları yok sayılır, 5 öğeli test kaydı geçersizdir (eski çözücüyle aynı)', () => {
+    const m = Math.floor(T0 / MIN);
+    const ep = { s: m, u: 'a', S: 1, f: [[1, 'neuro', 1]], o: [[2, 'R', 'neuro']] };
+    const r = decodeHomeReport(tokenOf({ v: 2, g: m + 60, a: m, b: m + 60, i: 'X', k: 'neck', e: [ep] }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.value.studyId).toBeUndefined();
+    expect(r.value.episodes[0]!.overrides).toBeUndefined();
+    expect(r.value.episodes[0]!.simulation).toBeUndefined();
+    expect(decodeHomeReport(tokenOf({ v: 2, g: m, a: m, b: m, e: [{ s: m, u: 'a', t: [[5, null, null, 'N', 'H']] }] }))).toEqual({ ok: false, error: 'FIELDS' });
+  });
+
+  it('v3: geçersiz araştırma alanları reddedilir', () => {
+    const m = Math.floor(T0 / MIN);
+    const bad = (ep: Record<string, unknown>, top: Record<string, unknown> = {}) =>
+      decodeHomeReport(tokenOf({ v: 3, g: m, a: m, b: m + 60, e: [{ s: m, u: 'a', ...ep }], ...top }));
+    expect(bad({ S: 2 })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({ f: [[1, 'Neuro!', 1]] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({ f: [[1, 'neuro', 2]] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({ o: [[1, 'zz']] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({ o: [[1, 'R', 5]] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({ t: [[5, null, null, 'N', 'X']] })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({}, { k: 'neck,Bad Id' })).toEqual({ ok: false, error: 'FIELDS' });
+    expect(bad({}, { w: ['1.0', 'k1', 'x'] })).toEqual({ ok: false, error: 'FIELDS' });
+    // Kısa kod listedeki kodun tam adıyla yazılamaz (tek karşılık).
+    expect(bad({ o: [[1, 'RED_FLAG']] })).toEqual({ ok: false, error: 'FIELDS' });
+    const ok = bad({ o: [[1, 'R'], [2, 'NEW_KIND_X', 'açıklama']] });
+    expect(ok.ok && ok.value.episodes[0]!.overrides).toEqual([
+      { at: T0 + MIN, kind: 'RED_FLAG' },
+      { at: T0 + 2 * MIN, kind: 'NEW_KIND_X', detail: 'açıklama' }
+    ]);
+  });
+
+  it('sığmayan raporda önce adım ayrıntısı, sonra araştırma açıklamaları kısalır/çıkar; aşma kodları kalır', () => {
+    const many = (start: number) =>
+      p4(start, {
+        overrides: Array.from({ length: 12 }, (_, i) => ({
+          at: start + (i + 2) * MIN,
+          kind: i % 2 ? 'APP_DECISION' : 'CONTRAINDICATION',
+          detail: `Uzun bir açıklama ${i}: ${'çok ayrıntılı gerekçe sözcükleri '.repeat(4)}`
+        }))
+      });
+    const rep = buildHomeReport(d3([many(T0), many(T0 + 3 * 60 * MIN)]), { now: T0 + 6 * 60 * MIN });
+    const { token, report, truncated } = encodeHomeReport(rep);
+    expect(truncated).toBe(true);
+    expect(token.length).toBeLessThanOrEqual(REPORT_TOKEN_BUDGET);
+    expect(report.stepsDropped).toBe(true);
+    const kinds = report.episodes.flatMap((e) => e.overrides ?? []).map((o) => o.kind);
+    expect(kinds.filter((k) => k === 'CONTRAINDICATION').length).toBeGreaterThan(0);
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(report);
+  });
+
+  it('kısaltma: cümle sınırında, yoksa sözcük sınırında "…" ile', () => {
+    expect(compactOverrideDetail('DOSE', 'kısa')).toBe('kısa');
+    expect(compactOverrideDetail('NO_DIAGNOSIS', 'Hekim tanısı olmadan kullanım')).toBeUndefined();
+    expect(compactOverrideDetail('APP_DECISION', 'Uygulamanın kararı: sol taraf, Epley. Gerekçe çok uzun bir cümle burada.', 30)).toBe('sol taraf, Epley.');
+    expect(compactOverrideDetail('X_Y', 'bir iki üç dört beş altı yedi sekiz dokuz on', 20)).toBe('bir iki üç dört beş…');
   });
 });

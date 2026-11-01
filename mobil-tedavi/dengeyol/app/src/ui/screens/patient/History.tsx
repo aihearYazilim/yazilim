@@ -1,8 +1,7 @@
 import { ReportQr } from './ReportQr';
 import { Fragment, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PROTOCOLS, sideName } from '../../../core/protocols';
-import { RED_FLAGS } from '../../../core/safety';
+import { sideName } from '../../../core/protocols';
 import { formatDateTime, formatDateTimeYear } from '../../../state/episodes';
 import { store, useData } from '../../../state/store';
 import type { Episode, EpisodeStatus } from '../../../state/types';
@@ -11,12 +10,11 @@ import { Screen } from '../../components/Screen';
 import { consentLine } from './consent';
 import {
   assistFallbackText,
-  decisionText,
   doseSummaryText,
   episodeEndNoteText,
   maneuverHeadText,
+  maneuverStatusText,
   maneuverTags,
-  overrideLines,
   PERIOD_REPORT_PATH,
   periodDoseText,
   periodCountsLine,
@@ -25,6 +23,12 @@ import {
   periodReportPlainText,
   priorDiagnosisText,
   profileRxCode,
+  protocolReportName,
+  recordSourceText,
+  redFlagLineText,
+  RESEARCH_GROUP_TITLE,
+  researchEntries,
+  researchLineText,
   reportOriginText,
   reportPeriod,
   reportPlainText,
@@ -33,12 +37,15 @@ import {
   rxShortcutText,
   rxShortcutUsed,
   rxValidityText,
+  sideCellLabel,
   sideCellText,
+  sideTestDecisionText,
+  sideTestName,
   STATUS_LABEL,
   stepDefFor,
   stepSummary,
-  stopReasonText,
   stopWhereText,
+  studyIdLine,
   testStopText
 } from './reportText';
 
@@ -142,6 +149,7 @@ export function PeriodReport() {
               <strong>{head}</strong>
             </p>
           )}
+          {studyIdLine(p) && <p data-testid="period-study-id">{studyIdLine(p)}</p>}
           {/* Önce son atağın sonucu (kullanıcı turu 4, k09), sonra sayılar; düz metindeki "Sonuç:" satırıyla aynı sıra. */}
           {lastOutcome && (
             <p className="lead" data-testid="period-last">
@@ -208,6 +216,9 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
   const assistFallback = assistFallbackText(e, d.settings);
   const shortcut = rxShortcutUsed(e, p);
   const consent = consentLine(p);
+  const studyId = studyIdLine(p);
+  const source = recordSourceText(e);
+  const research = researchEntries(e);
   // Büyük yazıda sağdan taşmasın: tablolar yerine satır satır liste (uzun sözcükler de kırılır).
   const wrap = { overflowWrap: 'anywhere' as const };
   return (
@@ -221,6 +232,7 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
                 <strong>{head}</strong>
               </p>
             )}
+            {studyId && <p data-testid="report-study-id">{studyId}</p>}
             <p className="small muted" data-testid="report-origin">
               {reportOriginText(e)}; tanı belgesi değildir. Oluşturma: {formatDateTimeYear(now)}
             </p>
@@ -292,32 +304,41 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
               <dd data-testid="report-consent">{consent}</dd>
             </>
           )}
+          {source && (
+            <>
+              <dt>Kayıt</dt>
+              <dd data-testid="report-source">{source}</dd>
+            </>
+          )}
         </dl>
       </div>
 
       {e.redFlags.length > 0 && (
         <div className="card stack">
           <h3>Güvenlik soruları</h3>
-          {e.redFlags.map((r, i) => {
-            const pos = RED_FLAGS.filter((q) => r.answers[q.id] === q.stopsOn);
-            return (
-              <div key={i} className="small">
-                <strong>{formatDateTimeYear(r.at)}</strong>: {pos.length === 0 ? 'tümü güvenli yanıtlandı' : 'DURDURULDU — ' + pos.map((q) => q.text).join(' | ')}
-              </div>
-            );
-          })}
+          {e.redFlags.map((r, i) => (
+            <div key={i} className="small" data-testid="report-redflag">
+              <strong>{formatDateTimeYear(r.at)}</strong>: {redFlagLineText(e, r)}
+            </div>
+          ))}
         </div>
       )}
 
       {e.sideTests.length > 0 && (
         <div className="card stack">
-          <h3>Taraf testleri (belirtiyle Dix-Hallpike)</h3>
+          <h3>Taraf testleri</h3>
           {e.sideTests.map((t, i) => (
-            <div key={i} className="small stack" style={{ gap: 2 }}>
-              <strong>{formatDateTimeYear(t.at)}</strong>
-              <span>Sağ: {sideCellText(t, 'R')}</span>
-              <span>Sol: {sideCellText(t, 'L')}</span>
-              <span>Karar: {decisionText(t.decision)}</span>
+            <div key={i} className="small stack" style={{ gap: 2 }} data-testid="report-side-test">
+              <strong>
+                {formatDateTimeYear(t.at)} — {sideTestName(t.canal)}
+              </strong>
+              <span>
+                {sideCellLabel(t.canal, 'R')}: {sideCellText(t, 'R')}
+              </span>
+              <span>
+                {sideCellLabel(t.canal, 'L')}: {sideCellText(t, 'L')}
+              </span>
+              <span>Karar: {sideTestDecisionText(e, t)}</span>
             </div>
           ))}
         </div>
@@ -330,10 +351,10 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
             <div key={m.id} className="stack" style={{ gap: 6 }}>
               <div className="row wrap">
                 <strong>{formatDateTimeYear(m.at)}</strong>
-                <span className="chip">
-                  {PROTOCOLS[m.protocolId].shortName} {m.side ? sideName(m.side) : ''}
+                <span className="chip" data-testid="report-maneuver-name">
+                  {protocolReportName(m.protocolId)} {m.side ? sideName(m.side) : ''}
                 </span>
-                <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{m.completed ? 'tamamlandı' : stopReasonText(m.stopReason, m.records)}</span>
+                <span className={`chip ${m.completed ? 'ok' : 'warn'}`}>{maneuverStatusText(m)}</span>
                 {maneuverTags(m).map((t) => (
                   <span key={t} className="chip">
                     {t}
@@ -364,16 +385,28 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
         </div>
       )}
 
-      {/* Araştırma kaydı: kullanıcının "Yine de devam et" ile aştığı uyarılar (Episode.overrides). */}
-      {(e.overrides ?? []).length > 0 && (
+      {/* Araştırma kaydı (Episode.overrides): aşılan uyarılar, uygulamanın kararları, seçimler ve bilgi kayıtları ayrı. */}
+      {research.length > 0 && (
         <div className="card stack" data-testid="report-overrides">
           <h3>Araştırma kaydı</h3>
-          <p className="small muted">Uyarıya rağmen devam edilen durumlar.</p>
-          {overrideLines(e).map((t, i) => (
-            <div key={i} className="small" data-testid="report-override">
-              {t}
-            </div>
-          ))}
+          {(['override', 'decision', 'info'] as const).map((g) => {
+            const xs = research.filter((x) => x.group === g);
+            if (g !== 'override' && xs.length === 0) return null;
+            const n = xs.reduce((k, x) => k + x.count, 0);
+            return (
+              <div key={g} className="stack" style={{ gap: 2 }} data-testid={`report-research-${g}`}>
+                <strong className="small">
+                  {RESEARCH_GROUP_TITLE[g]}
+                  {g === 'override' ? `: ${n || 'yok'}` : ''}
+                </strong>
+                {xs.map((x, i) => (
+                  <div key={i} className="small" data-testid={g === 'override' ? 'report-override' : undefined}>
+                    {researchLineText(x)}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

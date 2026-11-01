@@ -20,19 +20,29 @@
  * bağlantıya girecekse yazar; değilse bağlantı bayt bayt v1'dir. Gerekçe: muayenehanedeki eski klinisyen uygulamaları
  * bilinmeyen sürümü reddeder; raporların çoğunda (yüzüstünden gelme ve testte durdurma olmayan) eski sürüm de raporu
  * okumaya devam eder. v2'ye özgü bilgi varsa eski sürüm "uygulamayı güncelleyin" der; bu, bilginin sessizce kaybolmasından
- * iyidir (k09 #4). Bu sürüm v1 ve v2'yi okur.
+ * iyidir (k09 #4).
+ *
+ * v3 (yeni kullanıcı turu 1; y04 #1–#7, y05 #7): araştırma kaydı klinisyene ulaşır. Ataklara aşma/karar/bilgi kayıtları
+ * (`o`), güvenlik sorularının işaretlenen yanıtları ve devam edilip edilmediği (`f`), demo modu (`S`), taraf testinin türü
+ * (`t` kaydının 5. öğesi 'H' = sırtüstü baş çevirme testi); rapora kurulumda işaretlenen kontrendikasyonlar (`k`) ve çalışma
+ * katılımcı no (`i`) eklendi. v1/v2 çözücü 5 öğeli test kaydını geçersiz sayar, öbürlerini sessizce atar: bu yüzden bunlar
+ * ancak sürüm 3 ile yazılır ve kodlayıcı v3'ü YALNIZ bu bilgilerden biri varsa yazar (eski uygulama "güncelleyin" der).
+ * Uygulama ve karar kuralı sürümü (`w`) her sürümde yazılır (eski çözücü yok sayar; yeni çözücü her sürümde okur). `w`
+ * varsa rapor araştırma kaydını taşıyan bir uygulamadan gelmiştir: kayıt yoksa "aşma yok" demektir; `w` yoksa (eski
+ * uygulama) araştırma kaydı bilinmiyor. Bu sürüm v1, v2 ve v3'ü okur.
  */
 import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
 import { type StepRecord, type StopReason, vertigoSummary } from './runner';
-import type { SideDecision, SideTestResult } from './safety';
+import { APP_VERSION, DECISION_RULES_VERSION } from './version';
+import { RED_FLAGS, type SideDecision, type SideTestResult } from './safety';
 // Yalnız tür içe aktarımı (çalışma zamanında core → state bağımlılığı yok).
 import type { AppData, Episode, EpisodeStatus, ManeuverLog, RetestLog } from '../state/types';
 
-/** Bu uygulamanın yazabildiği en yeni sürüm (v2'ye özgü bilgi yoksa v1 yazılır: `homeReportVersion`). */
-export const REPORT_SHARE_VERSION = 2;
+/** Bu uygulamanın yazabildiği en yeni sürüm (v3/v2'ye özgü bilgi yoksa daha eski sürüm yazılır: `homeReportVersion`). */
+export const REPORT_SHARE_VERSION = 3;
 /** Bu uygulamanın çözebildiği sürümler. */
-const SUPPORTED_VERSIONS = [1, 2];
+const SUPPORTED_VERSIONS = [1, 2, 3];
 /** Üretilen bağlantının hedef üst sınırı (karakter): QR (hata düzeltme L) telefon ekranından rahat okunsun. */
 export const REPORT_TOKEN_BUDGET = 1400;
 /** Çözücünün kabul ettiği en uzun bağlantı (karakter); daha uzunu bozuk/elle üretilmiş sayılır. */
@@ -45,7 +55,13 @@ const MAX_SIDE_TESTS = 20;
 const MAX_RETESTS = 20;
 const MAX_STEPS = 12;
 const MAX_TEST_STOPS = 20;
+const MAX_RED_FLAGS = 20;
+const MAX_OVERRIDES = 40;
+const MAX_CONTRA = 20;
 const NOTE_MAX = 60;
+/** Araştırma kaydı açıklamasının bağlantıdaki en uzun hâli (karakter); sığmazsa önce kısaltılır, sonra çıkarılır. */
+export const OVERRIDE_DETAIL_MAX = 90;
+const VERSION_MAX = 16;
 const MIN = 60_000;
 
 // ---- Çözülmüş (okunur) biçim ---------------------------------------------------------------------------
@@ -106,6 +122,23 @@ export interface HomeSideTest {
   R: SideCell | null;
   L: SideCell | null;
   decision: SideDecision;
+  /** v3: hangi test (PC Dix-Hallpike, HC sırtüstü baş çevirme). v1/v2 bağlantısında yok (arka kanal varsayılır). */
+  canal?: 'PC' | 'HC';
+}
+
+/** v3: güvenlik sorularında işaretlenen (durdurma öneren) yanıtlar ve kullanıcının uyarıdan sonra devam edip etmediği. */
+export interface HomeRedFlag {
+  at: number;
+  /** İşaretlenen soruların kimlikleri (core/safety RED_FLAGS). */
+  ids: string[];
+  continued: boolean;
+}
+
+/** v3: araştırma kaydı (Episode.overrides): aşılan uyarı, uygulamanın kararı ya da bilgi kaydı. */
+export interface HomeOverride {
+  at: number;
+  kind: string;
+  detail?: string;
 }
 
 export interface HomeRetest {
@@ -132,6 +165,15 @@ export interface HomeEpisode {
   retests: HomeRetest[];
   /** v2: testte durdurmalar (yalnız varsa; v1 bağlantısında yok). */
   testStops?: HomeTestStop[];
+  /** v3: atak demo modunda (sanal sensör) yürütüldü. */
+  simulation?: boolean;
+  /** v3: güvenlik sorularında işaretlenen yanıtlar (yalnız işaretlenen kayıtlar). */
+  redFlags?: HomeRedFlag[];
+  /** v3: araştırma kaydı. */
+  overrides?: HomeOverride[];
+  /** Atağı açan uygulamanın sürümü, raporu üretenden farklıysa (`w`; her sürümde, eski çözücü yok sayar). */
+  appVersion?: string;
+  rulesVersion?: string;
 }
 
 export interface HomeReport {
@@ -149,6 +191,23 @@ export interface HomeReport {
   stepsDropped: boolean;
   episodesOmitted: number;
   maneuversOmitted: number;
+  /** Raporu üreten uygulamanın sürümü ve karar kuralı sürümü. Yoksa rapor araştırma kaydı taşımayan eski bir uygulamadandır. */
+  appVersion?: string;
+  rulesVersion?: string;
+  /** v3: çalışma katılımcı no (PatientProfile.studyId; reçetedeki hasta kodundan ayrı). */
+  studyId?: string;
+  /** v3: kurulumda işaretlenen kontrendikasyonlar (core/safety CONTRAINDICATIONS kimlikleri). */
+  contraindications?: string[];
+  /** v3: araştırma kaydı açıklamaları boyut nedeniyle çıkarıldı (kodlar kaldı). */
+  overrideDetailsDropped?: boolean;
+}
+
+/**
+ * Raporda araştırma kaydı bilgisi var mı: rapor araştırma kaydı taşıyan bir uygulamadan geldiyse (sürüm yazılıysa) true.
+ * false ise (eski uygulama) aşma olmadığı söylenemez; klinisyen ekranı bunu yazar.
+ */
+export function homeReportHasResearch(r: Pick<HomeReport, 'appVersion' | 'v'>): boolean {
+  return r.v >= 3 || !!r.appVersion;
 }
 
 // ---- Hasta verisinden rapor ------------------------------------------------------------------------------
@@ -201,7 +260,45 @@ export function homeManeuverOf(m: ManeuverLog): HomeManeuver {
   return out;
 }
 
-export function homeEpisodeOf(e: Episode): HomeEpisode {
+/**
+ * Güvenlik sorusu kaydından sonra kullanıcı uyarıyı aşıp devam etti mi (yeni kullanıcı turu 1, y04 #3)? Kayıttaki `stopped`
+ * uygulamanın durdurma önerisidir. Ölçüt: bu kayıttan sonra (bir sonraki güvenlik sorusu kaydına kadar) RED_FLAG aşma kaydı
+ * (manevra sonrası yeni belirti kaydı hariç) ya da test/manevra/tekrar testi kaydı var. Durdurma önermeyen kayıtta true.
+ */
+export function redFlagContinuedIn(
+  e: Pick<Episode, 'redFlags' | 'overrides' | 'sideTests' | 'maneuvers' | 'retests'>,
+  r: Episode['redFlags'][number]
+): boolean {
+  if (!r.stopped) return true;
+  const next = e.redFlags.filter((x) => x.at > r.at).sort((a, b) => a.at - b.at)[0];
+  const end = next?.at ?? Number.POSITIVE_INFINITY;
+  if ((e.overrides ?? []).some((o) => o.kind === 'RED_FLAG' && o.at >= r.at && o.at < end && !/^Manevra sonrası/.test(o.detail ?? ''))) return true;
+  return [...e.sideTests, ...e.maneuvers, ...e.retests].some((x) => x.at > r.at && x.at < end);
+}
+
+/** Güvenlik sorusu kaydında işaretlenen (durdurma öneren) soruların kimlikleri. */
+export function triggeredRedFlagIds(r: Episode['redFlags'][number]): string[] {
+  return RED_FLAGS.filter((q) => r.answers[q.id] === q.stopsOn).map((q) => q.id);
+}
+
+/**
+ * Araştırma kaydı açıklamasının bağlantıdaki kısa hâli: kodla aynı anlamdaki sabit açıklamalar yazılmaz, uygulamanın kararında
+ * "Uygulamanın kararı:" öneki atılır; uzun açıklama cümle (yoksa sözcük) sınırında `max` karaktere kısaltılır.
+ */
+export function compactOverrideDetail(kind: string, detail: string | undefined, max: number = OVERRIDE_DETAIL_MAX): string | undefined {
+  let d = (detail ?? '').replace(/[\u0000-\u001f]/g, ' ').trim();
+  if (kind === 'NO_DIAGNOSIS' || kind === 'GATE_HORIZONTAL_CANAL') return undefined;
+  if (kind === 'APP_DECISION') d = d.replace(/^Uygulamanın kararı:\s*/, '');
+  if (!d) return undefined;
+  if (d.length <= max) return d;
+  const cut = d.slice(0, max);
+  const sentence = cut.lastIndexOf('. ');
+  if (sentence >= max / 3) return cut.slice(0, sentence + 1);
+  const word = cut.lastIndexOf(' ');
+  return `${(word > max / 3 ? cut.slice(0, word) : cut.slice(0, max - 1)).replace(/[,;:\s]+$/, '')}…`;
+}
+
+export function homeEpisodeOf(e: Episode, reportVersion: { app?: string; rules?: string } = {}): HomeEpisode {
   const cell = (t: Episode['sideTests'][number], s: Side): SideCell | null => {
     const r = t.results.find((x) => x.side === s);
     return r ? { vertigo: r.vertigo, latencySec: r.latencySec, durationSec: r.durationSec, safetyStopped: r.safetyStopped } : null;
@@ -210,7 +307,13 @@ export function homeEpisodeOf(e: Episode): HomeEpisode {
     startedAt: e.startedAt,
     status: e.status,
     side: e.side,
-    sideTests: e.sideTests.slice(-MAX_SIDE_TESTS).map((t) => ({ at: t.at, R: cell(t, 'R'), L: cell(t, 'L'), decision: t.decision })),
+    sideTests: e.sideTests.slice(-MAX_SIDE_TESTS).map((t) => ({
+      at: t.at,
+      R: cell(t, 'R'),
+      L: cell(t, 'L'),
+      decision: t.decision,
+      ...(t.canal === 'HC' ? { canal: 'HC' as const } : {})
+    })),
     maneuvers: e.maneuvers.slice(-MAX_MANEUVERS).map(homeManeuverOf),
     retests: e.retests.slice(-MAX_RETESTS).map((r) => ({
       at: r.at,
@@ -227,14 +330,40 @@ export function homeEpisodeOf(e: Episode): HomeEpisode {
   if (e.rxShortcut) out.rxShortcut = true;
   const stops = (e.testStops ?? []).slice(-MAX_TEST_STOPS).map((t) => ({ at: t.at, test: t.test, side: t.side, reason: t.reason }));
   if (stops.length) out.testStops = stops;
+  if (e.simulation) out.simulation = true;
+  const flags = e.redFlags
+    .map((r) => ({ at: r.at, ids: triggeredRedFlagIds(r), continued: redFlagContinuedIn(e, r) }))
+    .filter((r) => r.ids.length > 0)
+    .slice(-MAX_RED_FLAGS);
+  if (flags.length) out.redFlags = flags;
+  const ov = [...(e.overrides ?? [])]
+    .sort((a, b) => a.at - b.at)
+    .slice(-MAX_OVERRIDES)
+    .map((o): HomeOverride => {
+      const detail = compactOverrideDetail(o.kind, o.detail);
+      return detail ? { at: o.at, kind: o.kind, detail } : { at: o.at, kind: o.kind };
+    });
+  if (ov.length) out.overrides = ov;
+  if ((e.appVersion || e.rulesVersion) && (e.appVersion !== reportVersion.app || e.rulesVersion !== reportVersion.rules)) {
+    if (e.appVersion) out.appVersion = e.appVersion.slice(0, VERSION_MAX);
+    if (e.rulesVersion) out.rulesVersion = e.rulesVersion.slice(0, VERSION_MAX);
+  }
   return out;
 }
 
 /**
- * Raporun bağlantıya yazılacağı sürüm: v2'ye özgü bilgi (testte durdurma ya da, adım ayrıntısı bağlantıdaysa, yüzüstünden
- * gelme bayrağı) varsa 2, yoksa 1 (eski klinisyen uygulamaları okuyabilsin; bkz. dosya başı).
+ * Raporun bağlantıya yazılacağı sürüm: v3'e özgü bilgi (araştırma kaydı, işaretlenen güvenlik sorusu, demo modu, sırtüstü
+ * baş çevirme testi, kontrendikasyon, katılımcı no) varsa 3; v2'ye özgü bilgi (testte durdurma ya da, adım ayrıntısı
+ * bağlantıdaysa, yüzüstünden gelme bayrağı) varsa 2; yoksa 1 (eski klinisyen uygulamaları okuyabilsin; bkz. dosya başı).
  */
-export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped'>): number {
+export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped' | 'studyId' | 'contraindications'>): number {
+  const v3 =
+    !!r.studyId ||
+    (r.contraindications?.length ?? 0) > 0 ||
+    r.episodes.some(
+      (e) => !!e.simulation || (e.redFlags?.length ?? 0) > 0 || (e.overrides?.length ?? 0) > 0 || e.sideTests.some((t) => t.canal === 'HC')
+    );
+  if (v3) return 3;
   const v2 = r.episodes.some(
     (e) => (e.testStops?.length ?? 0) > 0 || (!r.stepsDropped && e.maneuvers.some((m) => m.steps?.some((st) => st.flags.includes('proneArrival'))))
   );
@@ -277,16 +406,23 @@ export function buildHomeReport(d: AppData, opts: { now?: number; focusEpisodeId
   }
   const p = d.patient;
   const rx = p?.prescription;
+  const ver = { app: APP_VERSION, rules: DECISION_RULES_VERSION };
   const out: HomeReport = {
     v: 1,
     // Dakikaya yuvarlanır (bağlantıdaki duyarlık): ekranda gösterilen rapor çözülenle aynı olsun.
     generatedAt: toMin(now) * MIN,
     period: { from: toMin(sel.period.from) * MIN, to: toMin(sel.period.to) * MIN },
-    episodes: sel.episodes.slice(-MAX_EPISODES).map(homeEpisodeOf),
+    episodes: sel.episodes.slice(-MAX_EPISODES).map((e) => homeEpisodeOf(e, ver)),
     stepsDropped: false,
     episodesOmitted: Math.max(0, sel.episodes.length - MAX_EPISODES),
-    maneuversOmitted: sel.episodes.slice(-MAX_EPISODES).reduce((n, e) => n + Math.max(0, e.maneuvers.length - MAX_MANEUVERS), 0)
+    maneuversOmitted: sel.episodes.slice(-MAX_EPISODES).reduce((n, e) => n + Math.max(0, e.maneuvers.length - MAX_MANEUVERS), 0),
+    appVersion: ver.app.slice(0, VERSION_MAX),
+    rulesVersion: ver.rules.slice(0, VERSION_MAX)
   };
+  const studyId = cleanNote(p?.studyId)?.slice(0, PID_MAX_LEN);
+  if (studyId) out.studyId = studyId;
+  const contra = (p?.contraindications ?? []).filter((c) => CONTRA_ID.test(c)).slice(0, MAX_CONTRA);
+  if (contra.length) out.contraindications = contra;
   if (rx) {
     const code = rxCode(p?.prescriptionToken ?? rx) || rxCode(rx);
     if (code) out.rxCode = code;
@@ -361,6 +497,31 @@ const TEST_STOP_OF: Record<string, HomeTestStop['reason']> = { U: 'USER_FEELS_UN
 const REFER_OF = invert(REFER_CODE);
 
 const toMin = (t: number) => Math.floor(t / MIN);
+/** Güvenlik sorusu ve kontrendikasyon kimliği biçimi. */
+const CONTRA_ID = /^[a-z][a-zA-Z0-9_]{0,23}$/;
+const FLAG_ID = CONTRA_ID;
+/** Araştırma kaydı kodlarının kısa karşılıkları (bağlantı küçük kalsın); listede olmayan kod tam yazılır (≥3 karakter). */
+const OVERRIDE_CODE: Record<string, string> = {
+  NO_DIAGNOSIS: 'N',
+  APP_DECISION: 'D',
+  USER_CHOICE: 'U',
+  CONTRAINDICATION: 'C',
+  RED_FLAG: 'R',
+  REFERRAL: 'F',
+  DOSE: 'Q',
+  SIDE_CONFLICT: 'S',
+  SUBTYPE: 'T',
+  VERTIGO_TOO_LONG: 'V',
+  POSITION_UNREACHABLE: 'P',
+  EARLY_REPEAT: 'E',
+  GATE_HORIZONTAL_CANAL: 'G',
+  REFER_ATYPICAL_LONG: 'RL',
+  REFER_BOTH_SIDES: 'RB',
+  REFER_NOT_TRIGGERED: 'RN',
+  REFER_SIDE_CONFLICT: 'RC'
+};
+const OVERRIDE_OF = invert(OVERRIDE_CODE);
+const OVERRIDE_KIND = /^[A-Z][A-Z0-9_]{2,40}$/;
 const off = (t: number, base: number) => Math.max(0, toMin(t) - toMin(base));
 
 function cleanNote(s: unknown): string | undefined {
@@ -385,11 +546,20 @@ interface WireEpisode {
   n?: string;
   d?: Side;
   k?: 1;
-  t?: [number, WireCell, WireCell, string][];
+  /** Taraf testi [başa göre dakika, sağ, sol, karar] (+ v3: 'H' sırtüstü baş çevirme testi). */
+  t?: ([number, WireCell, WireCell, string] | [number, WireCell, WireCell, string, 'H'])[];
   m?: WireManeuver[];
   q?: [number, string, Side, 0 | 1, number | null, number | null][];
   /** v2: testte durdurma [başa göre dakika, 's' taraf testi / 'r' tekrar testi, taraf, neden kodu ('U')]. */
   y?: [number, string, Side, string][];
+  /** v3: demo modu. */
+  S?: 1;
+  /** v3: işaretlenen güvenlik soruları [başa göre dakika, "id,id", 1 devam edildi / 0 durdu]. */
+  f?: [number, string, 0 | 1][];
+  /** v3: araştırma kaydı [başa göre dakika, kod (OVERRIDE_CODE ya da tam kod), açıklama?]. */
+  o?: ([number, string] | [number, string, string])[];
+  /** Atağı açan uygulamanın sürümü [uygulama, kural] (raporu üretenden farklıysa; her sürümde). */
+  w?: [string, string];
 }
 interface Wire {
   v: number;
@@ -403,6 +573,14 @@ interface Wire {
   x?: 1;
   o?: number;
   q?: number;
+  /** Uygulama ve karar kuralı sürümü [uygulama, kural] (her sürümde; eski çözücü yok sayar). */
+  w?: [string, string];
+  /** v3: çalışma katılımcı no. */
+  i?: string;
+  /** v3: kontrendikasyon kimlikleri ("neck,spine"). */
+  k?: string;
+  /** v3: araştırma kaydı açıklamaları boyut nedeniyle çıkarıldı. */
+  xo?: 1;
 }
 
 function wireCell(c: SideCell | null): WireCell {
@@ -447,29 +625,54 @@ function wireManeuver(m: HomeManeuver, base: number, withSteps: boolean): WireMa
   return w;
 }
 
-function wireEpisode(e: HomeEpisode, withSteps: boolean): WireEpisode {
+function wireEpisode(e: HomeEpisode, withSteps: boolean, v3: boolean): WireEpisode {
   const b = e.startedAt;
   const w: WireEpisode = { s: toMin(b), u: STATUS_CODE[e.status] };
   if (e.endedAt !== undefined) w.z = off(e.endedAt, b);
   if (e.endNote) w.n = e.endNote;
   if (e.side) w.d = e.side;
   if (e.rxShortcut) w.k = 1;
-  if (e.sideTests.length) w.t = e.sideTests.map((t) => [off(t.at, b), wireCell(t.R), wireCell(t.L), wireDecision(t.decision)]);
+  if (e.sideTests.length) {
+    w.t = e.sideTests.map((t) =>
+      v3 && t.canal === 'HC'
+        ? [off(t.at, b), wireCell(t.R), wireCell(t.L), wireDecision(t.decision), 'H']
+        : [off(t.at, b), wireCell(t.R), wireCell(t.L), wireDecision(t.decision)]
+    );
+  }
   if (e.maneuvers.length) w.m = e.maneuvers.map((m) => wireManeuver(m, b, withSteps));
   if (e.retests.length) w.q = e.retests.map((r) => [off(r.at, b), KIND_CODE[r.kind], r.side, r.vertigo ? 1 : 0, r.latencySec, r.durationSec]);
   if (e.testStops?.length) w.y = e.testStops.map((t) => [off(t.at, b), TEST_CODE[t.test], t.side, STOP_CODE[t.reason]]);
+  if (v3) {
+    if (e.simulation) w.S = 1;
+    if (e.redFlags?.length) w.f = e.redFlags.map((r) => [off(r.at, b), r.ids.join(','), r.continued ? 1 : 0]);
+    if (e.overrides?.length) {
+      w.o = e.overrides.map((o) => {
+        const k = OVERRIDE_CODE[o.kind] ?? o.kind;
+        return o.detail ? [off(o.at, b), k, o.detail] : [off(o.at, b), k];
+      });
+    }
+  }
+  if (e.appVersion || e.rulesVersion) w.w = [e.appVersion ?? '', e.rulesVersion ?? ''];
   return w;
 }
 
 function toWire(r: HomeReport): Wire {
-  const w: Wire = { v: homeReportVersion(r), g: toMin(r.generatedAt), a: toMin(r.period.from), b: toMin(r.period.to), e: [] };
+  const v = homeReportVersion(r);
+  const v3 = v >= 3;
+  const w: Wire = { v, g: toMin(r.generatedAt), a: toMin(r.period.from), b: toMin(r.period.to), e: [] };
   if (r.pid) w.p = r.pid.slice(0, PID_MAX_LEN);
   if (r.rxCode) w.c = r.rxCode;
   if (r.rx) w.r = [r.rx.date, r.rx.side, r.rx.maneuver === 'epley' ? 'e' : 's', r.rx.perDay, r.rx.days];
-  w.e = r.episodes.map((e) => wireEpisode(e, !r.stepsDropped));
+  w.e = r.episodes.map((e) => wireEpisode(e, !r.stepsDropped, v3));
   if (r.stepsDropped) w.x = 1;
   if (r.episodesOmitted > 0) w.o = r.episodesOmitted;
   if (r.maneuversOmitted > 0) w.q = r.maneuversOmitted;
+  if (r.appVersion || r.rulesVersion) w.w = [r.appVersion ?? '', r.rulesVersion ?? ''];
+  if (v3) {
+    if (r.studyId) w.i = r.studyId.slice(0, PID_MAX_LEN);
+    if (r.contraindications?.length) w.k = r.contraindications.join(',');
+    if (r.overrideDetailsDropped) w.xo = 1;
+  }
   return w;
 }
 
@@ -497,10 +700,30 @@ export function encodeHomeReportRaw(r: HomeReport): string {
   return `${body}.${reportSum(body)}`;
 }
 
+/** Araştırma kaydı açıklamaları `max` karaktere kısaltılmış (0: çıkarılmış) rapor. */
+function withOverrideDetails(r: HomeReport, max: number): HomeReport {
+  return {
+    ...r,
+    ...(max === 0 ? { overrideDetailsDropped: true } : {}),
+    episodes: r.episodes.map((e) =>
+      e.overrides
+        ? {
+            ...e,
+            overrides: e.overrides.map((o) => {
+              const detail = max === 0 ? undefined : compactOverrideDetail(o.kind, o.detail, max);
+              return detail ? { at: o.at, kind: o.kind, detail } : { at: o.at, kind: o.kind };
+            })
+          }
+        : e
+    )
+  };
+}
+
 /**
- * Raporu bütçeye sığdırarak kodlar. Sıra: (1) adım ayrıntısı çıkarılır, (2) en eski ataklar çıkarılır (en az biri kalır),
- * (3) kalan ataklarda en eski manevralar çıkarılır, (4) en eski taraf/tekrar testleri çıkarılır. Dönen `report` gerçekte
- * kodlanan (kısaltılmış) rapordur; ekranda ne gönderildiği ondan gösterilir.
+ * Raporu bütçeye sığdırarak kodlar. Sıra: (1) adım ayrıntısı çıkarılır, (2) araştırma kaydı açıklamaları kısaltılır, sonra
+ * çıkarılır (kodlar, yani hangi uyarının aşıldığı, kalır), (3) en eski ataklar çıkarılır (en az biri kalır), (4) kalan
+ * ataklarda en eski manevralar çıkarılır, (5) en eski taraf/tekrar testleri çıkarılır. Dönen `report` gerçekte kodlanan
+ * (kısaltılmış) rapordur; ekranda ne gönderildiği ondan gösterilir.
  */
 export function encodeHomeReport(r: HomeReport, budget: number = REPORT_TOKEN_BUDGET): { token: string; report: HomeReport; truncated: boolean } {
   let cur: HomeReport = r;
@@ -513,6 +736,9 @@ export function encodeHomeReport(r: HomeReport, budget: number = REPORT_TOKEN_BU
   if (!fits() && !cur.stepsDropped && cur.episodes.some((e) => e.maneuvers.some((m) => m.steps?.length))) {
     retry({ ...cur, stepsDropped: true, episodes: cur.episodes.map((e) => ({ ...e, maneuvers: e.maneuvers.map((m) => ({ ...m, steps: null })) })) });
   }
+  const hasDetails = () => cur.episodes.some((e) => e.overrides?.some((o) => o.detail));
+  if (!fits() && hasDetails()) retry(withOverrideDetails(cur, 40));
+  if (!fits() && hasDetails()) retry(withOverrideDetails(cur, 0));
   while (!fits() && cur.episodes.length > 1) {
     retry({ ...cur, episodes: cur.episodes.slice(1), episodesOmitted: cur.episodesOmitted + 1 });
   }
@@ -690,9 +916,12 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
     status: code(STATUS_OF, o.u),
     side: o.d === undefined ? null : side(o.d),
     sideTests: arr(o.t, MAX_SIDE_TESTS).map((t) => {
-      if (!Array.isArray(t) || t.length !== 4) fail();
+      // v3: 5. öğe 'H' (sırtüstü baş çevirme testi); v1/v2'de yalnız 4 öğe.
+      if (!Array.isArray(t) || !(t.length === 4 || (v >= 3 && t.length === 5 && t[4] === 'H'))) fail();
       const a = t as unknown[];
-      return { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, R: readCell(a[1]), L: readCell(a[2]), decision: readDecision(a[3]) };
+      const st: HomeSideTest = { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, R: readCell(a[1]), L: readCell(a[2]), decision: readDecision(a[3]) };
+      if (v >= 3) st.canal = a.length === 5 ? 'HC' : 'PC';
+      return st;
     }),
     maneuvers: arr(o.m, MAX_MANEUVERS).map((m) => {
       const hm = readManeuver(m, startedAt, v);
@@ -729,7 +958,58 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
     });
     if (stops.length) out.testStops = stops;
   }
+  // v3: demo, işaretlenen güvenlik soruları, araştırma kaydı (v1/v2'de yok sayılır).
+  if (v >= 3) {
+    if (o.S !== undefined) {
+      if (o.S !== 1) fail();
+      out.simulation = true;
+    }
+    const flags = arr(o.f, MAX_RED_FLAGS).map((f): HomeRedFlag => {
+      if (!Array.isArray(f) || f.length !== 3 || typeof f[1] !== 'string') fail();
+      const a = f as unknown[];
+      const ids = (a[1] as string).split(',');
+      if (!ids.length || ids.length > RED_FLAGS.length + 4 || !ids.every((x) => FLAG_ID.test(x))) fail();
+      return { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, ids, continued: int(a[2], 0, 1) === 1 };
+    });
+    if (flags.length) out.redFlags = flags;
+    const ov = arr(o.o, MAX_OVERRIDES).map((x): HomeOverride => {
+      if (!Array.isArray(x) || x.length < 2 || x.length > 3 || typeof x[1] !== 'string') fail();
+      const a = x as unknown[];
+      const k = a[1] as string;
+      const kind = own(OVERRIDE_OF, k) ? OVERRIDE_OF[k]! : OVERRIDE_KIND.test(k) && !own(OVERRIDE_CODE, k) ? k : fail();
+      const at = startedAt + int(a[0], 0, OFF_MAX) * MIN;
+      if (a.length === 3) {
+        if (typeof a[2] !== 'string') fail();
+        const detail = cleanText(a[2] as string, OVERRIDE_DETAIL_MAX);
+        if (detail) return { at, kind, detail };
+      }
+      return { at, kind };
+    });
+    if (ov.length) out.overrides = ov;
+  }
+  if (o.w !== undefined) {
+    const ver = readVersion(o.w);
+    if (ver.app) out.appVersion = ver.app;
+    if (ver.rules) out.rulesVersion = ver.rules;
+  }
   return out;
+}
+
+/** Sürüm alanı [uygulama, kural]: kısa, yazdırılabilir metinler. */
+function readVersion(x: unknown): { app?: string; rules?: string } {
+  if (!Array.isArray(x) || x.length !== 2 || typeof x[0] !== 'string' || typeof x[1] !== 'string') fail();
+  const a = x as string[];
+  if (!a.every((t) => t.length <= VERSION_MAX && /^[0-9A-Za-z.+_-]*$/.test(t))) fail();
+  const out: { app?: string; rules?: string } = {};
+  if (a[0]) out.app = a[0];
+  if (a[1]) out.rules = a[1];
+  return out;
+}
+
+/** Denetim karakteri temizlenmiş, `max` karaktere kesilmiş metin; boşsa undefined. */
+function cleanText(s: string, max: number): string | undefined {
+  const t = s.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max).trim();
+  return t.length ? t : undefined;
 }
 
 function readWire(o: Record<string, unknown>): HomeReport {
@@ -753,6 +1033,28 @@ function readWire(o: Record<string, unknown>): HomeReport {
   if (o.c !== undefined) {
     if (typeof o.c !== 'string' || !/^[0-9a-f]{8}$/.test(o.c)) fail();
     out.rxCode = o.c as string;
+  }
+  if (o.w !== undefined) {
+    const ver = readVersion(o.w);
+    if (ver.app) out.appVersion = ver.app;
+    if (ver.rules) out.rulesVersion = ver.rules;
+  }
+  if (v >= 3) {
+    if (o.i !== undefined) {
+      if (typeof o.i !== 'string') fail();
+      const sid = cleanText(o.i as string, PID_MAX_LEN);
+      if (sid) out.studyId = sid;
+    }
+    if (o.k !== undefined) {
+      if (typeof o.k !== 'string') fail();
+      const ids = (o.k as string).split(',');
+      if (ids.length > MAX_CONTRA || !ids.every((x) => CONTRA_ID.test(x))) fail();
+      out.contraindications = ids;
+    }
+    if (o.xo !== undefined) {
+      if (o.xo !== 1) fail();
+      out.overrideDetailsDropped = true;
+    }
   }
   if (o.r !== undefined) {
     if (!Array.isArray(o.r) || o.r.length !== 5) fail();

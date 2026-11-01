@@ -70,7 +70,10 @@ import {
   startDose,
   subtypeRemembered,
   totalPauses,
-  type NextAction
+  type NextAction,
+  episodeStamp,
+  saveManeuverCheckpoint,
+  withoutCheckpoint
 } from '../../../state/episodes';
 import { logOverride } from '../../../state/overrides';
 import { activeEpisode, store, uid, useData } from '../../../state/store';
@@ -318,7 +321,9 @@ export function EpisodeFlow() {
         sideTests: [],
         maneuvers: [],
         retests: [],
-        status: 'active'
+        status: 'active',
+        // Araştırma kaydı: sürüm ve demo modu (yeni kullanıcı turu 1, y04 #6).
+        ...episodeStamp(cur.settings)
       };
       // Eski kilitlerin yerine bilgi kayıtları (atak açılırken bir kez): tanısız kullanım, yatay kanal tanısı, bekleyen
       // hekime yönlendirme.
@@ -735,7 +740,9 @@ export function EpisodeFlow() {
       // Raporda "N kez duraklatıldı".
       pauses: totalPauses(o.state.records)
     };
-    updateEpisode(id, (e) => ({ ...e, side, maneuvers: [...e.maneuvers, log] }));
+    // Atağın manevrası yapılana göre güncellenir (yatay kanalda BBQ roll; yeni kullanıcı turu 1, y04 #2); ara kayıt silinir.
+    const sim = store.get().settings.simulation;
+    updateEpisode(id, (e) => ({ ...withoutCheckpoint(e), side, protocolId, ...(sim ? { simulation: true } : {}), maneuvers: [...e.maneuvers, log] }));
   };
 
   const onManeuverExit = (o: RunnerOutcome, st: Extract<Stage, { k: 'maneuver' }>) => {
@@ -1345,6 +1352,13 @@ export function EpisodeFlow() {
           }}
           onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage)}
+          onProgress={(p) => {
+            // Ara kayıt: uygulama manevra sürerken kapanırsa açılışta "yarıda kaldı (adım n)" yazılır (y01 #6).
+            if (mode === 'practice') return;
+            store.update((x) =>
+              saveManeuverCheckpoint(x, { protocolId: stage.protocolId, side: stage.side, records: p.records, manual: p.manual, assisted: x.settings.assist === 'helper' }, Date.now())
+            );
+          }}
           intro={
             mode === 'practice' ? (
               <div className="notice info">

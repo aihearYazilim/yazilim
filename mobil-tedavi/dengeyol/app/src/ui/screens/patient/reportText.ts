@@ -6,9 +6,10 @@ import { type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidAt, rxVal
 import { wrapDeg } from '../../../core/geometry';
 import { capitalizeTr, type ProtocolId, PROTOCOLS, resolveProtocol, type Side, sideName, type StepDef } from '../../../core/protocols';
 import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary, stopReasonTextFor, PRONE_ARRIVAL_TEXT, REACH_TOUCHED_ONLY_TEXT } from '../../../core/runner';
-import { clampDose, DEFAULT_DOSE, type DoseLimits, localDayKey, RED_FLAGS, type SideDecision } from '../../../core/safety';
-import { formatDate, formatDateTimeYear, lastEpisodeOutcome, TREATMENT_WINDOW_DAYS } from '../../../state/episodes';
-import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from '../../../state/types';
+import { clampDose, DEFAULT_DOSE, DOSE_OVERRIDE_DETAIL, type DoseLimits, localDayKey, RED_FLAGS, type SideDecision } from '../../../core/safety';
+import { episodeCanal, HC_MANEUVER } from '../../../core/patientDecision';
+import { formatDate, formatDateTimeYear, lastEpisodeOutcome, TREATMENT_WINDOW_DAYS, versionText } from '../../../state/episodes';
+import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, RedFlagLog, Settings } from '../../../state/types';
 import { consentLine } from './consent';
 
 export const STATUS_LABEL: Record<EpisodeStatus, string> = {
@@ -33,26 +34,39 @@ const CODE_TEXT: Record<string, string> = {
 };
 
 /**
- * Araştırma kaydı kodlarının (Episode.overrides; yeniden tasarım BRIEF §1) rapordaki Türkçe karşılığı. Önekli kodlar
- * (GATE_…, REFER_…, RX_…) `overrideKindText` içinde nedenle birlikte çevrilir.
+ * Araştırma kaydı kodlarının (Episode.overrides; yeniden tasarım BRIEF §1) rapordaki Türkçe karşılığı: kullanıcının bir
+ * uyarıyı aştığı kayıtlar. Önekli kodlar (GATE_…, REFER_…, RX_…) `overrideKindText` içinde nedenle birlikte çevrilir.
+ * Uyarı gösterilmeden yazılan bilgi kayıtları (NO_DIAGNOSIS, SUBTYPE, GATE_HORIZONTAL_CANAL, USER_CHOICE) ve uygulamanın
+ * kararları (APP_DECISION) aşma değildir: `RESEARCH_INFO_TEXT`, `researchGroupOf` (yeni kullanıcı turu 1, y04 #5, y06 #7).
  */
 export const OVERRIDE_KIND_TEXT: Record<string, string> = {
-  NO_DIAGNOSIS: 'hekim tanısı girilmeden kullanıldı',
   CONTRAINDICATION: 'işaretlenen sağlık durumuna rağmen devam edildi',
-  RED_FLAG: 'güvenlik sorusu uyarısına rağmen devam edildi',
+  RED_FLAG: 'güvenlik sorusu uyarısı gösterildi, devam edildi',
   REFERRAL: 'hekime yönlendirmeden sonra yeni atak başlatıldı',
   DOSE: 'önerilen manevra sınırına rağmen devam edildi',
   SIDE_CONFLICT: 'taraf çelişkisinde seçilen tarafa devam edildi',
-  SUBTYPE: 'alt tip uyarısına rağmen devam edildi',
   VERTIGO_TOO_LONG: 'baş dönmesi 2 dakikayı aşınca manevraya devam edildi',
   POSITION_UNREACHABLE: 'pozisyona 1 dakikada gelinemeyince manevraya devam edildi',
-  GATE_HORIZONTAL_CANAL: 'yatay kanal uyarısına rağmen devam edildi'
+  EARLY_REPEAT: 'önerilen tekrar testi beklenmeden yeniden manevraya geçildi',
+  REFER_NOT_TRIGGERED: 'test baş dönmesi başlatmadığı hâlde manevraya geçildi'
 };
+
+/** Uyarı gösterilmeden yazılan bilgi kayıtları ve kullanıcının seçimleri (aşma sayılmaz). */
+export const RESEARCH_INFO_TEXT: Record<string, string> = {
+  NO_DIAGNOSIS: 'hekim tanısı girilmeden kullanıldı',
+  GATE_HORIZONTAL_CANAL: 'hekim tanısı yatay kanal (bilgi kaydı)',
+  SUBTYPE: 'alt tip yanıtı',
+  USER_CHOICE: 'kullanıcının seçimi'
+};
+
+/** Uygulamanın kendi kararı (aşma değildir). */
+export const APP_DECISION_KIND = 'APP_DECISION';
 
 /** Araştırma kaydı kodunun Türkçesi; bilinmeyen kod ham yazılmaz ("bir uyarıya rağmen devam edildi"). */
 export function overrideKindText(kind: string): string {
-  const known = OVERRIDE_KIND_TEXT[kind];
+  const known = OVERRIDE_KIND_TEXT[kind] ?? RESEARCH_INFO_TEXT[kind];
   if (known) return known;
+  if (kind === APP_DECISION_KIND) return 'uygulamanın kararı';
   const m = /^(GATE|REFER|RX)_(.+)$/.exec(kind);
   const why = m ? CODE_TEXT[m[2]!] : undefined;
   if (m?.[1] === 'REFER') return `hekime yönlendirme önerisine rağmen devam edildi${why ? ` (${why})` : ''}`;
@@ -61,11 +75,147 @@ export function overrideKindText(kind: string): string {
   return 'bir uyarıya rağmen devam edildi';
 }
 
-/** Araştırma kaydının satırları (eskiden yeniye): "31 Ekim 2026 14:05 — … : açıklama". */
-export function overrideLines(e: Pick<Episode, 'overrides'>): string[] {
-  return [...(e.overrides ?? [])]
-    .sort((a, b) => a.at - b.at)
-    .map((o) => `${formatDateTimeYear(o.at)} — ${overrideKindText(o.kind)}${o.detail ? `: ${o.detail}` : ''}`);
+/** Araştırma kaydının bölümü: kullanıcının aştığı uyarı, uygulamanın kararı ya da bilgi/seçim kaydı. */
+export type ResearchGroup = 'override' | 'decision' | 'info';
+
+/** Kaydın bölümü (koda göre; manevraya girilmeden vazgeçilen ön uyarı ayrıca `researchEntries` içinde bilgiye iner). */
+export function researchGroupOf(kind: string): ResearchGroup {
+  if (kind === APP_DECISION_KIND) return 'decision';
+  if (kind in RESEARCH_INFO_TEXT) return 'info';
+  return 'override';
+}
+
+/** Manevra öncesi aşılan uyarılar: ardından manevraya girilmediyse aşma sayılmaz (y06 #7: vazgeçilen tekrar). */
+const PRE_MANEUVER_KINDS = new Set(['EARLY_REPEAT', 'DOSE']);
+/** Ön uyarı ile manevra kaydı arasındaki en uzun süre (hazırlık + tanıtma + manevra; manevra kaydı bitişte yazılır). */
+const PRE_MANEUVER_WINDOW_MS = 45 * 60 * 1000;
+
+/** Atak içi "sıradaki adım" kodlarının (NextAction) Türkçesi: kayıt açıklamasında ham kod yazılmasın. */
+const NEXT_ACTION_TEXT: Record<string, string> = {
+  'early-retest': '1. saat tekrar testi',
+  'morning-retest': 'sabah testi',
+  'treat-again': 'yeniden manevra',
+  'retry-side-test': 'taraf testini yeniden yapma',
+  'resolved-suggest': 'düzelmiş görünüyor (atak kapatılabilir)'
+};
+
+const EPISODE_STATUS_TEXT: Record<string, string> = {
+  active: 'sürüyor',
+  resolved: 'düzeldi',
+  referred: 'hekime yönlendirildi',
+  emergency: 'acile yönlendirildi',
+  closed: 'kapatıldı'
+};
+
+/** Güvenlik sorusu kimliklerini ("neuro, ear") kısa Türkçe adlarına çevirir; kimlik listesi değilse null. */
+export function redFlagIdsText(s: string): string | null {
+  const ids = s.split(/\s*,\s*/).filter(Boolean);
+  if (!ids.length || !ids.every((x) => /^[a-z][a-zA-Z0-9_]*$/.test(x))) return null;
+  return ids.map((id) => RED_FLAGS.find((q) => q.id === id)?.label ?? 'güvenlik sorusu').join(', ');
+}
+
+/** Kayıt açıklamasının Türkçesi: ham kimlik ve kodlar çevrilir, kodla aynı anlamdaki açıklama yazılmaz. Yoksa ''. */
+export function researchDetailText(kind: string, detail: string | undefined): string {
+  const d = (detail ?? '').trim();
+  if (!d) return '';
+  if (kind === 'NO_DIAGNOSIS' && /^hekim tanısı olmadan kullanım$/i.test(d)) return '';
+  if (kind === APP_DECISION_KIND) return d.replace(/^Uygulamanın kararı:\s*/, '');
+  if (kind === 'RED_FLAG') return redFlagIdsText(d) ?? d;
+  if (kind === 'DOSE' && Object.prototype.hasOwnProperty.call(DOSE_OVERRIDE_DETAIL, d)) return DOSE_OVERRIDE_DETAIL[d as keyof typeof DOSE_OVERRIDE_DETAIL];
+  if (kind === 'REFERRAL') {
+    const m = /^Önceki atak: ([a-z]+)(?: \((.*)\))?$/.exec(d);
+    if (m) {
+      const why = m[2] ? endNoteText(m[2]) : '';
+      return `önceki atak ${EPISODE_STATUS_TEXT[m[1]!] ?? 'kapandı'}${why ? ` (${why})` : ''}`;
+    }
+  }
+  const out = d
+    .replace(/\b(early-retest|morning-retest|treat-again|retry-side-test|resolved-suggest)\b/g, (x) => NEXT_ACTION_TEXT[x] ?? x)
+    .replace(/^Sıradaki adım: none\b/, 'Sıradaki adım: yok');
+  if (/^[A-Z][A-Z0-9_]+$/.test(out)) return CODE_TEXT[out] ?? '';
+  return out;
+}
+
+/** Araştırma kaydının okunur satırı (bölümüyle). `count` > 1: aynı kayıt tekrarlandı (tek satırda). */
+export interface ResearchEntry {
+  at: number;
+  kind: string;
+  group: ResearchGroup;
+  text: string;
+  count: number;
+}
+
+/** Araştırma kaydı okunacak atak (hasta atağı ya da ev raporu atağı). */
+export interface ResearchSource {
+  overrides?: readonly { at: number; kind: string; detail?: string }[];
+  maneuvers: readonly { at: number }[];
+}
+
+/**
+ * Araştırma kaydı, bölümlenmiş ve Türkçe (yeni kullanıcı turu 1; y04 #4–5, y06 #7): kullanıcının aştığı uyarılar,
+ * uygulamanın kararları, seçimler ve bilgi kayıtları ayrı. Manevra öncesi uyarı (erken tekrar, doz) aşılıp manevraya
+ * girilmediyse aşma sayılmaz, bilgi olarak "manevraya girilmeden vazgeçildi" yazılır. Aynı bölümde aynı kayıt tekrar
+ * ederse tek satır olur (`count`). Hasta raporu ve klinisyen (ev raporu, biçim v3) aynı işlevi kullanır.
+ */
+export function researchEntries(e: ResearchSource): ResearchEntry[] {
+  const raw = [...(e.overrides ?? [])].sort((a, b) => a.at - b.at);
+  const out: ResearchEntry[] = [];
+  for (const o of raw) {
+    let group = researchGroupOf(o.kind);
+    const detail = researchDetailText(o.kind, o.detail);
+    let text = o.kind === APP_DECISION_KIND ? `Uygulamanın kararı: ${detail || 'ayrıntı kaydedilmedi'}` : `${overrideKindText(o.kind)}${detail ? `: ${detail}` : ''}`;
+    if (group === 'override' && PRE_MANEUVER_KINDS.has(o.kind) && !e.maneuvers.some((m) => m.at >= o.at && m.at - o.at <= PRE_MANEUVER_WINDOW_MS)) {
+      group = 'info';
+      text = `${text} — manevraya girilmeden vazgeçildi (aşma sayılmadı)`;
+    }
+    const same = out.find((x) => x.group === group && x.kind === o.kind && x.text === text);
+    if (same) same.count += 1;
+    else out.push({ at: o.at, kind: o.kind, group, text, count: 1 });
+  }
+  return out;
+}
+
+/** Kullanıcının aştığı uyarı sayısı (tekrarlar dahil; vazgeçilen ön uyarılar hariç). */
+export function overrideCount(e: ResearchSource): number {
+  return researchEntries(e)
+    .filter((x) => x.group === 'override')
+    .reduce((n, x) => n + x.count, 0);
+}
+
+/** Araştırma satırının metni: "31 Ekim 2026 14:05 — … (2 kez)". */
+export function researchLineText(x: ResearchEntry): string {
+  return `${formatDateTimeYear(x.at)} — ${x.text}${x.count > 1 ? ` (${x.count} kez)` : ''}`;
+}
+
+/** Bölüm başlıkları (hasta raporu, klinisyen ekranı). */
+export const RESEARCH_GROUP_TITLE: Record<ResearchGroup, string> = {
+  override: 'Uyarıya rağmen devam (kullanıcının aştığı uyarılar)',
+  decision: 'Uygulamanın kararları',
+  info: 'Seçimler ve bilgi kayıtları'
+};
+
+/** Kullanıcının aştığı uyarıların satırları (eskiden yeniye): "31 Ekim 2026 14:05 — …: açıklama". */
+export function overrideLines(e: ResearchSource): string[] {
+  return researchEntries(e)
+    .filter((x) => x.group === 'override')
+    .map(researchLineText);
+}
+
+/** Araştırma kaydının düz metin satırları (bölüm bölüm); kayıt yoksa boş. */
+export function researchPlainLines(e: ResearchSource): string[] {
+  const all = researchEntries(e);
+  if (all.length === 0) return [];
+  const L: string[] = [];
+  const ov = all.filter((x) => x.group === 'override');
+  L.push(`${RESEARCH_GROUP_TITLE.override}: ${ov.length ? ov.reduce((n, x) => n + x.count, 0) : 'yok'}`);
+  for (const x of ov) L.push(`- ${researchLineText(x)}`);
+  for (const g of ['decision', 'info'] as const) {
+    const xs = all.filter((x) => x.group === g);
+    if (!xs.length) continue;
+    L.push(`${RESEARCH_GROUP_TITLE[g]}:`);
+    for (const x of xs) L.push(`- ${researchLineText(x)}`);
+  }
+  return L;
 }
 
 /** Atağın kapanış notunu (endNote) Türkçe cümleye çevirir. */
@@ -255,10 +405,79 @@ export function episodeEndNoteText(e: Episode): string {
   return endNoteText(e.endNote);
 }
 
-/** "Manevra" satırı: hiç manevra yapılmadıysa planlanan manevra olduğu açıkça yazılır (k07). */
-export function maneuverHeadText(e: Episode): string {
-  const name = PROTOCOLS[e.protocolId].shortName;
-  return e.maneuvers.length > 0 ? name : `yapılmadı (planlanan: ${name})`;
+/** Protokolün rapordaki adı: yatay kanal test ve manevrasında Türkçe açıklamasıyla (yeni kullanıcı turu 1, y06 #1). */
+export function protocolReportName(id: ProtocolId): string {
+  if (id === 'supine-roll') return 'sırtüstü baş çevirme testi (supine roll)';
+  if (id === 'bbq-roll') return 'BBQ roll (yatakta dönme manevrası)';
+  return PROTOCOLS[id]?.shortName ?? 'manevra';
+}
+
+/**
+ * Atağın planlanan manevrası (henüz manevra yapılmadıysa): kayıtta Epley/Semont dışı bir manevra varsa o; yoksa atağın
+ * kanalına göre (yatay kanal testi ya da "yatakta dönünce" yanıtı → BBQ roll). Eski kayıtlarda `protocolId` hep Epley'dir.
+ */
+export function plannedProtocol(e: Pick<Episode, 'protocolId' | 'maneuvers' | 'sideTests' | 'subtype'>): ProtocolId {
+  if (e.protocolId !== 'epley' && e.protocolId !== 'semont') return e.protocolId;
+  return episodeCanal(e) === 'HC' ? HC_MANEUVER : e.protocolId;
+}
+
+/**
+ * "Manevra" satırı: yapılan manevralar kayıtlarından (atak kaydındaki `protocolId` eski kayıtlarda yapılan manevrayı
+ * göstermez; yeni kullanıcı turu 1, y04 #2). Hiç manevra yapılmadıysa planlanan manevra olduğu açıkça yazılır (k07).
+ */
+export function maneuverHeadText(e: Pick<Episode, 'protocolId' | 'maneuvers' | 'sideTests' | 'subtype'>): string {
+  const done = [...new Set(e.maneuvers.map((m) => m.protocolId))].map(protocolReportName);
+  return done.length > 0 ? done.join(', ') : `yapılmadı (planlanan: ${protocolReportName(plannedProtocol(e))})`;
+}
+
+/** Taraf testinin adı (kayıttaki kanal; eski kayıtta arka kanal). */
+export function sideTestName(canal: 'PC' | 'HC' | undefined): string {
+  return canal === 'HC' ? 'Sırtüstü baş çevirme testi (supine roll)' : 'Dix-Hallpike (belirtiyle)';
+}
+
+/** Taraf testi hücresinin etiketi: arka kanalda yatılan yan, yatay kanalda başın çevrildiği yön. */
+export function sideCellLabel(canal: 'PC' | 'HC' | undefined, s: Side): string {
+  if (canal === 'HC') return s === 'R' ? 'Başı sağa çevirince' : 'Başı sola çevirince';
+  return s === 'R' ? 'Sağ' : 'Sol';
+}
+
+/**
+ * Güvenlik sorusu kaydından sonra kullanıcı uyarıyı aşıp devam etti mi (yeni kullanıcı turu 1, y04 #3, y05 #7)? Kayıttaki
+ * `stopped` uygulamanın durdurma önerisidir; devam edildiyse rapor "DURDURULDU" yazmaz. Ölçüt: bu kayıttan sonra (bir sonraki
+ * güvenlik sorusu kaydına kadar) RED_FLAG aşma kaydı ya da test/manevra kaydı var.
+ */
+export function redFlagContinued(e: Pick<Episode, 'redFlags' | 'overrides' | 'sideTests' | 'maneuvers' | 'retests'>, r: RedFlagLog): boolean {
+  const next = e.redFlags.filter((x) => x.at > r.at).sort((a, b) => a.at - b.at)[0];
+  const end = next?.at ?? Number.POSITIVE_INFINITY;
+  const within = (t: number) => t >= r.at && t < end;
+  if ((e.overrides ?? []).some((o) => o.kind === 'RED_FLAG' && within(o.at) && !/^Manevra sonrası/.test(o.detail ?? ''))) return true;
+  return [...e.sideTests, ...e.maneuvers, ...e.retests].some((x) => x.at > r.at && x.at < end);
+}
+
+/**
+ * Güvenlik sorusu satırı: hepsi güvenliyse "tümü güvenli yanıtlandı"; işaretlenen varsa kullanıcının devam edip etmediği
+ * açıkça (y04 #3): "işaretlendi, uyarı gösterildi, devam edildi — …" ya da "işaretlendi, atak durduruldu — …".
+ */
+export function redFlagLineText(e: Pick<Episode, 'redFlags' | 'overrides' | 'sideTests' | 'maneuvers' | 'retests'>, r: RedFlagLog): string {
+  const pos = RED_FLAGS.filter((q) => r.answers[q.id] === q.stopsOn);
+  if (pos.length === 0) return 'tümü güvenli yanıtlandı';
+  const what = pos.map((q) => q.text).join(' | ');
+  if (!r.stopped) return `işaretlendi — ${what}`;
+  return redFlagContinued(e, r) ? `işaretlendi, uyarı gösterildi, devam edildi — ${what}` : `işaretlendi, atak durduruldu (hekime/acile yönlendirme) — ${what}`;
+}
+
+/** Atak kaydının kaynağı satırı: sürüm ve demo modu (y04 #6). İkisi de yoksa (eski kayıt) null. */
+export function recordSourceText(e: Pick<Episode, 'appVersion' | 'rulesVersion' | 'simulation'>): string | null {
+  const v = versionText(e.appVersion, e.rulesVersion);
+  const parts = [v, e.simulation ? 'DEMO MODU (sanal sensör; eğitim/deneme kaydı, gerçek tedavi değil)' : null].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/** Manevranın durumu: tamamlandı, durma nedeni ya da uygulama kapanınca yarıda kaldı (adım n; y01 #6). */
+export function maneuverStatusText(m: Pick<ManeuverLog, 'completed' | 'stopReason' | 'records' | 'recovered'>): string {
+  if (m.completed) return 'tamamlandı';
+  if (m.recovered) return `yarıda kaldı (${m.records.length}. adımda uygulama kapandı ya da yenilendi)`;
+  return stopReasonText(m.stopReason, m.records);
 }
 
 /** Adımın tek satırlık özeti (başlık hariç). Adım tanımı verilirse gelinemeyen adımda ulaşılan en iyi açı da yazılır. */
@@ -495,7 +714,28 @@ function episodeHeadLines(e: Episode, d: AppData, now: number, inPeriod: boolean
   }
   const af = assistFallbackText(e, d.settings);
   if (af) L.push(`Manevrayı yaptıran: ${af}`);
+  const src = recordSourceText(e);
+  if (src) L.push(`Kayıt: ${src}`);
   return L;
+}
+
+/**
+ * Taraf testinin kararı: uygulamanın kararı; test tetiklemediyse ve ardından manevra yapıldıysa kullanıcının seçtiği taraf da
+ * yazılır (yeni kullanıcı turu 1, y01 #5: "sağ yanıma yatınca" seçildiği hâlde kayıtta yalnız "taraf seçilmedi" görünüyordu).
+ */
+export function sideTestDecisionText(e: Pick<Episode, 'sideTests' | 'maneuvers'>, t: Episode['sideTests'][number]): string {
+  const base = decisionText(t.decision);
+  if (t.decision.kind !== 'NOT_TRIGGERED' && t.decision.kind !== 'REFER') return base;
+  const nextTest = e.sideTests.filter((x) => x.at > t.at).sort((a, b) => a.at - b.at)[0];
+  const sides = [...new Set(e.maneuvers.filter((m) => m.at >= t.at && (!nextTest || m.at < nextTest.at) && m.side).map((m) => m.side!))];
+  if (!sides.length) return base;
+  return `${base}; kullanıcı ${sides.map((s) => `${sideName(s)} tarafa`).join(' ve ')} manevrayı seçti`;
+}
+
+/** Hasta raporunun katılımcı satırı (reçetedeki hasta kodundan ayrı): "Çalışma katılımcı no: S-014". Yoksa null. */
+export function studyIdLine(p: Pick<PatientProfile, 'studyId'> | undefined): string | null {
+  const id = p?.studyId?.trim();
+  return id ? `Çalışma katılımcı no: ${id}` : null;
 }
 
 /** Atağın bölümleri: güvenlik soruları, taraf testleri, manevralar (adım adım), tekrar testleri. */
@@ -503,24 +743,22 @@ function episodeSectionLines(e: Episode): string[] {
   const L: string[] = [];
   if (e.redFlags.length > 0) {
     L.push('', 'GÜVENLİK SORULARI');
-    for (const r of e.redFlags) {
-      const pos = RED_FLAGS.filter((q) => r.answers[q.id] === q.stopsOn);
-      L.push(`- ${formatDateTimeYear(r.at)}: ${pos.length === 0 ? 'tümü güvenli yanıtlandı' : 'DURDURULDU — ' + pos.map((q) => q.text).join(' | ')}`);
-    }
+    for (const r of e.redFlags) L.push(`- ${formatDateTimeYear(r.at)}: ${redFlagLineText(e, r)}`);
   }
   if (e.sideTests.length > 0) {
-    L.push('', 'TARAF TESTLERİ (belirtiyle Dix-Hallpike)');
+    L.push('', 'TARAF TESTLERİ');
     for (const t of e.sideTests) {
-      L.push(`- ${formatDateTimeYear(t.at)}: Sağ: ${sideCellText(t, 'R')}; Sol: ${sideCellText(t, 'L')}. Karar: ${decisionText(t.decision)}`);
+      L.push(
+        `- ${formatDateTimeYear(t.at)} — ${sideTestName(t.canal)}: ${sideCellLabel(t.canal, 'R')}: ${sideCellText(t, 'R')}; ${sideCellLabel(t.canal, 'L')}: ${sideCellText(t, 'L')}. Karar: ${sideTestDecisionText(e, t)}`
+      );
     }
   }
   if (e.maneuvers.length > 0) {
     L.push('', 'MANEVRALAR');
     e.maneuvers.forEach((m, i) => {
-      const status = m.completed ? 'tamamlandı' : stopReasonText(m.stopReason, m.records);
       const tags = maneuverTags(m);
       L.push(
-        `${i + 1}) ${formatDateTimeYear(m.at)} — ${PROTOCOLS[m.protocolId].shortName}${m.side ? ' ' + sideName(m.side) : ''} — ${status}${tags.length ? ' · ' + tags.join(' · ') : ''}`
+        `${i + 1}) ${formatDateTimeYear(m.at)} — ${protocolReportName(m.protocolId)}${m.side ? ' ' + sideName(m.side) : ''} — ${maneuverStatusText(m)}${tags.length ? ' · ' + tags.join(' · ') : ''}`
       );
       for (const r of m.records) L.push(`   • ${r.title}: ${stepSummary(r, stepDefFor(m.protocolId, m.side, r.stepId))}`);
     });
@@ -529,11 +767,8 @@ function episodeSectionLines(e: Episode): string[] {
     L.push('', 'TEKRAR TESTLERİ');
     for (const r of e.retests) L.push(`- ${retestText(r)}`);
   }
-  const ov = overrideLines(e);
-  if (ov.length > 0) {
-    L.push('', 'ARAŞTIRMA KAYDI (uyarıya rağmen devam edilenler)');
-    for (const x of ov) L.push(`- ${x}`);
-  }
+  const research = researchPlainLines(e);
+  if (research.length > 0) L.push('', 'ARAŞTIRMA KAYDI', ...research);
   return L;
 }
 
@@ -544,6 +779,8 @@ export function reportPlainText(e: Episode, d: AppData, now: number = Date.now()
   L.push('DengeYol — BPPV atak raporu');
   const head = rxHeaderLine(p?.prescription, profileRxCode(p));
   if (head) L.push(head);
+  const sid = studyIdLine(p);
+  if (sid) L.push(sid);
   if (p?.prescription) {
     const v = rxValidityText(p.prescription, now);
     if (v) L.push(`Reçete geçerliliği: ${v}`);
@@ -699,6 +936,8 @@ export function periodReportPlainText(d: AppData, now: number = Date.now()): str
   L.push('DengeYol — BPPV dönem raporu');
   const head = rxHeaderLine(p?.prescription, profileRxCode(p));
   if (head) L.push(head);
+  const sid = studyIdLine(p);
+  if (sid) L.push(sid);
   if (p?.prescription) {
     const v = rxValidityText(p.prescription, now);
     if (v) L.push(`Reçete geçerliliği: ${v}`);

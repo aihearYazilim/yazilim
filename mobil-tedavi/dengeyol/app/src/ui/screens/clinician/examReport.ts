@@ -19,19 +19,31 @@ import {
   decodeHomeReport,
   type HomeEpisode,
   type HomeManeuver,
+  type HomeRedFlag,
   type HomeReport,
   type HomeRetest,
   type HomeSideTest,
   type HomeStep,
   type HomeTestStop,
   homeReportDatesText,
+  homeReportHasResearch,
   REPORT_DECODE_ERROR_TEXT
 } from '../../../core/reportShare';
-import { RED_FLAGS } from '../../../core/safety';
+import { contraindicationsFor, RED_FLAGS } from '../../../core/safety';
+import { versionText } from '../../../state/episodes';
 import { extractRxToken } from '../../../platform/reminders';
 import { RX_VALID_DAYS } from '../../../state/episodes';
 import type { ClinicExam, ConfirmedDiagnosis, ManeuverLog } from '../../../state/types';
-import { decisionText, endNoteText, STATUS_LABEL } from '../patient/reportText';
+import {
+  decisionText,
+  endNoteText,
+  protocolReportName,
+  type ResearchEntry,
+  researchEntries,
+  sideCellLabel,
+  sideTestName,
+  STATUS_LABEL
+} from '../patient/reportText';
 
 // ---- Tanı geçerliliği ------------------------------------------------------------------------------
 
@@ -551,8 +563,12 @@ function cellText(c: HomeSideTest['R']): string {
   return c.vertigo ? `baş dönmesi, gecikme ${c.latencySec ?? '?'} s, süre ${c.durationSec ?? '?'} s` : 'baş dönmesi yok';
 }
 
+/**
+ * "Dix-Hallpike (belirtiyle) — Sağ: …; Sol: … → karar". Biçim v3'te test türü bağlantıdadır (sırtüstü baş çevirme testinde
+ * hücreler "Başı sağa çevirince"); v1/v2'de arka kanal varsayılır (yeni kullanıcı turu 1, y04 ⚠6).
+ */
 export function homeSideTestText(t: HomeSideTest): string {
-  return `Sağ: ${cellText(t.R)}; Sol: ${cellText(t.L)} → ${decisionText(t.decision)}`;
+  return `${sideTestName(t.canal)} — ${sideCellLabel(t.canal, 'R')}: ${cellText(t.R)}; ${sideCellLabel(t.canal, 'L')}: ${cellText(t.L)} → ${decisionText(t.decision)}`;
 }
 
 export function homeStepText(st: HomeStep): string {
@@ -577,8 +593,14 @@ const AFTER_TEXT: Record<NonNullable<HomeManeuver['afterSymptoms']>, string> = {
 export function homeManeuverText(m: HomeManeuver): string {
   const def = PROTOCOLS[m.protocolId];
   const total = def?.steps.length;
-  const status = m.completed ? 'tamamlandı' : m.stopReason ? STOP_REASON_TEXT[m.stopReason] : 'yarıda kaldı';
-  const parts = [`${def?.shortName ?? m.protocolId}${m.side ? ` ${sideName(m.side)}` : ''}: ${status}${total ? ` (${m.stepCount}/${total} adım)` : ''}`];
+  const status = m.completed
+    ? 'tamamlandı'
+    : m.stopReason === 'INTERRUPTED'
+      ? `yarıda kaldı: ${m.stepCount}. adımda uygulama kapandı ya da yenilendi`
+      : m.stopReason
+        ? STOP_REASON_TEXT[m.stopReason]
+        : 'yarıda kaldı';
+  const parts = [`${def ? protocolReportName(m.protocolId) : m.protocolId}${m.side ? ` ${sideName(m.side)}` : ''}: ${status}${total ? ` (${m.stepCount}/${total} adım)` : ''}`];
   if (m.assisted === true) parts.push('yakını yaptırdı');
   else if (m.assisted === false) parts.push('kendi başına');
   if (m.manual) parts.push('sensörsüz');
@@ -726,7 +748,142 @@ export function homeReportNoteLine(r: HomeReport, examRxCode: string | null = nu
   if (flags.length) parts.push(`adım işaretleri: ${[...new Set(flags.map((f) => f.replace(/^\d+\. adımda /, '')))].join(', ')}`);
   const stops = homeTestStopsShort(r);
   if (stops) parts.push(stops);
+  parts.push(homeResearchNote(r));
   const trunc = homeTruncationText(r);
   if (trunc) parts.push('kısaltılmış rapor');
   return parts.join(' · ') + '.';
+}
+
+// ---- Ev raporunun araştırma kaydı (biçim v3; yeni kullanıcı turu 1, y04 #1, y05 #7) ------------------------------------
+
+/** Ev atağının araştırma kaydı, bölümlenmiş (hasta raporuyla aynı sınıflama: reportText `researchEntries`). */
+export function homeResearchEntries(e: HomeEpisode): ResearchEntry[] {
+  return researchEntries(e);
+}
+
+/** Kullanıcının aştığı uyarı sayısı (raporun bütün ataklarında). */
+export function homeOverrideCount(r: Pick<HomeReport, 'episodes'>): number {
+  return r.episodes
+    .flatMap((e) => researchEntries(e))
+    .filter((x) => x.group === 'override')
+    .reduce((n, x) => n + x.count, 0);
+}
+
+/** Aşılan uyarının HBYS satırındaki kısa adı (ham kod yazılmaz). */
+export function overrideShortName(kind: string): string {
+  const known: Record<string, string> = {
+    RED_FLAG: 'güvenlik sorusu (kırmızı bayrak)',
+    CONTRAINDICATION: 'kontrendikasyon',
+    DOSE: 'manevra sınırı',
+    EARLY_REPEAT: 'tekrar testi beklenmeden manevra',
+    VERTIGO_TOO_LONG: '2 dakikayı aşan baş dönmesi',
+    POSITION_UNREACHABLE: 'pozisyona gelinemedi',
+    SIDE_CONFLICT: 'taraf çelişkisi',
+    REFERRAL: 'yönlendirmeden sonra yeni atak',
+    REFER_NOT_TRIGGERED: 'test tetiklemeden manevra'
+  };
+  if (known[kind]) return known[kind]!;
+  if (/^REFER_/.test(kind)) return 'yönlendirme önerisi';
+  return 'diğer uyarı';
+}
+
+/** İşaretlenen güvenlik sorusu: "Çift görme / konuşma bozukluğu — uyarı gösterildi, devam edildi". */
+export function homeRedFlagText(f: HomeRedFlag): string {
+  const labels = f.ids.map((id) => RED_FLAGS.find((q) => q.id === id)?.label ?? 'güvenlik sorusu').join(', ');
+  return `${cap(labels)} — ${f.continued ? 'uyarı gösterildi, devam edildi' : 'atak durduruldu (hekime/acile yönlendirme)'}`;
+}
+
+/** Kurulumda işaretlenen kontrendikasyonların adları ("Boyun fıtığı …"); yoksa null. */
+export function homeContraText(r: Pick<HomeReport, 'contraindications'>): string | null {
+  const ids = r.contraindications ?? [];
+  if (!ids.length) return null;
+  const known = contraindicationsFor(ids).map((c) => c.label);
+  const unknown = ids.length - known.length;
+  return [...known, ...(unknown > 0 ? [`${unknown} tanınmayan madde`] : [])].join(', ');
+}
+
+/** Raporun kayıt kaynağı: "DengeYol 0.1.0 · karar kuralları k1"; sürüm yoksa (eski uygulama) null. */
+export function homeVersionText(r: Pick<HomeReport, 'appVersion' | 'rulesVersion'>): string | null {
+  return versionText(r.appVersion, r.rulesVersion);
+}
+
+/**
+ * HBYS satırının araştırma kaydı parçası: "araştırma kaydı — uyarıya rağmen devam: 2 (güvenlik sorusu (kırmızı bayrak),
+ * kontrendikasyon); güvenlik sorusu işaretli: Çift görme (devam edildi); …". Eski uygulamanın raporunda kayıt olmadığı söylenir.
+ */
+export function homeResearchNote(r: HomeReport): string {
+  if (!homeReportHasResearch(r)) return 'araştırma kaydı yok (raporu üreten uygulama eski sürüm)';
+  const parts: string[] = [];
+  const ov = r.episodes.flatMap((e) => researchEntries(e)).filter((x) => x.group === 'override');
+  const n = ov.reduce((k, x) => k + x.count, 0);
+  parts.push(`uyarıya rağmen devam: ${n}${n ? ` (${[...new Set(ov.map((x) => overrideShortName(x.kind)))].join(', ')})` : ''}`);
+  const flags = r.episodes.flatMap((e) => e.redFlags ?? []);
+  if (flags.length) {
+    parts.push(
+      `güvenlik sorusu işaretli: ${flags
+        .map((f) => `${f.ids.map((id) => RED_FLAGS.find((q) => q.id === id)?.label ?? 'güvenlik sorusu').join(', ')} (${f.continued ? 'devam edildi' : 'durdu'})`)
+        .join('; ')}`
+    );
+  }
+  const contra = homeContraText(r);
+  if (contra) parts.push(`kontrendikasyon: ${contra}`);
+  const decisions = r.episodes.flatMap((e) => researchEntries(e)).filter((x) => x.group === 'decision').reduce((k, x) => k + x.count, 0);
+  if (decisions) parts.push(`uygulama kararı: ${decisions}`);
+  const hc = r.episodes.some((e) => e.sideTests.some((t) => t.canal === 'HC'));
+  if (hc) parts.push('sırtüstü baş çevirme testi yapıldı');
+  const demo = r.episodes.filter((e) => e.simulation).length;
+  if (demo) parts.push(`DEMO MODU: ${demo} atak (eğitim kaydı)`);
+  if (r.studyId) parts.push(`katılımcı no ${r.studyId}`);
+  const ver = homeVersionText(r);
+  if (ver) parts.push(ver);
+  return `araştırma kaydı — ${parts.join('; ')}`;
+}
+
+/** Ev raporunun ilk okunuşta gösterilen eşleşme kodu: reçetedeki hasta kodu, yoksa çalışma katılımcı no. */
+export function homeMatchCode(r: Pick<HomeReport, 'pid' | 'studyId'>): string | undefined {
+  return r.pid ?? r.studyId;
+}
+
+const isAtypicalCell = (c: HomeSideTest['R']) => !!c && (c.safetyStopped || (c.vertigo && (c.durationSec === null || c.durationSec >= 60)));
+
+/**
+ * Ev raporu açılınca gösterilen tek cümlelik klinik öneri (yeni kullanıcı turu 1, y08 #3). Karar desteğidir, hasta beyanına
+ * dayanır; öncelik sırası: demo kaydı, acil belirti, hekime yönlendiren yanıt, atipik süre, manevraya yanıt, test tetiklenmemesi.
+ */
+export function homeReportAdvice(r: HomeReport): string {
+  const eps = r.episodes;
+  if (eps.length === 0) return 'Raporda atak yok: muayene bulgusuna göre ilerleyin.';
+  if (eps.every((e) => e.simulation)) return 'Bu rapor demo modunda (sanal sensörle) üretildi; gerçek tedavi kaydı değildir.';
+  const flags = eps.flatMap((e) => e.redFlags ?? []);
+  const emergencyFlag = flags.some((f) => f.ids.some((id) => RED_FLAGS.find((q) => q.id === id)?.action === 'emergency'));
+  const neuroAfter = eps.some((e) => e.maneuvers.some((m) => m.afterSymptoms === 'neuro'));
+  if (emergencyFlag || neuroAfter || eps.some((e) => e.status === 'emergency')) {
+    return 'Evde acil (nörolojik) belirti bildirildi: önce nörolojik değerlendirme yapın; santral neden dışlanmadan manevra önermeyin.';
+  }
+  if (flags.length || eps.some((e) => e.status === 'referred')) {
+    return 'Evde hekime yönlendiren bir yanıt ya da durum kaydedildi: bunu muayenede sorgulayın, sonra pozisyon testini tekrarlayın.';
+  }
+  const atypical =
+    eps.some((e) => e.sideTests.some((t) => isAtypicalCell(t.R) || isAtypicalCell(t.L))) ||
+    eps.some((e) => e.retests.some((x) => x.vertigo && (x.durationSec === null || x.durationSec >= 60))) ||
+    eps.some((e) => e.endNote === 'ATYPICAL_LONG' || e.maneuvers.some((m) => m.stopReason === 'VERTIGO_TOO_LONG'));
+  if (atypical) return 'Evde 1 dakikadan uzun baş dönmesi kaydedildi: santral pozisyonel nistagmusu dışlamak için testi muayenede gözlemle tekrarlayın.';
+  const completed = eps.flatMap((e) => e.maneuvers.filter((m) => m.completed)).sort((a, b) => a.at - b.at);
+  const retests = eps.flatMap((e) => e.retests).sort((a, b) => a.at - b.at);
+  const last = retests[retests.length - 1];
+  const lastMan = completed[completed.length - 1];
+  if (lastMan && (!last || last.at < lastMan.at)) {
+    return 'Manevra sonrası tekrar testi yapılmamış: muayenede pozisyon testini tekrarlayın; 2–3 doğru manevraya yanıt yoksa sevk düşünün.';
+  }
+  if (last?.vertigo) {
+    return completed.length >= 3
+      ? `${completed.length} manevraya karşın tekrar testi hâlâ pozitif: kanalı ve tarafı (yatay kanal, kupulolitiazis) yeniden değerlendirin; yanıtsızlık sürerse ileri değerlendirmeye yönlendirin.`
+      : 'Tekrar testi hâlâ pozitif: tanıyı (taraf ve kanal) muayenede doğrulayıp manevrayı tekrarlayın.';
+  }
+  if (last && last.kind === 'morning') return 'Sabah testi negatif, düzelmiş görünüyor: muayenede test de negatifse tedaviyi sonlandırabilirsiniz.';
+  if (last) return 'Yalnız 1. saat tekrar testi negatif: muayenede pozisyon testini tekrarlayıp düzelmeyi doğrulayın.';
+  if (eps.some((e) => e.sideTests.some((t) => t.decision.kind === 'NOT_TRIGGERED')) && completed.length === 0) {
+    return 'Evde test baş dönmesi başlatmadı: muayenede testi tekrarlayın; negatifse BPPV dışı nedenleri düşünün.';
+  }
+  return 'Ev kaydını muayene bulgusuyla karşılaştırın: pozisyon testini tekrarlayın.';
 }

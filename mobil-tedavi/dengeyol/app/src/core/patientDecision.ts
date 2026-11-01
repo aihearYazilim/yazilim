@@ -228,7 +228,9 @@ export function sideOrder(known: Side | null | undefined): Side[] {
 
 /** Kayıt için tek satır: "Uygulamanın kararı: …". */
 export function decisionLogDetail(d: BoldDecision): string {
-  const what = d.both ? 'iki tarafa sırayla' : d.side ? `${NAME[d.side]} taraf` : 'taraf seçilmedi';
+  // Önerilecek taraf yoksa bu kayıt uygulamanın kararıdır; kullanıcının seçtiği taraf ayrı kayıtta (USER_CHOICE / REFER_…) ve
+  // manevra kaydındadır (yeni kullanıcı turu 1, y01 #5: "taraf seçilmedi" kullanıcının seçmediği sanılıyordu).
+  const what = d.both ? 'iki tarafa sırayla' : d.side ? `${NAME[d.side]} taraf` : 'önerilen taraf yok (taraf seçimi kullanıcıya bırakıldı)';
   const man = d.canal === 'HC' ? 'BBQ roll (yatay kanal, geotropik varsayım)' : 'arka kanal manevrası';
   return `Uygulamanın kararı: ${what}, ${man}. ${d.reason}`;
 }

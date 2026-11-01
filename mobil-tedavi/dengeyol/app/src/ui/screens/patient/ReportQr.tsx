@@ -58,6 +58,7 @@ export function ReportQr({ data, episodeId, episodes, now }: ReportQrProps) {
   if (r.stepsDropped) cut.push('adım ayrıntıları');
   if (r.episodesOmitted) cut.push(`en eski ${r.episodesOmitted} atak`);
   if (r.maneuversOmitted) cut.push(`en eski ${r.maneuversOmitted} manevra`);
+  if (r.overrideDetailsDropped) cut.push('araştırma kaydının açıklamaları (kayıtlar duruyor)');
 
   return (
     <div className="card stack center" data-testid="report-qr">
@@ -72,6 +73,7 @@ export function ReportQr({ data, episodeId, episodes, now }: ReportQrProps) {
       <p className="small muted" data-testid="report-qr-summary">
         {dates}: {n} atak, {ms} manevra
         {r.pid ? ` · hasta kodu ${r.pid}` : ''}
+        {r.studyId ? ` · katılımcı no ${r.studyId}` : ''}
       </p>
       {svg ? (
         <div

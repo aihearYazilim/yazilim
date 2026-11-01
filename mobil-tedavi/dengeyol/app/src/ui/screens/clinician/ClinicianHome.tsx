@@ -9,6 +9,20 @@ import { Segmented } from '../../components/Controls';
 import { Icon, Logo } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { ReportPaste } from './ReportImport';
+import { studyCsv, studyRows } from './studyCsv';
+
+/** Çalışma verisini CSV olarak indirir (yeni kullanıcı turu 1, y04 #8). */
+function downloadStudyCsv(d: Parameters<typeof studyCsv>[0]) {
+  const blob = new Blob([studyCsv(d)], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dengeyol-calisma-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 const CLINICIAN_VOICE_NAME: Record<ClinicianVoice, string> = { short: 'kısa', full: 'açık', off: 'kapalı' };
 const CLINICIAN_VOICE_HINT: Record<ClinicianVoice, string> = {
@@ -41,6 +55,8 @@ export function ClinicianHome() {
     ? allExams.filter((e) => norm(d.clinicPatients.find((p) => p.id === e.patientId)?.code ?? '').includes(norm(query)))
     : allExams;
   const patientOf = (id: string) => d.clinicPatients.find((p) => p.id === id);
+  const homeReportCount = d.clinicExams.reduce((n, e) => n + (e.homeReports?.length ?? 0), 0);
+  const studyRowCount = homeReportCount > 0 ? studyRows(d).length : 0;
 
   const create = () => {
     // Aynı kodla kayıtlı hasta varsa yeni kayıt açılmaz; muayene o hastaya eklenir.
@@ -242,6 +258,19 @@ export function ClinicianHome() {
           <ReportPaste />
         </div>
       </details>
+
+      {homeReportCount > 0 && (
+        <div className="card stack" data-testid="clin-study-export">
+          <strong>Çalışma verisi</strong>
+          <span className="small muted">
+            Eklenen {homeReportCount} ev raporundan katılımcı başına satır satır olaylar (atak, güvenlik sorusu, test, manevra, tekrar testi, aşılan
+            uyarı, uygulama kararı). {studyRowCount} satır; ayırıcı noktalı virgül (Excel).
+          </span>
+          <button className="btn secondary" onClick={() => downloadStudyCsv(d)} data-testid="clin-study-csv">
+            <Icon name="share" /> Çalışma verisini dışa aktar (CSV)
+          </button>
+        </div>
+      )}
 
       <h3>Son muayeneler</h3>
       {allExams.length > 3 && (

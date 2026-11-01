@@ -37,7 +37,14 @@ import {
   SUBTYPE_VALID_MS,
   subtypeRemembered,
   totalPauses,
-  UNWELL_STOP_HOME_TEXT
+  UNWELL_STOP_HOME_TEXT,
+  APP_VERSION,
+  DECISION_RULES_VERSION,
+  episodeStamp,
+  recoverInterruptedManeuvers,
+  saveManeuverCheckpoint,
+  versionText,
+  withoutCheckpoint
 } from './episodes';
 import type { StepRecord } from '../core/runner';
 import { RED_FLAGS } from '../core/safety';
@@ -506,5 +513,79 @@ describe('testte "kötü hissediyorum" durdurmasından sonra ana ekran notu (kul
     expect(UNWELL_STOP_HOME_TEXT).toBe(
       'Son test, siz kötü hissettiğiniz için durdu. Kendinizi iyi hissettiğinizde yapın; geçmiyorsa hekiminize başvurun.'
     );
+  });
+});
+
+describe('araştırma damgası ve yarıda kalan manevra (yeni kullanıcı turu 1; y04 #6, y01 #6)', () => {
+  const T = new Date(2026, 9, 31, 3, 0).getTime();
+  const r = (stepId: string): StepRecord => ({
+    stepId,
+    title: stepId,
+    startedAt: 0,
+    firstInRangeAt: null,
+    reachedAt: null,
+    endedAt: null,
+    holdSec: 10,
+    samples: 0,
+    inRangeSamples: 0,
+    sumAbsThetaErr: 0,
+    maxAbsThetaErr: 0,
+    thetaSamples: 0,
+    vertigoMarks: [],
+    transitionSec: null,
+    manual: false,
+    driftCount: 0,
+    pauses: 1
+  });
+  const active = (): Episode => ({
+    id: 'a1',
+    startedAt: T,
+    side: null,
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'active'
+  });
+
+  it('yeni atağın damgası: uygulama ve kural sürümü, demo modunda simulation', () => {
+    expect(episodeStamp({ simulation: false })).toEqual({ appVersion: APP_VERSION, rulesVersion: DECISION_RULES_VERSION });
+    expect(episodeStamp({ simulation: true }).simulation).toBe(true);
+    expect(versionText('0.1.0', 'k1')).toBe('DengeYol 0.1.0 · karar kuralları k1');
+    expect(versionText(undefined, undefined)).toBeNull();
+  });
+
+  it('ara kayıt aktif atağa yazılır, aynı manevrada ilk zaman korunur; manevra kaydı yazılınca silinir', () => {
+    const d = { ...emptyData(), episodes: [active()] };
+    const a = saveManeuverCheckpoint(d, { protocolId: 'epley', side: 'R', records: [r('ep-sit')] }, T + 1000);
+    const b = saveManeuverCheckpoint(a, { protocolId: 'epley', side: 'R', records: [r('ep-sit'), r('ep-1')] }, T + 40_000);
+    expect(b.episodes[0]!.pendingManeuver!.at).toBe(T + 1000);
+    expect(b.episodes[0]!.pendingManeuver!.records).toHaveLength(2);
+    expect(withoutCheckpoint(b.episodes[0]!).pendingManeuver).toBeUndefined();
+    // Aktif atak yoksa (deneme ya da kapalı atak) veri değişmez.
+    const closed = { ...emptyData(), episodes: [{ ...active(), status: 'closed' as const }] };
+    expect(saveManeuverCheckpoint(closed, { protocolId: 'epley', side: 'R', records: [r('x')] }, T)).toBe(closed);
+  });
+
+  it('açılışta ara kayıt "yarıda kaldı" manevraya çevrilir: adım sayısı, duraklatma, atağın manevrası ve tarafı', () => {
+    const d = saveManeuverCheckpoint(
+      { ...emptyData(), episodes: [active()] },
+      { protocolId: 'bbq-roll', side: 'L', records: [r('bbq-1'), r('bbq-2'), r('bbq-3')], assisted: false, manual: false },
+      T + 1000
+    );
+    const out = recoverInterruptedManeuvers(d, () => 'm-new');
+    const e = out.episodes[0]!;
+    expect(e.pendingManeuver).toBeUndefined();
+    expect(e.protocolId).toBe('bbq-roll');
+    expect(e.side).toBe('L');
+    expect(e.maneuvers).toHaveLength(1);
+    const m = e.maneuvers[0]!;
+    expect(m).toMatchObject({ id: 'm-new', at: T + 1000, completed: false, stopReason: 'INTERRUPTED', recovered: true, pauses: 3, assisted: false });
+    expect(m.records).toHaveLength(3);
+    // Doz sayımına girer (bir pozisyon adımına geçildi).
+    expect(doseFor(out, e, T + 2000).allowed).toBe(true);
+    // Ara kaydı olmayan veri aynen döner.
+    expect(recoverInterruptedManeuvers(out, () => 'x')).toBe(out);
   });
 });
