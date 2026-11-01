@@ -33,7 +33,7 @@ import {
   SUPINE_ZONE_DEG
 } from './evaluator';
 import { angleDiff, wrapDeg } from './geometry';
-import { LIMITS, type ResolvedProtocol, sideName, type StepDef, type Target } from './protocols';
+import { LIMITS, PROTOCOLS, type ResolvedProtocol, sideName, type StepDef, type Target } from './protocols';
 
 export type RunnerMode = 'patient' | 'clinician';
 
@@ -262,13 +262,15 @@ export function safetyHoldText(s: Pick<RunnerState, 'safetyHold'>): string | nul
 
 /**
  * Uyarıda "Devam et" seçildiğinde araştırma kaydına yazılan kısa açıklama: hangi test/manevra, adım ve neden.
- * Ör. "Epley · sağ, adım 2/5 (Sırtüstü…): baş dönmesi 2 dakikayı aştı". Uyarı yoksa null.
+ * Ör. "Epley · sağ, adım 2/5 (Sırtüstü…): baş dönmesi 2 dakikayı aştı". Uyarı yoksa null. Kayıt hekime gider: hasta modunda
+ * ekranda gündelik ad ("Manevra") görünse de teknik kısa ad ve adım başlığı yazılır.
  */
 export function safetyHoldDetail(protocol: ResolvedProtocol, s: Pick<RunnerState, 'safetyHold' | 'stepIndex'>): string | null {
   const h = s.safetyHold;
   if (!h) return null;
   const step = protocol.steps[s.stepIndex];
-  const where = `${protocol.shortName}${protocol.side ? ` · ${sideName(protocol.side)}` : ''}, adım ${s.stepIndex + 1}/${protocol.steps.length}${step ? ` (${step.title})` : ''}`;
+  const name = PROTOCOLS[protocol.id]?.shortName ?? protocol.shortName;
+  const where = `${name}${protocol.side ? ` · ${sideName(protocol.side)}` : ''}, adım ${s.stepIndex + 1}/${protocol.steps.length}${step ? ` (${step.title})` : ''}`;
   const why =
     h.reason === 'VERTIGO_TOO_LONG'
       ? 'baş dönmesi 2 dakikayı aştı'
@@ -905,7 +907,8 @@ export function pauseSpeech(cfg: RunnerConfig, vertigoActive: boolean, full: boo
   // sarkıkken kusma tehlikelidir: ne yapılacağı ve "Kendimi kötü hissediyorum" yolu da söylenir (y07, yeni kullanıcı turu 1).
   const safeP = ' Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun.';
   const safeH = ' Hasta kusacak gibiyse başını kaldırıp yana çevirin ya da oturtun; boynu ağrıyorsa da onu yavaşça oturtun.';
-  const unwellP = ' Kendinizi kötü hissediyorsanız ekrandaki "Kendimi kötü hissediyorum" düğmesine dokunun.';
+  // Hasta ekrana bakmadan seçebilsin: iki kez hızlı dokunuş, ardından sesli onay ve 2 s basılı tutma (M2-4; y07, tur 2).
+  const unwellP = ' Kendinizi kötü hissediyorsanız ekrana iki kez hızlıca dokunun.';
   const unwellH = ' Hasta kendini kötü hissediyorsa "Hasta kendini kötü hissediyor" düğmesine dokunun.';
   if (!full) return pick(cfg, { patient: head + safeP + unwellP, helper: head + safeH + unwellH, clinician: 'Duraklatıldı.' });
   return pick(cfg, {
@@ -913,6 +916,27 @@ export function pauseSpeech(cfg: RunnerConfig, vertigoActive: boolean, full: boo
     helper: `${head}${safeH}${unwellH} Hasta bu pozisyona gelemiyorsa "Bu pozisyona gelemiyor" düğmesine dokunun. Bu iki düğme bir onay daha ister.`,
     clinician: 'Duraklatıldı.'
   });
+}
+
+/**
+ * Sayfa gizliyken (arama, uygulama değişimi) duraklatılan ya da duraklatmadayken gizlenen yürütücüye dönüldüğünde kısa tekrar:
+ * uzun duraklatma sesi gizliyken söylenmiş, duyulmamış olabilir (M2-3; y06, tur 2). Ekrandaki "Devam et" de, ekrana basılı
+ * tutmak da çalışır; ikisi de söylenir. Klinisyende yok (null): klinisyen ekranı görür, davranışı değişmez.
+ */
+export function pauseReturnSpeech(cfg: RunnerConfig, vertigoActive: boolean): string | null {
+  if (cfg.mode !== 'patient') return null;
+  const v = vertigoActive ? (cfg.helper ? ' Hastanın baş dönmesi geçtiyse ekrana bir kez dokunun.' : ' Baş dönmesi geçtiyse ekrana bir kez dokunun.') : '';
+  return `Duraklatıldı. Devam etmek için Devam et düğmesine dokunun ya da ekrana iki saniye basılı tutun.${v}`;
+}
+
+/**
+ * Duraklatmada iki kez hızlı dokunuşla "kendimi kötü hissediyorum" kurulunca söylenen sesli onay (M2-4; y07, tur 2): ekrana
+ * bakmadan onaylamak için 2 s basılı tutmak; vazgeçmek için bir şey yapmamak (onay süresi dolunca kendiliğinden kalkar).
+ */
+export function blindUnwellPrompt(cfg: RunnerConfig): string {
+  return cfg.helper
+    ? 'Hastanın kendini kötü hissettiğini anladım. Manevrayı durdurmak için ekrana iki saniye basılı tutun. Vazgeçmek için bir şey yapmayın.'
+    : 'Kendinizi kötü hissettiğinizi anladım. Manevrayı durdurmak için ekrana iki saniye basılı tutun. Vazgeçmek için bir şey yapmayın.';
 }
 
 /** Adım yönergesi: hastaya, yardımcıya (varsa yardımcı metni) ya da klinisyene (kısa seste yalnız adım başlığı). */

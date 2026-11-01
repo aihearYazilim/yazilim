@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { evaluate } from './evaluator';
 import { poseFromUp, upFromLying, upFromSitting } from './geometry';
-import { PROTOCOLS, resolveProtocol, type ProtocolId, type Target } from './protocols';
+import { MID_BED, PROTOCOLS, protocolForMode, resolveProtocol, type ProtocolId, type Target } from './protocols';
 
 function idealPose(t: Target) {
   if (t.kind === 'sitting') return poseFromUp(upFromSitting((t.psiMin + t.psiMax) / 2));
@@ -155,5 +155,52 @@ describe('Dix-Hallpike bulgu anahtarı', () => {
   it('sol testte dhL yazılır', () => {
     expect(resolveProtocol('dix-hallpike', 'L').steps[1]!.finding).toBe('dhL');
     expect(resolveProtocol('dix-hallpike', 'R').steps[1]!.finding).toBe('dhR');
+  });
+});
+
+describe('yeni kullanıcı turu 2 (M2-2, M2-7): hasta modunda gündelik başlıklar', () => {
+  const patientIds = ids.filter((id) => PROTOCOLS[id].patient !== 'no');
+  it.each(patientIds)('%s: hasta başlığı her adımda var; derece, teknik ad ve küçük harfle başlama yok', (id) => {
+    for (const side of ['R', 'L'] as const) {
+      const p = resolveProtocol(id, side);
+      for (const st of p.steps) {
+        expect(st.patientTitle, `${id} ${st.id}`).toBeTruthy();
+        for (const t of [st.patientTitle!, st.short ?? '']) {
+          expect(t, `${id} ${st.id}`).not.toMatch(/°|\d|Dix|Hallpike|Epley|Semont|BBQ|roll/i);
+          expect(t.charAt(0), t).toBe(t.charAt(0).toLocaleUpperCase('tr-TR'));
+        }
+        // Yönergeler (ses ve ekran) büyük harfle başlar ("sol yanınızdan…" değil; y06).
+        for (const t of [st.say, st.helperSay ?? '', st.reachedSay ?? '']) expect(t.charAt(0), t).toBe(t.charAt(0).toLocaleUpperCase('tr-TR'));
+      }
+      // Yürütücü başlığındaki kısa ad gündelik (teknik adlar kayıt, rapor ve klinisyende kalır).
+      const pm = protocolForMode(p, 'patient');
+      expect(pm.shortName, id).not.toMatch(/Dix|Hallpike|Epley|Semont|BBQ|roll/i);
+      expect(protocolForMode(p, 'clinician').shortName).toBe(PROTOCOLS[id].shortName);
+    }
+  });
+
+  it('başlıklar yöne göre aynalanır; teknik başlık (kayıt, klinisyen, yardımcı) değişmez', () => {
+    const r = resolveProtocol('bbq-roll', 'R');
+    const l = resolveProtocol('bbq-roll', 'L');
+    expect(r.steps[4]!.patientTitle).toBe('Sağ yanınıza dönün');
+    expect(l.steps[4]!.patientTitle).toBe('Sol yanınıza dönün');
+    expect(r.steps[4]!.title).toBe('Sağ yanına (sırtüstünden 270°)');
+    expect(resolveProtocol('epley', 'R').steps[3]!.patientTitle).toBe('Sol yanınıza dönün');
+    expect(resolveProtocol('epley', 'R').steps[1]!.title).toBe('Sırtüstü, baş sağa 45° ve sarkık');
+    // y06: "{H} yanınızdan dönerek…" artık büyük harfle.
+    expect(r.steps[3]!.say.startsWith('Sol yanınızdan dönerek')).toBe(true);
+  });
+
+  it('M2-7: hızla yatılan adımdan önceki oturuşta (Dix-Hallpike, Epley) "yatağın ortasında" cümlesi; yardımcı metninde ve Semont\'ta yok', () => {
+    for (const id of ['dix-hallpike', 'epley'] as const) {
+      for (const side of ['R', 'L'] as const) {
+        const p = resolveProtocol(id, side);
+        expect(p.steps[0]!.say.startsWith(MID_BED), `${id} ${side}`).toBe(true);
+        expect(p.steps[1]!.say).toMatch(/hızla sırtüstü yatın/);
+        expect(p.steps[0]!.helperSay).not.toContain(MID_BED);
+      }
+    }
+    expect(MID_BED).toBe('Yatağın ortasında oturun; düşmemek için kenara yakın olmayın.');
+    expect(resolveProtocol('semont', 'R').steps[0]!.say).not.toContain(MID_BED);
   });
 });

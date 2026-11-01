@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RAD, vec, type Vec3 } from '../../../core/geometry';
-import { ForeheadDetector, HOLD_MS, tiltFromVertical } from './forehead';
+import { ForeheadDetector, HOLD_MS, OFF_TILT_DEG, ON_TILT_DEG, tiltFromVertical } from './forehead';
 
 /** Dikeyden (y ekseni) z yönüne `deg` derece geriye yatık yerçekimi (m/s²); sign: iOS'taki ters işaret. */
 const tilt = (deg: number, sign = 1): Vec3 => vec(0, sign * 9.81 * Math.cos(deg * RAD), 9.81 * Math.sin(deg * RAD));
@@ -41,5 +41,14 @@ describe('telefonun alına konduğunu sezme (L5-4, y07)', () => {
     const det = new ForeheadDetector();
     expect(det.push(vec(NaN, 1, 0), 0)).toBe(false);
     expect(det.push(vec(0, 0, 0), 20)).toBe(false);
+  });
+});
+
+describe('yeni kullanıcı turu 2 (M2-5): eğimli alın', () => {
+  it('alına yaslanan telefon alnın eğimi kadar yatık (ör. 22°) olsa da alında sayılır; elde okuma (≥ 35°) sayılmaz', () => {
+    for (const deg of [12, 18, 22, 25]) expect(feed(new ForeheadDetector(), (t) => tilt(deg + Math.sin(t / 80)), 0, 4000), `${deg}°`).not.toBeNull();
+    for (const deg of [35, 45, 60]) expect(feed(new ForeheadDetector(), () => tilt(deg), 0, 5000), `${deg}°`).toBeNull();
+    expect(ON_TILT_DEG).toBeLessThan(OFF_TILT_DEG);
+    expect(OFF_TILT_DEG).toBeLessThan(35);
   });
 });

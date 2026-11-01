@@ -15,6 +15,8 @@ import {
   estimateSpeechSec,
   initialRunnerState,
   PATIENT_FIRST_HINT_DELAY_SEC,
+  blindUnwellPrompt,
+  pauseReturnSpeech,
   pauseSpeech,
   type RunnerConfig,
   type RunnerEvent,
@@ -30,9 +32,13 @@ import {
   confirmDeadline,
   confirmPromptSpoken,
   CONFIRM_PROMPT,
+  deferSheetTap,
+  DOUBLE_TAP_MS,
   initialPauseSheet,
   type PauseChoice,
   type PauseSheetState,
+  pauseSheetDoubleTap,
+  pauseSheetHold,
   pauseSheetTap,
   type SheetTarget
 } from '../../core/pauseSheet';
@@ -50,6 +56,7 @@ import { HangBar, HeadGauge, HoldRing } from '../components/Gauges';
 import { Icon } from '../components/Icon';
 import { publishSimTarget, useSimAuto } from '../components/SimPanel';
 import { BedSetup } from './Illustrations';
+import { CAL_LOOKUP_SPOKEN } from './Calibrate';
 
 
 /** Zincirde telefonun yerinde sayılması için dik duruşta kayıtlı yerleşime göre en fazla sapma (°). */
@@ -95,6 +102,12 @@ const SAFETY_HOLD_LOCK_MS = 1000;
  */
 export const RESUME_TAP_GUARD_MS = 1000;
 
+/**
+ * Acil belirti uyarısı aşıldıysa yürütücü başlığının altında duran kısa kırmızı satır (M2-1; y05, tur 2): başta söylenen
+ * hatırlatma test ve manevra boyunca ekranda da görünsün.
+ */
+export const RUNNER_EMERGENCY_LINE = "Acil belirti bildirdiniz: kötüleşirse durun ve 112'yi arayın.";
+
 export function RunnerView({
   protocolId,
   side,
@@ -108,6 +121,7 @@ export function RunnerView({
   onPlaced,
   onSensorless,
   startNote,
+  emergency = false,
   onProgress
 }: {
   protocolId: ProtocolId;
@@ -134,6 +148,11 @@ export function RunnerView({
   /** Başlarken söylenecek ek bilgi (ör. "Önce sol tarafı, sonra sağ tarafı test ediyoruz."). */
   startNote?: string;
   /**
+   * Acil belirti uyarısı aşıldı (hasta akışı): başlığın altında kısa kırmızı 112 satırı (RUNNER_EMERGENCY_LINE). Sesli
+   * hatırlatma `startNote` ile gelir; başlangıç cümlesi sonuna dek okunur, ilk adım komutu onu kesmez (M2-1).
+   */
+  emergency?: boolean;
+  /**
    * Her adım başında süren kaydı bildirir (yeni kullanıcı turu 1, y01 #6): akış ara kayıt yazar; uygulama manevra sürerken
    * kapanırsa yeniden açılışta "yarıda kaldı (adım n)" olarak kaydedilir.
    */
@@ -158,14 +177,15 @@ export function RunnerView({
       countEverySec: P ? 10 : DEFAULT_RUNNER_CONFIG.countEverySec,
       firstHintDelaySec: P ? PATIENT_FIRST_HINT_DELAY_SEC : DEFAULT_RUNNER_CONFIG.firstHintDelaySec,
       introSecFor: (t: string) => (P ? (settings.speech ? estimateSpeechSec(t, settings.speechRate) : 4) : 1.5),
-      // Yönergenin gerçek bitişi beklenir (yavaş seslerde tahmin yetmez). Simülasyonda belirlenimci tahmin kullanılır.
-      awaitSpeechEnd: P && settings.speech && !settings.simulation && speech.usable(),
+      // Yönergenin gerçek bitişi beklenir (yavaş seslerde tahmin yetmez). Demo modunda da (M2-6; y01, y02, y03): sesli
+      // okuma yoksa (uçtan uca testler) belirlenimci tahmin kullanılır.
+      awaitSpeechEnd: P && settings.speech && speech.usable(),
       helper: helperVoice,
       sensorless: manual,
       // Klinisyende telefon hastanın alnında: varsayılan kısa (yalnız kısa komut ve sayım; k08, tur 2).
       clinicianVoice: settings.clinicianVoice ?? 'short'
     }),
-    [mode, protocol, P, settings.speech, settings.speechRate, settings.simulation, helperVoice, manual, settings.clinicianVoice]
+    [mode, protocol, P, settings.speech, settings.speechRate, helperVoice, manual, settings.clinicianVoice]
   );
 
   const [started, setStarted] = useState(false);
@@ -282,9 +302,19 @@ export function RunnerView({
   useEffect(() => {
     if (!started) return;
     const onVis = () => {
-      if (document.visibilityState === 'hidden') dispatch({ type: 'pause', now: now() });
+      if (document.visibilityState === 'hidden') {
+        dispatch({ type: 'pause', now: now() });
+        return;
+      }
       // Tarayıcı, sayfa gizlenince ekran kilidini bırakır; geri gelince yeniden iste.
-      else void keepAwake();
+      void keepAwake();
+      // Duraklatma sesi sayfa gizliyken söylenmiş olabilir: dönüşte kısa tekrar (M2-3; y06). Klinisyende yok.
+      const cur = sRef.current;
+      const back = cur.phase === 'paused' ? pauseReturnSpeech(cfg, cur.vertigoActive) : null;
+      if (back) {
+        speech.speak(back, 'high');
+        setCaption(back);
+      }
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
@@ -405,7 +435,9 @@ export function RunnerView({
     setCaption(text);
     // Konuşmanın gerçek bitişi beklenir (yavaş seslerde tahmin yetmez); olay gelmezse tahminin 2 katı + 2 s sonra devam.
     const est = settings.speech ? estimateSpeechSec(text, settings.speechRate) * 1000 : 0;
-    if (settings.simulation) await sleep(est);
+    // Demo modunda da söylenir ve bitişi beklenir (M2-6; y01: yerleştirme cümleleri demo modunda sessizdi). Sesli okuma
+    // yoksa (uçtan uca testler) tahmini süre hızlandırılmış saatle beklenir.
+    if (settings.simulation && !speech.usable()) await sleep(est);
     else await speech.speakAsync(text, est * 2 + 2000);
     await sleep(extraMs);
   };
@@ -443,7 +475,8 @@ export function RunnerView({
     tones.play('move');
     setPrep('lookup');
     sim.lookUp();
-    await sayAndWait('Şimdi başınızı yavaşça geriye yatırın ve tavana bakın. Öyle kalın.', 1500);
+    // Başı dönen kişi için yumuşak: yavaşça, zorlamadan, rahat olduğu kadar (M2-5; kalibrasyondaki cümle).
+    await sayAndWait(CAL_LOOKUP_SPOKEN, 1500);
     if (!alive.current) return null;
     const lu = await collectSamples(source, Math.max(400, scaled(1200)));
     sim.upright();
@@ -484,7 +517,9 @@ export function RunnerView({
       const stillPlaced = chained && (await quickMountCheck(calibration));
       if (!alive.current) return;
       if (!stillPlaced) {
-        if (chained) speech.speak('Telefonun yeri değişmiş olabilir. Yeniden yerleştirelim.', 'high');
+        // Bu cümle yerleştirme yönergesiyle kesilmesin: bitişi beklenir.
+        if (chained) await sayAndWait('Telefonun yeri değişmiş olabilir. Yeniden yerleştirelim.', 0);
+        if (!alive.current) return;
         const c = await placePhone(calibration);
         if (!c || !alive.current) return;
         setCalibration(c);
@@ -494,8 +529,10 @@ export function RunnerView({
     // Yardımcı modunda yönergeler yakına; hastaya tek cümle söylenir. Klinisyen sesi kapalıyken hiç konuşulmaz (k08, tur 3).
     const startText = startSpeechText(cfg, startNote);
     if (startText !== null) {
-      if (P && !settings.simulation) {
-        // Başlangıç cümlesi (ve varsa giriş notu) 3 s'lik sayımda ilk yönergeyle kesilmesin: önce sonuna kadar okunur.
+      if (P && (!settings.simulation || speech.usable())) {
+        // Başlangıç cümlesi (ve varsa giriş notu, ör. acil belirti hatırlatması) 3 s'lik sayımda ilk yönergeyle kesilmesin:
+        // önce sonuna kadar okunur. Demo modunda da (M2-1, M2-6; y05: hatırlatma 0,2 s'de adım komutuyla kesiliyordu).
+        setCaption(startText);
         await speech.speakAsync(startText, estimateSpeechSec(startText, settings.speechRate) * 2000 + 2000);
         if (!alive.current) return;
       } else speech.speak(startText, 'high');
@@ -601,29 +638,93 @@ export function RunnerView({
       const full = pauseSpeech(cfg, sRef.current.vertigoActive, true);
       speech.speak(full, 'high');
       setCaption(full);
-    } else if (a.kind === 'arm') {
-      // Ekrana bakmadan dokunan da bir şey olduğunu bilsin: "hazırsanız dokunun" titreşimi ve kısa söz. Onay süresi bu söz
-      // bittikten sonra başlar (k01, tur 4); bitiş olayı bu kuruluşa bağlanır (eski kuruluşunki yok sayılır).
-      haptics.play('ready');
-      const armedAt = r.state.armedAt;
-      speech.speak(CONFIRM_PROMPT, 'high', () => {
-        if (!alive.current || armedAt === null) return;
-        const next = confirmPromptSpoken(sheetRef.current, armedAt, performance.now());
-        if (next !== sheetRef.current) setSheet(next);
+    } else if (a.kind === 'arm') announceArm(CONFIRM_PROMPT, r.state.armedAt);
+    else if (a.kind === 'commit') commitChoice(a.choice);
+  };
+  /**
+   * Seçim kuruldu: ekrana bakmadan dokunan da bir şey olduğunu bilsin — "hazırsanız dokunun" titreşimi ve kısa söz. Onay süresi
+   * bu söz bittikten sonra başlar (k01, tur 4); bitiş olayı bu kuruluşa bağlanır (eski kuruluşunki yok sayılır).
+   */
+  const announceArm = (text: string, armedAt: number | null) => {
+    haptics.play('ready');
+    speech.speak(text, 'high', () => {
+      if (!alive.current || armedAt === null) return;
+      const next = confirmPromptSpoken(sheetRef.current, armedAt, performance.now());
+      if (next !== sheetRef.current) setSheet(next);
+    });
+    setCaption(text);
+  };
+  const commitChoice = (choice: PauseChoice) => {
+    const reason = choice === 'unwell' ? 'USER_FEELS_UNWELL' : choice === 'unreachable' ? 'POSITION_UNREACHABLE' : 'USER_ABORT';
+    dispatch({ type: 'abort', now: now(), reason });
+  };
+  /** Son kısa dokunuşun anı (performance.now) ve çift dokunuş beklenerek ertelenen tek dokunuş (M2-4). */
+  const lastSheetTapAt = useRef<number | null>(null);
+  const pendingSheetTap = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearPendingSheetTap = () => {
+    if (pendingSheetTap.current) clearTimeout(pendingSheetTap.current);
+    pendingSheetTap.current = null;
+  };
+  useEffect(() => clearPendingSheetTap, []);
+  useEffect(() => {
+    if (state.phase === 'paused') return;
+    clearPendingSheetTap();
+    lastSheetTapAt.current = null;
+  }, [state.phase]);
+  /**
+   * Duraklatma sayfasında kısa dokunuş. Hasta modunda iki kez hızlı dokunuş "Kendimi kötü hissediyorum"u ekrana bakmadan
+   * kurar ve sesli onay söylenir (M2-4; y07, tur 2); bu yüzden tek dokunuş, ikinci dokunuş beklenerek DOUBLE_TAP_MS sonra
+   * işlenir (kör çift dokunuşun ilki "Devam et"e denk gelse de manevra sürmez). Baş dönmesi işaretliyken ya da kurulu seçim
+   * varken tek dokunuş hemen işlenir. Klinisyende değişiklik yok.
+   */
+  const sheetShortTap = (target: SheetTarget) => {
+    const t = performance.now();
+    const prev = lastSheetTapAt.current;
+    // Baş dönmesi işaretliyken ilk dokunuş "geçti"dir (hemen); çift dokunuşun ilki sayılmaz (titreyen elin çift dokunuşu
+    // "geçti" + "kötüyüm" olmasın).
+    lastSheetTapAt.current = P && sRef.current.vertigoActive ? null : t;
+    if (P && prev !== null && t - prev <= DOUBLE_TAP_MS) {
+      const speaking = settings.speech && speech.usable();
+      const prompt = blindUnwellPrompt(cfg);
+      const r = pauseSheetDoubleTap(sheetRef.current, {
+        now: t,
+        patient: P,
+        promptMs: speaking ? estimateSpeechSec(prompt, settings.speechRate) * 2000 + 2000 : 0
       });
-      setCaption(CONFIRM_PROMPT);
-    } else if (a.kind === 'commit') {
-      const reason = a.choice === 'unwell' ? 'USER_FEELS_UNWELL' : a.choice === 'unreachable' ? 'POSITION_UNREACHABLE' : 'USER_ABORT';
-      dispatch({ type: 'abort', now: now(), reason });
+      if (r.action.kind === 'arm') {
+        clearPendingSheetTap();
+        lastSheetTapAt.current = null;
+        setSheet(r.state);
+        announceArm(prompt, r.state.armedAt);
+        return;
+      }
     }
+    if (deferSheetTap(sheetRef.current, { now: t, vertigoActive: sRef.current.vertigoActive, patient: P })) {
+      clearPendingSheetTap();
+      pendingSheetTap.current = setTimeout(() => {
+        pendingSheetTap.current = null;
+        if (alive.current && sRef.current.phase === 'paused') onSheetTap(target);
+      }, DOUBLE_TAP_MS);
+    } else onSheetTap(target);
+  };
+  /** Duraklatma sayfasında ekrana 2 s basılı tutmak: devam; ekrana bakmadan kurulmuş seçim varsa onu onaylar (M2-4). */
+  const onSheetHold = () => {
+    if (sRef.current.phase !== 'paused') return;
+    clearPendingSheetTap();
+    const r = pauseSheetHold(sheetRef.current, performance.now());
+    setSheet(r.state);
+    if (r.action.kind === 'commit') commitChoice(r.action.choice);
+    else resumeNow();
   };
   const sheetButton = (target: SheetTarget) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (sheetTap(e)) onSheetTap(target);
+    if (sheetTap(e)) sheetShortTap(target);
   };
 
   /** Ekrandaki başlık / yönerge / kısa özet: yardımcı modunda yardımcıya, klinisyende klinisyen metni. */
-  const titleOf = (st: StepDef) => (helperVoice && st.helperTitle ? st.helperTitle : st.title);
+  // Hasta kendisi yapıyorsa gündelik başlık (derece ve teknik ad yok; M2-2); yardımcı ve klinisyen başlıkları değişmez.
+  const titleOf = (st: StepDef) =>
+    helperVoice && st.helperTitle ? st.helperTitle : P && !helperVoice && st.patientTitle ? st.patientTitle : st.title;
   const sayOf = (st: StepDef) => (!P ? st.clinician : helperVoice && st.helperSay ? st.helperSay : st.say);
   const shortOf = (st: StepDef) => (!P ? undefined : helperVoice && st.helperShort ? st.helperShort : st.short);
 
@@ -891,8 +992,10 @@ export function RunnerView({
   /** Kurulan seçimin yerinde dokunulamayan not durur (aynı yere ikinci kör dokunuş onaylamaz); diğerleri düğmedir. */
   const sheetChoice = (choice: PauseChoice, btn: React.ReactNode) =>
     armed === choice ? (
-      <div className="sheet-armed" role="status" data-testid={`runner-armed-${choice}`} key={choice}>
-        Onaylamak için yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.
+      <div className="sheet-armed" role="status" data-testid={`runner-armed-${choice}`} data-blind={sheet.blind || undefined} key={choice}>
+        {sheet.blind
+          ? 'Onaylamak için ekrana 2 saniye basılı tutun ya da yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.'
+          : 'Onaylamak için yukarıdaki kırmızı "Evet" düğmesine dokunun. Vazgeçmek için bir şey yapmayın.'}
       </div>
     ) : (
       btn
@@ -968,6 +1071,13 @@ export function RunnerView({
           <Icon name="rotate" />
         </button>
       </div>
+      {/* Acil belirti aşıldıysa başlığın altında kısa kırmızı 112 satırı (M2-1; y05). */}
+      {P && emergency && (
+        <div className="runner-emergency" role="note" data-testid="runner-emergency">
+          <Icon name="alert" size={18} />
+          <span>{RUNNER_EMERGENCY_LINE}</span>
+        </div>
+      )}
 
       {/* Klinisyen eylemleri üstte: alttaki işaret alanına körlemesine dokunuş gözlemi kazara bitirmesin. */}
       {!P && state.phase !== 'between' && !terminal && (
@@ -999,7 +1109,7 @@ export function RunnerView({
         )}
 
         {showHint && ev?.hint ? (
-          <HintBanner hint={ev.hint} flipped={flipped} texts={hintTexts} />
+          <HintBanner hint={ev.hint} flipped={flipped} texts={hintTexts} self={P && !helperVoice} />
         ) : (
           <div className="row">
             <span className={`status-pill ${statusClass}`} aria-live="polite" data-testid="runner-status">
@@ -1049,7 +1159,7 @@ export function RunnerView({
                 <p className="small">Sensörsüz mod — açı ölçülmüyor.</p>
               </div>
             ) : (
-              <HeadGauge target={step.target} pose={pose} inRange={!!ev?.inRange} flipped={flipped} />
+              <HeadGauge target={step.target} pose={pose} inRange={!!ev?.inRange} flipped={flipped} self={P && !helperVoice} />
             )}
             <HoldRing value={ringVal} max={ringMax} label={ringLabel} sub={ringSub} />
           </div>
@@ -1069,7 +1179,7 @@ export function RunnerView({
 
         {/* Yönerge: yeni adımın başında tam, sonra kısaltılmış (ses zaten söyledi; ekran göstergeye yer açar). */}
         <p className={`runner-instr${state.phase === 'intro' || state.phase === 'between' ? '' : ' compact'}`}>{instrText}</p>
-        {step?.unverifiable && state.phase !== 'between' && <p className="small muted">{step.unverifiable}</p>}
+        {step?.unverifiable && state.phase !== 'between' && (!P || helperVoice) && <p className="small muted">{step.unverifiable}</p>}
 
         {state.notice && (
           <div className="notice" role="status">
@@ -1202,9 +1312,7 @@ export function RunnerView({
           onPointerDown={(e) => {
             e.stopPropagation();
             if (!P) return;
-            startPress(() => {
-              if (sRef.current.phase === 'paused') resumeNow();
-            });
+            startPress(onSheetHold);
           }}
           onPointerUp={cancelPress}
           onPointerLeave={cancelPress}
@@ -1213,7 +1321,7 @@ export function RunnerView({
             e.stopPropagation();
             if ((e.target as HTMLElement).closest('button')) return;
             if (!sheetTap(e)) return;
-            onSheetTap('background');
+            sheetShortTap('background');
           }}
         >
           <div className="sheet" data-armed={armed ?? undefined}>
@@ -1239,6 +1347,7 @@ export function RunnerView({
             {P && (
               <p className="small" data-testid="runner-paused-hint">
                 Ekrana bakmadan: devam etmek için ekranın herhangi bir yerine 2 saniye basılı tutun.
+                {helperVoice ? ' Hasta kötüyse iki kez hızlıca dokunun.' : ' Kendinizi kötü hissediyorsanız iki kez hızlıca dokunun.'}
                 {state.vertigoActive
                   ? ' Baş dönmesi geçtiyse bir kez dokunun; bu ilk dokunuş hiçbir düğmeyi seçmez.'
                   : ' Aşağıdaki kırmızı ve gri düğmeler bir onay daha ister.'}
@@ -1314,7 +1423,7 @@ export function turnText(theta: number): string {
  * Düzeltme yönü: büyük ok + tek satır. Ok, telefonun alındaki fiziksel yerine göre çizilir:
  * ekran düz dururken (karşıdan bakış) hastanın sağı ekranın solundadır; ekran çevrilince sağdadır.
  */
-function HintBanner({ hint, flipped, texts }: { hint: HintKey; flipped: boolean; texts: Record<HintKey, string> }) {
+function HintBanner({ hint, flipped, texts, self = false }: { hint: HintKey; flipped: boolean; texts: Record<HintKey, string>; self?: boolean }) {
   const right = hint === 'TURN_RIGHT' || hint === 'TURN_BODY_RIGHT';
   const left = hint === 'TURN_LEFT' || hint === 'TURN_BODY_LEFT';
   // Yanlış taraf: ok yok (en kısa yön yüzüstünden geçirir); önce sırtüstü (k02, tur 2).
@@ -1322,8 +1431,10 @@ function HintBanner({ hint, flipped, texts }: { hint: HintKey; flipped: boolean;
   const toRightOfScreen = right ? flipped : left ? !flipped : null;
   const arrow = toRightOfScreen === null ? null : toRightOfScreen ? '→' : '←';
   // Ekran yardımcıya/klinisyene bakar: yön sözü kişiye göre ("hastanın sağına") yazılır; ses kendi kipindeki sözle söyler.
-  const text =
-    hint === 'TURN_RIGHT'
+  // Hasta kendisi yapıyorsa gündelik: "SAĞINIZA" (M2-2; y01).
+  const text = self
+    ? hintSelfText(hint, texts)
+    : hint === 'TURN_RIGHT'
       ? 'Başı HASTANIN SAĞINA biraz daha çevirin'
       : hint === 'TURN_LEFT'
         ? 'Başı HASTANIN SOLUNA biraz daha çevirin'
@@ -1341,6 +1452,25 @@ function HintBanner({ hint, flipped, texts }: { hint: HintKey; flipped: boolean;
       {arrow && toRightOfScreen === true && <span className="hint-arrow" aria-hidden="true">{arrow}</span>}
     </div>
   );
+}
+
+/** Hasta kendisi yapıyorken ipucu afişi: yön sözü ikinci şahısla ("SAĞINIZA"); diğer ipuçları hasta metniyle. */
+export function hintSelfText(hint: HintKey, texts: Record<HintKey, string>): string {
+  switch (hint) {
+    case 'TURN_RIGHT':
+      return 'Başınızı SAĞINIZA biraz daha çevirin';
+    case 'TURN_LEFT':
+      return 'Başınızı SOLUNUZA biraz daha çevirin';
+    case 'TURN_BODY_RIGHT':
+      return 'Bütün vücudunuzla SAĞINIZA dönün (yalnız baş değil)';
+    case 'TURN_BODY_LEFT':
+      return 'Bütün vücudunuzla SOLUNUZA dönün (yalnız baş değil)';
+    case 'WRONG_SIDE_RIGHT':
+    case 'WRONG_SIDE_LEFT':
+      return `DUR — yanlış taraf. Önce sırtüstüne, sonra ${hint === 'WRONG_SIDE_RIGHT' ? 'SAĞ' : 'SOL'} YANINIZA (yüzüstünden değil)`;
+    default:
+      return texts[hint];
+  }
 }
 
 /** Basılı tutunca çalışan düğme (hasta modunda kazara duraklatmayı önler). Klavyeyle Enter/Boşluk hemen çalıştırır. */

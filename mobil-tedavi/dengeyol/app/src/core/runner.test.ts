@@ -13,6 +13,8 @@ import {
   HANG_MORE_MAX_HINTS,
   initialRunnerState,
   pauseSpeech,
+  pauseReturnSpeech,
+  blindUnwellPrompt,
   PRONE_ARRIVAL_NOTICE,
   PRONE_ARRIVAL_TEXT,
   REACH_TOUCHED_ONLY_TEXT,
@@ -97,7 +99,7 @@ function run(x: Sim, opts: { reactSec?: number; maxSec?: number; poseOverride?: 
 
 /** Duraklatma sesinin kusma/boyun ve "kendimi kötü" cümleleri (hasta; y07, yeni kullanıcı turu 1). */
 const PAUSE_SAFE_P =
-  'Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun. Kendinizi kötü hissediyorsanız ekrandaki "Kendimi kötü hissediyorum" düğmesine dokunun.';
+  'Kusacak gibiyseniz başınızı kaldırıp yana dönün ya da oturun; boynunuz ağrıyorsa da yavaşça oturun. Kendinizi kötü hissediyorsanız ekrana iki kez hızlıca dokunun.';
 
 describe('Epley yürütücüsü (hasta modu)', () => {
   it('ideal hasta ile tüm adımları tamamlar; süreler en azından minimum', () => {
@@ -2403,5 +2405,44 @@ describe('yeni kullanıcı turu 1 — y02: titreyen elle çift dokunuş ve açı
     expect(asked.length).toBeGreaterThanOrEqual(2);
     expect(asked[0]).toBeLessThanOrEqual(30);
     expect(asked[asked.length - 1]).toBeLessThan(120);
+  });
+});
+
+describe('yeni kullanıcı turu 2 (M2): yürütücü sesi', () => {
+  it('M2-4: duraklatma sesi "kendimi kötü" yolunu ekrana bakmadan söyler (iki kez dokunma); sesli onay 2 s basılı tutmayı söyler', () => {
+    const x = sim('epley');
+    expect(pauseSpeech(x.cfg, false, false)).toMatch(/Kendinizi kötü hissediyorsanız ekrana iki kez hızlıca dokunun\.$/);
+    expect(pauseSpeech(x.cfg, false, false)).not.toMatch(/düğmesine dokunun/);
+    expect(blindUnwellPrompt(x.cfg)).toBe(
+      'Kendinizi kötü hissettiğinizi anladım. Manevrayı durdurmak için ekrana iki saniye basılı tutun. Vazgeçmek için bir şey yapmayın.'
+    );
+    expect(blindUnwellPrompt({ ...x.cfg, helper: true })).toMatch(/^Hastanın kendini kötü hissettiğini anladım\./);
+    // Klinisyen duraklatma sesi değişmez.
+    expect(pauseSpeech(sim('epley', 'clinician').cfg, false, false)).toBe('Duraklatıldı.');
+  });
+
+  it('M2-3: sayfaya dönüşte kısa tekrar ("Devam et" ve basılı tutma ikisi de söylenir); baş dönmesi işaretliyse tek dokunuş; klinisyende yok', () => {
+    const x = sim('epley');
+    expect(pauseReturnSpeech(x.cfg, false)).toBe('Duraklatıldı. Devam etmek için Devam et düğmesine dokunun ya da ekrana iki saniye basılı tutun.');
+    expect(pauseReturnSpeech(x.cfg, true)).toMatch(/Baş dönmesi geçtiyse ekrana bir kez dokunun\.$/);
+    expect(pauseReturnSpeech({ ...x.cfg, helper: true }, true)).toMatch(/Hastanın baş dönmesi geçtiyse/);
+    expect(pauseReturnSpeech(sim('epley', 'clinician').cfg, false)).toBeNull();
+    // Kısa: yavaş seste de birkaç saniye (tam duraklatma sesinden kısa).
+    expect(pauseReturnSpeech(x.cfg, true)!.length).toBeLessThan(pauseSpeech(x.cfg, true, false).length);
+  });
+
+  it('M2-1: acil belirti hatırlatması başlangıç cümlesinin başında (arayüz sonuna dek okur, ilk adım komutu onu kesmez)', () => {
+    const x = sim('dix-hallpike');
+    const note = "Acil belirti bildirdiniz; kötüleşirse durun ve 112'yi arayın. Önce sağ, sonra sol tarafı test ediyoruz.";
+    expect(startSpeechText(x.cfg, note)).toBe(`${note} Başlıyoruz. Yönergeleri dinleyin.`);
+    // Klinisyende not okunmaz (davranış değişmez).
+    expect(startSpeechText(sim('dix-hallpike', 'clinician').cfg, note)).toBe('Başlıyoruz.');
+  });
+
+  it('M2-2: hasta modu protokolünde (gündelik kısa ad) araştırma kaydı açıklaması teknik adla yazılır', () => {
+    const x = sim('epley');
+    expect(x.cfg.protocol.shortName).toBe('Manevra');
+    const v = safetyHoldDetail(x.cfg.protocol, { stepIndex: 1, safetyHold: { reason: 'VERTIGO_TOO_LONG', from: 'holding', at: 0, wrongSide: false } });
+    expect(v).toMatch(/^Epley · sağ, adım 2\/5 \(Sırtüstü, baş sağa 45° ve sarkık\)/);
   });
 });

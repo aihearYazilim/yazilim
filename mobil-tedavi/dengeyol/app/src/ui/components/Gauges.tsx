@@ -31,13 +31,19 @@ export function HeadGauge({
   target,
   pose,
   inRange,
-  flipped = false
+  flipped = false,
+  self = false
 }: {
   target: Target;
   pose: HeadPose | null;
   inRange: boolean;
   /** Ekran 180° çevrik mi (tepeden bakış). Değilse karşıdan bakış: hastanın sağı ekranın solu. */
   flipped?: boolean;
+  /**
+   * Hasta kendisi yapıyor: yan etiketleri ikinci şahısla "SAĞINIZ / SOLUNUZ" (yeni kullanıcı turu 2, M2-2; y01). Çizim ve
+   * yerleşim aynı; yardımcı ve klinisyende "HASTANIN SAĞI / SOLU".
+   */
+  self?: boolean;
 }) {
   if (target.kind === 'sitting') return <SittingGauge target={target} pose={pose} inRange={inRange} />;
   const lying = pose && pose.tiltFromUpright >= 45;
@@ -70,10 +76,18 @@ export function HeadGauge({
       {/* Yön etiketleri */}
       <text x={C} y={18} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--muted)">YÜZ TAVANA</text>
       <text x={C} y={234} textAnchor="middle" fontSize="12" fontWeight="700" fill="var(--muted)">YÜZ YERE</text>
-      <text x={rightX} y={C - 4} textAnchor={flipped ? 'end' : 'start'} fontSize="11" fontWeight="700" fill="var(--muted)">HASTANIN</text>
-      <text x={rightX} y={C + 9} textAnchor={flipped ? 'end' : 'start'} fontSize="14" fontWeight="800" fill="var(--text)">SAĞI</text>
-      <text x={leftX} y={C - 4} textAnchor={flipped ? 'start' : 'end'} fontSize="11" fontWeight="700" fill="var(--muted)">HASTANIN</text>
-      <text x={leftX} y={C + 9} textAnchor={flipped ? 'start' : 'end'} fontSize="14" fontWeight="800" fill="var(--text)">SOLU</text>
+      {!self && (
+        <text x={rightX} y={C - 4} textAnchor={flipped ? 'end' : 'start'} fontSize="11" fontWeight="700" fill="var(--muted)">HASTANIN</text>
+      )}
+      <text x={rightX} y={C + (self ? 4 : 9)} textAnchor={flipped ? 'end' : 'start'} fontSize={self ? 12 : 14} fontWeight="800" fill="var(--text)" data-side="right">
+        {self ? 'SAĞINIZ' : 'SAĞI'}
+      </text>
+      {!self && (
+        <text x={leftX} y={C - 4} textAnchor={flipped ? 'start' : 'end'} fontSize="11" fontWeight="700" fill="var(--muted)">HASTANIN</text>
+      )}
+      <text x={leftX} y={C + (self ? 4 : 9)} textAnchor={flipped ? 'start' : 'end'} fontSize={self ? 12 : 14} fontWeight="800" fill="var(--text)" data-side="left">
+        {self ? 'SOLUNUZ' : 'SOLU'}
+      </text>
       {theta !== null && nose && noseL && noseR && earL && earR ? (
         <g>
           <circle cx={earL.x} cy={earL.y} r={9} fill="var(--gauge-head)" stroke="var(--gauge-head-line)" strokeWidth={2} />

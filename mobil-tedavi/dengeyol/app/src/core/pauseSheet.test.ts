@@ -5,8 +5,12 @@ import {
   confirmPromptSpoken,
   CONFIRM_PROMPT,
   CONFIRM_WINDOW_MS,
+  deferSheetTap,
+  DOUBLE_TAP_MS,
   initialPauseSheet,
   type PauseSheetState,
+  pauseSheetDoubleTap,
+  pauseSheetHold,
   pauseSheetTap,
   type SheetTarget
 } from './pauseSheet';
@@ -171,5 +175,40 @@ describe('tur 4 G1-1: onay penceresi onay cümlesi bittikten sonra başlar ve en
     expect(pauseSheetTap(initialPauseSheet(), 'replay', { now: 0, vertigoActive: false, patient: false }).action).toEqual({
       kind: 'replay'
     });
+  });
+});
+
+describe('yeni kullanıcı turu 2 (M2-4, y07): "Kendimi kötü hissediyorum" ekrana bakmadan', () => {
+  it('iki kez hızlı dokunuş seçimi kurar (ekrana bakmadan); 2 s basılı tutma onaylar, "Evet" de onaylar', () => {
+    const r = pauseSheetDoubleTap(initialPauseSheet(), { now: 1000, patient: true, promptMs: 4000 });
+    expect(r.action).toEqual({ kind: 'arm', choice: 'unwell' });
+    expect(r.state).toMatchObject({ armed: 'unwell', armedAt: 1000, blind: true });
+    expect(pauseSheetHold(r.state, 3000).action).toEqual({ kind: 'commit', choice: 'unwell' });
+    expect(pauseSheetHold(r.state, 3000).state.armed).toBeNull();
+    expect(pauseSheetTap(r.state, 'confirm', patient(3000)).action).toEqual({ kind: 'commit', choice: 'unwell' });
+  });
+
+  it('onay süresi dolunca basılı tutma yine "devam"dır; düğmeyle kurulan seçimde de basılı tutma "devam"dır', () => {
+    const blind = pauseSheetDoubleTap(initialPauseSheet(), { now: 0, patient: true, promptMs: 4000 }).state;
+    expect(pauseSheetHold(blind, 4000 + CONFIRM_WINDOW_MS).action).toEqual({ kind: 'resume' });
+    const viaButton = pauseSheetTap(initialPauseSheet(), 'unwell', patient(0)).state;
+    expect(viaButton.blind).toBeFalsy();
+    expect(pauseSheetHold(viaButton, 100).action).toEqual({ kind: 'resume' });
+    expect(pauseSheetHold(initialPauseSheet(), 100).action).toEqual({ kind: 'resume' });
+  });
+
+  it('kurulu seçim varken ya da klinisyende çift dokunuş bir şey kurmaz', () => {
+    const armed = pauseSheetTap(initialPauseSheet(), 'abort', patient(0)).state;
+    expect(pauseSheetDoubleTap(armed, { now: 100, patient: true }).action).toEqual({ kind: 'none' });
+    expect(pauseSheetDoubleTap(initialPauseSheet(), { now: 0, patient: false }).action).toEqual({ kind: 'none' });
+  });
+
+  it('tek dokunuş hasta modunda çift dokunuş beklenerek ertelenir; baş dönmesi işaretliyken, kurulu seçim varken ve klinisyende hemen', () => {
+    expect(DOUBLE_TAP_MS).toBeGreaterThanOrEqual(300);
+    expect(DOUBLE_TAP_MS).toBeLessThanOrEqual(500);
+    expect(deferSheetTap(initialPauseSheet(), patient(0))).toBe(true);
+    expect(deferSheetTap(initialPauseSheet(), patient(0, true))).toBe(false);
+    expect(deferSheetTap(pauseSheetTap(initialPauseSheet(), 'abort', patient(0)).state, patient(100))).toBe(false);
+    expect(deferSheetTap(initialPauseSheet(), { now: 0, vertigoActive: false, patient: false })).toBe(false);
   });
 });

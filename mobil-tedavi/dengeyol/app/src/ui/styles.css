@@ -905,6 +905,12 @@ textarea.input {
   bottom: calc(140px + env(safe-area-inset-bottom));
   z-index: 95;
 }
+/* Yürütücü dışında (telefonu alına koyma bekleyen ekranlar; M2-5) üstte: alttaki sabit düğmeleri ve içeriği örtmesin. */
+.sim-toggle.at-top,
+.sim-panel.at-top {
+  top: calc(26px + env(safe-area-inset-top));
+  bottom: auto;
+}
 
 .qr {
   background: #fff;
@@ -1182,6 +1188,20 @@ input[type='radio'] {
 }
 .runner-actions .btn {
   min-height: 56px;
+}
+/* Acil belirti aşıldıysa yürütücü başlığının altında kısa kırmızı 112 satırı (M2-1). */
+.runner-emergency {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 /* Yatay ekranda gösterge ve sayaç kaybolmasın: iki sütun, daha küçük dokunma alanı */

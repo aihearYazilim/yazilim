@@ -72,13 +72,18 @@ function fakeSpeech(ms) {
   let cur = null;
   let timer = null;
   const queue = [];
+  /** Okunan cümleler: { text, at (başlangıç, ms), end: 'ended' | 'cancelled' | null } (yeni kullanıcı turu 2, M2). */
+  const log = [];
   const voice = { lang: 'tr-TR', name: 'Sahte', localService: true, default: true, voiceURI: 'tr' };
   const next = () => {
     if (cur || !queue.length) return;
     cur = queue.shift();
+    cur.__rec = { text: cur.text, at: performance.now(), end: null };
+    log.push(cur.__rec);
     timer = setTimeout(() => {
       const u = cur;
       cur = null;
+      u.__rec.end = 'ended';
       u.onend?.({});
       next();
     }, ms);
@@ -103,6 +108,7 @@ function fakeSpeech(ms) {
         clearTimeout(timer);
         const u = cur;
         cur = null;
+        u.__rec.end = 'cancelled';
         u.onerror?.({});
       }
       while (queue.length) queue.shift().onerror?.({});
@@ -110,7 +116,9 @@ function fakeSpeech(ms) {
     pause() {},
     resume() {},
     /** Test için: okunan ya da sırada bekleyen cümle var mı? */
-    __busy: () => !!cur || queue.length > 0
+    __busy: () => !!cur || queue.length > 0,
+    /** Test için: okunan cümlelerin kaydı (kopya). */
+    __log: () => log.map((r) => ({ ...r }))
   };
   class Utt {
     constructor(text) {
@@ -2046,7 +2054,7 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   await ctx.close();
 });
 
-await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift dokunuş baş dönmesi işaretlemez; hızlı çift dokunuş işareti açık bırakmaz; tek dokunuş işaretler', async () => {
+await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift dokunuş baş dönmesi işaretlemez (tur 2, M2-4: çift dokunuş ekrana bakmadan "kötüyüm"ü kurar, kayıt açmaz; tek "Devam et" sürdürür); hızlı çift dokunuş işareti açık bırakmaz; tek dokunuş işaretler', async () => {
   // ×4: Epley sarkık baş adımı (45 s) gerçek ~11 s; çift dokunuş ve 1 s bekleme adım içinde kalır.
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', timeScale: 4 }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
   await startManeuver(page);
@@ -2055,6 +2063,13 @@ await step('Yeni kullanıcı turu 1 kilidi: duraklatmadan "Devam et"e çift doku
   await page.getByTestId('runner-pause').press('Enter');
   await waitPhase(page, ['paused']);
   await page.getByTestId('runner-resume').dblclick();
+  // Çift dokunuş (kör ya da istemsiz) "Kendimi kötü hissediyorum"u kurar; manevra sürmez, durmaz, kayıt açılmaz (M2-4).
+  await page.locator('[data-testid="runner-armed-unwell"][data-blind]').waitFor({ timeout: 3000 });
+  await page.waitForTimeout(600);
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('çift dokunuştan sonra duraklatma kalktı');
+  if ((await storeOf(page)).episodes[0].maneuvers.length) throw new Error('çift dokunuş kayıt açtı');
+  // Tek "Devam et" (kurulu seçim varken hemen) sürdürür; ardından baş dönmesi işaretlenmez.
+  await page.getByTestId('runner-resume').click();
   await page.waitForFunction(() => document.querySelector('[data-testid="runner"]')?.getAttribute('data-phase') !== 'paused');
   await page.waitForTimeout(300);
   if ((await page.getByTestId('vertigo-pad').getAttribute('aria-pressed')) === 'true') throw new Error('"Devam et"e çift dokunuşun ikincisi baş dönmesi işaretledi');
@@ -2252,6 +2267,121 @@ await step('Yeni kullanıcı turu 1 (L5-7, y02): hekim tanısı tarafı ana ekra
   if (await page.getByTestId('rest-continue').count()) throw new Error('ikinci taraf da test edildi');
   const ep = (await storeOf(page)).episodes[0];
   if (ep.sideTests[0].results.length !== 1 || ep.sideTests[0].results[0].side !== 'R') throw new Error('tek taraf testi kaydı: ' + JSON.stringify(ep.sideTests[0].results));
+  noErrors(errors);
+  await ctx.close();
+});
+
+// ------------------------------------------------------------------------------------------------
+// Yeni kullanıcı turu 2 (M2): yürütücü, kalibrasyon, ses.
+
+const speechLog = (page) => page.evaluate(() => window.speechSynthesis.__log());
+
+await step('Yeni kullanıcı turu 2 (M2-1, M2-6; y05): acil uyarısı aşılınca yürütücü başındaki 112 hatırlatması demo modunda da adım komutuyla kesilmez; başlığın altında kırmızı 112 satırı', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', speech: true }, data: { patient: PATIENT_OK } }), { speechMs: 400 });
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page, ['neuro']);
+  await page.getByTestId('stop-emergency').waitFor();
+  await unlocked(page);
+  await page.getByTestId('redflag-override').click();
+  await calibrate(page);
+  await page.getByTestId('runner').waitFor({ timeout: 30000 });
+  // Görsel: başlığın altında kısa kırmızı satır, test/manevra boyunca.
+  const line = await page.getByTestId('runner-emergency').innerText();
+  if (!/112/.test(line)) throw new Error('kırmızı satırda 112 yok: ' + line);
+  await snap(page, 'yurutucu-112-satiri');
+  // Ses: hatırlatmalı başlangıç cümlesi sonuna dek okundu; ilk adım komutu ondan sonra başladı (kesmedi).
+  await page.waitForFunction(() => window.speechSynthesis.__log().some((r) => /Başlıyoruz/.test(r.text) && /112/.test(r.text) && r.end), null, { timeout: 15000 });
+  const log = await speechLog(page);
+  const i = log.findIndex((r) => /Başlıyoruz/.test(r.text) && /112/.test(r.text));
+  if (log[i].end !== 'ended') throw new Error('112 hatırlatması kesildi: ' + JSON.stringify(log.slice(i, i + 2)));
+  await page.waitForFunction((n) => window.speechSynthesis.__log().length > n, i + 1, { timeout: 15000 });
+  const after = (await speechLog(page))[i + 1];
+  if (after.at < log[i].at + 350) throw new Error('adım komutu hatırlatma bitmeden başladı');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 2 (M2-2, M2-3, M2-4, M2-6; y01, y03, y06, y07): hasta yürütücüsünde gündelik başlık ve "SAĞINIZ"; demo modunda yerleştirme sesli; gizliyken duraklatınca dönüşte kısa tekrar; çift dokunuş + 2 s basılı tutma "Kendimi kötü hissediyorum"', async () => {
+  const cal = { sign: 1, facing: 'outward', matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], mountTiltDeg: 0, createdAt: '2026-01-01T00:00:00.000Z' };
+  const { ctx, page, errors } = await newPage(
+    seed({ settings: { role: 'patient', speech: true, timeScale: 10 }, data: { patient: { ...PATIENT_OK, calibration: cal }, episodes: [readyEpisode()] } }),
+    { speechMs: 300 }
+  );
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('prep-ready').click();
+  await page.getByTestId('runner').waitFor({ timeout: 30000 });
+  // M2-6: demo modunda da yerleştirme cümleleri okunur ve bitişi beklenir; baş geriye yumuşak dille.
+  const log = await speechLog(page);
+  const place = log.find((r) => r.text.startsWith('Telefonun arkasını alnınıza yaslayın'));
+  const look = log.find((r) => /rahat olduğunuz kadar geriye yatırın/.test(r.text));
+  const start = log.find((r) => /^Başlıyoruz/.test(r.text));
+  if (!place || place.end !== 'ended' || !look || look.end !== 'ended') throw new Error('yerleştirme cümleleri demo modunda okunmadı: ' + JSON.stringify(log.map((r) => r.text.slice(0, 30) + ' ' + r.end)));
+  if (!start || start.end !== 'ended') throw new Error('başlangıç cümlesi kesildi: ' + JSON.stringify(start));
+  // M2-2: başlık gündelik; teknik ad ve derece yok.
+  const head = await page.locator('.runner-head-title strong').innerText();
+  if (!/^Manevra · sağ — Adım \d\/5/.test(head)) throw new Error('yürütücü başlığı: ' + head);
+  const titles = ['Oturun, başınızı sağa çevirin', 'Hızla sırtüstü yatın', 'Başınızı sola çevirin', 'Sol yanınıza dönün', 'Yavaşça oturun'];
+  const title = (await page.getByTestId('runner-step-title').innerText()).replace(/^Sırada: /, '');
+  if (!titles.includes(title)) throw new Error('adım başlığı: ' + title);
+  const shown = [title, await page.getByTestId('runner-short').innerText().catch(() => ''), await page.locator('.runner-instr').innerText()].join(' | ');
+  if (/°|Epley|Dix/.test(shown)) throw new Error('hasta ekranında derece ya da teknik ad var: ' + shown);
+  await holdAtStep(page, 1, 30000);
+  if (!(await page.locator('svg text', { hasText: 'SAĞINIZ' }).count())) throw new Error('göstergede "SAĞINIZ" yok');
+  if (await page.locator('svg text', { hasText: 'HASTANIN' }).count()) throw new Error('hasta göstergesinde "HASTANIN" var');
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  await snap(page, 'yurutucu-gundelik-baslik');
+  // M2-3: sayfa gizliyken duraklatıldı; dönüşte kısa tekrar söylenir.
+  await setHidden(page, true);
+  await waitPhase(page, ['paused'], 5000);
+  const n0 = (await speechLog(page)).length;
+  await setHidden(page, false);
+  await page.waitForFunction((n) => window.speechSynthesis.__log().slice(n).some((r) => r.text.startsWith('Duraklatıldı. Devam etmek için Devam et düğmesine dokunun')), n0, { timeout: 3000 });
+  // M2-4: ekrana bakmadan iki kez hızlı dokunuş "Kendimi kötü hissediyorum"u kurar; sesli onay; 2 s basılı tutma onaylar.
+  const sheet = page.getByTestId('runner-paused');
+  await sheet.dblclick({ position: { x: 20, y: 80 } });
+  await page.locator('[data-testid="runner-armed-unwell"][data-blind]').waitFor({ timeout: 3000 });
+  await page.waitForFunction(() => window.speechSynthesis.__log().some((r) => r.text.startsWith('Kendinizi kötü hissettiğinizi anladım')), null, { timeout: 3000 });
+  if ((await page.getByTestId('runner').getAttribute('data-phase')) !== 'paused') throw new Error('çift dokunuş duraklatmayı kaldırdı');
+  await snap(page, 'duraklatma-kor-kotuyum');
+  const box = await sheet.boundingBox();
+  await page.mouse.move(box.x + 20, box.y + 80);
+  await page.mouse.down();
+  await page.waitForTimeout(2300);
+  await page.mouse.up();
+  await page.waitForFunction(() => {
+    const d = JSON.parse(localStorage.getItem('dengeyol:v1'));
+    return d.episodes[0].maneuvers.some((m) => m.stopReason === 'USER_FEELS_UNWELL');
+  }, null, { timeout: 5000 });
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 2 (M2-5; y07, y02): demo panelinden sanal telefon alına konunca hazırlıkta ve tanıtma girişinde ekranın her yeri yeter; tanıtma girişinde "Başla" altta sabit', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', fontScale: 'xlarge' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('prep').waitFor();
+  // Demo yolu: yürütücü dışında da "Sanal baş" paneli açılır; "Telefonu alına koy".
+  await page.getByTestId('sim-open').click();
+  await page.getByTestId('sim-forehead').click();
+  await page.getByTestId('prep-forehead').waitFor({ timeout: 5000 });
+  // Panele dokunuş "Hazırım" sayılmaz.
+  await page.getByTestId('sim-panel').getByRole('button', { name: 'Kapat' }).click();
+  await page.waitForTimeout(300);
+  if (!(await page.getByTestId('prep').count())) throw new Error('demo paneline dokunuş hazırlığı geçti');
+  await page.getByTestId('prep').click();
+  await page.getByTestId('calibrate').waitFor();
+  await page.getByTestId('cal-forehead').waitFor({ timeout: 5000 });
+  // "Başla" kaydırmadan görünür (çok büyük yazıda da).
+  const vh = page.viewportSize().height;
+  const b = await page.getByTestId('cal-start').boundingBox();
+  if (!b || b.y < 0 || b.y + b.height > vh + 1) throw new Error(`"Başla" kaydırmadan görünmüyor (${b?.y}+${b?.height}, ekran ${vh})`);
+  await snap(page, 'tanitma-basla-sabit');
+  await page.waitForTimeout(800);
+  await page.locator('[data-testid="calibrate"] h2').first().click();
+  await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
   noErrors(errors);
   await ctx.close();
 });

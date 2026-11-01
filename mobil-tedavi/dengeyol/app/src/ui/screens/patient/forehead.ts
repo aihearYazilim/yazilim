@@ -11,10 +11,14 @@
  */
 import { angleBetween, norm, type Vec3 } from '../../../core/geometry';
 
-/** Dikeyden en çok bu kadar sapma "dik" sayılır (derece). */
-export const ON_TILT_DEG = 18;
-/** "Alında" durumundan çıkış eşiği (derece; gidip gelme olmasın). */
-export const OFF_TILT_DEG = 25;
+/**
+ * Dikeyden en çok bu kadar sapma "dik" sayılır (derece). Alın geriye eğimlidir (yetişkinde çoğunlukla 10–25°; kalibrasyon
+ * 40°'ye dek kabul eder): alına yaslanan telefon da o kadar yatık durur. Eski eşik 18° eğimli alında hiç açılmıyordu
+ * (yeni kullanıcı turu 2, M2-5). Elde okurken telefon çoğunlukla 35–60° yatıktır.
+ */
+export const ON_TILT_DEG = 26;
+/** "Alında" durumundan çıkış eşiği (derece; gidip gelme olmasın). Ekrana bakmak için indirince (≥ 35–40°) kapanır. */
+export const OFF_TILT_DEG = 32;
 /** Yön bu kadar süre sabit kalmalı (ms). */
 export const HOLD_MS = 1500;
 /** Sabitlik: dayanak yönden en çok bu kadar sapma (derece). */

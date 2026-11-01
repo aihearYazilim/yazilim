@@ -1390,6 +1390,7 @@ export function EpisodeFlow() {
           chained={ch.chained}
           autoStart={ch.autoStart}
           startNote={reminderNote(stage.note ?? (first ? `Önce ${sideName(side)}, sonra ${sideName(other!)} tarafı test ediyoruz.` : undefined))}
+          emergency={emergencyReminder}
           onPlaced={onPlaced}
           onSensorless={() => {
             setCal(null);
@@ -1430,6 +1431,7 @@ export function EpisodeFlow() {
           chained={ch.chained}
           autoStart={ch.autoStart}
           startNote={reminderNote('Sırtüstü yatıp başınızı önce sağa, sonra sola çevireceğiz.')}
+          emergency={emergencyReminder}
           onPlaced={onPlaced}
           onSensorless={() => {
             setCal(null);
@@ -1579,6 +1581,7 @@ export function EpisodeFlow() {
             );
           }}
           startNote={reminderNote(stage.note)}
+          emergency={emergencyReminder}
           intro={withReminder(
             stage.note ? (
               <div className="notice info" data-testid="run-note">
@@ -1652,6 +1655,7 @@ export function EpisodeFlow() {
           onRecalibrate={recalibrate}
           onExit={(o) => onRetestExit(o, stage.side, stage.protocolId)}
           startNote={reminderNote()}
+          emergency={emergencyReminder}
           intro={withReminder(
             <div className="notice info">
               <Icon name="info" />

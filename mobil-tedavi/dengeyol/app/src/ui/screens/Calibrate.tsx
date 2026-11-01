@@ -32,7 +32,12 @@ import { PhoneOnForehead } from './Illustrations';
 import { ForeheadTap } from '../components/ForeheadTap';
 
 /** Hasta modunda tanıtma girişi açılınca okunan kısa ses (L5-6). */
-export const CAL_INTRO_SPOKEN = 'Telefonu başınıza tanıtalım. Telefonu elinizde tutun ve Başla düğmesine dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.';
+export const CAL_INTRO_SPOKEN =
+  'Telefonu başınıza tanıtalım. Telefonu elinizde tutun ve ekranın altındaki Başla düğmesine dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.';
+
+/** Hasta modunda baş geriye: baş dönmesi olan kişi için yumuşak — yavaşça, zorlamadan, rahat olduğu kadar (M2-5; y07, y02). */
+export const CAL_LOOKUP_SPOKEN = 'Şimdi başınızı yavaşça, zorlamadan, rahat olduğunuz kadar geriye yatırın ve tavana bakın. Öyle kalın.';
+export const CAL_LOOKUP_TEXT = 'Başınızı yavaşça, rahat olduğunuz kadar geriye yatırın; zorlamayın.';
 
 type Stage = 'intro' | 'place' | 'upright' | 'lookup' | 'done' | 'error' | 'nosensor';
 
@@ -128,8 +133,9 @@ export function Calibrate({
   const sayAndWait = async (t: string, extraMs: number) => {
     const st = store.get().settings;
     const est = st.speech ? estimateSpeechSec(speechText(t), st.speechRate) * 1000 : 0;
-    // Konuşmanın gerçek bitişini bekle (yavaş seslerde tahmin yetmez); olay gelmezse tahminin 2 katı + 2 s.
-    if (st.simulation) {
+    // Konuşmanın gerçek bitişini bekle (yavaş seslerde tahmin yetmez); olay gelmezse tahminin 2 katı + 2 s. Demo modunda da
+    // (M2-6, hasta): sesli okuma yoksa (uçtan uca testler) ya da klinisyende (değişmedi) tahmini süre beklenir.
+    if (st.simulation && (audience !== 'patient' || !speech.usable())) {
       say(t);
       await wait(est);
     } else await speech.speakAsync(t, est * 2 + 2000);
@@ -203,9 +209,7 @@ export function Calibrate({
     // 3) Tavana bak
     setStage('lookup');
     await sayAndWait(
-      P
-        ? 'Şimdi başınızı yavaşça, zorlamadan, rahat olduğunuz kadar geriye yatırın ve tavana bakın. Öyle kalın.'
-        : 'Hastanın başını zorlamadan geriye yatırıp tavana baktırın.',
+      P ? CAL_LOOKUP_SPOKEN : 'Hastanın başını zorlamadan geriye yatırıp tavana baktırın.',
       1200
     );
     if (!live()) return;
@@ -262,6 +266,12 @@ export function Calibrate({
     </div>
   );
 
+  const startButton = (
+    <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">
+      <Icon name="play" /> Başla
+    </button>
+  );
+
   // Alındaki adımlar: ekran çevirme açıksa yürütücüdeki gibi tam ekran ve 180° döner.
   const onForehead = stage === 'place' || stage === 'upright' || stage === 'lookup' || stage === 'done';
   const wrap = (children: ReactNode) =>
@@ -300,9 +310,7 @@ export function Calibrate({
                     <li>Ardından hastanın başını geriye yatırıp tavana baktırın.</li>
                   </ol>
                 )}
-                <button className="btn primary block xl" onClick={() => void run()} data-testid="cal-start">
-                  <Icon name="play" /> Başla
-                </button>
+                {!P && startButton}
                 {P && (
                   <button
                     className="btn ghost"
@@ -329,6 +337,8 @@ export function Calibrate({
                   </p>
                 )}
               </div>
+              {/* Hasta modunda "Başla" ekranın altında hep görünür (hazırlıktaki "Hazırım" gibi; M2-5: y02, y07). */}
+              {P && <div className="sticky-actions">{startButton}</div>}
         </>
       )}
 
@@ -343,7 +353,7 @@ export function Calibrate({
           <p className="lead">
             {stage === 'place' && (P ? 'Telefonun arkası alnınızda, ekran karşıya baksın. Dik oturun.' : 'Ekran size baksın, üst kenar saç çizgisine doğru.')}
             {stage === 'upright' && 'Ölçülüyor…'}
-            {stage === 'lookup' && (P ? 'Başınızı yavaşça geriye yatırın.' : 'Başını yavaşça geriye yatırsın.')}
+            {stage === 'lookup' && (P ? CAL_LOOKUP_TEXT : 'Başını yavaşça geriye yatırsın.')}
           </p>
           {count > 0 && <div style={{ fontSize: '3rem', fontWeight: 800 }}>{count}</div>}
         </div>

@@ -12,6 +12,9 @@
  *     onay kendiliğinden kalkar.
  *   - "Devam" ekranın herhangi bir yerine 2 s basılı tutmakla (arayüz) ya da "Devam et" düğmesiyle; geri alınabilir.
  *   - "Tekrar dinle" (ayrıntılı duraklatma sesi) kalıcı sonuç doğurmaz: kurulmuş onayı bozmaz.
+ *   - Ekrana bakmadan "Kendimi kötü hissediyorum" (M2-4; y07, tur 2): iki kez hızlı dokunuş seçimi kurar ve sesli onay
+ *     söylenir; onay ekranın herhangi bir yerine 2 s basılı tutmak (ya da üstteki "Evet"). Bu yüzden tek dokunuş, ikinci
+ *     dokunuş beklenerek kısa gecikmeyle işlenir (DOUBLE_TAP_MS).
  * Klinisyen ekranı görür: onay istenmez.
  */
 
@@ -35,6 +38,11 @@ export interface PauseSheetState {
   promptDoneAt: number | null;
   /** Bitiş olayı gelmezse cümlenin bittiği varsayılan süre (kurulmadan sonra, ms; tahmin). */
   promptMs: number;
+  /**
+   * Seçim ekrana bakmadan kuruldu (iki kez hızlı dokunuş; M2-4): onay, üstteki "Evet"in yanında ekranın herhangi bir yerine
+   * 2 s basılı tutmakla da verilir. Düğmeyle kurulan seçimde basılı tutmak her zamanki gibi "devam"dır.
+   */
+  blind?: boolean;
 }
 
 export const initialPauseSheet = (): PauseSheetState => ({ armed: null, armedAt: null, promptDoneAt: null, promptMs: 0 });
@@ -121,4 +129,42 @@ export function pauseSheetTap(
         action: { kind: 'arm', choice: target }
       };
   }
+}
+
+/**
+ * İki kısa dokunuş arasındaki en uzun süre (ms): bu süre içinde gelen ikinci dokunuş "iki kez hızlıca dokunun" sayılır (M2-4;
+ * y07, tur 2: kusmak üzere olan hasta "Kendimi kötü hissediyorum"u ekrana bakmadan seçebilsin). Bu yüzden hasta modunda
+ * (baş dönmesi işaretli değilken ve kurulu seçim yokken) duraklatma sayfasındaki tek dokunuş bu kadar gecikmeyle işlenir:
+ * kör çift dokunuşun ilki "Devam et"e denk gelse de manevra sürmesin.
+ */
+export const DOUBLE_TAP_MS = 400;
+
+/** Hasta modunda bu kısa dokunuş, çift dokunuş beklenerek ertelenmeli mi? (Kurulu seçim ya da baş dönmesi varken hayır.) */
+export function deferSheetTap(st: PauseSheetState, ctx: { now: number; vertigoActive: boolean; patient: boolean }): boolean {
+  return ctx.patient && !ctx.vertigoActive && armedChoice(st, ctx.now) === null;
+}
+
+/**
+ * İki kez hızlı dokunuş (hasta modu): "Kendimi kötü hissediyorum" ekrana bakmadan kurulur; arayüz sesli onayı söyler
+ * (bkz. runner `blindUnwellPrompt`). Kurulu bir seçim varken ya da klinisyende değişiklik yok.
+ */
+export function pauseSheetDoubleTap(
+  st: PauseSheetState,
+  ctx: { now: number; patient: boolean; promptMs?: number }
+): { state: PauseSheetState; action: SheetAction } {
+  if (!ctx.patient || armedChoice(st, ctx.now) !== null) return { state: st, action: { kind: 'none' } };
+  return {
+    state: { armed: 'unwell', armedAt: ctx.now, promptDoneAt: null, promptMs: Math.max(0, ctx.promptMs ?? 0), blind: true },
+    action: { kind: 'arm', choice: 'unwell' }
+  };
+}
+
+/**
+ * Duraklatma sayfasında ekrana 2 s basılı tutmanın sonucu: ekrana bakmadan kurulmuş (ve süresi dolmamış) seçim varsa onu
+ * onaylar; yoksa her zamanki gibi devam.
+ */
+export function pauseSheetHold(st: PauseSheetState, now: number): { state: PauseSheetState; action: SheetAction } {
+  const armed = armedChoice(st, now);
+  if (armed && st.blind) return { state: initialPauseSheet(), action: { kind: 'commit', choice: armed } };
+  return { state: initialPauseSheet(), action: { kind: 'resume' } };
 }

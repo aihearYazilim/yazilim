@@ -19,6 +19,20 @@ export function publishSimTarget(t: Target | null) {
   listeners.forEach((l) => l(t));
 }
 
+type ForeheadListener = (on: boolean) => void;
+let foreheadReady = 0;
+const foreheadListeners = new Set<ForeheadListener>();
+
+/**
+ * "Telefon alındayken ekranın her yeri" bekleyen bir ekran açık (hazırlık, telefonu tanıtma girişi; ForeheadTap). Demo
+ * modunda sanal baş paneli bu ekranlarda da açılabilsin: yoksa sanal telefon alına konamıyor, ekranın her yerine dokunma
+ * demo yolunda hiç denenemiyordu (yeni kullanıcı turu 2, M2-5; y07, y02).
+ */
+export function publishSimForehead(on: boolean) {
+  foreheadReady = Math.max(0, foreheadReady + (on ? 1 : -1));
+  foreheadListeners.forEach((l) => l(foreheadReady > 0));
+}
+
 export function SimPanel() {
   const { simulated } = useMotion();
   const { settings } = useData();
@@ -29,6 +43,7 @@ export function SimPanel() {
   const [psi, setPsi] = useState(0);
   const [reading, setReading] = useState(true);
   const [target, setTarget] = useState<Target | null>(currentTarget);
+  const [forehead, setForehead] = useState(foreheadReady > 0);
 
   useEffect(() => {
     const l: Listener = (t) => {
@@ -37,8 +52,16 @@ export function SimPanel() {
       if (!t) setOpen(false);
     };
     listeners.add(l);
+    const f: ForeheadListener = (on) => {
+      setForehead(on);
+      if (!on && !currentTarget) setOpen(false);
+    };
+    foreheadListeners.add(f);
+    // Kardeş bileşen (ForeheadTap) bu etkiden önce bildirmiş olabilir: o anki durum alınır.
+    setForehead(foreheadReady > 0);
     return () => {
       listeners.delete(l);
+      foreheadListeners.delete(f);
     };
   }, []);
 
@@ -54,6 +77,16 @@ export function SimPanel() {
   }, [simulated, posture, theta, phi, psi, reading]);
 
   if (!simulated) return null;
+
+  /** Sanal telefonu alına koy: dik oturuş, karşıya bakış (ForeheadTap ekranlarında). */
+  const putOnForehead = () => {
+    // Doğrudan da ayarlanır: panelin durumu (ör. önceki manevradan) zaten "dik oturuş" olabilir; o zaman etki yeniden çalışmaz.
+    simulated.reading = false;
+    simulated.setHeadUp(upFromSitting(0));
+    setPosture('sit');
+    setPsi(0);
+    setReading(false);
+  };
 
   const goTarget = () => {
     if (!target) return;
@@ -73,12 +106,12 @@ export function SimPanel() {
       <div className="sim-badge" role="status">DEMO MODU · sanal sensör · tedavi amaçlı değildir</div>
       {/* Demo paneline dokunmak süren yönergeyi susturmaz (data-keep-speech): incelemelerde panelin kestiği cümle
           uygulamanın kesmesi sanılıyordu (yeni kullanıcı turu 1, y03/y07). */}
-      {!target ? null : !open ? (
-        <button className="btn secondary sim-toggle" onClick={() => setOpen(true)} data-testid="sim-open" aria-label="Demo panelini aç" data-keep-speech>
+      {!target && !forehead ? null : !open ? (
+        <button className={`btn secondary sim-toggle${target ? '' : ' at-top'}`} onClick={() => setOpen(true)} data-testid="sim-open" aria-label="Demo panelini aç" data-keep-speech data-sim-control>
           <Icon name="head" /> Sanal baş
         </button>
       ) : (
-        <div className="sim-panel" data-testid="sim-panel" data-keep-speech>
+        <div className={`sim-panel${target ? '' : ' at-top'}`} data-testid="sim-panel" data-keep-speech data-sim-control>
           <div className="row">
             <strong className="grow">Sanal baş (demo)</strong>
             <button className="btn icon" onClick={() => setOpen(false)} aria-label="Kapat">
@@ -105,9 +138,15 @@ export function SimPanel() {
               <input type="range" min={-45} max={60} value={psi} onChange={(e) => setPsi(+e.target.value)} />
             </>
           )}
-          <button className="btn primary" onClick={goTarget} disabled={!target} data-testid="sim-goto">
-            Hedef pozisyona git
-          </button>
+          {target ? (
+            <button className="btn primary" onClick={goTarget} data-testid="sim-goto">
+              Hedef pozisyona git
+            </button>
+          ) : (
+            <button className="btn primary" onClick={putOnForehead} data-testid="sim-forehead" aria-pressed={!reading}>
+              Telefonu alına koy (dik otur)
+            </button>
+          )}
           <label>Zaman hızı</label>
           <div className="seg">
             {([1, 5, 20] as const).map((v) => (
