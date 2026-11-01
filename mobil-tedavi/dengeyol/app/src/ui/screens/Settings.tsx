@@ -89,6 +89,30 @@ export function Settings() {
         </section>
       )}
 
+      {s.role === 'patient' && d.patient?.consentAt && (
+        // Yeni kullanıcı turu 1 (y04 #7): reçetesiz katılımcının raporu klinisyende bu numarayla eşleşir (rapor ve QR'da).
+        <section className="card stack" data-testid="settings-study">
+          <h3>Klinik çalışma</h3>
+          <div className="field">
+            <label htmlFor="study-id">Çalışma katılımcı numarası (isteğe bağlı)</label>
+            <input
+              id="study-id"
+              className="input"
+              value={d.patient.studyId ?? ''}
+              maxLength={30}
+              autoComplete="off"
+              placeholder="Ör. DY-014"
+              onChange={(e) => {
+                const v = e.target.value.replace(/[\u0000-\u001f]/g, '');
+                store.update((x) => (x.patient ? { ...x, patient: { ...x.patient, studyId: v.trim() ? v : undefined } } : x));
+              }}
+              data-testid="settings-study-id"
+            />
+            <span className="small muted">Çalışmaya katılıyorsanız araştırma ekibinin verdiği numarayı yazın. Raporunuzda ve hekime gösterdiğiniz QR kodda yer alır.</span>
+          </div>
+        </section>
+      )}
+
       <section className="card stack">
         <h3>Ses ve geri bildirim</h3>
         <label className="row">

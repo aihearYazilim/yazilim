@@ -107,7 +107,8 @@ export function RunnerView({
   autoStart = false,
   onPlaced,
   onSensorless,
-  startNote
+  startNote,
+  onProgress
 }: {
   protocolId: ProtocolId;
   side: Side | null;
@@ -132,6 +133,11 @@ export function RunnerView({
   onSensorless?: () => void;
   /** Başlarken söylenecek ek bilgi (ör. "Önce sol tarafı, sonra sağ tarafı test ediyoruz."). */
   startNote?: string;
+  /**
+   * Her adım başında süren kaydı bildirir (yeni kullanıcı turu 1, y01 #6): akış ara kayıt yazar; uygulama manevra sürerken
+   * kapanırsa yeniden açılışta "yarıda kaldı (adım n)" olarak kaydedilir.
+   */
+  onProgress?: (p: { records: RunnerState['records']; manual: boolean }) => void;
 }) {
   const { settings } = useData();
   const { source } = useMotion();
@@ -287,6 +293,14 @@ export function RunnerView({
 
   // Çalışırken sayfa kapatılmak/yenilenmek istenirse uyar
   const running = started && !['done', 'aborted', 'safetyStop'].includes(state.phase);
+
+  // Adım başında ara kayıt (onProgress): sayfa kapanırsa yapılan kısım kaybolmasın.
+  const progressRef = useRef(onProgress);
+  progressRef.current = onProgress;
+  useEffect(() => {
+    if (running && state.records.length > 0) progressRef.current?.({ records: state.records, manual });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [running, state.stepIndex, state.records.length]);
 
   // Geri tuşu / kenardan kaydırma manevrayı onaysız bitirmesin: geçmişe bir girdi eklenir, geri gelince duraklatılır.
   useEffect(() => {

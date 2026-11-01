@@ -77,7 +77,10 @@ import {
   type ResumeTarget,
   singleSideTestSide,
   vomitPause,
-  VOMITING_OVERRIDE_KIND
+  VOMITING_OVERRIDE_KIND,
+  episodeStamp,
+  saveManeuverCheckpoint,
+  withoutCheckpoint
 } from '../../../state/episodes';
 import { logOverride } from '../../../state/overrides';
 import { ackNeuroAlert, emergencyOverridden, neuroAlertFor } from '../../../state/neuroAlert';
@@ -371,7 +374,9 @@ export function EpisodeFlow() {
         sideTests: [],
         maneuvers: [],
         retests: [],
-        status: 'active'
+        status: 'active',
+        // Araştırma kaydı: sürüm ve demo modu (yeni kullanıcı turu 1, y04 #6).
+        ...episodeStamp(cur.settings)
       };
       // Eski kilitlerin yerine bilgi kayıtları (atak açılırken bir kez): tanısız kullanım, yatay kanal tanısı, bekleyen
       // hekime yönlendirme.
@@ -475,7 +480,7 @@ export function EpisodeFlow() {
   const resumeEntry = (rt: ResumeTarget): Stage => {
     const run: RunStage =
       rt.kind === 'maneuver'
-        ? { k: 'maneuver', side: rt.side, protocolId: rt.protocolId, ...(rt.then ? { then: rt.then } : {}), note: resumeManeuverNote(rt.side) }
+        ? { k: 'maneuver', side: rt.side, protocolId: rt.protocolId, note: resumeManeuverNote(rt.side) }
         : { k: 'sideRun', order: rt.order, results: rt.results, note: resumeSideNote(rt.results[rt.results.length - 1]!.side, rt.order[rt.results.length]!) };
     if (calibratedRef.current) return { ...run, auto: true };
     nextRunRef.current = run;
@@ -554,15 +559,6 @@ export function EpisodeFlow() {
     setStage(entryStage());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
-  // Manevra sahnesi açılınca "yarıda kalan manevra" işareti (L5-3): sekme kapanırsa dönüşte hazırlıksız baştan.
-  useEffect(() => {
-    if (stage.k !== 'maneuver' || mode === 'practice') return;
-    const id = activeEpisode(store.get())?.id;
-    if (!id) return;
-    const { side, protocolId, then } = stage;
-    updateEpisode(id, (e) => ({ ...e, resumeRun: { at: Date.now(), side, protocolId, ...(then ? { then } : {}) } }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stage]);
   useEffect(() => {
     window.scrollTo(0, 0);
     if (stage.k === 'calibrate') calHandledRef.current = false;
@@ -850,15 +846,12 @@ export function EpisodeFlow() {
       // Raporda "N kez duraklatıldı".
       pauses: totalPauses(o.state.records)
     };
-    // Yarıda kalan manevra işareti (L5-3): uygulamadan çıkılıp kesildiyse kalır (dönünce baştan), yoksa silinir.
-    updateEpisode(id, (e) => ({ ...e, side, maneuvers: [...e.maneuvers, log], resumeRun: o.state.stopReason === 'INTERRUPTED' ? e.resumeRun : undefined }));
+    // Atağın manevrası yapılana göre güncellenir (yatay kanalda BBQ roll; yeni kullanıcı turu 1, y04 #2); ara kayıt silinir.
+    const sim = store.get().settings.simulation;
+    updateEpisode(id, (e) => ({ ...withoutCheckpoint(e), side, protocolId, ...(sim ? { simulation: true } : {}), maneuvers: [...e.maneuvers, log] }));
   };
 
   const onManeuverExit = (o: RunnerOutcome, st: Extract<Stage, { k: 'maneuver' }>) => {
-    if (o.started === false && mode !== 'practice') {
-      const id = activeEpisode(store.get())?.id;
-      if (id) updateEpisode(id, (e) => ({ ...e, resumeRun: undefined }));
-    }
     if (notStarted(o)) return;
     const { side, protocolId } = st;
     logManeuver(o, side, protocolId);
@@ -1578,6 +1571,13 @@ export function EpisodeFlow() {
           }}
           onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage)}
+          onProgress={(p) => {
+            // Ara kayıt: uygulama manevra sürerken kapanırsa açılışta "yarıda kaldı (adım n)" yazılır (y01 #6).
+            if (mode === 'practice') return;
+            store.update((x) =>
+              saveManeuverCheckpoint(x, { protocolId: stage.protocolId, side: stage.side, records: p.records, manual: p.manual, assisted: x.settings.assist === 'helper' }, Date.now())
+            );
+          }}
           startNote={reminderNote(stage.note)}
           intro={withReminder(
             stage.note ? (

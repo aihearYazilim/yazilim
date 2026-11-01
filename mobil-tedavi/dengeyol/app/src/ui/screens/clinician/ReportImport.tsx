@@ -15,7 +15,7 @@ import { store, uid, useData } from '../../../state/store';
 import type { ClinicExam, ClinicPatient, HomeReportRecord } from '../../../state/types';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
-import { looksLikeRxLink, reportPasteErrorText } from './examReport';
+import { homeMatchCode, looksLikeRxLink, reportPasteErrorText } from './examReport';
 import { HomeReportView } from './HomeReportView';
 
 const norm = (s: string) => s.trim().toLocaleLowerCase('tr-TR');
@@ -71,16 +71,29 @@ export function ReportImport() {
   const report = res.ok ? res.value : null;
   const id = homeReportId(token);
 
-  const matched = report?.pid ? d.clinicPatients.find((p) => norm(p.code) === norm(report.pid!)) : undefined;
+  // Eşleşme: reçetedeki hasta kodu, yoksa çalışma katılımcı no (biçim v3; yeni kullanıcı turu 1, y04 #7).
+  const code = report ? homeMatchCode(report) : undefined;
+  const matched = code ? d.clinicPatients.find((p) => norm(p.code) === norm(code)) : undefined;
   const [patientSel, setPatientSel] = useState<string>(matched?.id ?? 'new');
-  const [newCode, setNewCode] = useState(report?.pid ?? '');
+  const [newCode, setNewCode] = useState(code ?? '');
   const patient = d.clinicPatients.find((p) => p.id === patientSel);
   const exams = useMemo(
     () => (patient ? d.clinicExams.filter((e) => e.patientId === patient.id).sort((a, b) => b.at - a.at) : []),
     [d.clinicExams, patient]
   );
-  // Varsayılan: bugün bu hastaya açılmış muayene (kontrol muayenesi) varsa o; yoksa yeni kontrol muayenesi.
-  const todayExam = exams.find((e) => localDayKey(e.at) === localDayKey(Date.now()));
+  // Varsayılan: yeni kontrol muayenesi (yeni kullanıcı turu 1, y08 #3: rapor ilk muayeneye eklenince onun basılı raporu
+  // değişiyordu). Yalnız bugün açılmış ve henüz boş (bulgu, manevra, tanı, reçete, ev raporu yok) bir muayene varsa o
+  // seçili gelir: klinisyen kontrol muayenesini önce açmış demektir.
+  const todayExam = exams.find(
+    (e) =>
+      localDayKey(e.at) === localDayKey(Date.now()) &&
+      Object.keys(e.findings).length === 0 &&
+      Object.keys(e.retestFindings).length === 0 &&
+      e.maneuvers.length === 0 &&
+      !e.diagnosis &&
+      !e.prescriptionToken &&
+      !(e.homeReports ?? []).length
+  );
   const [examSel, setExamSel] = useState<string | null>(null);
   const examChoice = examSel !== null && (examSel === 'new' || exams.some((e) => e.id === examSel)) ? examSel : (todayExam?.id ?? 'new');
   const rxExam = report?.rxCode ? exams.find((e) => e.prescriptionToken && rxCode(e.prescriptionToken) === report.rxCode) : undefined;
@@ -109,12 +122,12 @@ export function ReportImport() {
     let patientId = patient?.id;
     let newPatient: ClinicPatient | null = null;
     if (!patientId) {
-      const code = newCode.trim() || report.pid || `H-${(d.clinicPatients.length + 1).toString().padStart(3, '0')}`;
+      const pcode = newCode.trim() || code || `H-${(d.clinicPatients.length + 1).toString().padStart(3, '0')}`;
       // Aynı kodla kayıtlı hasta varsa yeni kayıt açılmaz (klinisyen ana ekranındaki kural).
-      const same = d.clinicPatients.find((p) => norm(p.code) === norm(code));
+      const same = d.clinicPatients.find((p) => norm(p.code) === norm(pcode));
       if (same) patientId = same.id;
       else {
-        newPatient = { id: uid(), code: code.slice(0, 30), sex: '-', createdAt: now };
+        newPatient = { id: uid(), code: pcode.slice(0, 30), sex: '-', createdAt: now };
         patientId = newPatient.id;
       }
     }
@@ -174,7 +187,7 @@ export function ReportImport() {
               }}
               data-testid="hr-patient"
             >
-              <option value="new">Yeni hasta kaydı{report.pid ? ` (kod ${report.pid})` : ''}</option>
+              <option value="new">Yeni hasta kaydı{code ? ` (kod ${code})` : ''}</option>
               {d.clinicPatients.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.code}
@@ -197,11 +210,12 @@ export function ReportImport() {
               />
             </div>
           )}
-          {patient && report.pid && norm(patient.code) !== norm(report.pid) && (
+          {patient && code && norm(patient.code) !== norm(code) && (
             <div className="notice danger" role="status" data-testid="hr-code-mismatch">
               <Icon name="alert" />
               <span>
-                Rapordaki hasta kodu ({report.pid}) seçtiğiniz hastanın kodundan ({patient.code}) farklı. Doğru hastayı seçtiğinizden emin olun.
+                Rapordaki {report.pid ? 'hasta kodu' : 'katılımcı no'} ({code}) seçtiğiniz hastanın kodundan ({patient.code}) farklı. Doğru hastayı seçtiğinizden
+                emin olun.
               </span>
             </div>
           )}

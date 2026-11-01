@@ -4,7 +4,7 @@
  * ("Yine de devam et" kayda geçer); tanısız kullanıcı alt tip sorusundan hazırlığa geçer; hazırlık maddeleri yakını
  * modunda yardımcıya göre ve "Titreşimleri tanı" hazırlıkta açılır.
  */
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { createElement } from 'react';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -342,8 +342,9 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
 });
 
 describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
+  // Önceki (beforeEach) sahte saat kaldırılmadan yeniden kurulursa Date sahte olmuyor: önce gerçek saate dön.
   const fixedNoon = () =>
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+    vi.useRealTimers().useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
   const activeEp = (over: Partial<NonNullable<AppData['episodes']>[number]> = {}) => {
     const now = Date.now();
     return {
@@ -434,7 +435,11 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
   it('kaldığınız yerden: kayıtlı tanıtmayla yarıda kalan manevra "Başlat" ekranında, notuyla (L5-3)', async () => {
     seed('self', { calibration: { sign: 1, facing: 'outward', matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], mountTiltDeg: 0, createdAt: '2026-01-01T00:00:00.000Z' } });
     const now = Date.now();
-    store.update((d) => ({ ...d, episodes: [activeEp({ resumeRun: { at: now - 2 * 60_000, side: 'R', protocolId: 'epley' } })] }));
+    // Manevra sürerken uygulama kapandı: açılışta L3 ara kaydından "yarıda kaldı" kaydı kuruldu (recovered, INTERRUPTED).
+    store.update((d) => ({
+      ...d,
+      episodes: [activeEp({ maneuvers: [manAt(now - 2 * 60_000, { completed: false, stopReason: 'INTERRUPTED', recovered: true, records: [] })] })]
+    }));
     mount();
     expect(byTestId('prep')).toBeNull();
     act(() => {
@@ -453,7 +458,10 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
   });
 
   it('telefon alındayken (sensör dik ve sabit) hazırlıkta ekranın her yeri "Hazırım"; elde okurken boş yere dokunuş geçmez (L5-4)', async () => {
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance'] });
+    // Sensör örneklerinin zamanı (performance.now) sahte saatle ilerlesin.
+    vi.useRealTimers().useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'] });
+    const perf = vi.spyOn(performance, 'now').mockImplementation(() => Date.now());
+    onTestFinished(() => perf.mockRestore());
     seed();
     store.update((d) => ({ ...d, settings: { ...d.settings, simulation: true } }));
     mount();
@@ -473,6 +481,12 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
       vi.advanceTimersByTime(2500);
     });
     expect(byTestId('prep-forehead')).not.toBeNull();
+    // Şerit açılır açılmaz gelen dokunuş sayılmaz (parmak zaten ekrandaydı).
+    act(() => byTestId('prep')!.click());
+    expect(byTestId('prep')).not.toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
     act(() => byTestId('prep')!.click());
     expect(byTestId('prep')).toBeNull();
     expect(byTestId('calibrate')).not.toBeNull();

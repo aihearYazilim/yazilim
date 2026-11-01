@@ -529,6 +529,10 @@ await step('Hasta: acil kırmızı bayrak → 112 uyarısı; "Durdur" atağı ac
     await page.goto(BASE + '#/hasta/rapor/' + ep.id);
     const rep = await page.getByTestId('report-overrides').innerText();
     if (/\bRED_FLAG\b/.test(rep)) throw new Error('araştırma kaydında ham kod: ' + rep);
+    // Yeni kullanıcı turu 1 (y04 #3–4, y05 #7): devam edilen bayrak "DURDURULDU" değil; kimlik Türkçe.
+    if (/\bneuro\b/.test(rep)) throw new Error('araştırma kaydında ham kimlik: ' + rep);
+    const flagLine = await page.getByTestId('report-redflag').first().innerText();
+    if (!flagLine.includes('işaretlendi, uyarı gösterildi, devam edildi') || /DURDURULDU/.test(flagLine)) throw new Error('güvenlik sorusu satırı: ' + flagLine);
     await snap(page, 'rapor-arastirma-kaydi');
     noErrors(errors);
     await ctx.close();
@@ -809,6 +813,17 @@ await step('Hasta: "yatakta sağa-sola dönünce" yanıtı → sırtüstü baş 
   ep = (await storeOf(page)).episodes.at(-1);
   const m = ep.maneuvers.at(-1);
   if (m?.protocolId !== 'bbq-roll' || m.side !== 'R' || !m.completed) throw new Error('BBQ roll kaydı: ' + JSON.stringify(m && { p: m.protocolId, s: m.side, c: m.completed }));
+  // Atak kaydı ve rapor gerçekte yapılan test ve manevrayı yazar (yeni kullanıcı turu 1, y04 #2, y06 #1).
+  if (ep.protocolId !== 'bbq-roll') throw new Error('atak kaydında manevra BBQ roll değil: ' + ep.protocolId);
+  if (!ep.appVersion || !ep.rulesVersion) throw new Error('atakta sürüm yok');
+  await page.goto(BASE + '#/hasta/rapor/' + ep.id);
+  const rep = await page.getByTestId('episode-report').innerText();
+  if (!rep.includes('BBQ roll') || !rep.includes('Sırtüstü baş çevirme testi')) throw new Error('raporda yapılan test/manevra yok: ' + rep.slice(0, 600));
+  if (/Dix-Hallpike|Epley/.test(rep)) throw new Error('raporda yapılmayan test/manevra adı: ' + rep.slice(0, 600));
+  if (!(await page.getByTestId('report-source').innerText()).includes('karar kuralları')) throw new Error('raporda sürüm satırı yok');
+  const research = await page.getByTestId('report-overrides').innerText();
+  if (/alt tip uyarısına rağmen|bir uyarıya rağmen/.test(research)) throw new Error('uyarı gösterilmeyen yerde "uyarıya rağmen": ' + research);
+  if (!research.includes('Uyarıya rağmen devam (kullanıcının aştığı uyarılar): yok')) throw new Error('aşma sayısı satırı yok: ' + research);
   noErrors(errors);
   await ctx.close();
 });
@@ -1893,6 +1908,28 @@ await step('Tur 6 kilidi: manevra sürerken sayfayı kapatma/yenileme uyarısı 
   if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
   if (await unloadWarns(page)) throw new Error('manevra bitince kapatma uyarısı kalkmadı');
   if (errors.length) throw new Error('konsol hataları: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (y01 #6): manevra sürerken sayfa yenilenince yarım manevra "yarıda kaldı (adım n)" olarak atağa ve rapora yazılır', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await startManeuver(page);
+  await holdAtStep(page, 1);
+  let ep = (await storeOf(page)).episodes[0];
+  if ((ep.pendingManeuver?.records?.length ?? 0) < 2) throw new Error('manevra sürerken ara kayıt yok: ' + JSON.stringify(ep.pendingManeuver ?? null).slice(0, 200));
+  // Kapatma uyarısı (beforeunload) onaylanır: kullanıcı sayfayı gerçekten yeniledi/kapattı.
+  page.on('dialog', (d) => void d.accept().catch(() => undefined));
+  await page.reload();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('dengeyol:v1')).episodes[0].maneuvers.length > 0, null, { timeout: 15000 });
+  ep = (await storeOf(page)).episodes[0];
+  const m = ep.maneuvers[0];
+  if (ep.pendingManeuver || m.completed || m.stopReason !== 'INTERRUPTED' || !m.recovered || m.records.length < 2) {
+    throw new Error('yarım manevra kaydı: ' + JSON.stringify({ p: !!ep.pendingManeuver, c: m.completed, s: m.stopReason, r: m.recovered, n: m.records.length }));
+  }
+  await page.goto(BASE + '#/hasta/rapor/' + ep.id);
+  const rep = await page.getByTestId('episode-report').innerText();
+  if (!/yarıda kaldı \(\d+\. adımda uygulama kapandı ya da yenilendi\)/.test(rep)) throw new Error('raporda yarım manevra yok: ' + rep.slice(0, 800));
+  noErrors(errors);
   await ctx.close();
 });
 

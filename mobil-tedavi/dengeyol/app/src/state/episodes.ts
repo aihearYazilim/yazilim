@@ -20,7 +20,7 @@ import {
   type RedFlagQuestion
 } from '../core/safety';
 import type { StepRecord } from '../core/runner';
-import type { AppData, Episode, EpisodeStatus, PatientProfile, Settings } from './types';
+import type { AppData, Episode, EpisodeStatus, ManeuverLog, PatientProfile, Settings } from './types';
 
 /**
  * Erken tekrar testi için manevradan sonra beklenecek süre (ms): 1 saat. Yayımlanmış manevra çalışmalarında erken
@@ -529,19 +529,21 @@ export const RESUME_VALID_MS = 30 * 60 * 1000;
 
 /**
  * Uygulamadan çıkılıp dönülünce kaldığı yer (L5-3; y07, y01): tamamlanmış birinci taraf testi (ikinci test kalır) ya da
- * yarıda kalan manevra (baştan yapılır; hazırlık ekranı yeniden gösterilmez). 30 dakikadan eskiyse ya da sonrasında
- * tamamlanmış bir iş varsa null.
+ * yarıda kalan manevra (baştan yapılır; hazırlık ekranı yeniden gösterilmez). Yarıda kalan manevra, uygulama kapanınca
+ * ara kayıttan kurulan (L3: `recoverInterruptedManeuvers`) ya da uygulamadan çıkılınca kesilen ('INTERRUPTED') son manevra
+ * kaydıdır; ayrı kayıt tutulmaz. 30 dakikadan eskiyse ya da sonrasında başka bir iş varsa null.
  */
 export type ResumeTarget =
   | { kind: 'side'; at: number; order: Side[]; results: NonNullable<Episode['sideProgress']>['results'] }
-  | { kind: 'maneuver'; at: number; side: Side; protocolId: NonNullable<Episode['resumeRun']>['protocolId']; then?: Side };
+  | { kind: 'maneuver'; at: number; side: Side; protocolId: Episode['maneuvers'][number]['protocolId'] };
 
 export function resumeTarget(e: Episode | null | undefined, now: number): ResumeTarget | null {
   if (!e) return null;
   const fresh = (t: number) => t <= now && now - t <= RESUME_VALID_MS;
-  const r = e.resumeRun;
-  if (r && fresh(r.at) && !e.maneuvers.some((m) => m.completed && m.at >= r.at)) {
-    return { kind: 'maneuver', at: r.at, side: r.side, protocolId: r.protocolId, ...(r.then ? { then: r.then } : {}) };
+  const last = [...e.maneuvers].sort((a, b) => a.at - b.at)[e.maneuvers.length - 1];
+  if (last && !last.completed && last.stopReason === 'INTERRUPTED' && last.side && fresh(last.at)) {
+    const later = [...e.sideTests, ...e.retests].some((x) => x.at > last.at);
+    if (!later) return { kind: 'maneuver', at: last.at, side: last.side, protocolId: last.protocolId };
   }
   const p = e.sideProgress;
   if (p && fresh(p.at) && p.results.length > 0 && p.results.length < p.order.length && !e.sideTests.some((t) => t.at >= p.at)) {
@@ -671,4 +673,77 @@ export function rxPeriodSummary(episodes: Episode[]): string {
   if (referred) parts.push(`${referred} atak hekime ya da acile yönlendirildi`);
   if (lead) parts.unshift(lead);
   return parts.join(' · ');
+}
+
+// ---- Araştırma kaydı: sürüm, demo damgası, yarıda kalan manevra (yeni kullanıcı turu 1, y04 #6, y01 #6) ------------------
+
+import { APP_VERSION, DECISION_RULES_VERSION } from '../core/version';
+export { APP_VERSION, DECISION_RULES_VERSION };
+
+/** Yeni atağa yazılacak damga: uygulama ve kural sürümü, demo modundaysa `simulation: true`. */
+export function episodeStamp(settings: Pick<Settings, 'simulation'>): Pick<Episode, 'appVersion' | 'rulesVersion' | 'simulation'> {
+  return { appVersion: APP_VERSION, rulesVersion: DECISION_RULES_VERSION, ...(settings.simulation ? { simulation: true } : {}) };
+}
+
+/** Sürüm metni: "DengeYol 0.1.0 · karar kuralları k1"; sürüm bilinmiyorsa (eski kayıt) null. */
+export function versionText(appVersion: string | undefined, rulesVersion: string | undefined): string | null {
+  if (!appVersion && !rulesVersion) return null;
+  return [appVersion ? `DengeYol ${appVersion}` : null, rulesVersion ? `karar kuralları ${rulesVersion}` : null].filter(Boolean).join(' · ');
+}
+
+/**
+ * Süren manevranın ara kaydını aktif atağa yazar (yürütücü her adım başında bildirir). Aktif atak yoksa veri değişmez.
+ * Aynı manevranın sonraki adımlarında ilk yazılış zamanı korunur.
+ */
+export function saveManeuverCheckpoint(
+  d: AppData,
+  cp: { protocolId: Episode['protocolId']; side: Side | null; records: StepRecord[]; assisted?: boolean; manual?: boolean },
+  now: number
+): AppData {
+  const ep = d.episodes.find((e) => e.status === 'active');
+  if (!ep) return d;
+  const prev = ep.pendingManeuver;
+  const at = prev && prev.protocolId === cp.protocolId && prev.side === cp.side && prev.records.length <= cp.records.length ? prev.at : now;
+  return { ...d, episodes: d.episodes.map((e) => (e.id === ep.id ? { ...e, pendingManeuver: { at, ...cp } } : e)) };
+}
+
+/** Ara kaydı silinmiş atak (manevra olağan biçimde kaydedilince). */
+export function withoutCheckpoint(e: Episode): Episode {
+  if (!e.pendingManeuver) return e;
+  const rest = { ...e };
+  delete rest.pendingManeuver;
+  return rest;
+}
+
+/**
+ * Açılışta: ara kaydı kalmış (manevra sürerken uygulama kapanmış) ataklara "yarıda kaldı" manevra kaydı yazılır. Kayıt
+ * ara kayıttaki adımları taşır (`records.length` yarıda kalınan adım), stopReason 'INTERRUPTED', `recovered: true`. Doz
+ * sayımı olağan kurala uyar (bir pozisyon adımına geçildiyse sayılır). Ara kaydı olmayan veri aynen döner.
+ */
+export function recoverInterruptedManeuvers(d: AppData, newId: () => string): AppData {
+  if (!d.episodes.some((e) => e.pendingManeuver)) return d;
+  return {
+    ...d,
+    episodes: d.episodes.map((e) => {
+      const p = e.pendingManeuver;
+      if (!p) return e;
+      const rest = withoutCheckpoint(e);
+      if (p.records.length === 0) return rest;
+      const log: ManeuverLog = {
+        id: newId(),
+        at: p.at,
+        protocolId: p.protocolId,
+        side: p.side,
+        completed: false,
+        stopReason: 'INTERRUPTED',
+        records: p.records,
+        manual: !!p.manual,
+        ...(p.assisted !== undefined ? { assisted: p.assisted } : {}),
+        pauses: totalPauses(p.records),
+        recovered: true
+      };
+      const maneuvers = [...e.maneuvers, log].sort((a, b) => a.at - b.at);
+      return { ...rest, maneuvers, protocolId: p.protocolId, ...(p.side && !e.side ? { side: p.side } : {}) };
+    })
+  };
 }
