@@ -1609,8 +1609,8 @@ await step('Tur 2–3 kilidi: aynı gün manevrayla kapatılan atak yeniden aç�
   await page.goto(BASE + '#/hasta');
   await page.getByTestId('active-episode').waitFor();
   if (await page.getByTestId('do-retest').count()) throw new Error('1 saat dolmadan tekrar testi açıldı');
-  // Yeni kullanıcı turu 2 (M1-8): saat tek satırda, büyük düğmenin altında ("Tekrar testi 15:03 — …").
-  if (!/Tekrar testi \d\d:\d\d — /.test(await page.getByTestId('start-episode').innerText())) throw new Error('tekrar testi saati yok');
+  // Yeni kullanıcı turu 2 (M1-8): saat tek satırda, büyük düğmenin altında; tur 3 (N1-5): "Tekrar testi 15:03'te …".
+  if (!/Tekrar testi \d\d:\d\d'(de|da|te|ta)\b/.test(await page.getByTestId('start-episode').innerText())) throw new Error('tekrar testi saati yok');
   // Adresle "treat"/"start": manevra ya da test kendiliğinden açılmaz, önce uyarı.
   for (const mode of ['treat', 'start']) {
     await page.goto(BASE + '#/hasta/atak/' + mode);
@@ -2108,7 +2108,7 @@ await step('Tur 6 kilidi: manevra sürerken sayfayı kapatma/yenileme uyarısı 
   await ctx.close();
 });
 
-await step('Yeni kullanıcı turu 1 (y01 #6): manevra sürerken sayfa yenilenince yarım manevra "yarıda kaldı (adım n)" olarak atağa ve rapora yazılır', async () => {
+await step('Yeni kullanıcı turu 1 (y01 #6) ve 3 (N1-4): manevra sürerken sayfa yenilenince yarım manevra "yarıda kaldı (adım n)" olarak atağa ve rapora yazılır; yenilenen sayfada önce yarım manevra sorusu', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
   await startManeuver(page);
   await holdAtStep(page, 1);
@@ -2117,6 +2117,10 @@ await step('Yeni kullanıcı turu 1 (y01 #6): manevra sürerken sayfa yenileninc
   // Kapatma uyarısı (beforeunload) onaylanır: kullanıcı sayfayı gerçekten yeniledi/kapattı.
   page.on('dialog', (d) => void d.accept().catch(() => undefined));
   await page.reload();
+  // Yeni kullanıcı turu 3 (N1-4; y01): manevra sayfası yenilenince de önce "n. adımda yarıda kaldı" sorusu; hazırlık yok.
+  await page.getByTestId('resume-ask').waitFor({ timeout: 15000 });
+  if (!/Manevra \d+\. adımda yarıda kaldı/.test(await page.getByTestId('resume-ask').innerText())) throw new Error('yenilenen sayfada yarım manevra sorusu yok');
+  if ((await page.getByTestId('prep').count()) || (await page.getByTestId('runner').count())) throw new Error('yenilenen sayfada hazırlık ya da yürütücü açıldı');
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('dengeyol:v1')).episodes[0].maneuvers.length > 0, null, { timeout: 15000 });
   ep = (await storeOf(page)).episodes[0];
   const m = ep.maneuvers[0];
@@ -2308,7 +2312,8 @@ await step('Yeni kullanıcı turu 1 (L5-1, y07): kusma bildirilince ana ekran do
   await card.waitFor();
   const home = await page.getByTestId('active-episode').innerText();
   if (/Son testte baş dönmesi gelmedi/.test(home)) throw new Error('ana ekran "son testte baş dönmesi gelmedi" diyor');
-  if (!/1 manevra tamamlandı · önerilen en fazla 3/.test(home) || /sınır doldu/.test(home)) throw new Error('bugünkü manevra sayısı yanlış: ' + home.slice(0, 300));
+  // Yeni kullanıcı turu 3 (N1-5; y03): tek satır "başka manevra yok"; "önerilen en fazla 3" satırları yok.
+  if (!/Bugün başka manevra yok; önce sabah testi/.test(home) || /sınır doldu|önerilen en fazla/.test(home)) throw new Error('bugün satırı yanlış: ' + home.slice(0, 300));
   const when = (await card.innerText()).match(/\d{1,2} \S+ \d\d:\d\d/)?.[0];
   if (!when) throw new Error('ana ekranda sabah testi zamanı yok');
   await snap(page, 'kusma-ana-ekran');
@@ -2480,6 +2485,81 @@ await step('Yeni kullanıcı turu 2 (M1-1, M1-2; y02, y06): kulak "Doktorum tan�
   ep = (await storeOf(page)).episodes[0];
   if (!(ep.overrides ?? []).some((o) => o.kind === 'USER_CHOICE' && /^Uygulamanın önerisi seçildi — .*sol taraf da test edildi/.test(o.detail ?? ''))) throw new Error('seçim kaydı: ' + JSON.stringify(ep.overrides));
   if ((ep.overrides ?? []).some((o) => /^REFER_/.test(o.kind))) throw new Error('önerilen yol aşma diye kaydedildi');
+  // Yeni kullanıcı turu 3 (N1-3; y02): sol test baş dönmesi yapınca taraf çelişkisi; önerilen yol test tarafı, "Yanlış
+  // girmişim: kaydı düzelt" görünür. Düzeltme tanıyı sol yapar ve sol tarafa manevraya geçer; aşma sayılmaz.
+  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  const dec = page.getByTestId('decision');
+  await dec.waitFor({ timeout: 15000 });
+  if ((await dec.getAttribute('data-warn')) !== 'SIDE_CONFLICT') throw new Error('taraf çelişkisi ekranı gelmedi: ' + (await dec.getAttribute('data-warn')));
+  const top = page.locator('[data-testid="decision"] [role="radio"]').first();
+  if ((await top.getAttribute('data-testid')) !== 'decision-test-side' || !/\bprimary\b/.test((await top.getAttribute('class')) ?? '')) throw new Error('önerilen yol test tarafı değil');
+  const fix = page.getByTestId('decision-fix-dx');
+  if (!(await fix.isVisible())) throw new Error('"kaydı düzelt" seçeneği görünmüyor');
+  if (!/Yanlış girmişim, doktor sol dedi: kaydı düzelt/.test(await fix.innerText())) throw new Error('düzeltme etiketi: ' + (await fix.innerText()));
+  await unlocked(page);
+  await fix.click();
+  await page.locator('[data-testid="runner"], [data-testid="runner-start"]').first().waitFor({ timeout: 30000 });
+  const st3 = await storeOf(page);
+  if (st3.patient.side !== 'L' || !st3.patient.diagnosedByDoctor) throw new Error('tanı tarafı düzeltilmedi: ' + JSON.stringify(st3.patient));
+  ep = st3.episodes[0];
+  if (ep.side !== 'L') throw new Error('manevra tarafı sol değil: ' + ep.side);
+  if (!(ep.overrides ?? []).some((o) => o.kind === 'USER_CHOICE' && /kayıt düzeltildi: sağ yerine sol/.test(o.detail ?? ''))) throw new Error('düzeltme kaydı: ' + JSON.stringify(ep.overrides));
+  if ((ep.overrides ?? []).some((o) => o.kind === 'SIDE_CONFLICT')) throw new Error('düzeltme aşma diye kaydedildi');
+  if (!/düzeltti \(sağ yerine sol\)/.test(ep.sideConflictNote ?? '')) throw new Error('rapor notu: ' + ep.sideConflictNote);
+  noErrors(errors);
+  await ctx.close();
+});
+
+// ------------------------------------------------------------------------------------------------
+// Yeni kullanıcı turu 3 (N1): hasta akışı.
+
+await step('Yeni kullanıcı turu 3 (N1-1, N1-6, N1-5, N1-7, N1-8): ana ekran bir kez konuşur; "Şu an nasılsınız?" dokunulmadan seçenekleriyle okunur; bitişte iki kısa satır ve ana ekranla aynı saat; manevra sonrası belirti şiddeti manevraya yazılır', async () => {
+  const { ctx, page, errors } = await newPage(
+    seed({ settings: { role: 'patient', speech: true, askVas: true }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }),
+    { speechMs: 400 }
+  );
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').waitFor();
+  // N1-1: ana ekran açılınca kısa ses (bir kez).
+  await page.waitForFunction(() => window.speechSynthesis.__log().some((r) => /^Başınız dönüyorsa üstteki büyük düğmeye dokunun/.test(r.text)), null, { timeout: 5000 });
+  await page.getByTestId('start-episode').click();
+  // Atak başı belirti şiddeti (araştırma ayarı açık): geçilir.
+  await page.getByTestId('vas-before').waitFor();
+  await unlocked(page);
+  await page.getByTestId('vas-before-skip').click();
+  await page.getByTestId('prep').waitFor();
+  await calibrate(page);
+  const phase = await driveRunner(page);
+  if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
+  // N1-6: hiç dokunmadan (demo modunda telefonun inişi sezilmez) soru seçenekleriyle okunur.
+  await page.getByRole('radio', { name: /İyiyim/ }).waitFor();
+  const t0 = Date.now();
+  await page.waitForFunction(() => window.speechSynthesis.__log().some((r) => /^Şu an nasılsınız\?.*Birinci: İyiyim/.test(r.text)), null, { timeout: 12000 });
+  if (Date.now() - t0 > 9000) throw new Error('soru geç okundu: ' + (Date.now() - t0) + ' ms');
+  await clickChoice(page, 'İyiyim');
+  // N1-8: manevra sonrası belirti şiddeti manevraya yazılır (atakta yalnız başlangıç).
+  await page.getByTestId('vas-after').waitFor();
+  await unlocked(page);
+  await page.getByTestId('vas-after-3').click();
+  await page.getByTestId('end-maneuver-done').waitFor();
+  const ep = (await storeOf(page)).episodes[0];
+  if (ep.maneuvers[ep.maneuvers.length - 1].vasAfter !== 3 || ep.vas?.after !== undefined) throw new Error('belirti şiddeti kaydı: ' + JSON.stringify({ m: ep.maneuvers.map((m) => m.vasAfter), vas: ep.vas }));
+  // N1-7: üstte iki kısa satır, paragraf katlı; N1-5: tekrar testi saati ana ekrandakiyle aynı.
+  const lines = await page.getByTestId('end-line').allInnerTexts();
+  if (lines.join('|') !== '10 dakika oturun.|Kalkarken tutunun.') throw new Error('bitiş satırları: ' + lines.join('|'));
+  if (await page.getByTestId('end-details').evaluate((el) => el.open)) throw new Error('bitiş paragrafı katlı değil');
+  const endTime = (await page.getByTestId('end-next-step').innerText()).match(/\d\d:\d\d/)?.[0];
+  await page.getByTestId('go-home').click();
+  await page.getByTestId('active-episode').waitFor();
+  const homeTime = (await page.getByTestId('start-episode').innerText()).match(/\d\d:\d\d/)?.[0];
+  if (!endTime || endTime !== homeTime) throw new Error(`tekrar testi saati bitişte ${endTime}, ana ekranda ${homeTime}`);
+  if (!/Şimdilik başka manevra yok; önce tekrar testi/.test(await page.getByTestId('home-today-count').innerText())) throw new Error('ana ekranda tek satır yok');
+  // Ana ekran ikinci kez konuşmaz.
+  const intro = (await page.evaluate(() => window.speechSynthesis.__log())).filter((r) => /^Başınız dönüyorsa/.test(r.text)).length;
+  if (intro !== 1) throw new Error('ana ekran sesi ' + intro + ' kez okundu');
+  // Hasta raporunda belirti şiddeti.
+  await page.goto(BASE + '#/hasta/rapor/' + ep.id);
+  if (!/manevradan sonra 3/.test(await page.getByTestId('report-vas').innerText())) throw new Error('raporda belirti şiddeti yok');
   noErrors(errors);
   await ctx.close();
 });

@@ -795,7 +795,7 @@ export function homeStepText(st: HomeStep): string {
 const AFTER_TEXT: Record<NonNullable<HomeManeuver['afterSymptoms']>, string> = {
   none: 'sonrası: iyi',
   mild: 'sonrası: hafif belirti',
-  severe: 'sonrası: şiddetli belirti',
+  severe: 'sonrası: kusma ya da şiddetli bulantı',
   neuro: 'sonrası: yeni nörolojik belirti'
 };
 

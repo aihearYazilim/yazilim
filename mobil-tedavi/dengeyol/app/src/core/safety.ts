@@ -161,12 +161,13 @@ export const RED_FLAGS: RedFlagQuestion[] = [
       'Bir kulağınızda yeni ya da ani başlayan işitme kaybı, tıkanma, çınlama, kulak ağrısı ya da kulak akıntısı var mı? Uzun süredir olan ve değişmeyen çınlama sayılmaz.',
     label: 'yeni kulak belirtisi (işitme kaybı, tıkanma, çınlama, ağrı ya da akıntı)',
     // Kullanıcı turu 2 (k03): KBB değerlendirmesinden sonra ne yanıtlanacağı. "Yeni" sözünün anlamını açar; durdurma aynı.
-    hint: 'Bir KBB hekimi bu kulak belirtinize baktıysa ve o günden beri artmadıysa artık yeni sayılmaz: "Hayır" deyin. Belirti arttıysa, değiştiyse ya da yeni bir kulak belirtisi eklendiyse "Evet" deyin.',
+    // Yeni kullanıcı turu 3 (N1-7; y03): "KBB" yerine gündelik "kulak doktoru"; kısaltma yalnız ilk anışta ayraç içinde.
+    hint: 'Bir kulak doktoru (KBB) bu kulak belirtinize baktıysa ve o günden beri artmadıysa artık yeni sayılmaz: "Hayır" deyin. Belirti arttıysa, değiştiyse ya da yeni bir kulak belirtisi eklendiyse "Evet" deyin.',
     stopsOn: 'yes',
     action: 'doctor',
-    why: 'Yeni kulak belirtileri kristal oynaması (BPPV) dışında bir kulak sorununu gösterebilir. Ani işitme kaybı ya da yeni kulak dolgunluğu varsa BUGÜN bir KBB hekimine ya da KBB hekimi olan bir hastanenin acil servisine başvurun: erken tedavi işitmeyi kurtarabilir. Yalnız yeni çınlama, ağrı ya da akıntı varsa birkaç gün içinde KBB hekimine başvurun ve bu belirtiyi söyleyin. Manevrayı KBB değerlendirmesinden sonra yapın.',
-    stopSpoken: 'Ani işitme kaybı ya da kulak tıkanması varsa bugün KBB hekimine gidin; diğer kulak belirtilerinde birkaç gün içinde.',
-    refer: 'Yukarıdaki aciliyete göre bir KBB hekimine başvurun ve kulak belirtinizi söyleyin.',
+    why: 'Yeni kulak belirtileri kristal oynaması (BPPV) dışında bir kulak sorununu gösterebilir. Ani işitme kaybı ya da yeni kulak tıkanması varsa BUGÜN bir kulak doktoruna (KBB) ya da kulak doktoru olan bir hastanenin acil servisine başvurun: erken tedavi işitmeyi kurtarabilir. Yalnız yeni çınlama, ağrı ya da akıntı varsa birkaç gün içinde kulak doktoruna başvurun ve bu belirtiyi söyleyin. Manevrayı kulak doktoru baktıktan sonra yapın.',
+    stopSpoken: 'Ani işitme kaybı ya da kulak tıkanması varsa bugün kulak doktoruna gidin; diğer kulak belirtilerinde birkaç gün içinde.',
+    refer: 'Yukarıdaki aciliyete göre bir kulak doktoruna (KBB) başvurun ve kulak belirtinizi söyleyin.',
     doctorAsk:
       'Kulağımda yeni bir belirti var (işitme azalması, tıkanma, çınlama, ağrı ya da akıntı); DengeYol bu yüzden manevrayı durdurdu. Bu belirtiyle evde manevra yapabilir miyim? Belirti değişmedikçe uygulamadaki kulak sorusuna "Hayır" diyebilir miyim?'
   },

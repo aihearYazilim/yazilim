@@ -91,8 +91,11 @@ export function researchGroupOf(kind: string): ResearchGroup {
   return 'override';
 }
 
-/** Manevra öncesi aşılan uyarılar: ardından manevraya girilmediyse aşma sayılmaz (y06 #7: vazgeçilen tekrar). */
-const PRE_MANEUVER_KINDS = new Set(['EARLY_REPEAT', 'DOSE', 'NEURO_ALERT']);
+/**
+ * Manevra öncesi aşılan uyarılar: ardından manevraya girilmediyse aşma sayılmaz (y06 #7: vazgeçilen tekrar). Yeni kullanıcı
+ * turu 3 (N1-8; y07): kusma uyarısı aşılıp manevraya girilmediyse (ör. güvenlik listesinde bırakıldı) de aşma sayılmaz.
+ */
+const PRE_MANEUVER_KINDS = new Set(['EARLY_REPEAT', 'DOSE', 'NEURO_ALERT', 'VOMITING']);
 /** Ön uyarı ile manevra kaydı arasındaki en uzun süre (hazırlık + tanıtma + manevra; manevra kaydı bitişte yazılır). */
 const PRE_MANEUVER_WINDOW_MS = 45 * 60 * 1000;
 
@@ -474,6 +477,8 @@ export function redFlagLineText(
   // (bu onayı soran) atakta belirtilir.
   const confirmed = !!e.appVersion && pos.some((q) => q.action === 'emergency') ? ' ("doğru mu?" sorusunda onaylandı)' : '';
   const what = `${pos.map((q) => q.text).join(' | ')}${confirmed}`;
+  // Uyarı aşılınca kayıt `stopped: false, continued: true` (N1-8); eski kayıtlarda devam, aşma kaydından çıkarılır.
+  if (r.continued) return `işaretlendi, uyarı gösterildi, devam edildi — ${what}`;
   if (!r.stopped) return `işaretlendi — ${what}`;
   return redFlagContinued(e, r) ? `işaretlendi, uyarı gösterildi, devam edildi — ${what}` : `işaretlendi, atak durduruldu (hekime/acile yönlendirme) — ${what}`;
 }
@@ -689,10 +694,27 @@ export function maneuverTags(m: ManeuverLog): string[] {
           ? 'sonrası: hafif belirti'
           : m.afterSymptoms === 'neuro'
             ? 'sonrası: yeni nörolojik belirti'
-            : 'sonrası: şiddetli belirti'
+            : // Ekrandaki yanıtla aynı (N1-8; y07: "şiddetli belirti" kusmayı anlatmıyordu).
+              'sonrası: kusma ya da şiddetli bulantı'
     );
   }
   return tags;
+}
+
+/**
+ * Hasta raporunda belirti şiddeti satırı (N1-8; y04: VAS yalnız klinisyende görünüyordu): "başta 6, 1. manevradan sonra 2,
+ * 2. manevradan sonra 1". Manevra başına değer (`ManeuverLog.vasAfter`) yoksa eski kayıttaki `Episode.vas.after`
+ * ("manevradan sonra 3"). Hiç değer yoksa null.
+ */
+export function vasReportText(e: Pick<Episode, 'vas' | 'maneuvers'>): string | null {
+  const parts: string[] = [];
+  if (e.vas?.before !== undefined) parts.push(`başta ${e.vas.before}`);
+  const per = e.maneuvers.map((m, i) => ({ i, v: m.vasAfter })).filter((x): x is { i: number; v: number } => x.v !== undefined);
+  if (per.length > 0) {
+    const many = e.maneuvers.length > 1;
+    for (const x of per) parts.push(`${many ? `${x.i + 1}. manevradan` : 'manevradan'} sonra ${x.v}`);
+  } else if (e.vas?.after !== undefined) parts.push(`manevradan sonra ${e.vas.after}`);
+  return parts.length ? parts.join(', ') : null;
 }
 
 /**
@@ -741,6 +763,8 @@ function episodeHeadLines(e: Episode, d: AppData, now: number, inPeriod: boolean
   }
   const af = assistFallbackText(e, d.settings);
   if (af) L.push(`Manevrayı yaptıran: ${af}`);
+  const vas = vasReportText(e);
+  if (vas) L.push(`Belirti şiddeti (0–10): ${vas}`);
   const neuro = neuroAlertText(e);
   if (neuro) L.push(`Yeni belirti: ${neuro}`);
   const src = recordSourceText(e);

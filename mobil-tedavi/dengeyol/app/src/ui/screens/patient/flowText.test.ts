@@ -66,7 +66,19 @@ import {
   singleSideNote,
   VOMIT_WARN_TITLE,
   vomitWarnSpoken,
-  vomitWarnText
+  vomitWarnText,
+  homeIntroSpoken,
+  HOME_INTRO_SPOKEN,
+  homeTodayWaitText,
+  MANEUVER_DONE_LINES,
+  NOT_TRIGGERED_SAFETY,
+  RED_FLAGS_CORRECTED_SPOKEN,
+  RED_FLAGS_OPEN_SPOKEN,
+  redFlagsNamesAloud,
+  redFlagsSpokenOpen,
+  redFlagShortName,
+  redFlagStopHeadline,
+  timeLocative
 } from './flowText';
 
 describe('seçenekli ekranın sesli biçimi (kullanıcı turu 3, k01, k04, k05)', () => {
@@ -331,9 +343,10 @@ describe('yeniden tasarım: tek ekran güvenlik listesi', () => {
   });
 
   it('sonraki adım tek satır, saat bir kez; seste cümleler noktayla ayrılır (M1-8; y01, y02)', () => {
-    expect(nextStepLine('early-retest', '05:55', true)).toBe('Tekrar testi 05:55 — uyanınca "Başım dönüyor"a basın');
-    expect(nextStepLine('early-retest', '15:03', false)).toBe('Tekrar testi 15:03 — saati gelince "Başım dönüyor"a basın');
-    expect(nextStepLine('morning-retest', '1 Kasım 06:00', false)).toMatch(/^Sabah testi 1 Kasım 06:00 — uyanınca/);
+    // Yeni kullanıcı turu 3 (N1-5; y03): "uyanınca" yalnız uyuyan için; saat ekiyle.
+    expect(nextStepLine('early-retest', '23:14', true)).toBe('Tekrar testi 23:14\'te (uyuyorsanız uyanınca): "Başım dönüyor"a basın');
+    expect(nextStepLine('early-retest', '15:03', false)).toBe('Tekrar testi 15:03\'te: "Başım dönüyor"a basın');
+    expect(nextStepLine('morning-retest', '1 Kasım 06:00', false)).toBe('Sabah testi 1 Kasım 06:00\'da (uyanınca): "Başım dönüyor"a basın');
     const { short } = choiceSpeechParts({ title: 'Testte baş dönmesi başlamadı', spokenLead: 'Test baş dönmesi yapmadı' }, [{ label: 'Durdur' }]);
     expect(short).toBe('Testte baş dönmesi başlamadı. Test baş dönmesi yapmadı. Birinci: Durdur.');
     expect(endSentence('Bitti?')).toBe('Bitti?');
@@ -385,7 +398,9 @@ describe('yeniden tasarım: tek ekran güvenlik listesi', () => {
     const em = redFlagWarnSpoken('emergency', [neuro]);
     expect(em).toMatch(/112/);
     expect(em.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
-    expect(redFlagWarnSpoken('doctor', [ear])).toMatch(/KBB/);
+    // N1-7 (y03): seste "KBB" değil "kulak doktoru".
+    expect(redFlagWarnSpoken('doctor', [ear])).toMatch(/kulak doktoruna/);
+    expect(redFlagWarnSpoken('doctor', [ear])).not.toMatch(/KBB/);
     expect(redFlagWarnSpoken('emergency', [], 'Yeni belirti.')).toMatch(/Yeni belirti\. Hemen 112/);
     for (const q of RED_FLAGS) expect(redFlagWarnSpoken(q.action, [q])).not.toMatch(/BPPV/);
   });
@@ -414,12 +429,16 @@ describe('yeniden tasarım: uyarı ekranları kilitlemez', () => {
     }
   });
 
-  it('taraf çelişkisi: "Test tarafına devam" / "Hekimin dediği tarafa devam"', () => {
+  it('taraf çelişkisi: önerilen "Test tarafına devam", "Yanlış girmişim: kaydı düzelt", "Hekimin dediği tarafa devam" (N1-3; y02)', () => {
     const d = { ...base, side: 'R' as const, doctorSide: 'L' as const, warn: 'SIDE_CONFLICT' as const };
     const sc = decisionScreen(d);
-    expect(ids(d)).toEqual(['decision-test-side', 'decision-doctor-side', 'decision-stop']);
-    expect(sc.options[0]!.label).toBe('Test tarafına devam (sağ)');
-    expect(sc.options[1]!.label).toBe('Hekimin dediği tarafa devam (sol)');
+    expect(ids(d)).toEqual(['decision-test-side', 'decision-fix-dx', 'decision-doctor-side', 'decision-stop']);
+    expect(sc.options[0]).toMatchObject({ label: 'Test tarafına devam (sağ)', primary: true });
+    expect(sc.options[1]).toMatchObject({ value: 'fix:dx', label: 'Yanlış girmişim, doktor sağ dedi: kaydı düzelt' });
+    expect(sc.options[2]!.label).toBe('Hekimin dediği tarafa devam (sol)');
+    // İlk ses öneriyi söyler; seçenekler katlanmaz (düzeltme görünsün).
+    expect(sc.spoken).toMatch(/^Önerim: test tarafına devam\. Test sağ, hekiminiz sol demişti\./);
+    expect(sc.fold).toBe(false);
   });
 
   it('tetiklenmedi: bilinen tarafa manevra önerilen (dolu) düğme; taraf yoksa önerilen "iki tarafa sırayla"; öbür kanalın testi', () => {
@@ -452,13 +471,13 @@ describe('yeniden tasarım: uyarı ekranları kilitlemez', () => {
     }
   });
 
-  it('önerilen yol işareti: temiz kararda "Öneriyle devam", iki tarafta "Devam et"; atipik süre ve taraf çelişkisinde önerilen yok', () => {
+  it('önerilen yol işareti: temiz kararda "Öneriyle devam", iki tarafta "Devam et", taraf çelişkisinde test tarafı (N1-3); atipik sürede önerilen yok', () => {
     const primaryOf = (d: Parameters<typeof decisionScreen>[0]) => decisionScreen(d).options.filter((o) => o.primary).map((o) => o.testid);
     expect(primaryOf({ ...base, side: 'R', warn: null })).toEqual(['decision-continue']);
     expect(primaryOf({ ...base, side: 'R', both: true, warn: 'BOTH_SIDES' })).toEqual(['decision-continue']);
     expect(primaryOf({ ...base, side: 'L', warn: 'BOTH_SIDES' })).toEqual(['decision-continue']);
     expect(primaryOf({ ...base, side: 'R', warn: 'ATYPICAL_LONG' })).toEqual([]);
-    expect(primaryOf({ ...base, side: 'R', doctorSide: 'L', warn: 'SIDE_CONFLICT' })).toEqual([]);
+    expect(primaryOf({ ...base, side: 'R', doctorSide: 'L', warn: 'SIDE_CONFLICT' })).toEqual(['decision-test-side']);
   });
 
   it('atipik süre: "Yine de devam et" uygulamanın tarafına; ekranda 112 bilgisi', () => {
@@ -526,8 +545,66 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası metinler', () => {
     expect(one.options.find((o) => o.value === 'go:R')!.primary).toBeFalsy();
     expect(one.spoken).toMatch(/^Önerim: sol tarafı da test etmek\./);
     expect(one.fold).toBe(true);
+    // N1-7 (y02): "öbür tarafı test edelim" ile "kristal oynamasından olmayabilir" yan yana değil; güvenlik cümlesi kalır.
+    expect(one.lead).not.toMatch(/olmayabilir/);
+    expect(one.lead).toContain(NOT_TRIGGERED_SAFETY);
     expect(decisionScreen(d).options.find((o) => o.value === 'test:other')).toBeUndefined();
     // Karar kendisi öbür tarafın testini taşıyorsa (patientDecision testOther) seçenek de gelir.
     expect(decisionScreen({ ...d, testOther: 'L' }).options[0]).toMatchObject({ value: 'test:other', primary: true });
+  });
+});
+
+describe('yeni kullanıcı turu 3, N1: hasta akışı metinleri', () => {
+  it('ana ekranın açılış sesi kısa; tanı girilmemişse "Doktorum tanı koydu" cümlesi, tanı varsa ek cümle yok (N1-1)', () => {
+    expect(HOME_INTRO_SPOKEN).toBe('Başınız dönüyorsa üstteki büyük düğmeye dokunun.');
+    expect(homeIntroSpoken(false)).toBe(HOME_INTRO_SPOKEN);
+    expect(homeIntroSpoken(true)).toMatch(/^Başınız dönüyorsa üstteki büyük düğmeye dokunun\. .*Doktorum tanı koydu/);
+    expect(homeIntroSpoken(true).length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+  });
+
+  it('güvenlik listesi açılış sesi tek cümle (~6 s); yavaş seste ya da büyük yazıda kısa madde adları da; düzeltmeden sonra kısa ses (N1-2)', () => {
+    expect(redFlagsSpokenOpen(RED_FLAGS, false)).toBe(RED_FLAGS_OPEN_SPOKEN);
+    expect(RED_FLAGS_OPEN_SPOKEN).toMatch(/^Şu an bunlardan biri varsa işaretleyin; yoksa Hiçbiri yok'a dokunun\. .*Listeyi dinle/);
+    // ~6 s (≈13 karakter/s): 125 karakteri geçmez.
+    expect(RED_FLAGS_OPEN_SPOKEN.length).toBeLessThanOrEqual(125);
+    for (const q of RED_FLAGS) expect(RED_FLAGS_OPEN_SPOKEN).not.toContain(RED_FLAG_SHORT[q.id]!);
+    const named = redFlagsSpokenOpen(RED_FLAGS, true);
+    for (const q of RED_FLAGS) expect(named).toContain(RED_FLAG_SHORT[q.id]!);
+    expect(named).toMatch(/Hiçbiri yok'a dokunun\.$/);
+    expect(redFlagsNamesAloud({ speechRate: 1, fontScale: 'normal' })).toBe(false);
+    expect(redFlagsNamesAloud({ speechRate: 0.8, fontScale: 'normal' })).toBe(true);
+    expect(redFlagsNamesAloud({ speechRate: 1, fontScale: 'xlarge' })).toBe(true);
+    expect(RED_FLAGS_CORRECTED_SPOKEN).toBe("Düzeltildi. Başka yoksa Hiçbiri yok'a dokunun.");
+    // İşaretleme sesi maddenin kısa adıyla (kısa cümle; kilit kısa sürer).
+    const neck = RED_FLAGS.find((q) => q.id === 'neck')!;
+    expect(redFlagToggleSpoken(redFlagShortName(neck), true, 2)).toBe('İşaretlendi: boyun incinmesi.');
+  });
+
+  it('saat eki okunuşa göre; ana ekranın "Bugün" satırı sıradaki teste göre (N1-5)', () => {
+    expect(timeLocative('23:14')).toBe("23:14'te");
+    expect(timeLocative('23:10')).toBe("23:10'da");
+    expect(timeLocative('14:50')).toBe("14:50'de");
+    expect(timeLocative('14:40')).toBe("14:40'ta");
+    expect(timeLocative('15:03')).toBe("15:03'te");
+    expect(timeLocative('06:00')).toBe("06:00'da");
+    expect(timeLocative('20:00')).toBe("20:00'de");
+    expect(timeLocative('00:00')).toBe("00:00'da");
+    expect(timeLocative('1 Kasım 09:00')).toBe("1 Kasım 09:00'da");
+    expect(timeLocative('saat yok')).toBe('saat yok');
+    expect(homeTodayWaitText('early-retest')).toBe('Şimdilik başka manevra yok; önce tekrar testi');
+    expect(homeTodayWaitText('morning-retest')).toBe('Bugün başka manevra yok; önce sabah testi');
+  });
+
+  it('bitiş ekranında iki kısa satır; uyarı ekranının üst cümlesi kısa, "KBB" yerine "kulak doktoru" (N1-7)', () => {
+    expect(MANEUVER_DONE_LINES).toEqual(['10 dakika oturun.', 'Kalkarken tutunun.']);
+    const byId = (id: string) => RED_FLAGS.find((q) => q.id === id)!;
+    expect(redFlagStopHeadline('doctor', [byId('ear')])).toMatch(/^Kulak doktoruna gidin/);
+    expect(redFlagStopHeadline('emergency', [byId('neuro')])).toBe("Hemen 112'yi arayın.");
+    expect(redFlagStopHeadline('doctor', [byId('neck'), byId('fever')])).toBe('Bugün hekiminize ya da acil servise gidin.');
+    expect(redFlagStopHeadline('doctor', [{ id: 'yeni', action: 'doctor' }])).toBe('Hekiminize başvurun.');
+    for (const q of RED_FLAGS) expect(redFlagStopHeadline(q.action, [q]).length, q.id).toBeLessThanOrEqual(80);
+    const ear = byId('ear');
+    for (const t of [ear.stopSpoken, redFlagStopHeadline('doctor', [ear]), RED_FLAG_CHECK_TEXT.ear!]) expect(t).not.toMatch(/KBB/);
+    expect(ear.why).toMatch(/kulak doktoru/);
   });
 });

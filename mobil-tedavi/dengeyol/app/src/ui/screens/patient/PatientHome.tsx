@@ -27,7 +27,7 @@ import {
   todayManeuverCounts,
   vomitPause
 } from '../../../state/episodes';
-import { HOME_VOMIT_TEXT, nextStepLine } from './flowText';
+import { HOME_VOMIT_TEXT, homeIntroSpoken, homeTodayWaitText, NEURO_STRIP_TEXT, nextStepLine } from './flowText';
 import { speech } from '../../../platform/speech';
 import { useTapLock } from '../../components/Controls';
 import type { AppData, Episode } from '../../../state/types';
@@ -47,6 +47,50 @@ function useNow(ms = 15000) {
     return () => clearInterval(id);
   }, [ms]);
   return now;
+}
+
+/** Ana ekranda "Doktorum tanı koydu" gösterilir mi: tanı/taraf bilinmiyor, reçete yok ve bu atakta test başlamadı. */
+function askDxSideFor(d: AppData): boolean {
+  const p = d.patient;
+  if (!p) return false;
+  const ep = activeEpisode(d);
+  return !p.prescription && (!p.diagnosedByDoctor || p.side === 'unknown') && (!ep || (!ep.side && ep.sideTests.length === 0));
+}
+
+/** Ana ekranın açılış sesi bu uygulama oturumunda okundu mu ("bir kez"; N1-1). */
+let homeIntroDone = false;
+
+/** Testler için: açılış sesi yeniden okunabilsin. */
+export function resetHomeIntro(): void {
+  homeIntroDone = false;
+}
+
+/**
+ * Ana ekran açılınca bir kez kısa ses (yeni kullanıcı turu 3, N1-1; y02, y06: ana ekran konuşmayan tek ekrandı): "Başınız
+ * dönüyorsa üstteki büyük düğmeye dokunun."; tanı girilmemişse "Doktorum tanı koydu" için bir cümle daha. Uygulama
+ * oturumunda bir kez (ekrana her dönüşte değil). Ekrana herhangi bir dokunuş sesi susturur (düğmeler SpeechHush ile zaten
+ * susturur); ses bitince dinleyici kalkar, sonraki konuşmaları kesmez. Manevra sonrası yeni belirti şeridi varsa 112 söylenir.
+ */
+function useHomeIntro(enabled: boolean) {
+  useEffect(() => {
+    if (!enabled || homeIntroDone) return;
+    homeIntroDone = true;
+    const d = store.get();
+    const text = neuroAlertFor(d, Date.now()) ? NEURO_STRIP_TEXT : homeIntroSpoken(askDxSideFor(d));
+    let on = true;
+    const hush = () => {
+      off();
+      speech.cancel();
+    };
+    const off = () => {
+      if (!on) return;
+      on = false;
+      document.removeEventListener('pointerdown', hush, true);
+    };
+    document.addEventListener('pointerdown', hush, true);
+    speech.speak(text, 'normal', off);
+    return off;
+  }, [enabled]);
 }
 
 /** Ana ekrandaki kısa bilgi satırı (kilit kartlarının yerine; yeniden tasarım). */
@@ -73,6 +117,8 @@ export function PatientHome() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+  // Açılınca bir kez kısa ses (N1-1).
+  useHomeIntro(!!p?.consentAt);
 
   const right = (
     <>
@@ -119,7 +165,7 @@ export function PatientHome() {
   const vomit = vomitPause(d, now);
   const bad = ep ? lastBadMoment(ep) : null;
   // Hekim tanısındaki taraf ana ekrandan tek dokunuşla girilebilir (L5-7; y02): taraf henüz bilinmiyorsa ve test başlamadıysa.
-  const askDxSide = !p.prescription && (!p.diagnosedByDoctor || p.side === 'unknown') && (!ep || (!ep.side && ep.sideTests.length === 0));
+  const askDxSide = askDxSideFor(d);
   const singleSide = !askDxSide && (!ep || (!ep.side && ep.sideTests.length === 0)) ? singleSideTestSide(p, now) : null;
 
   /** "Başım dönüyor": hekime yönlendirmeden sonraysa bu aşma, yönlendirilen atağa araştırma kaydı olarak yazılır. */
@@ -278,11 +324,13 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
                 ? `Henüz test edilmedi (son tanı: ${side === 'R' ? 'sağ' : 'sol'})`
                 : 'Henüz belirlenmedi'}
           </dd>
+          {/* Tek satır (N1-5; y03): sıradaki adım test iken "başka manevra yok; önce tekrar testi"; değilse yalnız sayılar.
+              Gün sayısı ve önerilen sınırlar raporda; sınır doluysa ayrı bilgi satırı. */}
           <dt>Bugün</dt>
-          <dd data-testid="home-today-count">{todayCountText(counts, limits.maxPerDay, dose.allowed)}</dd>
-          <dt>Gün</dt>
-          <dd>
-            {dose.day}. gün (önerilen en fazla {limits.maxDays})
+          <dd data-testid="home-today-count">
+            {(na.kind === 'early-retest' || na.kind === 'morning-retest') && !na.ready && !neuro
+              ? homeTodayWaitText(na.kind)
+              : todayCountText(counts, limits.maxPerDay, dose.allowed)}
           </dd>
         </dl>
       </div>
@@ -303,22 +351,18 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
         </InfoLine>
       )}
 
-      {!neuro && na.kind === 'early-retest' && (
+      {/* Zamanı gelmemiş tekrar testinin kartı yok (N1-5; y01: saat ve bilgi büyük düğmenin altındaki satırda); yalnız
+          hatırlatıcı düğmesi kalır. Zamanı gelince kart "Tekrar testini yap" ile. */}
+      {!neuro && na.kind === 'early-retest' && na.ready && (
         <div className="card stack">
           <h2>Tekrar testi</h2>
-          <p>
-            {na.ready
-              ? 'Tekrar testinin zamanı geldi (yaklaşık 2 dakika).'
-              : 'Manevranın işe yarayıp yaramadığını kısa bir testle göreceğiz (saati yukarıda). Bu arada oturun ve dinlenin.'}
-          </p>
-          {na.ready && (
-            <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest')} data-testid="do-retest">
-              Tekrar testini yap
-            </button>
-          )}
-          {!na.ready && <ReminderButton at={na.at} title="DengeYol: tekrar testi zamanı" />}
+          <p>Tekrar testinin zamanı geldi (yaklaşık 2 dakika).</p>
+          <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest')} data-testid="do-retest">
+            Tekrar testini yap
+          </button>
         </div>
       )}
+      {!neuro && na.kind === 'early-retest' && !na.ready && <ReminderButton at={na.at} title="DengeYol: tekrar testi zamanı" />}
 
       {!neuro && na.kind === 'morning-retest' && (
         <div className={`card stack${na.afterVomit ? ' tint-warn' : ''}`} data-testid={na.afterVomit ? 'home-vomit' : undefined}>
@@ -550,9 +594,10 @@ function DxSideQuick({ testid }: { testid: string }) {
         <div className="stack" data-testid="home-dx-confirm" data-locked={locked || undefined} style={{ gap: 12 }}>
           <strong className="lead">{name} kulak dediniz, doğru mu?</strong>
           <span className="small">Doğruysa yalnız {pick === 'R' ? 'sağ' : 'sol'} taraf test edilir.</span>
+          {/* "Evet" ve "Hayır" eşit görünümde (N1-7; y06: dolu yeşil "Evet" okumayan kişiyi yanlış tanıya götürüyordu). */}
           <button
             type="button"
-            className="btn primary block xl"
+            className="btn secondary block xl"
             aria-disabled={locked || undefined}
             onClick={() => {
               if (locked) return;
@@ -565,7 +610,7 @@ function DxSideQuick({ testid }: { testid: string }) {
           </button>
           <button
             type="button"
-            className="btn secondary block"
+            className="btn secondary block xl"
             aria-disabled={locked || undefined}
             onClick={() => !locked && setPick(null)}
             data-testid="home-dx-no"
@@ -746,12 +791,13 @@ export function ReferralReason({ episode }: { episode: Episode }) {
 }
 
 /**
- * Ana ekrandaki "Bugün" satırı (M1-8; y07: tamamlanmış yokken "2 / 3"): "1 tamamlandı, 2 yarıda kaldı · önerilen en fazla
- * 3"; sınır doluysa yarıda kalanların da sayıldığı söylenir.
+ * Ana ekrandaki "Bugün" satırı (M1-8; y07: tamamlanmış yokken "2 / 3"): "1 tamamlandı, 2 yarıda kaldı". Önerilen sınır
+ * yalnız doluysa yazılır (N1-5; y03: "önerilen en fazla 3" bugün yine yapılacak sanılıyordu); yarıda kalanların da
+ * sayıldığı söylenir.
  */
 export function todayCountText(c: { completed: number; partial: number }, maxPerDay: number, allowed: boolean): string {
   const done = `${c.completed} manevra tamamlandı${c.partial ? `, ${c.partial} yarıda kaldı` : ''}`;
-  return `${done} · önerilen en fazla ${maxPerDay}${allowed ? '' : ` (sınır doldu${c.partial ? '; yarıda kalanlar da sayılır' : ''})`}`;
+  return allowed ? done : `${done} · önerilen en fazla ${maxPerDay} (sınır doldu${c.partial ? '; yarıda kalanlar da sayılır' : ''})`;
 }
 
 /** Büyük düğmenin altındaki tek satır sonraki adım (tekrar ya da sabah testi henüz zamanı gelmediyse); yoksa null. */

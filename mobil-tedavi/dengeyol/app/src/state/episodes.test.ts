@@ -50,6 +50,8 @@ import {
   recoverInterruptedManeuvers,
   saveManeuverCheckpoint,
   versionText,
+  needsRedFlags,
+  withLastManeuverVas,
   withoutCheckpoint
 } from './episodes';
 import type { StepRecord } from '../core/runner';
@@ -664,5 +666,40 @@ describe('araştırma damgası ve yarıda kalan manevra (yeni kullanıcı turu 1
     expect(doseFor(out, e, T + 2000).allowed).toBe(true);
     // Ara kaydı olmayan veri aynen döner.
     expect(recoverInterruptedManeuvers(out, () => 'x')).toBe(out);
+  });
+
+  it('N1-4 (y01): manevra sayfası yenilenince kurtarmadan önce de ara kayıt yarıda kalan manevra sayılır; kurtarmadan sonra aynı hedef', () => {
+    const d = saveManeuverCheckpoint(
+      { ...emptyData(), episodes: [active()] },
+      { protocolId: 'epley', side: 'R', records: [r('ep-sit'), r('ep-1'), r('ep-2')] },
+      T + 1000
+    );
+    const before = resumeTarget(d.episodes[0]!, T + 60_000);
+    expect(before).toEqual({ kind: 'maneuver', at: T + 1000, side: 'R', protocolId: 'epley', step: 3 });
+    const after = resumeTarget(recoverInterruptedManeuvers(d, () => 'm').episodes[0]!, T + 60_000);
+    expect(after).toEqual(before);
+    // Ara kayıt eskiyse, adımsızsa ya da sonrasında test yapıldıysa yok.
+    expect(resumeTarget(d.episodes[0]!, T + 1000 + RESUME_VALID_MS + 1)).toBeNull();
+    expect(resumeTarget({ ...d.episodes[0]!, pendingManeuver: { ...d.episodes[0]!.pendingManeuver!, records: [] } }, T + 60_000)).toBeNull();
+    expect(resumeTarget({ ...d.episodes[0]!, retests: [{ at: T + 2000, kind: 'early', side: 'R', vertigo: false, latencySec: null, durationSec: null }] }, T + 60_000)).toBeNull();
+  });
+});
+
+describe('yeni kullanıcı turu 3 (N1-8): manevra başına belirti şiddeti, devam edilen güvenlik yanıtı', () => {
+  it('manevra sonrası belirti şiddeti en son manevraya yazılır; önceki manevranınki ezilmez', () => {
+    const e = ep({ maneuvers: [man(base), man(base + 20 * 60e3)] });
+    const a = withLastManeuverVas(e, 4);
+    expect(a.maneuvers.map((m) => m.vasAfter)).toEqual([undefined, 4]);
+    const b = withLastManeuverVas({ ...a, maneuvers: [...a.maneuvers, man(base + 40 * 60e3)] }, 1);
+    expect(b.maneuvers.map((m) => m.vasAfter)).toEqual([undefined, 4, 1]);
+    expect(b.vas).toBeUndefined();
+    const none = ep({});
+    expect(withLastManeuverVas(none, 3)).toBe(none);
+  });
+
+  it('uyarısı aşılan (continued) güvenlik yanıtı bir sonraki girişte yeniden sorulur', () => {
+    const t = base;
+    expect(needsRedFlags(ep({ redFlags: [{ at: t, answers: {}, stopped: false }] }), t + 60e3)).toBe(false);
+    expect(needsRedFlags(ep({ redFlags: [{ at: t, answers: {}, stopped: false, continued: true }] }), t + 60e3)).toBe(true);
   });
 });

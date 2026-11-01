@@ -44,7 +44,9 @@ import {
   retestText,
   stopWhereText,
   testStopText,
-  unreachableStopDetail
+  unreachableStopDetail,
+  maneuverTags,
+  vasReportText
 } from './reportText';
 
 const rec = (o: Partial<StepRecord> = {}): StepRecord => ({
@@ -658,5 +660,60 @@ describe('gerçekte yapılan test ve manevra (yeni kullanıcı turu 1; y04 #2, y
     expect(t).toMatch(/\nÇalışma katılımcı no: DY-014\n/);
     expect(t).toMatch(/\nKayıt: DengeYol 0\.1\.0 · karar kuralları k1 · DEMO MODU/);
     expect(periodReportPlainText(d, at('2026-10-31T12:00:00'))).toMatch(/\nÇalışma katılımcı no: DY-014\n/);
+  });
+});
+
+describe('yeni kullanıcı turu 3 (N1-8; y04, y07): belirti şiddeti, kusma, devam edilen güvenlik yanıtı', () => {
+  const at = (s: string) => new Date(s).getTime();
+  const m = (t: string, p: Partial<Episode['maneuvers'][number]> = {}): Episode['maneuvers'][number] => ({
+    id: `m${t}`,
+    at: at(t),
+    protocolId: 'epley',
+    side: 'R',
+    completed: true,
+    stopReason: null,
+    records: [rec({ stepId: 'ep-sit' }), rec({ stepId: 'ep-1' })],
+    manual: false,
+    ...p
+  });
+  const base: Episode = {
+    id: 'v1',
+    startedAt: at('2026-10-31T09:00:00'),
+    side: 'R',
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'active'
+  };
+
+  it('belirti şiddeti hastanın raporunda: başta ve manevra başına; eski kayıtta atağın "sonra" değeri', () => {
+    const two: Episode = { ...base, vas: { before: 6 }, maneuvers: [m('2026-10-31T09:15:00', { vasAfter: 3 }), m('2026-10-31T09:40:00', { vasAfter: 1 })] };
+    expect(vasReportText(two)).toBe('başta 6, 1. manevradan sonra 3, 2. manevradan sonra 1');
+    expect(vasReportText({ ...base, vas: { before: 6 }, maneuvers: [m('2026-10-31T09:15:00', { vasAfter: 2 })] })).toBe('başta 6, manevradan sonra 2');
+    expect(vasReportText({ ...base, vas: { before: 7, after: 3 }, maneuvers: [m('2026-10-31T09:15:00')] })).toBe('başta 7, manevradan sonra 3');
+    expect(vasReportText(base)).toBeNull();
+    const t = reportPlainText(two, { ...emptyData(), episodes: [two] }, at('2026-10-31T12:00:00'));
+    expect(t).toMatch(/\nBelirti şiddeti \(0–10\): başta 6, 1\. manevradan sonra 3, 2\. manevradan sonra 1\n/);
+  });
+
+  it('manevra sonrası "kusma ya da şiddetli bulantı" ekrandaki yanıtla aynı', () => {
+    expect(maneuverTags(m('2026-10-31T09:15:00', { afterSymptoms: 'severe' }))).toContain('sonrası: kusma ya da şiddetli bulantı');
+    expect(maneuverTags(m('2026-10-31T09:15:00', { afterSymptoms: 'severe' })).join(' ')).not.toMatch(/şiddetli belirti/);
+  });
+
+  it('kusma uyarısı aşılıp manevraya girilmediyse aşma sayılmaz; manevraya girildiyse sayılır', () => {
+    const vom = { at: at('2026-10-31T09:10:00'), kind: 'VOMITING', detail: 'Kusma bildirildikten sonra yeniden manevra' };
+    const left: Episode = { ...base, overrides: [vom] };
+    expect(overrideCount(left)).toBe(0);
+    expect(researchEntries(left)[0]!.text).toMatch(/manevraya girilmeden vazgeçildi \(aşma sayılmadı\)$/);
+    const went: Episode = { ...left, maneuvers: [m('2026-10-31T09:25:00')] };
+    expect(overrideCount(went)).toBe(1);
+  });
+
+  it('uyarısı aşılan güvenlik yanıtı (stopped: false, continued: true) "devam edildi" yazılır', () => {
+    const rf = { at: at('2026-10-31T09:01:00'), answers: { neuro: 'yes' as const }, stopped: false, continued: true };
+    expect(redFlagLineText({ ...base, redFlags: [rf] }, rf)).toMatch(/^işaretlendi, uyarı gösterildi, devam edildi — /);
   });
 });

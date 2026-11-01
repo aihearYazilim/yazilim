@@ -18,7 +18,7 @@ import type { Calibration } from '../../../core/calibration';
 import { rxCanalOf, rxPcManeuver, rxProtocolId } from '../../../core/prescription';
 import type { ProtocolId, Side } from '../../../core/protocols';
 import { sideName } from '../../../core/protocols';
-import { SAFETY_STOP_TEXT, stopTextFor, vertigoSummary } from '../../../core/runner';
+import { estimateSpeechSec, SAFETY_STOP_TEXT, stopTextFor, vertigoSummary } from '../../../core/runner';
 import {
   contraindicationsFor,
   evaluateRedFlags,
@@ -82,6 +82,7 @@ import {
   RED_FLAG_UNDO_KIND,
   episodeStamp,
   saveManeuverCheckpoint,
+  withLastManeuverVas,
   withoutCheckpoint
 } from '../../../state/episodes';
 import { logOverride } from '../../../state/overrides';
@@ -144,7 +145,14 @@ import {
   redFlagToggleSpoken,
   RED_FLAGS_TITLE,
   redFlagsSpokenFull,
-  redFlagsSpokenShort,
+  redFlagsSpokenOpen,
+  redFlagsNamesAloud,
+  redFlagShortName,
+  redFlagStopHeadline,
+  RED_FLAGS_CORRECTED_SPOKEN,
+  RED_FLAG_TOGGLE_LOCK_MAX_MS,
+  RED_FLAG_TOGGLE_LOCK_MIN_MS,
+  MANEUVER_DONE_LINES,
   endSentence,
   NEURO_START_SPOKEN,
   NEURO_START_TEXT,
@@ -211,8 +219,8 @@ type Stage =
   | { k: 'feelCheck'; kind: 'unwell' | 'vertigoLong'; what: 'maneuver' | 'side' | 'retest' }
   /** Doz/gün sınırı: uyarı + "Yine de devam et". next: devam edilince (yoksa giriş denetimleri sürer). */
   | { k: 'dose'; text: string; reason: string; next?: Stage; look?: boolean }
-  /** Güvenlik soruları: tek ekran işaret listesi. */
-  | { k: 'redflags' }
+  /** Güvenlik soruları: tek ekran işaret listesi. corrected: "Yanlış dokundum"dan dönüldü (açılış sesi okunmaz; N1-2). */
+  | { k: 'redflags'; corrected?: boolean }
   /**
    * Kırmızı bayrak uyarısı (112/hekim bilgisi) + "Yine de devam et". after: manevra sonrası yeni belirti. logAt: bu uyarıyı
    * doğuran güvenlik sorusu kaydının zamanı ("Yanlış dokundum, listeye dön" o kaydı geri alır; M1-4).
@@ -270,6 +278,10 @@ type Stage =
       nextStep?: string;
       /** "Yine de devam et" (ör. "Hâlâ kötüyüm"den sonra): giriş denetimleri sürer; aşma `kind` ile yazılır. */
       override?: { label: string; testid: string; kind: string; detail: string };
+      /** Başlığın altındaki kısa satırlar ("10 dakika oturun."); varsa `text` paragrafı `foldText` ile katlanabilir (N1-7). */
+      lines?: readonly string[];
+      /** `text` paragrafı katlı "Ayrıntı"da (ekranda kısa satırlar ve sonraki adım kalır). */
+      foldText?: boolean;
     };
 
 function updateEpisode(id: string, fn: (e: Episode) => Episode) {
@@ -740,6 +752,19 @@ export function EpisodeFlow() {
     const recommended = sc.options.find((o) => o.primary)?.value === v;
     const warnKind = recommended ? null : dec.warn === 'SIDE_CONFLICT' ? 'SIDE_CONFLICT' : dec.warn ? `REFER_${dec.warn}` : null;
     const protocolId = maneuverFor(dec.canal, pcManeuver);
+    if (v === 'fix:dx' && dec.side) {
+      // Taraf çelişkisinde "Yanlış girmişim: kaydı düzelt" (N1-3; y02): hekim tanısı test tarafına düzeltilir, o tarafa
+      // devam edilir. Aşma değildir (öneriyle aynı taraf): seçim kaydı ve rapordaki taraf uyuşmazlığı notu.
+      const s = dec.side;
+      const was = dec.doctorSide ?? (s === 'R' ? 'L' : 'R');
+      store.update((x) => (x.patient ? { ...x, patient: { ...x.patient, diagnosedByDoctor: true, side: s } } : x));
+      const id = ensureEpisode();
+      const fixNote = `Kullanıcı, hekim tanısındaki tarafı yanlış girdiğini söyleyip düzeltti (${sideName(was)} yerine ${sideName(s)}).`;
+      updateEpisode(id, (e) => ({ ...e, sideConflictNote: e.sideConflictNote ? `${e.sideConflictNote} ${fixNote}` : fixNote }));
+      note('USER_CHOICE', `Hekim tanısı yanlış girilmişti, kayıt düzeltildi: ${sideName(was)} yerine ${sideName(s)}; test tarafına devam`);
+      startManeuver(s, protocolId, undefined, { auto: true });
+      return;
+    }
     if (v === 'go:R' || v === 'go:L') {
       const s: Side = v === 'go:R' ? 'R' : 'L';
       const differs = !!dec.side && s !== dec.side;
@@ -968,11 +993,18 @@ export function EpisodeFlow() {
       sev === 'mild'
         ? 'Hafif baş dönmesi ve bulantı manevradan sonra birkaç dakika, bazen birkaç saat sürebilir; bu beklenen bir durumdur. Geçmezse ya da artarsa manevrayı tekrarlamayın; kusma başlarsa bugün yeniden manevra yapmayın ve hekiminize danışın. '
         : '';
-    const retestAt = Date.now() + EARLY_RETEST_MS;
+    // Tekrar testi saati ana ekrandakiyle aynı kaynaktan (N1-5; y02: bitişte 23:30, ana ekranda 23:29): kayıtlı atağın
+    // sıradaki adımı (son tamamlanan manevra + 1 saat).
+    const epNow = activeEpisode(store.get());
+    const naNow = epNow ? nextAction(epNow, Date.now()) : null;
+    const retestAt = naNow?.kind === 'early-retest' ? naNow.at : Date.now() + EARLY_RETEST_MS;
     return {
       k: 'end',
       tone: long ? 'warn' : sev === 'none' ? 'ok' : 'info',
       title: 'Manevra tamamlandı',
+      // Üstte iki kısa satır ve sonraki adım; paragraf katlı (N1-7; y01, y03).
+      lines: MANEUVER_DONE_LINES,
+      foldText: true,
       // Test saati ekranda tek yerde: alttaki "sonraki adım" satırında (M1-8; y01, y03: saat iki-üç kez yazıyordu).
       text: `${mild}10 dakika oturarak dinlenin: baş dönmesi tamamen sönsün ve dengeniz yerine gelsin. Kalkarken önce yatağın kenarında oturun, bir yere tutunun; gece ise ışığı açın. Uyku pozisyonu kısıtlaması ya da boyunluk gerekmez.`,
       testid: 'end-maneuver-done',
@@ -1227,7 +1259,12 @@ export function EpisodeFlow() {
           when={stage.when}
           onDone={(v) => {
             const id = activeEpisode(store.get())?.id;
-            if (id && v !== null) updateEpisode(id, (e) => ({ ...e, vas: { ...(e.vas ?? {}), [stage.when]: v } }));
+            if (id && v !== null) {
+              // Manevradan sonraki değer o manevraya yazılır (N1-8; y04: iki manevrada atak başına tek alan eziliyordu);
+              // atakta yalnız başlangıç değeri.
+              if (stage.when === 'after') updateEpisode(id, (e) => withLastManeuverVas(e, v));
+              else updateEpisode(id, (e) => ({ ...e, vas: { ...(e.vas ?? {}), before: v } }));
+            }
             setStage(stage.next);
           }}
         />
@@ -1351,7 +1388,7 @@ export function EpisodeFlow() {
       );
 
     case 'redflags':
-      return <RedFlagsScreen flags={flags} recur={recur} onDone={onRedFlagsDone} />;
+      return <RedFlagsScreen key={stage.corrected ? 'corrected' : 'open'} flags={flags} recur={recur} corrected={!!stage.corrected} onDone={onRedFlagsDone} />;
 
     case 'stop': {
       const emergency = stage.action === 'emergency';
@@ -1366,23 +1403,34 @@ export function EpisodeFlow() {
       return (
         <Screen title={emergency ? 'Acil uyarı' : 'Uyarı'} back="/hasta">
           {/* 112/hekim cümlesi açılışta okunur; bitene dek (en az 5 s) "Yine de devam et" basılamaz (RedFlagOverride). */}
+          {/* En üstte tek kısa cümle: ne yapılacağı (N1-7; y03: kulak uyarısı 70 sözcüktü). Hekim uyarısında gerekçe ve
+              kime başvurulacağı katlı "Neden? Ayrıntı"da (ve "Ayrıntıyı dinle"de); acilde kısa gerekçe açık kalır. */}
           <div className={`card ${emergency ? 'tint-danger' : 'tint-warn'} stack`} data-testid={`stop-${stage.action}`}>
             <div className="card-title">
               <Icon name="alert" />
               <h2>{title}</h2>
             </div>
-            {whys.map((w, i) => (
-              <p key={i}>{w}</p>
-            ))}
+            <p className="lead" data-testid="stop-headline">
+              <strong>{redFlagStopHeadline(stage.action, stage.triggered)}</strong>
+            </p>
+            {emergency ? (
+              whys.map((w, i) => <p key={i}>{w}</p>)
+            ) : (
+              <details data-testid="stop-details">
+                <summary>Neden? Ayrıntı</summary>
+                <div className="stack small" style={{ marginTop: 8 }}>
+                  {whys.map((w, i) => (
+                    <p key={i}>{w}</p>
+                  ))}
+                  <p>{todo}</p>
+                </div>
+              </details>
+            )}
           </div>
-          {emergency ? (
+          {emergency && (
             <a className="btn danger block xl" href="tel:112" data-testid="call-112">
               <Icon name="phone" /> 112'yi ara
             </a>
-          ) : (
-            <div className="card soft small">
-              <p>{todo}</p>
-            </div>
           )}
           <ListenAgain text={fullStop} label="Ayrıntıyı dinle" slower />
           {/* Güvenli yol: acilde 112 (yukarıda, kırmızı); hekim uyarısında "Durdur" dolu birincil. "Yine de" çerçeveli ikincil. */}
@@ -1417,7 +1465,7 @@ export function EpisodeFlow() {
                   updateEpisode(id, (e) => ({ ...e, redFlags: e.redFlags.filter((r) => r.at !== stage.logAt) }));
                   note(RED_FLAG_UNDO_KIND, stage.triggered.map((q) => redFlagCheckText(q)).join('; '));
                 }
-                setStage({ k: 'redflags' });
+                setStage({ k: 'redflags', corrected: true });
               }}
             >
               Yanlış dokundum, listeye dön
@@ -1429,6 +1477,11 @@ export function EpisodeFlow() {
             minMs={minWait}
             onClick={() => {
               note('RED_FLAG', stage.after ? 'Manevra sonrası yeni belirti' : stage.triggered.map((q) => q.id).join(', '));
+              // Yanıt kaydı "durdu" kalmasın: devam edildi (N1-8; y04: yedekte `stopped: true` yanıltıcıydı).
+              const id = episodeId ?? activeEpisode(store.get())?.id;
+              if (id && mode !== 'practice' && !stage.after && stage.logAt !== undefined) {
+                updateEpisode(id, (e) => ({ ...e, redFlags: e.redFlags.map((r) => (r.at === stage.logAt ? { ...r, stopped: false, continued: true } : r)) }));
+              }
               // Manevra sonrası yeni belirti: olağan "tamamlandı" ekranı yerine kırmızı 112 ekranı (L2-1).
               setStage(stage.after ? neuroEndStage() : withVasBefore(afterSafetyStage()));
             }}
@@ -1840,7 +1893,19 @@ export function EpisodeFlow() {
           <SpeakOnce text={endSpoken} />
           <div className={`card tint-${stage.tone === 'info' ? 'accent' : stage.tone === 'danger' ? 'danger' : stage.tone} stack`} data-testid={stage.testid}>
             <h1>{stage.title}</h1>
-            <p className="lead">{stage.text}</p>
+            {stage.lines?.map((l) => (
+              <p key={l} className="lead" data-testid="end-line">
+                <strong>{l}</strong>
+              </p>
+            ))}
+            {stage.foldText ? (
+              <details data-testid="end-details">
+                <summary>Ayrıntı</summary>
+                <p style={{ marginTop: 8 }}>{stage.text}</p>
+              </details>
+            ) : (
+              <p className="lead">{stage.text}</p>
+            )}
           </div>
           {stage.call112 && (
             <a className="btn danger block xl" href="tel:112" data-testid="end-call-112">
@@ -2074,10 +2139,13 @@ function NeuroAckButtons({ episodeId }: { episodeId: string }) {
 function RedFlagsScreen({
   flags,
   recur,
+  corrected = false,
   onDone
 }: {
   flags: RedFlagQuestion[];
   recur: { last30: number; last180: number } | null;
+  /** "Yanlış dokundum, listeye dön"den gelindi: açılış sesi yerine "Düzeltildi…" (N1-2; y02). */
+  corrected?: boolean;
   onDone: (checked: string[]) => void;
 }) {
   const [checked, setChecked] = useState<string[]>([]);
@@ -2086,7 +2154,17 @@ function RedFlagsScreen({
   /** Onaydan listeye dönüldü: açılış cümlesi yeniden okunmaz. */
   const [returned, setReturned] = useState(false);
   // Ana ekrandaki dokunuşun ikincisi "Hiçbiri yok"a düşmesin. Kilit görünmez (L2-6; y03: gri düğmeyi kapalı sandı).
-  const locked = useTapLock('redflags', 800);
+  const openLocked = useTapLock('redflags', 800);
+  /**
+   * İşaretleme sesi ("İşaretlendi: …") sürerken büyük düğme kilitli (N1-2; y02: büyük düğmeye basınca cümle 0,5 s'de
+   * kesiliyordu): cümle bitene dek, en az ~1,5 s, en çok 4 s. Kilit görünmez; kilitliyken dokunuş sesi de kesmez.
+   */
+  const [toggleLock, setToggleLock] = useState(0);
+  const toggleSeq = useRef(0);
+  useEffect(() => () => void (toggleSeq.current = -1), []);
+  const locked = openLocked || toggleLock > 0;
+  const settings = useData().settings;
+  const [openSpoken] = useState(() => (corrected ? RED_FLAGS_CORRECTED_SPOKEN : redFlagsSpokenOpen(flags, redFlagsNamesAloud(settings))));
   const full = redFlagsSpokenFull(flags);
   const any = checked.length > 0;
   const toggle = (v: string) => {
@@ -2094,7 +2172,25 @@ function RedFlagsScreen({
     const on = !checked.includes(v);
     const next = on ? [...checked, v] : checked.filter((x) => x !== v);
     setChecked(next);
-    if (q) speech.speak(redFlagToggleSpoken(redFlagCheckText(q), on, next.length), 'high');
+    if (!q) return;
+    const seq = ++toggleSeq.current;
+    const t0 = Date.now();
+    setToggleLock(seq);
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      clearTimeout(cap);
+      // Yalnız son işaretlemenin kilidi açılır (art arda işaretlemede önceki cümle kesilir, onDone erken gelir).
+      if (toggleSeq.current === seq) setToggleLock(0);
+    };
+    const cap = setTimeout(release, RED_FLAG_TOGGLE_LOCK_MAX_MS);
+    // Madde seste kısa adıyla (cümle kısa kalsın; ekranda tam metin).
+    speech.speak(redFlagToggleSpoken(redFlagShortName(q), on, next.length), 'high', () => {
+      const left = RED_FLAG_TOGGLE_LOCK_MIN_MS - (Date.now() - t0);
+      if (left > 0) setTimeout(release, left);
+      else release();
+    });
   };
   const proceed = () => {
     if (locked) return;
@@ -2124,8 +2220,9 @@ function RedFlagsScreen({
   }
   return (
     <Screen title="Güvenlik soruları" back="/hasta">
-      {/* İlk ses maddelerin kısa adlarını da sayar (~20 s; M1-9, y07); tam liste "Listeyi dinle"de. */}
-      {!returned && <SpeakOnce text={redFlagsSpokenShort(flags)} priority="high" />}
+      {/* İlk ses tek cümle (~6 s; N1-2, y01, y07); yavaş seste ya da büyük yazıda maddelerin kısa adları da. Tam liste
+          "Listeyi dinle"de. "Yanlış dokundum"dan dönünce yalnız "Düzeltildi…". */}
+      {!returned && <SpeakOnce text={openSpoken} priority="high" />}
       <h1 data-testid="redflags-title">{RED_FLAGS_TITLE}</h1>
       <p className="small muted">Yalnız şu anda ya da bu atakta olanları işaretleyin.</p>
       {/* "Listeyi dinle" listenin üstünde: kaydırmadan görünür (y02). */}
@@ -2541,9 +2638,21 @@ function ConfirmAnswer({
  * "Telefonu alın" cümlesi bittikten bu kadar sonra soru kendiliğinden okunur (dokunulmadıysa, telefonun alındığı
  * sezilmediyse). Kullanıcı turu 4 (k01): 6 s'de, telefonu alıp hemen yanıtlayan kişi soruyu hiç duymuyordu.
  */
-const DEFER_READ_AFTER_MS = 3500;
+const DEFER_READ_AFTER_MS = 3000;
 /** "Telefonu alın" cümlesinin bitişi hiç gelmezse (ses motoru olayı) en geç bu sürede okunur. */
 const DEFER_READ_MAX_MS = 15000;
+/** Önceki ekranın son cümlesi (ör. "Manevra tamamlandı.") için pay: kendiliğinden okuma tahmini bu kadar geç başlar. */
+const DEFER_READ_LEAD_MS = 1500;
+
+/** Ses motoru başka bir cümleyi okuyor ya da sırada cümle var mı (kendiliğinden okuma araya girmesin). */
+function speechBusy(): boolean {
+  try {
+    const s = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
+    return !!s && (s.speaking || s.pending);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Ekranın sesli okunuşu. prompt yoksa metin hemen okunur. prompt varsa (telefon hâlâ alında): önce yalnız prompt; tam
@@ -2588,6 +2697,20 @@ function useDeferredRead(prompt: string | undefined, full: string, priority: 'hi
     speech.speak(prompt, priority, () => {
       if (!read) timers.push(setTimeout(readNow, DEFER_READ_AFTER_MS));
     });
+    // Yeni kullanıcı turu 3 (N1-6; y07, y02): ses motorunun bitiş olayı gecikse ya da hiç gelmese de (demo modunda telefonun
+    // alından inişi de sezilmez) soru, "Telefonu alın" cümlesinin tahmini süresinden ~3 s sonra okunur. O an başka bir cümle
+    // okunuyorsa bitmesi beklenir (en geç DEFER_READ_MAX_MS).
+    const t0 = Date.now();
+    const estMs = estimateSpeechSec(prompt, store.get().settings.speechRate) * 1000 + DEFER_READ_AFTER_MS + DEFER_READ_LEAD_MS;
+    const autoRead = () => {
+      if (read) return;
+      if (speechBusy() && Date.now() - t0 < DEFER_READ_MAX_MS) {
+        timers.push(setTimeout(autoRead, 500));
+        return;
+      }
+      readNow();
+    };
+    timers.push(setTimeout(autoRead, Math.min(estMs, DEFER_READ_MAX_MS)));
     timers.push(setTimeout(readNow, DEFER_READ_MAX_MS));
     return stop;
   }, [prompt, full, priority, source]);

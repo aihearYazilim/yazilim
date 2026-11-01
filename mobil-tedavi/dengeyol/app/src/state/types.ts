@@ -95,7 +95,11 @@ export interface ManeuverLog {
    * (yeni kullanıcı turu 1, y01 #6). stopReason 'INTERRUPTED'; `records.length` yarıda kalınan adımdır.
    */
   recovered?: boolean;
-  /** Bu manevradan sonraki belirti şiddeti (VAS 0–10; manevra başına). Sorulmadıysa ya da geçildiyse yok. */
+  /**
+   * Bu manevradan sonra sorulan belirti şiddeti 0–10 (yeni kullanıcı turu 3, N1-8; y04: iki manevralı atakta atak başına
+   * tek `Episode.vas.after` ikinci yanıtla eziliyordu). settings.askVas açıkken "Şu an nasılsınız?"dan sonra sorulur; "Geç"
+   * denirse yazılmaz. Eski kayıtlarda yok (o kayıtlarda `Episode.vas.after` okunur). Ev raporunda `mv`, CSV'de `vas_sonra`.
+   */
   vasAfter?: number;
 }
 
@@ -120,7 +124,13 @@ export interface RetestLog {
 export interface RedFlagLog {
   at: number;
   answers: Record<string, YesNo>;
+  /** Yanıt durdurma önerdi ve kişi durdu (ya da henüz karar vermedi). Uyarı aşılıp devam edildiyse false ve `continued`. */
   stopped: boolean;
+  /**
+   * Durdurma öneren yanıttan sonra uyarı "Yine de devam et" ile aşıldı (yeni kullanıcı turu 3, N1-8; y04: yedekte devam
+   * edilen kayıt `stopped: true` görünüyordu). Eski kayıtlarda yok (o kayıtlarda devam, RED_FLAG aşma kaydından çıkarılır).
+   */
+  continued?: boolean;
 }
 
 export type EpisodeStatus = 'active' | 'resolved' | 'referred' | 'emergency' | 'closed';
@@ -212,8 +222,9 @@ export interface Episode {
   neuroAlertAck?: { at: number; by: 'ok' | 'called112' };
   /**
    * Belirti şiddeti 0 (yok) – 10 (en kötü), isteğe bağlı (yeni kullanıcı turu 2, M1-11; y04 #2): settings.askVas açıkken
-   * atak başında (before, bir kez) ve son manevradan sonra (after) sorulur; "Geç" denirse yazılmaz. Ev raporu v3'te taşınır,
-   * çalışma CSV'sine yazılır. Eski kayıtlarda ve ayar kapalıyken yok.
+   * atak başında (before, bir kez) sorulur; "Geç" denirse yazılmaz. Ev raporu v3'te taşınır, çalışma CSV'sine yazılır.
+   * Eski kayıtlarda ve ayar kapalıyken yok. `after` yalnız eski kayıtlarda (geriye dönük okunur): yeni kayıtta manevradan
+   * sonraki değer manevraya yazılır (`ManeuverLog.vasAfter`; N1-8).
    */
   vas?: { before?: number; after?: number };
 }
