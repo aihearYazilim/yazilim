@@ -1,9 +1,10 @@
 import { useLayoutEffect, useState, type ReactNode } from 'react';
-import { Speech, speech } from '../../platform/speech';
+import { Speech, speech, SPEECH_RATES } from '../../platform/speech';
+import { store } from '../../state/store';
 import { Icon } from './Icon';
 
-/** Kilit süresince düğmeler soluk görünür: dokunuşun neden boşa gittiği anlaşılsın. */
-const LOCKED_STYLE = { opacity: 0.55, transition: 'opacity 0.2s' } as const;
+// Kilit süresince seçenekler soluklaşmaz (yeni kullanıcı turu 1, L2-6; y03: gri seçenekleri kapalı sandı). Kilit
+// görünmezdir; yalnız seçeneklerin üstünde ince bir dolma çubuğu belirir (styles.css `.choices[data-locked]::before`).
 
 /**
  * Dokunuş kilidi: `lockKey` değişince (yeni soru/ekran) `lockMs` boyunca true. Titreyen el ya da çift dokunuşun ikincisi
@@ -92,11 +93,59 @@ export function choiceSpeech(title: string, options: string[]): string {
  * Büyük "Tekrar dinle" düğmesi: metni baştan (öncekini keserek) okur. Ses kapalı/yoksa görünmez. Ekran açılınca kısa hâl
  * okunuyorsa burada tam hâl verilir; etiket o zaman "Ayrıntıyı dinle" olabilir (kullanıcı turu 3).
  */
-export function ListenAgain({ text, testid = 'listen-again', label = 'Tekrar dinle' }: { text: string; testid?: string; label?: string }) {
+export function ListenAgain({
+  text,
+  testid = 'listen-again',
+  label = 'Tekrar dinle',
+  slower
+}: {
+  text: string;
+  testid?: string;
+  label?: string;
+  /** Yanında "Daha yavaş" düğmesi (yeni kullanıcı turu 1, L2-6; y03: yavaş konuşma yalnız Ayarlar'daydı). */
+  slower?: boolean;
+}) {
   if (!speech.enabled) return null;
-  return (
-    <button type="button" className="btn secondary block" onClick={() => speech.speak(text, 'high')} data-testid={testid}>
+  const listen = (
+    <button type="button" className={`btn secondary${slower ? ' grow' : ' block'}`} onClick={() => speech.speak(text, 'high')} data-testid={testid}>
       <Icon name="volume" /> {label}
+    </button>
+  );
+  if (!slower) return listen;
+  return (
+    <div className="row listen-row">
+      {listen}
+      <SlowerSpeech text={text} />
+    </div>
+  );
+}
+
+/** Bir sonraki yavaş konuşma hızı (en yavaşta null). */
+export function slowerRate(rate: number): number | null {
+  const lower = SPEECH_RATES.map((r) => r.value).filter((v) => v < rate - 0.001);
+  return lower.length ? Math.max(...lower) : null;
+}
+
+/** "Daha yavaş": konuşma hızını bir basamak düşürür (Ayarlar'daki ayarla aynı) ve metni yeniden okur. */
+function SlowerSpeech({ text }: { text: string }) {
+  const [rate, setRate] = useState(() => store.get().settings.speechRate);
+  const next = slowerRate(rate);
+  return (
+    <button
+      type="button"
+      className="btn secondary"
+      disabled={next === null}
+      onClick={() => {
+        if (next === null) return;
+        setRate(next);
+        speech.rate = next;
+        store.update((x) => ({ ...x, settings: { ...x.settings, speechRate: next } }));
+        speech.speak(text, 'high');
+      }}
+      data-testid="listen-slower"
+      aria-label="Daha yavaş konuş"
+    >
+      🐢 Daha yavaş
     </button>
   );
 }
@@ -115,7 +164,7 @@ export function Choice<T extends string>({
   hushOnAnswer
 }: {
   /** testid: seçenek düğmesinin `data-testid`'i (uçtan uca testler). */
-  options: { value: T; label: ReactNode; sub?: ReactNode; testid?: string }[];
+  options: { value: T; label: ReactNode; sub?: ReactNode; testid?: string; primary?: boolean }[];
   value: T | null | undefined;
   onChange: (v: T) => void;
   name: string;
@@ -126,7 +175,7 @@ export function Choice<T extends string>({
 }) {
   const locked = useTapLock(lockKey, lockMs);
   return (
-    <div className="choices" role="radiogroup" aria-label={name} data-locked={locked || undefined} style={locked ? LOCKED_STYLE : undefined}>
+    <div className="choices" role="radiogroup" aria-label={name} data-locked={locked || undefined}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -134,7 +183,7 @@ export function Choice<T extends string>({
           role="radio"
           aria-checked={value === o.value}
           aria-disabled={locked || undefined}
-          className="choice"
+          className={o.primary ? 'choice primary' : 'choice'}
           data-testid={o.testid}
           onClick={(e) => {
             if (locked) return;
@@ -156,7 +205,7 @@ export function Choice<T extends string>({
 
 /**
  * İşaret listesi. `testidPrefix` verilirse her madde `${testidPrefix}-${value}` testid'i taşır; `sub` maddenin altında küçük
- * açıklama. `keepSpeech`: işaretlemek ekranın okunuşunu kesmesin (uzun liste okunurken kişi işaretleyebilsin; SpeechHush).
+ * açıklama; `icon` maddenin başında simge (sesli okunmaz). `keepSpeech`: işaretlemek ekranın okunuşunu kesmesin (uzun liste okunurken kişi işaretleyebilsin; SpeechHush).
  */
 export function CheckList({
   options,
@@ -166,7 +215,7 @@ export function CheckList({
   label,
   keepSpeech
 }: {
-  options: { value: string; label: ReactNode; sub?: ReactNode }[];
+  options: { value: string; label: ReactNode; sub?: ReactNode; icon?: string }[];
   values: string[];
   onToggle: (v: string) => void;
   testidPrefix?: string;
@@ -186,6 +235,11 @@ export function CheckList({
           data-testid={testidPrefix ? `${testidPrefix}-${o.value}` : undefined}
         >
           <span className="dot" />
+          {o.icon && (
+            <span className="choice-icon" aria-hidden="true">
+              {o.icon}
+            </span>
+          )}
           <span>
             {o.label}
             {o.sub && <span className="sub">{o.sub}</span>}
@@ -234,7 +288,7 @@ export function YesNo({
     onAnswer(v);
   };
   return (
-    <div className="yesno" data-locked={locked || undefined} style={locked ? LOCKED_STYLE : undefined}>
+    <div className="yesno" data-locked={locked || undefined}>
       <button
         type="button"
         className={`btn xl ${value === 'yes' ? 'primary' : 'secondary'}`}

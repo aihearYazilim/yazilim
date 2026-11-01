@@ -31,7 +31,15 @@ import { HapticLegend } from '../../components/HapticLegend';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
 import { CONSENT_OPTIONS, CONSENT_OPTIONS_GIST, CONSENT_RISKS, CONSENT_RISKS_GIST, CONSENT_VERSION, consentStatement } from './consent';
-import { CONTRA_LISTEN_LABEL, contraHearingText, contraSpeech, contraSpeechShort, dxRecentAnsweredText } from './onboardingText';
+import {
+  CONSENT_FIRST_SPOKEN,
+  consentCheckLabel,
+  CONTRA_LISTEN_LABEL,
+  contraHearingText,
+  contraSpeech,
+  contraSpeechShort,
+  dxRecentAnsweredText
+} from './onboardingText';
 import { RxPaste } from './PatientHome';
 
 type DxWhen = NonNullable<PatientProfile['dxWhen']>;
@@ -57,16 +65,25 @@ function ConsentScreen() {
   const [consent, setConsent] = useState(consented && (d.patient?.consentVersion ?? '1') === CONSENT_VERSION);
   // Hasta adına yakını kuruyor (k02): manevra ekranları da yardımcıya göre konuşur (settings.assist).
   const [helperSetup, setHelperSetup] = useState(d.patient?.consentBy === 'helper' || (!consented && d.settings.assist === 'helper'));
+  /** Yakını kutusu, yakını kurulumuysa açık gelir (yalnız ilk açılışta). */
+  const [helperBoxOpen] = useState(helperSetup);
+  /** Soluk "Başla"ya dokunuldu: hemen üstündeki onay kutusu kısa süre yanıp söner. */
+  const [flash, setFlash] = useState(0);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(0), 1200);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   const start = () => {
     if (!consent) {
-      // Pasif düğmeye dokunulursa onay kutusunu göster.
-      const el = document.querySelector('[data-testid="ob-consent"]') as HTMLElement | null;
-      if (typeof el?.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el?.focus();
+      // Soluk düğmeye dokunulursa hemen üstündeki onay kutusu yanıp söner ve kısa ses (y03, y06).
+      setFlash(Date.now());
+      speech.speak(CONSENT_FIRST_SPOKEN, 'high');
+      (document.querySelector('[data-testid="ob-consent"]') as HTMLElement | null)?.focus();
       return;
     }
     // Dokunuş içinde ses kilidi açılır (iOS): ilk manevrada sesli yönerge hemen çalışsın.
@@ -103,17 +120,29 @@ function ConsentScreen() {
       }}
       footer={
         <>
-          <button className="btn primary block xl" aria-disabled={!consent} onClick={start} data-testid="ob-start">
+          {/* Onay kutusu "Başla"nın hemen üstünde (yeni kullanıcı turu 1, L2-3; y01, y03, y06): ilk dokunuş boşa gitmesin;
+              tam metin yukarıda. "Başla" onaysızken soluk görünür. */}
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={consent}
+            className={`choice check consent-check${flash ? ' flash' : ''}`}
+            onClick={() => setConsent(!consent)}
+            data-testid="ob-consent"
+          >
+            <span className="dot" />
+            <span>{consentCheckLabel(helperSetup)}</span>
+          </button>
+          <button className={`btn primary block xl${consent ? '' : ' is-off'}`} aria-disabled={!consent} onClick={start} data-testid="ob-start">
             Başla
           </button>
-          {!consent && <p className="small muted center">Başlamak için onay kutusunu işaretleyin.</p>}
         </>
       }
     >
       <h1>DengeYol</h1>
       <p className="lead">
         Yatarken, kalkarken ya da yatakta dönerken gelen kısa baş dönmesinde (kristal oynaması, BPPV) testi ve manevrayı sesle adım adım
-        yaptırır. Telefon alnınızda durur.
+        yaptırır. Telefon alnınızda durur. Hekim tanınız olmasa da kullanabilirsiniz.
       </p>
       <div className="card tint-danger stack">
         <div className="card-title">
@@ -162,53 +191,52 @@ function ConsentScreen() {
           </div>
         </details>
       )}
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={helperSetup}
-        className="choice check"
-        onClick={() => {
-          const v = !helperSetup;
-          setHelperSetup(v);
-          // Manevra ekranları da yardımcıya göre konuşsun. Yakını seçimi kaldırılınca "ekranı çevir" de kalkar.
-          store.update((x) => ({ ...x, settings: { ...x.settings, assist: v ? 'helper' : 'self', ...(v ? {} : { screenFlip: false }) } }));
-        }}
-        data-testid="ob-helper"
-      >
-        <span className="dot" />
-        <span>
-          Hasta adına, onun bilgisi ve isteğiyle bir yakını olarak kuruyorum
-          <span className="sub">Manevrada yönergeler size söylenir; hastaya yalnız kıpırdamaması söylenir.</span>
-        </span>
-      </button>
-      {/* Kullanıcı turu 4 (k02): başucunda durma seçimi yakını seçilince burada da sorulur (hazırlık ekranındakiyle aynı ayar). */}
-      {helperSetup && (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={!!d.settings.screenFlip}
-          className="choice check"
-          onClick={() => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: !x.settings.screenFlip } }))}
-          data-testid="ob-flip"
-        >
-          <span className="dot" />
-          <span>
-            Hastanın başucunda duracağım (ekranı bana göre çevir)
-            <span className="sub">Manevrada ekran size göre ters döner. Sonra hazırlık ekranında da değiştirebilirsiniz.</span>
-          </span>
-        </button>
-      )}
-      <button
-        type="button"
-        role="checkbox"
-        aria-checked={consent}
-        className="choice check"
-        onClick={() => setConsent(!consent)}
-        data-testid="ob-consent"
-      >
-        <span className="dot" />
-        <span>{consentStatement(helperSetup)}</span>
-      </button>
+      {/* Onam metninin tamamı; onay kutusu ekranın altında, "Başla"nın hemen üstünde. */}
+      <div className="card soft small" data-testid="ob-consent-text">
+        <p style={{ margin: 0 }}>{consentStatement(helperSetup)}</p>
+      </div>
+      {/* Yakını kurulumu onaydan açıkça ayrı ve katlanır (y03: iki benzer kutu karıştırılıyordu). */}
+      <details className="card soft small" data-testid="ob-helper-box" open={helperBoxOpen}>
+        <summary>Hasta adına bir yakını mı kuruyor?</summary>
+        <div className="stack" style={{ marginTop: 10 }}>
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={helperSetup}
+            className="choice check"
+            onClick={() => {
+              const v = !helperSetup;
+              setHelperSetup(v);
+              // Manevra ekranları da yardımcıya göre konuşsun. Yakını seçimi kaldırılınca "ekranı çevir" de kalkar.
+              store.update((x) => ({ ...x, settings: { ...x.settings, assist: v ? 'helper' : 'self', ...(v ? {} : { screenFlip: false }) } }));
+            }}
+            data-testid="ob-helper"
+          >
+            <span className="dot" />
+            <span>
+              Hasta adına, onun bilgisi ve isteğiyle bir yakını olarak kuruyorum
+              <span className="sub">Manevrada yönergeler size söylenir; hastaya yalnız kıpırdamaması söylenir.</span>
+            </span>
+          </button>
+          {/* Kullanıcı turu 4 (k02): başucunda durma seçimi yakını seçilince burada da sorulur (hazırlık ekranındakiyle aynı ayar). */}
+          {helperSetup && (
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={!!d.settings.screenFlip}
+              className="choice check"
+              onClick={() => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: !x.settings.screenFlip } }))}
+              data-testid="ob-flip"
+            >
+              <span className="dot" />
+              <span>
+                Hastanın başucunda duracağım (ekranı bana göre çevir)
+                <span className="sub">Manevrada ekran size göre ters döner. Sonra hazırlık ekranında da değiştirebilirsiniz.</span>
+              </span>
+            </button>
+          )}
+        </div>
+      </details>
       <p className="small muted" data-testid="ob-optional">
         Tanınız, hangi kulak olduğu ve sağlık durumunuz isteğe bağlıdır; isterseniz sonra Ayarlar'dan girersiniz. Ses ve yazı boyutu da Ayarlar'da.
       </p>

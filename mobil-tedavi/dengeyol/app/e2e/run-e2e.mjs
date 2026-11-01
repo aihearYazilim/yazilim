@@ -193,6 +193,11 @@ async function answerRedFlags(page, check = []) {
   await unlocked(page);
   await page.getByTestId(check.length ? 'redflags-continue' : 'redflags-none').click();
   await page.getByTestId('redflags').waitFor({ state: 'detached' });
+  // Acil belirti işaretlendiyse uyarıdan önce tek "doğru mu?" onayı (yeni kullanıcı turu 1, y02): "Evet, doğru".
+  if (await page.getByTestId('redflags-confirm').isVisible().catch(() => false)) {
+    await unlocked(page);
+    await page.getByTestId('redflags-confirm-yes').click();
+  }
 }
 
 /** Alt tip (tek soru): yalnız sorulursa (tanıda kanal biliniyorsa ya da yanıt tazeyse sorulmaz). */
@@ -511,6 +516,9 @@ await step('Hasta: acil kırmızı bayrak → 112 uyarısı; "Durdur" atağı ac
     await page.getByTestId('start-episode').click();
     await answerRedFlags(page, ['neuro']);
     await page.getByTestId('stop-emergency').waitFor();
+    // Yavaşlatma (kilit değil): görünür, geri sayımlı, çerçeveli ikincil; süre dolunca basılır.
+    const ovClass = await page.getByTestId('redflag-override').getAttribute('class');
+    if (!/\boverride\b/.test(ovClass ?? '')) throw new Error('"Yine de devam et" çerçeveli ikincil değil: ' + ovClass);
     await unlocked(page);
     await page.getByTestId('redflag-override').click();
     await page.getByTestId('prep').waitFor();
@@ -637,6 +645,9 @@ await step('Kullanılabilirlik: güvenlik listesinde yanlış işaret dokunarak 
   await answerRedFlags(page);
   await page.getByTestId('prep').waitFor();
   if ((await storeOf(page)).episodes[0].redFlags.at(-1)?.stopped) throw new Error('kaldırılan işaret durdurma olarak kaydedildi');
+  // "Kim yapıyor" katlanır "Ayrıntılar"da (y01, y06: "Hazırım" altta sabit, ilk ekranda görünür).
+  if (!(await page.getByTestId('prep-ready').isVisible())) throw new Error('"Hazırım" ilk ekranda görünmüyor');
+  await page.getByTestId('prep-details').locator('summary').first().click();
   await page.getByRole('button', { name: 'Bir yakınımla' }).click();
   await page.getByTestId('helper-card').waitFor();
   // Tur 3: yakını modunda hazırlık maddeleri yardımcıya göre; "Titreşimleri tanı" hazırlıkta açılır (k02, k04).
@@ -1652,6 +1663,103 @@ await step('Tur 5 kilidi: sık tekrar uyarısı varken güvenlik listesinin "Hi�
   const scrolled = await page.evaluate(() => window.scrollY);
   if (scrolled !== 0) throw new Error('güvenlik listesi sayfa kaydırılmış olarak açıldı: ' + scrolled);
   await snap(page, 'sik-tekrar-liste');
+  noErrors(errors);
+  await ctx.close();
+});
+
+// ------------------------------------------------------------------------------------------------
+// Yeni kullanıcı turu 1 (L2): hasta akışı ve ekranlar.
+
+await step('Yeni kullanıcı 1 (L2-1): manevra sonrası "Yeni belirti" aşılınca olağan "tamamlandı" yok; kırmızı 112 ekranı ve ana ekranda şerit', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await toManeuver(page);
+  const phase = await driveRunner(page);
+  if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
+  await clickChoice(page, /Yeni belirti var/);
+  await page.getByTestId('after-confirm').waitFor();
+  await unlocked(page);
+  await page.getByTestId('after-confirm-yes').click();
+  await page.getByTestId('stop-emergency').waitFor();
+  await unlocked(page);
+  await page.getByTestId('redflag-override').click();
+  await page.getByTestId('end-neuro').waitFor();
+  await page.getByTestId('end-call-112').waitFor();
+  const main = await page.locator('main').innerText();
+  if (/Manevra tamamlandı|normaldir|beklenen bir durum|tekrar test/i.test(main)) throw new Error('aşmadan sonra olağan/rahatlatıcı metin: ' + main);
+  for (const id of ['rest-timer', 'add-reminder', 'end-maneuver-done', 'treat-now']) if (await page.getByTestId(id).count()) throw new Error(id + ' gösterildi');
+  let ep = (await storeOf(page)).episodes.find((e) => e.id === 'act');
+  if (!kindsOf(ep).includes('RED_FLAG')) throw new Error('aşma kaydı yok');
+  await snap(page, 'yeni-belirti-112');
+  await page.getByTestId('go-home').click();
+  await page.getByTestId('home-neuro').waitFor();
+  if (await page.getByTestId('add-reminder').count()) throw new Error('ana ekranda tekrar testi hatırlatıcısı var');
+  // Kilit yok: "Başım dönüyor" çalışır; akışta da şerit görünür.
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('neuro-strip').waitFor();
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('home-neuro-ok').click();
+  await page.getByTestId('home-neuro').waitFor({ state: 'detached' });
+  ep = (await storeOf(page)).episodes.find((e) => e.id === 'act');
+  if (ep.neuroAlertAck?.by !== 'ok') throw new Error('şerit yanıtı kaydedilmedi');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı 1 (L2-7, y01): test tetiklemedi → tek büyük önerilen "iki tarafa sırayla"; seçince manevra doğrudan başlar (Başlat ekranı yok)', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, side: 'unknown' } } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page);
+  await answerSubtype(page);
+  await page.getByTestId('prep').waitFor();
+  await calibrate(page);
+  await driveRunner(page);
+  await page.locator('[data-testid="rest-continue"][data-enabled]').click({ timeout: 15000 });
+  await driveRunner(page);
+  await page.getByTestId('decision').waitFor({ timeout: 15000 });
+  if ((await page.getByTestId('decision').getAttribute('data-warn')) !== 'NOT_TRIGGERED') throw new Error('tetiklenmedi kararı beklenirdi');
+  const txt = await page.getByTestId('decision').innerText();
+  if (!/kristal oynamasından olmayabilir/.test(txt)) throw new Error('"olmayabilir" cümlesi yok: ' + txt);
+  const first = page.locator('[data-testid="decision"] [role="radio"]').first();
+  if ((await first.getAttribute('data-testid')) !== 'decision-both' || !/\bprimary\b/.test((await first.getAttribute('class')) ?? '')) throw new Error('önerilen "iki tarafa sırayla" büyük dolu düğme değil');
+  if ((await page.locator('[data-testid="decision"] .choice.primary').count()) !== 1) throw new Error('birden çok önerilen düğme');
+  await snap(page, 'tetiklenmedi-karar');
+  await unlocked(page);
+  await first.click();
+  // Ayrı "Başlat" ekranı ve ikinci "Kim yapıyor" sorusu yok: yürütücü kendiliğinden başlar.
+  await page.locator('[data-testid="runner"], [data-testid="runner-start"]').first().waitFor({ timeout: 30000 });
+  if (await page.getByTestId('runner-start').isVisible().catch(() => false)) throw new Error('seçimden sonra "Başlat" ekranı geldi');
+  if (await page.getByTestId('runner-assist').count()) throw new Error('"Kim yapıyor" yeniden soruldu');
+  const ep = (await storeOf(page)).episodes.at(-1);
+  if (!(ep.overrides ?? []).some((o) => o.kind === 'REFER_NOT_TRIGGERED' && /İki tarafa sırayla/.test(o.detail ?? ''))) throw new Error('seçim kaydı yok: ' + JSON.stringify(ep.overrides));
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı 1 (L2-3, L2-6, y02): kurulumda onay "Başla"nın hemen üstünde; "Çok büyük" yazıda güvenlik listesinin sabit düğmesi son maddeyi örtmez; "Listeyi dinle" kaydırmadan görünür', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient', speech: true, fontScale: 'xlarge' } }), { speechMs: 300 });
+  await page.goto(BASE + '#/hasta/kurulum');
+  const box = await page.getByTestId('ob-consent').boundingBox();
+  const start = await page.getByTestId('ob-start').boundingBox();
+  const vh = page.viewportSize().height;
+  if (!box || !start || box.y + box.height > start.y || start.y + start.height > vh || box.y < 0) throw new Error('onay kutusu "Başla"nın hemen üstünde ve kaydırmadan görünür değil');
+  if (!/\bis-off\b/.test((await page.getByTestId('ob-start').getAttribute('class')) ?? '')) throw new Error('onaysız "Başla" soluk değil');
+  await page.getByTestId('ob-consent').click();
+  await page.getByTestId('ob-start').click();
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('redflags').waitFor();
+  const listen = await page.getByTestId('listen-again').boundingBox();
+  if (!listen || listen.y + listen.height > vh) throw new Error('"Listeyi dinle" kaydırmadan görünmüyor');
+  await page.getByTestId('listen-slower').waitFor();
+  // Son maddeye kaydırınca sabit düğme onu örtmez.
+  const items = page.locator('[data-testid="redflags"] [role="checkbox"]');
+  const last = items.last();
+  await last.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const lb = await last.boundingBox();
+  const sticky = await page.locator('.sticky-actions').boundingBox();
+  if (!lb || !sticky || lb.y + lb.height > sticky.y + 1) throw new Error(`sabit düğme son maddeyi örtüyor (madde ${lb?.y}+${lb?.height}, düğme ${sticky?.y})`);
+  await snap(page, 'cok-buyuk-yazi-liste');
   noErrors(errors);
   await ctx.close();
 });

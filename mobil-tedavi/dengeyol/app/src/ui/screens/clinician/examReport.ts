@@ -847,7 +847,8 @@ export function overrideShortName(kind: string): string {
     POSITION_UNREACHABLE: 'pozisyona gelinemedi',
     SIDE_CONFLICT: 'taraf çelişkisi',
     REFERRAL: 'yönlendirmeden sonra yeni atak',
-    REFER_NOT_TRIGGERED: 'test tetiklemeden manevra'
+    REFER_NOT_TRIGGERED: 'test tetiklemeden manevra',
+    VOMITING: 'kusmaya rağmen yeniden deneme'
   };
   if (known[kind]) return known[kind]!;
   if (/^REFER_/.test(kind)) return 'yönlendirme önerisi';
@@ -858,6 +859,18 @@ export function overrideShortName(kind: string): string {
 export function homeRedFlagText(f: HomeRedFlag): string {
   const labels = f.ids.map((id) => RED_FLAGS.find((q) => q.id === id)?.label ?? 'güvenlik sorusu').join(', ');
   return `${cap(labels)} — ${f.continued ? 'uyarı gösterildi, devam edildi' : 'atak durduruldu (hekime/acile yönlendirme)'}`;
+}
+
+/**
+ * Manevra sonrası yeni nörolojik belirtide 112 şeridine yanıt: "112'yi aradım dedi" / "belirtiler geçti dedi" / "yanıt
+ * vermedi". Bu atakta böyle bir belirti yoksa null.
+ */
+export function homeNeuroAckText(e: HomeEpisode): string | null {
+  const m = e.maneuvers.filter((x) => x.afterSymptoms === 'neuro').sort((a, b) => b.at - a.at)[0];
+  if (!m) return null;
+  const ack = e.neuroAck && e.neuroAck.at >= m.at ? e.neuroAck : null;
+  if (!ack) return '112 uyarısı gösterildi, kişi yanıt vermedi';
+  return `112 uyarısı gösterildi, kişi ${ack.by === 'called112' ? '"112\'yi aradım"' : '"belirtiler geçti, iyiyim"'} dedi (${dateTime(ack.at)})`;
 }
 
 /** Kurulumda işaretlenen kontrendikasyonların adları ("Boyun fıtığı …"); yoksa null. */
@@ -894,6 +907,10 @@ export function homeResearchNote(r: HomeReport): string {
   }
   const contra = homeContraText(r);
   if (contra) parts.push(`kontrendikasyon: ${contra}`);
+  const acks = r.episodes.map((e) => homeNeuroAckText(e)).filter((x): x is string => !!x);
+  if (acks.length) parts.push(`yeni belirti: ${acks.join('; ')}`);
+  const taps = r.episodes.reduce((n, e) => n + (e.vertigoTapCancels ?? 0), 0);
+  if (taps) parts.push(`çift dokunuşla geri alınan baş dönmesi işareti: ${taps}`);
   const decisions = r.episodes.flatMap((e) => researchEntries(e)).filter((x) => x.group === 'decision').reduce((k, x) => k + x.count, 0);
   if (decisions) parts.push(`uygulama kararı: ${decisions}`);
   const hc = r.episodes.some((e) => e.sideTests.some((t) => t.canal === 'HC'));

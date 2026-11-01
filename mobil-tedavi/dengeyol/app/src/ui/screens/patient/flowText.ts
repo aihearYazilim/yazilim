@@ -149,7 +149,7 @@ export const PREP_HELPER_ITEMS: readonly string[] = [
   'Telefonun otomatik ekran döndürmesini kapatın; yan yatışlarda yazılar yer değiştirmesin.'
 ];
 
-const PREP_READY = 'Hazırsanız ekrandaki Hazırım düğmesine dokunun.';
+const PREP_READY = 'Hazırsanız ekranın altındaki Hazırım düğmesine dokunun.';
 
 /** Hazırlık ekranı açılınca okunan kısa hâl (kullanıcı turu 3, k05): yatak ve yastık, ses, "Hazırım". */
 export function prepSpokenShort({ helper, semontOnly, hc }: PrepTextInput): string {
@@ -325,18 +325,18 @@ export const LOOK_AT_SCREEN = 'Telefonu alnınızdan alın ve ekrana bakın.';
  * sorunun kısa adı kullanılır (`redFlagCheckText`).
  */
 export const RED_FLAG_CHECK_TEXT: Record<string, string> = {
-  continuous: 'Kıpırdamadan dururken bile saatlerdir süren dönme ya da ayakta duramama',
-  neuro: 'Çift görme, konuşma ya da yutma bozukluğu',
+  continuous: 'Hiç kımıldamadan yatarken bile saatlerdir dönme ya da hiç ayakta duramama',
+  neuro: 'Çift görme, konuşmada ya da yutkunmada zorluk',
   neuroWeak: 'Yüzde, kolda ya da bacakta güçsüzlük ya da uyuşma',
   neuroGait: 'Baş dönmesi yokken de yürüyememe',
-  headache: 'Yeni ve şiddetli baş ya da boyun ağrısı',
-  cardiac: 'Göğüs ağrısı, çarpıntı ya da bayılma',
-  orthostatic: 'Ayağa kalkınca, etraf dönmeden göz kararması ya da bayılacak gibi olma',
-  anticoag: 'Kan sulandırıcı (aspirin dahil) kullanırken yeni baş ağrısı ya da baş çarpması',
-  spontaneous: 'Baş hareketi olmadan kendiliğinden gelen, dakikalar ya da saatler süren ataklar',
-  headTrauma: 'Son haftalarda baş çarpması ya da kaza',
-  ear: 'Bir kulakta yeni işitme kaybı, tıkanma, çınlama, ağrı ya da akıntı',
-  neck: 'Son bir ayda boyun incinmesi, travması ya da çıtlatma',
+  headache: 'Yeni ve çok şiddetli baş ya da boyun ağrısı',
+  cardiac: 'Göğüs ağrısı, kalp çarpıntısı ya da bayılma',
+  orthostatic: 'Ayağa kalkınca gözün önü kararıyor, bayılacak gibi oluyorsunuz (etraf dönmeden)',
+  anticoag: 'Kanı sulandıran ilaç (aspirin dahil) alırken yeni baş ağrısı ya da başı çarpma',
+  spontaneous: 'Baş hiç kımıldamadan, kendi kendine gelen ve dakikalarca ya da saatlerce süren dönme',
+  headTrauma: 'Son haftalarda başı bir yere çarpma ya da kaza',
+  ear: 'Bir kulakta yeni: az duyma, tıkanma, çınlama, ağrı ya da kulaktan sıvı gelmesi',
+  neck: 'Son bir ayda boynu incitme ya da boyna darbe (kaza, düşme, boynu çıtlatma)',
   fever: 'Ateş ya da su bile içilemeyecek kadar kusma',
   same: 'Hekiminizin daha önce "kristal oynaması" dediğinden farklı bir baş dönmesi'
 };
@@ -346,8 +346,35 @@ export const RED_FLAG_CHECK_SUB: Record<string, string> = {
   continuous: 'Ataktan sonra kalan hafif sersemlik sayılmaz.',
   orthostatic: 'Yataktan kalkarken etrafın dönmesi sayılmaz.',
   anticoag: 'Coraspin, Plavix, Coumadin, Xarelto, Eliquis, Lixiana, Pradaxa gibi.',
-  ear: 'Uzun süredir değişmeyen çınlama sayılmaz; KBB hekiminin baktığı ve artmayan belirti de sayılmaz.'
+  ear: 'Uzun süredir değişmeyen çınlama sayılmaz; KBB hekiminin baktığı ve artmayan belirti de sayılmaz.',
+  // y01: midesi bulanan kişi tereddüt etmesin.
+  fever: 'Bulantı ve bir iki kez kusma bu baş dönmesinde olağandır; sayılmaz.'
 };
+
+/**
+ * Güvenlik listesindeki her maddenin simgesi (yeni kullanıcı turu 1, L2-6; y03: okuması zayıf kişi simgeye bakar). Ekranda
+ * maddenin başında, sesli okunmaz. Liste dışı (yeni eklenen) soruda genel uyarı simgesi.
+ */
+export const RED_FLAG_ICON: Record<string, string> = {
+  continuous: '🌀',
+  neuro: '👁️',
+  neuroWeak: '💪',
+  neuroGait: '🚶',
+  headache: '🤕',
+  cardiac: '❤️',
+  orthostatic: '🌑',
+  anticoag: '💊',
+  spontaneous: '⏱️',
+  headTrauma: '⛑️',
+  ear: '👂',
+  neck: '🦴',
+  fever: '🌡️',
+  same: '🩺'
+};
+
+export function redFlagIcon(q: Pick<RedFlagQuestion, 'id'>): string {
+  return RED_FLAG_ICON[q.id] ?? '⚠️';
+}
 
 export function redFlagCheckText(q: Pick<RedFlagQuestion, 'id' | 'label'>): string {
   return RED_FLAG_CHECK_TEXT[q.id] ?? cap(q.label.trim());
@@ -366,6 +393,19 @@ export const RED_FLAGS_SPOKEN = 'Güvenlik soruları. Listedekilerden biri varsa
 export function redFlagsSpokenFull(qs: Pick<RedFlagQuestion, 'id' | 'label'>[]): string {
   return withoutBppv(`${RED_FLAGS_TITLE} ${qs.map((q) => `${redFlagCheckText(q).replace(/"/g, '')}.`).join(' ')} Hiçbiri yoksa, Hiçbiri yok düğmesine dokunun.`);
 }
+
+/**
+ * Güvenlik listesinde işaret koyup kaldırınca kısa ses (y02: titreyen elle hangi maddeye dokunduğu duyulsun). İlk işarette
+ * ve son işaret kalkınca alttaki düğmenin değiştiği de söylenir (y02: düğme sessizce değişiyordu).
+ */
+export function redFlagToggleSpoken(itemText: string, on: boolean, countAfter: number): string {
+  const item = withoutBppv(itemText.replace(/"/g, ''));
+  if (on) return `İşaretlendi: ${item}.${countAfter === 1 ? ' Alttaki düğme şimdi: İşaretlediklerimle devam.' : ''}`;
+  return `İşaret kaldırıldı: ${item}.${countAfter === 0 ? ' Alttaki düğme yine: Hiçbiri yok.' : ''}`;
+}
+
+/** Acil belirti işaretlenince uyarıdan önceki "doğru mu?" onayında sonuç cümlesi (kilit değil; yanlış dokunuş koruması). */
+export const RED_FLAG_CONFIRM_CONSEQUENCE = "Bu yanıtla acil (112) uyarısı gösterilecek.";
 
 /** İşaret listesinden yanıt kaydı: işaretli madde durduran yanıt (`stopsOn`), işaretsiz madde güvenli yanıt. */
 export function redFlagAnswers(qs: Pick<RedFlagQuestion, 'id' | 'stopsOn'>[], checked: readonly string[]): Record<string, YesNo> {
@@ -388,6 +428,37 @@ export function redFlagWarnSpoken(action: StopAction, triggered: Pick<RedFlagQue
   const why = q?.stopSpoken ?? fallback;
   return withoutBppv([`${RED_FLAG_WARN_TITLE[action]}.`, why, action === 'emergency' ? "Hemen 112'yi arayın." : ''].filter(Boolean).join(' '));
 }
+
+/**
+ * Kırmızı bayrak uyarısında "Yine de devam et" en az bu süre (ve 112/hekim cümlesi bitene dek) basılamaz (yeni kullanıcı
+ * turu 1, L2-2; y05: uyarı açılır açılmaz dokunulup 112 cümlesi 0,9 s'de kesiliyordu). Kilit değil, yalnız yavaşlatma:
+ * düğme görünür ve geri sayım gösterir. Demo modunda zaman hızlandırmasına bölünür.
+ */
+export const RED_FLAG_OVERRIDE_MIN_MS = 5000;
+
+/** Geri sayım sırasında "Yine de devam et" düğmesinin etiketi. */
+export function overrideCountdownLabel(label: string, secondsLeft: number): string {
+  return secondsLeft > 0 ? `${label} (${secondsLeft})` : label;
+}
+
+// ---- Manevra sonrası yeni belirti (inme): kırmızı 112 şeridi --------------------------------------------------------
+
+/** Manevra sonrası "Yeni belirti" uyarısı aşılınca olağan "Manevra tamamlandı" yerine gösterilen ekran (L2-1; y05). */
+export const NEURO_END_TITLE = "Yeni belirti bildirdiniz: 112'yi arayın";
+
+export const NEURO_END_TEXT =
+  "Manevradan sonra başlayan konuşma bozukluğu, yüzde ya da kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı kristal oynamasına bağlı değildir; inme gibi acil bir durumun işareti olabilir. Hemen 112'yi arayın. Yalnız kalmayın, araç kullanmayın; bugün yeniden manevra yapmayın.";
+
+export const NEURO_END_SPOKEN = "Yeni belirti bildirdiniz. Hemen 112'yi arayın. Yalnız kalmayın.";
+
+/** Akışta ve ana ekranda kalıcı kırmızı şerit. */
+export const NEURO_STRIP_TEXT = "Yeni nörolojik belirti bildirdiniz. Hemen 112'yi arayın.";
+
+/** Acil uyarısı aşıldıktan sonra yürütücüde ve karar ekranında kısa kırmızı hatırlatma (L2-2; y05). */
+export const EMERGENCY_REMINDER_TEXT = "Acil belirti bildirdiniz: kötüleşirse ya da yeni belirti olursa hemen durun ve 112'yi arayın.";
+
+/** Aynı hatırlatmanın yürütücü başında okunan kısa sesi. */
+export const EMERGENCY_REMINDER_SPOKEN = "Acil belirti bildirdiniz; kötüleşirse durun ve 112'yi arayın.";
 
 // ---- Kontrendikasyon, doz, erken tekrar uyarıları --------------------------------------------------------------------
 
@@ -468,10 +539,18 @@ export interface DecisionScreen {
   lead: string;
   /** Varsayılan okunuşta lead yerine. */
   spokenLead: string;
-  options: ({ value: DecisionChoice; testid: string } & SpokenOption)[];
+  /** primary: uygulamanın önerdiği yol; büyük dolu düğme olarak gösterilir (L2-2; y01). */
+  options: ({ value: DecisionChoice; testid: string; primary?: boolean } & SpokenOption)[];
 }
 
+/** Testin tetiklemediği kararın açıklaması (L2-7; y05): "BPPV olmayabilir" ve sürekli baş dönmesinde hekim/112. */
+export const NOT_TRIGGERED_NOTE =
+  "Test baş dönmesi yapmadı; baş dönmeniz kristal oynamasından olmayabilir. Baş dönmesi sürekliyse ya da yürüyemiyorsanız hekime başvurun; inme belirtisinde 112'yi arayın.";
+
 const go = (s: Side): DecisionChoice => (s === 'R' ? 'go:R' : 'go:L');
+
+/** İlk seçeneği önerilen yol (büyük dolu düğme) yapar. */
+const withPrimary = (o: DecisionScreen['options']): DecisionScreen['options'] => o.map((x, i) => (i === 0 ? { ...x, primary: true } : x));
 
 /**
  * Uyarılı kararın ekranı (BRIEF §2b): başlık uyarıyı, açıklama uygulamanın kararını ve gerekçesini söyler; ilk seçenek
@@ -479,9 +558,9 @@ const go = (s: Side): DecisionChoice => (s === 'R' ? 'go:R' : 'go:L');
  */
 export function decisionScreen(d: BoldDecision): DecisionScreen {
   const hc = d.canal === 'HC';
-  const man = hc ? 'barbekü manevrası' : 'manevra';
+  const man = hc ? 'yatakta dönme manevrası' : 'manevra';
   /** "sağ taraf manevrası" kalıbı. */
-  const manOf = hc ? 'barbekü manevrası' : 'manevrası';
+  const manOf = hc ? 'yatakta dönme manevrası' : 'manevrası';
   const stop = { value: 'end' as const, label: 'Durdur', testid: 'decision-stop' };
   const sideOptions = (preferred: Side | null, continueLabel: (s: Side) => string): DecisionScreen['options'] =>
     preferred
@@ -504,7 +583,7 @@ export function decisionScreen(d: BoldDecision): DecisionScreen {
       title: 'Başka bir seçenek',
       lead: `${d.reason} Uygulamanın önerisi: ${SIDE_NAME[d.side]} taraf ${manOf}.`,
       spokenLead: `Önerimiz ${SIDE_NAME[d.side]} taraf.`,
-      options: [...sideOptions(d.side, (s) => `Öneriyle devam: ${SIDE_NAME[s]} taraf ${manOf}`), ...(hc ? [] : [both]), otherTest, stop]
+      options: [...withPrimary(sideOptions(d.side, (s) => `Öneriyle devam: ${SIDE_NAME[s]} taraf ${manOf}`)), ...(hc ? [] : [both]), otherTest, stop]
     };
   }
   switch (d.warn) {
@@ -529,20 +608,38 @@ export function decisionScreen(d: BoldDecision): DecisionScreen {
         ]
       };
     }
-    case 'NOT_TRIGGERED':
+    case 'NOT_TRIGGERED': {
+      // Önerilen yol tek büyük düğme (y01): bilinen taraf varsa o tarafa, yoksa (arka kanalda) iki tarafa sırayla manevra.
+      const end = { value: 'end' as const, label: 'Bugünlük bitir (sabah yeniden test)', testid: 'decision-stop' };
+      if (!d.side && !hc) {
+        return {
+          title: 'Testte baş dönmesi başlamadı',
+          lead: `${NOT_TRIGGERED_NOTE} Baş dönmeniz sürüyorsa ve hangi yan olduğunu bilmiyorsanız iki tarafa sırayla manevra yapabiliriz.`,
+          spokenLead: 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Önerimiz: iki tarafa sırayla manevra.',
+          options: [
+            { ...both, label: 'Hangi yan bilmiyorum: iki tarafa sırayla manevra', spokenLabel: 'İki tarafa sırayla manevra', primary: true },
+            ...sideOptions(null, () => ''),
+            otherTest,
+            end
+          ]
+        };
+      }
       return {
         title: 'Testte baş dönmesi başlamadı',
         lead: d.side
-          ? `Kristaller yerine oturmuş olabilir. İsterseniz yine de ${SIDE_NAME[d.side]} tarafa ${man} yapalım.`
-          : `Kristaller yerine oturmuş olabilir. Baş dönmesi hangi yana ${hc ? 'çevirince' : 'yatınca'} oluyorsa o tarafa ${man} yapabiliriz.`,
-        spokenLead: d.side ? `İsterseniz yine de ${SIDE_NAME[d.side]} tarafa ${man} yapalım.` : 'Hangi yanda oluyorsa o tarafa manevra yapabiliriz.',
+          ? `${NOT_TRIGGERED_NOTE} Baş dönmeniz sürüyorsa yine de ${SIDE_NAME[d.side]} tarafa ${man} yapabiliriz.`
+          : `${NOT_TRIGGERED_NOTE} Baş dönmesi hangi yana çevirince oluyorsa o tarafa ${man} yapabiliriz.`,
+        spokenLead: d.side
+          ? `Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Önerimiz: ${SIDE_NAME[d.side]} tarafa ${man}.`
+          : 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Hangi yanda oluyorsa o tarafa manevra yapabiliriz.',
         options: [
-          ...sideOptions(d.side, (s) => `Yine de manevra yap: ${SIDE_NAME[s]} taraf`),
+          ...sideOptions(d.side, (s) => `${cap(SIDE_NAME[s])} tarafa ${man} yap`).map((o, i) => (d.side && i === 0 ? { ...o, primary: true } : o)),
           ...(hc ? [] : [both]),
           otherTest,
-          { value: 'end', label: 'Bugünlük bitir (sabah yeniden test)', testid: 'decision-stop' }
+          end
         ]
       };
+    }
     default: {
       // İki taraf (arka kanalda) ya da tarafı belirlenemeyen yatay kanal.
       const lead = d.both
@@ -551,8 +648,8 @@ export function decisionScreen(d: BoldDecision): DecisionScreen {
           ? `${d.reason} ${cap(man)} ${SIDE_NAME[d.side]} tarafa yapılacak. Düzelmezse hekime görünün.`
           : `${d.reason} Hangi yana ${hc ? 'çevirince' : 'yatınca'} daha çok dönüyorsa onu seçin.`;
       const options: DecisionScreen['options'] = d.both
-        ? [{ ...both, testid: 'decision-continue', label: 'Devam et: iki tarafa sırayla' }, ...sideOptions(null, () => ''), otherTest, stop]
-        : [...sideOptions(d.side, (s) => `Devam et: ${SIDE_NAME[s]} taraf ${manOf}`), ...(hc ? [] : [both]), otherTest, stop];
+        ? [{ ...both, testid: 'decision-continue', label: 'Devam et: iki tarafa sırayla', primary: true }, ...sideOptions(null, () => ''), otherTest, stop]
+        : [...(d.side ? withPrimary : (o: DecisionScreen['options']) => o)(sideOptions(d.side, (s) => `Devam et: ${SIDE_NAME[s]} taraf ${manOf}`)), ...(hc ? [] : [both]), otherTest, stop];
       return {
         title: hc && !d.side ? 'Taraf belirlenemedi' : 'İki tarafta da baş dönmesi oldu',
         lead,
@@ -570,7 +667,7 @@ export function chainGateText(d: Pick<BoldDecision, 'canal' | 'side'>, dxWarn?: 
   if (d.canal === 'HC') {
     return {
       title: `${cap(SIDE_DATIVE[s])} çevirince baş dönmesi daha güçlüydü`,
-      text: `Yatay kanal, ${SIDE_NAME[s]} taraf kabul ediyoruz; en sık biçim budur. Şimdi barbekü manevrasını yapacağız: aynı yöne adım adım tam bir tur döneceksiniz. ${tap}`
+      text: `Yatay kanal, ${SIDE_NAME[s]} taraf kabul ediyoruz; en sık biçim budur. Şimdi yatakta dönme manevrasını yapacağız: aynı yöne adım adım tam bir tur döneceksiniz. ${tap}`
     };
   }
   return {

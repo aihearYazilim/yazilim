@@ -187,6 +187,12 @@ export interface Episode {
    * manevra sürerken kapanırsa yeniden açılışta "yarıda kaldı (adım n)" manevra kaydına çevrilir (recoverInterruptedManeuvers).
    */
   pendingManeuver?: { at: number; protocolId: ProtocolId; side: Side | null; records: StepRecord[]; assisted?: boolean; manual?: boolean };
+  /**
+   * Manevra sonrası "Yeni belirti" (inme belirtisi) bildirildikten sonra ana ekrandaki ve akıştaki kırmızı 112 şeridini
+   * kapatan yanıt (yeni kullanıcı turu 1, L2-1): 'ok' "Belirtiler geçti, iyiyim", 'called112' "112'yi aradım". Şerit bu
+   * yanıta ya da 24 saate dek görünür (state/neuroAlert.ts). Eski kayıtlarda yok.
+   */
+  neuroAlertAck?: { at: number; by: 'ok' | 'called112' };
 }
 
 export interface ClinicPatient {

@@ -731,6 +731,18 @@ describe('ev dönemi raporu: biçim v3 — araştırma kaydı (yeni kullanıcı 
     expect(decodeHomeReport(tokenOf({ v: 2, g: m, a: m, b: m, r: ['2026-10-31', 'R', 'b', 3, 5], e: [] }))).toEqual({ ok: false, error: 'FIELDS' });
   });
 
+  it('112 şeridine yanıt ve çift dokunuşla geri alınan işaretler v3 ile taşınır (L1/L2 alanları)', () => {
+    const m = maneuver(T0 + 15 * MIN, { afterSymptoms: 'neuro', records: [rec('ep-sit'), rec('ep-1', { vertigoTapCancels: 2 })] });
+    const ep = episode(T0, { maneuvers: [m], neuroAlertAck: { at: T0 + 30 * MIN, by: 'called112' }, rxShortcut: undefined });
+    const rep = buildHomeReport(data([ep], false), { now: T0 + 60 * MIN, episodes: [ep] });
+    expect(rep.v).toBe(3);
+    const { token, report } = encodeHomeReport(rep);
+    const r = decodeHomeReport(token);
+    expect(r.ok && r.value).toEqual(report);
+    expect(r.ok && r.value.episodes[0]!.neuroAck).toEqual({ at: T0 + 30 * MIN, by: 'called112' });
+    expect(r.ok && r.value.episodes[0]!.vertigoTapCancels).toBe(2);
+  });
+
   it('kısaltma: cümle sınırında, yoksa sözcük sınırında "…" ile', () => {
     expect(compactOverrideDetail('DOSE', 'kısa')).toBe('kısa');
     expect(compactOverrideDetail('NO_DIAGNOSIS', 'Hekim tanısı olmadan kullanım')).toBeUndefined();

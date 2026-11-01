@@ -12,6 +12,17 @@ const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci',
 /** Eski uygunluk listesinin "hiçbiri" seçeneği (yeniden tasarımda liste isteğe bağlı; seçenek yok, ad uyumluluk için). */
 export const noneLabel = (helper: boolean) => (helper ? 'Hiçbiri hastaya uymuyor' : 'Hiçbiri bana uymuyor');
 
+/**
+ * Kurulumda "Başla"nın hemen üstündeki kısa onay kutusu (yeni kullanıcı turu 1, L2-3; y01, y03, y06). Onam metninin
+ * tamamı ekranda üstte yazılıdır (consentStatement).
+ */
+export function consentCheckLabel(helper: boolean): string {
+  return helper ? 'Hasta adına yukarıdaki metni okudum, kabul ediyorum' : 'Yukarıdaki metni okudum, kabul ediyorum';
+}
+
+/** Onaysız (soluk) "Başla"ya dokunulunca kısa ses. */
+export const CONSENT_FIRST_SPOKEN = 'Önce Başla düğmesinin hemen üstündeki onay kutusunu işaretleyin.';
+
 /** Uygunluk listesinin "Tekrar dinle" düğmesinin etiketi (kısa girişten sonra bütün maddeleri okur). */
 export const CONTRA_LISTEN_LABEL = 'Tekrar dinle (bütün maddeler)';
 

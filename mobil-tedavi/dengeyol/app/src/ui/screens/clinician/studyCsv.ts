@@ -8,7 +8,7 @@ import { decodeHomeReport, type HomeEpisode, type HomeReport } from '../../../co
 import { RED_FLAGS } from '../../../core/safety';
 import type { AppData } from '../../../state/types';
 import { researchEntries } from '../patient/reportText';
-import { homeManeuverText, homeRetestText, homeSideTestText, homeTestStopText } from './examReport';
+import { homeManeuverText, homeNeuroAckText, homeRetestText, homeSideTestText, homeTestStopText } from './examReport';
 
 export const STUDY_CSV_COLUMNS = [
   'katilimci_no',
@@ -64,6 +64,7 @@ function episodeRows(base: Omit<Row, 'atak_baslangic' | 'zaman' | 'olay' | 'kod'
     add(m.at, 'manevra', PROTOCOLS[m.protocolId] ? m.protocolId : 'bilinmiyor', m.side ? sideName(m.side) : '', homeManeuverText(m));
   }
   for (const x of e.retests) add(x.at, 'tekrar_testi', x.kind, sideName(x.side), homeRetestText(x));
+  if (e.neuroAck) add(e.neuroAck.at, 'yeni_belirti_yaniti', e.neuroAck.by, '', homeNeuroAckText(e) ?? '');
   for (const x of e.testStops ?? []) add(x.at, 'testte_durdurma', x.reason, sideName(x.side), homeTestStopText(x));
   for (const x of researchEntries(e)) {
     const olay = x.group === 'override' ? 'asma' : x.group === 'decision' ? 'uygulama_karari' : 'bilgi';

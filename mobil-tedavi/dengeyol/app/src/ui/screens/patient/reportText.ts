@@ -48,7 +48,8 @@ export const OVERRIDE_KIND_TEXT: Record<string, string> = {
   VERTIGO_TOO_LONG: 'baş dönmesi 2 dakikayı aşınca manevraya devam edildi',
   POSITION_UNREACHABLE: 'pozisyona 1 dakikada gelinemeyince manevraya devam edildi',
   EARLY_REPEAT: 'önerilen tekrar testi beklenmeden yeniden manevraya geçildi',
-  REFER_NOT_TRIGGERED: 'test baş dönmesi başlatmadığı hâlde manevraya geçildi'
+  REFER_NOT_TRIGGERED: 'test baş dönmesi başlatmadığı hâlde manevraya geçildi',
+  VOMITING: 'kusmaya rağmen yeniden denendi'
 };
 
 /** Uyarı gösterilmeden yazılan bilgi kayıtları ve kullanıcının seçimleri (aşma sayılmaz). */
@@ -458,12 +459,32 @@ export function redFlagContinued(e: Pick<Episode, 'redFlags' | 'overrides' | 'si
  * Güvenlik sorusu satırı: hepsi güvenliyse "tümü güvenli yanıtlandı"; işaretlenen varsa kullanıcının devam edip etmediği
  * açıkça (y04 #3): "işaretlendi, uyarı gösterildi, devam edildi — …" ya da "işaretlendi, atak durduruldu — …".
  */
-export function redFlagLineText(e: Pick<Episode, 'redFlags' | 'overrides' | 'sideTests' | 'maneuvers' | 'retests'>, r: RedFlagLog): string {
+export function redFlagLineText(
+  e: Pick<Episode, 'redFlags' | 'overrides' | 'sideTests' | 'maneuvers' | 'retests' | 'appVersion'>,
+  r: RedFlagLog
+): string {
   const pos = RED_FLAGS.filter((q) => r.answers[q.id] === q.stopsOn);
   if (pos.length === 0) return 'tümü güvenli yanıtlandı';
-  const what = pos.map((q) => q.text).join(' | ');
+  // Acil belirti işaretlenince uygulama "doğru mu?" diye sorar (L2); yanıt kayda yalnız onaylanınca girer. Sürümü yazılı
+  // (bu onayı soran) atakta belirtilir.
+  const confirmed = !!e.appVersion && pos.some((q) => q.action === 'emergency') ? ' ("doğru mu?" sorusunda onaylandı)' : '';
+  const what = `${pos.map((q) => q.text).join(' | ')}${confirmed}`;
   if (!r.stopped) return `işaretlendi — ${what}`;
   return redFlagContinued(e, r) ? `işaretlendi, uyarı gösterildi, devam edildi — ${what}` : `işaretlendi, atak durduruldu (hekime/acile yönlendirme) — ${what}`;
+}
+
+/**
+ * Manevra sonrası yeni nörolojik belirti (L2-1): 112 uyarısı ve kırmızı şeride kişinin yanıtı (Episode.neuroAlertAck).
+ * Böyle bir belirti bildirilmediyse null.
+ */
+export function neuroAlertText(e: Pick<Episode, 'maneuvers' | 'neuroAlertAck'>): string | null {
+  const m = e.maneuvers.filter((x) => x.afterSymptoms === 'neuro').sort((a, b) => b.at - a.at)[0];
+  if (!m) return null;
+  const ack = e.neuroAlertAck && e.neuroAlertAck.at >= m.at ? e.neuroAlertAck : null;
+  const answer = ack
+    ? `kişi ${ack.by === 'called112' ? '"112\'yi aradım"' : '"belirtiler geçti, iyiyim"'} dedi (${formatDateTimeYear(ack.at)})`
+    : 'kişi 112 şeridine yanıt vermedi';
+  return `manevra sonrası yeni nörolojik belirti bildirildi (${formatDateTimeYear(m.at)}); 112 uyarısı gösterildi; ${answer}`;
 }
 
 /** Atak kaydının kaynağı satırı: sürüm ve demo modu (y04 #6). İkisi de yoksa (eski kayıt) null. */
@@ -498,6 +519,7 @@ export function stepSummary(r: StepRecord, step?: StepDef): string {
   if (r.noSitThrough) parts.push('oturuştan geçilmedi');
   if (r.wrongSide) parts.push('önce yanlış tarafa dönüldü');
   if (r.borderline) parts.push('hedefin sınırında tutuldu');
+  if (r.vertigoTapCancels) parts.push(`${r.vertigoTapCancels} baş dönmesi işareti çift dokunuşla geri alındı`);
   parts.push(symptomText(r) ?? 'baş dönmesi işaretlenmedi');
   return parts.join(' · ');
 }
@@ -714,6 +736,8 @@ function episodeHeadLines(e: Episode, d: AppData, now: number, inPeriod: boolean
   }
   const af = assistFallbackText(e, d.settings);
   if (af) L.push(`Manevrayı yaptıran: ${af}`);
+  const neuro = neuroAlertText(e);
+  if (neuro) L.push(`Yeni belirti: ${neuro}`);
   const src = recordSourceText(e);
   if (src) L.push(`Kayıt: ${src}`);
   return L;

@@ -79,7 +79,8 @@ function mount(path = '/hasta/atak/start') {
 const byTestId = (id: string) => host!.querySelector<HTMLElement>(`[data-testid="${id}"]`);
 
 async function waitUnlocked() {
-  for (let i = 0; i < 50 && host!.querySelector('[data-locked]'); i++) {
+  // Kırmızı bayrak uyarısında "Yine de devam et" en az 5 s bekler (L2-2): 10 s'ye dek ilerletilir.
+  for (let i = 0; i < 100 && host!.querySelector('[data-locked]'); i++) {
     act(() => {
       vi.advanceTimersByTime(100);
     });
@@ -136,7 +137,23 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     act(() => byTestId('rf-neuro')!.click());
     expect(byTestId('redflags-none')).toBeNull();
     await click('redflags-continue');
+    // Acil belirti: uyarıdan önce tek "doğru mu?" onayı (y02; kilit değil, yanlış dokunuş koruması).
+    expect(byTestId('redflags-confirm-title')!.textContent).toMatch(/Çift görme.*doğru mu\?/);
+    await click('redflags-confirm-yes');
     expect(byTestId('stop-emergency')).not.toBeNull();
+    // "Yine de devam et" görünür ama 112 cümlesi bitene ve en az 5 s geçene dek basılamaz (geri sayımlı, çerçeveli ikincil).
+    const ov = byTestId('redflag-override') as HTMLButtonElement;
+    expect(ov.disabled).toBe(true);
+    expect(ov.className).toMatch(/\boverride\b/);
+    expect(ov.textContent).toMatch(/Yine de devam et \(5\)/);
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect((byTestId('redflag-override') as HTMLButtonElement).disabled).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+    expect((byTestId('redflag-override') as HTMLButtonElement).disabled).toBe(false);
     expect(byTestId('call-112')!.getAttribute('href')).toBe('tel:112');
     expect(ep()!.redFlags[0]!.answers.neuro).toBe('yes');
     expect(ep()!.redFlags[0]!.stopped).toBe(true);
@@ -152,11 +169,30 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     mount();
     act(() => byTestId('rf-headache')!.click());
     await click('redflags-continue');
+    await click('redflags-confirm-yes');
     const id = ep()!.id;
     await click('redflag-stop');
     const e = store.get().episodes.find((x) => x.id === id)!;
     expect(e.status).toBe('emergency');
     expect(byTestId('report-probe')!.textContent).toBe(id);
+  });
+
+  it('acil belirti onayında "Yanlış dokundum": listeye döner, işaret korunur; hekim belirtisinde onay sorulmaz', async () => {
+    seed();
+    mount();
+    act(() => byTestId('rf-neuro')!.click());
+    await click('redflags-continue');
+    await click('redflags-confirm-back');
+    expect(byTestId('redflags')).not.toBeNull();
+    expect(byTestId('rf-neuro')!.getAttribute('aria-checked')).toBe('true');
+    expect(ep()).toBeNull();
+    // İşaret kaldırılıp hekim belirtisi (kulak) işaretlenince onay yok, doğrudan uyarı; "Durdur" dolu birincil.
+    act(() => byTestId('rf-neuro')!.click());
+    act(() => byTestId('rf-ear')!.click());
+    await click('redflags-continue');
+    expect(byTestId('redflags-confirm')).toBeNull();
+    expect(byTestId('stop-doctor')).not.toBeNull();
+    expect(byTestId('redflag-stop')!.className).toMatch(/\bprimary\b/);
   });
 
   it('kontrendikasyon: uyarı + "Yine de devam et" → kayıt (atak açılınca yazılır)', async () => {
@@ -197,7 +233,12 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     }));
     mount();
     expect(byTestId('plan-warn')).not.toBeNull();
+    // Önerilen yol (ana ekran) büyük dolu düğme; "Yine de manevra yap" çerçeveli ikincil (y06).
+    expect(byTestId('go-home')!.className).toMatch(/\bprimary\b/);
+    expect(byTestId('plan-override')!.className).toMatch(/\boverride\b/);
     await click('plan-override');
+    expect(byTestId('go-home')!.className).toMatch(/\bprimary\b/);
+    expect(byTestId('dose-override')!.className).not.toMatch(/\bprimary\b/);
     expect(byTestId('dose-warn')).not.toBeNull();
     await click('dose-override');
     expect(kinds()).toEqual(['EARLY_REPEAT', 'DOSE']);
@@ -218,6 +259,51 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     expect(byTestId('prep-hearing')!.textContent).toMatch(/Hastanın işitme cihazı varsa/);
     expect(byTestId('prep-hearing')!.textContent).not.toMatch(/bir yakınınızla/);
     expect(byTestId('prep-ready')).not.toBeNull();
+  });
+
+  it('hazırlık: "Hazırım" altta sabit; işitme cihazı, titreşimler ve "Kim yapıyor" katlanır "Ayrıntılar"da (kendim modunda kapalı)', async () => {
+    seed();
+    mount();
+    await click('redflags-none');
+    expect(byTestId('prep-ready')!.closest('.sticky-actions')).not.toBeNull();
+    const details = byTestId('prep-details') as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(details.contains(byTestId('prep-hearing'))).toBe(true);
+    expect(details.textContent).toMatch(/Kim yapıyor/);
+  });
+
+  it('manevra sonrası yeni belirti bildirildiyse (24 saat): ana ekranda ve akışta kırmızı 112 şeridi; tekrar testi/hatırlatıcı yok; "112\'yi aradım" kapatır', async () => {
+    seed();
+    const now = Date.now();
+    store.update((d) => ({
+      ...d,
+      episodes: [
+        {
+          id: 'n',
+          startedAt: now - 20 * 60_000,
+          side: 'R',
+          protocolId: 'epley',
+          redFlags: [{ at: now - 20 * 60_000, answers: {}, stopped: false }],
+          sideTests: [],
+          maneuvers: [{ id: 'm', at: now - 5 * 60_000, protocolId: 'epley', side: 'R', completed: true, stopReason: null, records: [], manual: false, afterSymptoms: 'neuro' }],
+          retests: [],
+          status: 'active',
+          overrides: [{ at: now - 4 * 60_000, kind: 'RED_FLAG', detail: 'Manevra sonrası yeni belirti' }]
+        }
+      ]
+    }));
+    mount('/hasta');
+    expect(byTestId('home-neuro')).not.toBeNull();
+    expect(byTestId('home-neuro-call')!.getAttribute('href')).toBe('tel:112');
+    expect(byTestId('add-reminder')).toBeNull();
+    expect(byTestId('home-neuro-retest')).not.toBeNull();
+    // Kilit yok: "Başım dönüyor" akışı açar; akışta da şerit görünür.
+    act(() => byTestId('start-episode')!.click());
+    expect(byTestId('plan-warn')).not.toBeNull();
+    expect(byTestId('neuro-strip')).not.toBeNull();
+    act(() => byTestId('neuro-strip-called')!.click());
+    expect(byTestId('neuro-strip')).toBeNull();
+    expect(store.get().episodes[0]!.neuroAlertAck?.by).toBe('called112');
   });
 
   it('reçete bitimi kartı dönem raporunu açar ve tek satır sonucu gösterir (k09)', () => {

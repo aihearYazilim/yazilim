@@ -175,6 +175,10 @@ export interface HomeEpisode {
   /** Atağı açan uygulamanın sürümü, raporu üretenden farklıysa (`w`; her sürümde, eski çözücü yok sayar). */
   appVersion?: string;
   rulesVersion?: string;
+  /** v3: manevra sonrası yeni belirtide kırmızı 112 şeridine yanıt (Episode.neuroAlertAck). */
+  neuroAck?: NonNullable<Episode['neuroAlertAck']>;
+  /** v3: manevralarda hızlı çift dokunuşla geri alınan baş dönmesi işaretlerinin toplamı (StepRecord.vertigoTapCancels). */
+  vertigoTapCancels?: number;
 }
 
 export interface HomeReport {
@@ -345,6 +349,9 @@ export function homeEpisodeOf(e: Episode, reportVersion: { app?: string; rules?:
       return detail ? { at: o.at, kind: o.kind, detail } : { at: o.at, kind: o.kind };
     });
   if (ov.length) out.overrides = ov;
+  if (e.neuroAlertAck) out.neuroAck = { at: e.neuroAlertAck.at, by: e.neuroAlertAck.by };
+  const taps = e.maneuvers.reduce((n, m) => n + m.records.reduce((k, r) => k + (r.vertigoTapCancels ?? 0), 0), 0);
+  if (taps > 0) out.vertigoTapCancels = taps;
   if ((e.appVersion || e.rulesVersion) && (e.appVersion !== reportVersion.app || e.rulesVersion !== reportVersion.rules)) {
     if (e.appVersion) out.appVersion = e.appVersion.slice(0, VERSION_MAX);
     if (e.rulesVersion) out.rulesVersion = e.rulesVersion.slice(0, VERSION_MAX);
@@ -364,7 +371,13 @@ export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped
     (!!r.rx && r.rx.maneuver !== 'epley' && r.rx.maneuver !== 'semont') ||
     (r.contraindications?.length ?? 0) > 0 ||
     r.episodes.some(
-      (e) => !!e.simulation || (e.redFlags?.length ?? 0) > 0 || (e.overrides?.length ?? 0) > 0 || e.sideTests.some((t) => t.canal === 'HC')
+      (e) =>
+        !!e.simulation ||
+        !!e.neuroAck ||
+        !!e.vertigoTapCancels ||
+        (e.redFlags?.length ?? 0) > 0 ||
+        (e.overrides?.length ?? 0) > 0 ||
+        e.sideTests.some((t) => t.canal === 'HC')
     );
   if (v3) return 3;
   const v2 = r.episodes.some(
@@ -521,7 +534,8 @@ const OVERRIDE_CODE: Record<string, string> = {
   REFER_ATYPICAL_LONG: 'RL',
   REFER_BOTH_SIDES: 'RB',
   REFER_NOT_TRIGGERED: 'RN',
-  REFER_SIDE_CONFLICT: 'RC'
+  REFER_SIDE_CONFLICT: 'RC',
+  VOMITING: 'K'
 };
 const OVERRIDE_OF = invert(OVERRIDE_CODE);
 const OVERRIDE_KIND = /^[A-Z][A-Z0-9_]{2,40}$/;
@@ -563,6 +577,10 @@ interface WireEpisode {
   o?: ([number, string] | [number, string, string])[];
   /** Atağı açan uygulamanın sürümü [uygulama, kural] (raporu üretenden farklıysa; her sürümde). */
   w?: [string, string];
+  /** v3: 112 şeridine yanıt [başa göre dakika, 'o' iyiyim / 'c' 112'yi aradım]. */
+  a?: [number, 'o' | 'c'];
+  /** v3: çift dokunuşla geri alınan baş dönmesi işareti sayısı. */
+  c?: number;
 }
 interface Wire {
   v: number;
@@ -647,6 +665,8 @@ function wireEpisode(e: HomeEpisode, withSteps: boolean, v3: boolean): WireEpiso
   if (e.testStops?.length) w.y = e.testStops.map((t) => [off(t.at, b), TEST_CODE[t.test], t.side, STOP_CODE[t.reason]]);
   if (v3) {
     if (e.simulation) w.S = 1;
+    if (e.neuroAck) w.a = [off(e.neuroAck.at, b), e.neuroAck.by === 'called112' ? 'c' : 'o'];
+    if (e.vertigoTapCancels) w.c = e.vertigoTapCancels;
     if (e.redFlags?.length) w.f = e.redFlags.map((r) => [off(r.at, b), r.ids.join(','), r.continued ? 1 : 0]);
     if (e.overrides?.length) {
       w.o = e.overrides.map((o) => {
@@ -967,6 +987,12 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
       if (o.S !== 1) fail();
       out.simulation = true;
     }
+    if (o.a !== undefined) {
+      if (!Array.isArray(o.a) || o.a.length !== 2 || (o.a[1] !== 'o' && o.a[1] !== 'c')) fail();
+      const a = o.a as unknown[];
+      out.neuroAck = { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, by: a[1] === 'c' ? 'called112' : 'ok' };
+    }
+    if (o.c !== undefined) out.vertigoTapCancels = int(o.c, 1, 999);
     const flags = arr(o.f, MAX_RED_FLAGS).map((f): HomeRedFlag => {
       if (!Array.isArray(f) || f.length !== 3 || typeof f[1] !== 'string') fail();
       const a = f as unknown[];

@@ -9,6 +9,7 @@ import { RESEARCH_GROUP_TITLE, researchLineText } from '../patient/reportText';
 import {
   homeContraText,
   homeEpisodeTitle,
+  homeNeuroAckText,
   homeManeuverText,
   homePeriodText,
   homeRedFlagText,
@@ -210,6 +211,8 @@ function ResearchSection({ report, testId, printCompact }: { report: HomeReport;
                   Güvenlik sorusu {time(f.at)}: {homeRedFlagText(f)}
                 </li>
               ))}
+              {homeNeuroAckText(e) && <li data-testid={`${testId}-neuro-ack`}>Manevra sonrası yeni belirti: {homeNeuroAckText(e)}</li>}
+              {e.vertigoTapCancels ? <li>Çift dokunuşla geri alınan baş dönmesi işareti: {e.vertigoTapCancels}</li> : null}
               <li data-testid={`${testId}-override-count`}>
                 {RESEARCH_GROUP_TITLE.override}: {n || 'yok'}
               </li>

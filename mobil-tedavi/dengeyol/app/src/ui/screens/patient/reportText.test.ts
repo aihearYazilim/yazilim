@@ -10,6 +10,7 @@ import {
   endNoteText,
   maneuverPauses,
   maneuverStatusText,
+  neuroAlertText,
   overrideCount,
   overrideKindText,
   overrideLines,
@@ -608,6 +609,21 @@ describe('gerçekte yapılan test ve manevra (yeni kullanıcı turu 1; y04 #2, y
     const e = { ...base, maneuvers: [m] };
     expect(reportPlainText(e, { ...emptyData(), episodes: [e] }, at('2026-10-31T12:00:00'))).toMatch(/— yarıda kaldı \(3\. adımda uygulama kapandı/);
   });
+  it('L1/L2 alanları: 112 şeridi yanıtı, çift dokunuşla geri alınan işaret, acil belirtide "doğru mu?" onayı; VOMITING Türkçe', () => {
+    const m = { ...base.maneuvers[0]!, afterSymptoms: 'neuro' as const, records: [rec({ vertigoTapCancels: 1 })] };
+    const e: Episode = { ...base, maneuvers: [m], neuroAlertAck: { at: at('2026-10-31T09:40:00'), by: 'called112' } };
+    expect(neuroAlertText(e)).toMatch(/112 uyarısı gösterildi; kişi "112'yi aradım" dedi \(31 Ekim 2026 09:40\)$/);
+    expect(neuroAlertText({ ...e, neuroAlertAck: undefined })).toMatch(/kişi 112 şeridine yanıt vermedi$/);
+    expect(neuroAlertText(base)).toBeNull();
+    const t = reportPlainText(e, { ...emptyData(), episodes: [e] }, at('2026-10-31T12:00:00'));
+    expect(t).toMatch(/\nYeni belirti: manevra sonrası yeni nörolojik belirti bildirildi/);
+    expect(t).toMatch(/1 baş dönmesi işareti çift dokunuşla geri alındı/);
+    const rf = { at: at('2026-10-31T09:01:00'), answers: { neuro: 'yes' as const }, stopped: true };
+    expect(redFlagLineText({ ...base, redFlags: [rf], appVersion: '0.1.0' }, rf)).toMatch(/\("doğru mu\?" sorusunda onaylandı\)$/);
+    expect(redFlagLineText({ ...base, redFlags: [rf] }, rf)).not.toMatch(/doğru mu/);
+    expect(overrideKindText('VOMITING')).toBe('kusmaya rağmen yeniden denendi');
+  });
+
   it('kayıt satırı: sürüm ve demo modu; katılımcı no rapor başında (y04 #6–7)', () => {
     const e = { ...base, appVersion: '0.1.0', rulesVersion: 'k1', simulation: true };
     expect(recordSourceText(e)).toBe('DengeYol 0.1.0 · karar kuralları k1 · DEMO MODU (sanal sensör; eğitim/deneme kaydı, gerçek tedavi değil)');

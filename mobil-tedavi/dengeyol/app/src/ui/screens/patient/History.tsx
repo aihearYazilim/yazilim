@@ -15,6 +15,7 @@ import {
   maneuverHeadText,
   maneuverStatusText,
   maneuverTags,
+  neuroAlertText,
   PERIOD_REPORT_PATH,
   periodDoseText,
   periodCountsLine,
@@ -218,6 +219,7 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
   const consent = consentLine(p);
   const studyId = studyIdLine(p);
   const source = recordSourceText(e);
+  const neuro = neuroAlertText(e);
   const research = researchEntries(e);
   // Büyük yazıda sağdan taşmasın: tablolar yerine satır satır liste (uzun sözcükler de kırılır).
   const wrap = { overflowWrap: 'anywhere' as const };
@@ -302,6 +304,12 @@ function ReportBody({ e, inPeriod = false }: { e: Episode; inPeriod?: boolean })
             <>
               <dt>Onam</dt>
               <dd data-testid="report-consent">{consent}</dd>
+            </>
+          )}
+          {neuro && (
+            <>
+              <dt>Yeni belirti</dt>
+              <dd data-testid="report-neuro-alert">{neuro}</dd>
             </>
           )}
           {source && (

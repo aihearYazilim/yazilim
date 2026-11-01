@@ -244,10 +244,19 @@ describe('yeniden tasarım: kilit yok (kurulum tek ekran, ana ekranda her zaman 
     expect(byTestId('ob-dx')).toBeNull();
     expect(byTestId('ob-contra')).toBeNull();
     expect(byTestId('ob-speech')).toBeNull();
-    // Onaysız "Başla" ilerlemez.
+    // Onay kutusu "Başla"nın hemen üstünde (altta sabit alanda); onaysız "Başla" soluk görünür ve ilerlemez (L2-3).
+    const start = byTestId('ob-start')!;
+    const consentBox = byTestId('ob-consent')!;
+    expect(consentBox.closest('.footer-actions')).toBe(start.closest('.footer-actions'));
+    expect(consentBox.nextElementSibling).toBe(start);
+    expect(start.className).toMatch(/\bis-off\b/);
+    // Yakını kurulumu onaydan ayrı, katlanır kutuda.
+    expect(byTestId('ob-helper-box')!.contains(byTestId('ob-helper'))).toBe(true);
     click(byTestId('ob-start'));
     expect(store.get().patient?.consentAt).toBeUndefined();
+    expect(byTestId('ob-consent')!.className).toMatch(/\bflash\b/);
     click(byTestId('ob-consent'));
+    expect(byTestId('ob-start')!.className).not.toMatch(/\bis-off\b/);
     click(byTestId('ob-start'));
     const p = store.get().patient!;
     expect(p.consentAt).toBeTruthy();

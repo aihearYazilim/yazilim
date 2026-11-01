@@ -28,6 +28,8 @@ import type { AppData, Episode } from '../../../state/types';
 import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
 import { logOverride } from '../../../state/overrides';
+import { neuroAlertFor } from '../../../state/neuroAlert';
+import { NeuroAlertStrip } from './NeuroAlert';
 import { activeEpisode, store, useData } from '../../../state/store';
 import { Icon } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
@@ -102,6 +104,9 @@ export function PatientHome() {
   const overDose = startDs && !startDs.allowed ? startDs : null;
   const rxReport = !ep ? rxEndReport(d, now) : null;
   const na = ep ? nextAction(ep, now) : null;
+  // Manevra sonrası yeni nörolojik belirti (24 saat ya da yanıtlanana dek): en üstte kırmızı 112 şeridi; tekrar testi ve
+  // hatırlatıcı gösterilmez (L2-1; y05). Kilit yok: "Başım dönüyor" çalışır.
+  const neuro = neuroAlertFor(d, now);
 
   /** "Başım dönüyor": hekime yönlendirmeden sonraysa bu aşma, yönlendirilen atağa araştırma kaydı olarak yazılır. */
   const start = () => {
@@ -111,6 +116,7 @@ export function PatientHome() {
 
   return (
     <Screen title="DengeYol" right={right}>
+      {neuro && <NeuroAlertStrip alert={neuro} testid="home-neuro" />}
       <button className="big-action" onClick={start} data-testid="start-episode">
         <Icon name="sparkle" size={34} />
         Başım dönüyor
@@ -153,7 +159,7 @@ export function PatientHome() {
         </InfoLine>
       )}
 
-      {ep && <ActiveEpisodeCard now={now} />}
+      {ep && <ActiveEpisodeCard now={now} neuro={!!neuro && neuro.episodeId === ep.id} />}
 
       {!ep && recentlyClosed && (
         <div className="card tint-ok stack" data-testid="home-closed">
@@ -206,7 +212,7 @@ export function PatientHome() {
   );
 }
 
-function ActiveEpisodeCard({ now }: { now: number }) {
+function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
   const d = useData();
   const nav = useNavigate();
   const ep = activeEpisode(d)!;
@@ -262,7 +268,14 @@ function ActiveEpisodeCard({ now }: { now: number }) {
         </div>
       )}
 
-      {na.kind === 'early-retest' && (
+      {/* Yeni nörolojik belirti bildirildiyse tekrar testi ve hatırlatıcı yerine tek satır (şerit en üstte). */}
+      {neuro && (na.kind === 'early-retest' || na.kind === 'morning-retest') && (
+        <InfoLine testid="home-neuro-retest" tone="warn">
+          Yeni belirti bildirdiniz: önce 112 ya da hekim. Tekrar testi şimdilik önerilmiyor.
+        </InfoLine>
+      )}
+
+      {!neuro && na.kind === 'early-retest' && (
         <div className="card stack">
           <h2>Tekrar testi</h2>
           <p>{na.ready ? 'Tekrar testinin zamanı geldi (yaklaşık 2 dakika).' : 'Manevranın işe yarayıp yaramadığını görmek için 1 saat sonra kısa bir test yapacağız.'}</p>
@@ -283,7 +296,7 @@ function ActiveEpisodeCard({ now }: { now: number }) {
         </div>
       )}
 
-      {na.kind === 'morning-retest' && (
+      {!neuro && na.kind === 'morning-retest' && (
         <div className="card stack">
           <h2>Sabah testi</h2>
           <p>

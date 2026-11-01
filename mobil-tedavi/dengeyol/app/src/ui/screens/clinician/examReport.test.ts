@@ -17,6 +17,7 @@ import {
   homeContraText,
   homeEpisodeTitle,
   homeMatchCode,
+  homeNeuroAckText,
   homeOverrideCount,
   homeRedFlagText,
   homeReportAdvice,
@@ -732,6 +733,17 @@ describe('ev raporunun araştırma kaydı ve klinik öneri (yeni kullanıcı tur
     expect(homeResearchNote(rep())).toMatch(/^araştırma kaydı — uyarıya rağmen devam: 0;/);
     // Eski uygulama (sürüm yok, v1/v2): kayıt bilinmiyor.
     expect(homeResearchNote(rep({ v: 1, appVersion: undefined, rulesVersion: undefined }))).toBe('araştırma kaydı yok (raporu üreten uygulama eski sürüm)');
+  });
+
+  it('112 şeridi yanıtı ve çift dokunuş geri almaları HBYS satırında (L1/L2 alanları)', () => {
+    const m = { ...ep().maneuvers[0]!, afterSymptoms: 'neuro' as const };
+    const r = rep({}, { maneuvers: [m], neuroAck: { at: S + 40 * MIN, by: 'ok' }, vertigoTapCancels: 2 });
+    expect(homeNeuroAckText(r.episodes[0]!)).toMatch(/^112 uyarısı gösterildi, kişi "belirtiler geçti, iyiyim" dedi/);
+    expect(homeNeuroAckText(ep({ maneuvers: [m] }))).toBe('112 uyarısı gösterildi, kişi yanıt vermedi');
+    expect(homeNeuroAckText(ep())).toBeNull();
+    const note = homeResearchNote(r);
+    expect(note).toMatch(/yeni belirti: 112 uyarısı gösterildi, kişi "belirtiler geçti, iyiyim" dedi/);
+    expect(note).toMatch(/çift dokunuşla geri alınan baş dönmesi işareti: 2/);
   });
 
   it('işaretlenen güvenlik sorusu ve kontrendikasyon adları Türkçe', () => {
