@@ -203,6 +203,11 @@ export interface Episode {
    * yanıta ya da 24 saate dek görünür (state/neuroAlert.ts). Eski kayıtlarda yok.
    */
   neuroAlertAck?: { at: number; by: 'ok' | 'called112' };
+  /**
+   * Belirti şiddeti (0–10, isteğe bağlı; yeni kullanıcı turu 2, y04 #2): atak başında (before) ve manevradan sonra (after).
+   * Ev raporu v3'te taşınır, çalışma CSV'sine yazılır. Eski kayıtlarda yok.
+   */
+  vas?: { before?: number; after?: number };
 }
 
 export interface ClinicPatient {
@@ -253,6 +258,11 @@ export interface ClinicExam {
    * içindedir; bağlantı (token) aynen saklanır, ekranda ve HBYS notunda her seferinde çözülür. Eski kayıtlarda yok.
    */
   homeReports?: HomeReportRecord[];
+  /**
+   * Teste başlamadan güvenlik kontrolü (yeni kullanıcı turu 2, y08 #3, y05 #4): spontan nistagmus, nörolojik bulgu, boyun
+   * sorunu. Uyarıdır, testleri engellemez; rapora ve HBYS notuna yazılır. Yanıtlanmayan maddenin alanı yoktur. Eski kayıtlarda yok.
+   */
+  safetyCheck?: { at: number; spontaneous?: boolean; neuro?: boolean; neck?: boolean };
 }
 
 /** Muayeneye eklenmiş ev dönemi raporu. */

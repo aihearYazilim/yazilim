@@ -14,6 +14,7 @@ import {
   homePeriodText,
   homeRedFlagText,
   homeReportAdvice,
+  homeReportAlert,
   homeReportHeadline,
   homeResearchEntries,
   homeRetestText,
@@ -21,6 +22,7 @@ import {
   homeStepText,
   homeTestStopText,
   homeTruncationText,
+  homeVasText,
   homeVersionText,
   shortDate
 } from './examReport';
@@ -45,9 +47,19 @@ export function HomeReportView({
 }) {
   const trunc = homeTruncationText(report);
   const advice = homeReportAdvice(report);
+  const alert = homeReportAlert(report);
   return (
     <div className="card stack home-report" data-testid={testId}>
       <h3>Ev dönemi · {homePeriodText(report)}</h3>
+      {/* Kırmızı bayrak aşıldıysa ya da yeni nörolojik belirti bildirildiyse ilk satır bu (yeni kullanıcı turu 2, y05 #3). */}
+      {alert && (
+        <div className="notice danger" role="alert" data-testid={`${testId}-alert`}>
+          <Icon name="alert" />
+          <span>
+            <strong>{alert}</strong>
+          </span>
+        </div>
+      )}
       {printCompact && (
         // Basılı özet: kodlar tek satırda (reçete ayrıntısı raporun reçete bölümünde zaten var).
         <p className="small print-only" data-testid={`${testId}-print-codes`}>
@@ -86,7 +98,7 @@ export function HomeReportView({
         <dd>{shortDate(new Date(report.generatedAt))}</dd>
       </dl>
       <p data-testid={`${testId}-headline`}>
-        <strong>{homeReportHeadline(report)}</strong>
+        <strong>{homeReportHeadline(report, { alert: false })}</strong>
       </p>
       {/* Tek cümle klinik öneri (yeni kullanıcı turu 1, y08 #3): karar desteği, hasta beyanına dayanır. */}
       <div className="notice info" data-testid={`${testId}-advice`}>
@@ -113,6 +125,7 @@ export function HomeReportView({
             {e.rxShortcut ? ' · reçeteli kısa yol (taraf testi yapılmadı)' : ''}
           </strong>
           <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
+            {homeVasText(e) && <li data-testid={`${testId}-vas`}>Belirti şiddeti (0–10): {homeVasText(e)}</li>}
             {e.sideTests.map((t, j) => (
               <li key={`t${j}`}>
                 Taraf testi {time(t.at)}: {homeSideTestText(t)}

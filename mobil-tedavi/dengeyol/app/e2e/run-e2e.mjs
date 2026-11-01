@@ -1001,12 +1001,28 @@ await step('Klinisyen (L4-2): saf aşağı vuran nistagmus → Tedavi ve Reçete
 await step('Klinisyen (L4-3/L4-4/L4-6): tipik arka kanal bulgusundan sonra "Sıradaki: Tanı" (roll isteğe bağlı); bulgu formunda "Nasıl görünür?" ve "Emin değilim"; yeni muayenede "Önceki kalibrasyonu kullan"', async () => {
   const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test', method: 'çıplak göz' } } }));
   await newExam(page, 'T-1');
+  // Teste başlamadan kontrol uyarıdır, kilit değil (yeni kullanıcı turu 2, M3-3): yanıtlanmadan test başlar.
+  await page.getByTestId('exam-safety').waitFor();
   await page.getByTestId('test-run-dhR').click();
   if (await page.getByTestId('cal-reuse').count()) throw new Error('kalibrasyon yokken "önceki kalibrasyon" sunuldu');
+  // Kalibrasyonda telefonun alında tutuluşu ve işaret koyma yönergesi (M3-3, y08 #4).
+  await page.getByTestId('exam-hold-tip').waitFor();
   await calibrate(page);
   await page.getByTestId('runner-ready').waitFor();
   await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.5 });
   await page.getByTestId('finding-form').waitFor();
+  // İşaret konduysa "Hasta baş dönmesi bildirdi" işaretli gelir (M3-2, y08 #2).
+  if (!(await page.getByRole('checkbox', { name: 'Hasta baş dönmesi bildirdi' }).isChecked())) throw new Error('işaret varken "baş dönmesi bildirdi" boş geldi');
+  // Biten testin ölçümü ve formda girilen sayfa yenilenince kaybolmaz (M3-1, y08 #1).
+  const latBefore = await page.locator('#lat').inputValue();
+  if (latBefore === '') throw new Error('işaretten gecikme dolmadı');
+  await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).click();
+  await page.locator('#dur').fill('17');
+  await page.reload();
+  await page.getByTestId('finding-form').waitFor();
+  if ((await page.locator('#lat').inputValue()) !== latBefore || (await page.locator('#dur').inputValue()) !== '17') throw new Error('yenilemede ölçüm/taslak kayboldu');
+  if (!(await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).isChecked())) throw new Error('yenilemede nistagmus seçimi kayboldu');
+  if (!(await page.getByRole('checkbox', { name: 'Hasta baş dönmesi bildirdi' }).isChecked())) throw new Error('yenilemede baş dönmesi işareti kayboldu');
   // Çıplak göz: "Emin değilim" kısa yolu ve "Nasıl görünür?" yardımı (L4-4).
   await page.getByTestId('finding-unsure').waitFor();
   await page.getByTestId('finding-help').locator('summary').click();
@@ -1015,6 +1031,11 @@ await step('Klinisyen (L4-3/L4-4/L4-6): tipik arka kanal bulgusundan sonra "Sır
   await page.locator('#lat').fill('3');
   await page.locator('#dur').fill('20');
   await page.getByTestId('finding-save').click();
+  // Kaydedilen bulgu baş dönmesiyle; kaydedince taslak silinir, yenilemede form yeniden açılmaz.
+  if ((await storeOf(page)).clinicExams[0].findings.dhR?.vertigo !== true) throw new Error('işaretli testte baş dönmesi kaydedilmedi');
+  await page.reload();
+  await page.getByTestId('test-run-dhL').waitFor();
+  if (await page.getByTestId('finding-form').count()) throw new Error('kaydedilen bulgunun formu yenilemede yeniden açıldı');
   // Sol DH: "Emin değilim, baş dönmesi var" → nistagmus yok + baş dönmesi + not.
   await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
   await page.getByTestId('finding-unsure').click();
@@ -1033,6 +1054,14 @@ await step('Klinisyen (L4-3/L4-4/L4-6): tipik arka kanal bulgusundan sonra "Sır
   await page.getByTestId('dx-suggestion').first().waitFor();
   // Yeni muayene: bu oturumdaki kalibrasyon tek dokunuşla yeniden kullanılır (L4-6).
   await newExam(page, 'T-2');
+  // Teste başlamadan kontrol: "Var" uyarı gösterir, testler engellenmez; yanıtlar rapora yazılır (M3-3).
+  await page.getByTestId('exam-safety-neck').getByRole('button', { name: 'Var' }).click();
+  if (!(await page.getByTestId('exam-safety-warn').innerText()).includes('Boyun sorunu')) throw new Error('boyun uyarısı yok');
+  await page.getByTestId('exam-safety-spontaneous').getByRole('button', { name: 'Yok' }).click();
+  await page.getByTestId('exam-safety-neuro').getByRole('button', { name: 'Yok' }).click();
+  await page.getByTestId('exam-safety-close').click();
+  if (!(await page.getByTestId('exam-safety-done').innerText()).includes('boyun sorunu VAR')) throw new Error('kontrol özeti yok');
+  if (!(await page.getByTestId('test-run-dhR').isEnabled())) throw new Error('güvenlik uyarısı testi kilitledi');
   await page.getByTestId('test-run-dhR').click();
   await page.getByTestId('cal-reuse').click();
   await page.getByTestId('runner-ready').waitFor();
@@ -1097,11 +1126,18 @@ await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley �
   if (!/Sağ arka kanal/.test(dxText)) throw new Error('tanı önerisi beklenmedik: ' + dxText);
   await snap(page, 'tani-onerisi');
   await page.getByTestId('dx-confirm').first().click();
+  // Onaydan sonra düğme durumu söyler (M3-4, y08 #8).
+  if ((await page.getByTestId('dx-confirm').first().innerText()).trim() !== 'Onaylandı ✓') throw new Error('onay sonrası "Onaylandı ✓" yok');
+  await page.getByTestId('dx-unconfirm').waitFor();
   await page.getByRole('button', { name: 'Tedaviye geç' }).click();
   await page.getByTestId('treat-run-epley').click();
   await driveRunner(page);
   await page.getByText('Yapılan manevralar').waitFor();
   await page.getByRole('button', { name: 'Reçete' }).click();
+  // Tek süre satırı: gün sayısı ve son geçerli gün; kısa yol açıklaması katlanır (M3-4, y08 #6).
+  const validity = await page.getByTestId('rx-validity').innerText();
+  if (!/^3 gün, günde en çok 3 manevra\. Reçete \d\d\.\d\d\.\d{4} tarihine kadar \(dahil\) geçerli\.$/.test(validity)) throw new Error('reçete süre satırı: ' + validity);
+  await page.getByTestId('rx-shortcut-help').waitFor();
   await page.getByTestId('rx-make').click();
   await page.getByTestId('rx-output').waitFor();
   rxUrl = await page.getByTestId('rx-url').inputValue();
@@ -1221,6 +1257,11 @@ await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı has
     throw new Error('ev dönemi yeni kontrol muayenesine eklenmedi');
   }
   await snap(page, 'ev-raporu-muayenede');
+  // "Son muayeneler": ev dönemindeki manevra ve aşma sayısı (yeni kullanıcı turu 2, y04 #5).
+  await page.goto(BASE + '#/odyolog');
+  const homeSum = await page.getByTestId('clin-exam-home').innerText();
+  // Eski (v1, araştırma kaydı yok) raporda aşma sayısı bilinmez, yazılmaz.
+  if (homeSum.trim() !== '· ev: 2 manevra') throw new Error('listede ev dönemi özeti yok: ' + homeSum);
   // Aynı rapor ikinci kez eklenmez.
   await page.goto(BASE + '#/odyolog/ev-raporu/' + token);
   await page.getByTestId('hr-already').waitFor();

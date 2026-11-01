@@ -31,6 +31,10 @@
  * Uygulama ve karar kuralı sürümü (`w`) her sürümde yazılır (eski çözücü yok sayar; yeni çözücü her sürümde okur). `w`
  * varsa rapor araştırma kaydını taşıyan bir uygulamadan gelmiştir: kayıt yoksa "aşma yok" demektir; `w` yoksa (eski
  * uygulama) araştırma kaydı bilinmiyor. Bu sürüm v1, v2 ve v3'ü okur.
+ *
+ * v3 eki (yeni kullanıcı turu 2; y04 #1–#4): atağa belirti şiddeti (VAS 0–10, önce/sonra; `v` anahtarı) eklendi ve araştırma
+ * kaydı açıklamaları kısaltılmadan (en çok OVERRIDE_DETAIL_FULL_MAX) yazılır; bağlantı bütçeyi aşarsa önce OVERRIDE_DETAIL_MAX'a
+ * kısaltılır. İkisi de sürümü değiştirmez: önceki v3 çözücü `v`yi yok sayar ve uzun açıklamayı kendi sınırında keser.
  */
 import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxManeuverFromWire, rxManeuverWire, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
@@ -60,8 +64,13 @@ const MAX_RED_FLAGS = 20;
 const MAX_OVERRIDES = 40;
 const MAX_CONTRA = 20;
 const NOTE_MAX = 60;
-/** Araştırma kaydı açıklamasının bağlantıdaki en uzun hâli (karakter); sığmazsa önce kısaltılır, sonra çıkarılır. */
+/**
+ * Bütçe aşılınca araştırma kaydı açıklamasının kısaltıldığı uzunluk (karakter); yine sığmazsa 40'a, sonra çıkarılır. Önceki
+ * sürümlerin çözücüsü açıklamayı bu uzunlukta keser.
+ */
 export const OVERRIDE_DETAIL_MAX = 90;
+/** Araştırma kaydı açıklamasının bağlantıdaki en uzun hâli (kısaltılmamış gerekçe; yeni kullanıcı turu 2, y04 #4). */
+export const OVERRIDE_DETAIL_FULL_MAX = 300;
 const VERSION_MAX = 16;
 const MIN = 60_000;
 
@@ -179,6 +188,8 @@ export interface HomeEpisode {
   neuroAck?: NonNullable<Episode['neuroAlertAck']>;
   /** v3: manevralarda hızlı çift dokunuşla geri alınan baş dönmesi işaretlerinin toplamı (StepRecord.vertigoTapCancels). */
   vertigoTapCancels?: number;
+  /** v3: belirti şiddeti 0–10 (Episode.vas): atak başında ve manevradan sonra; yalnız girilen değer. */
+  vas?: { before?: number; after?: number };
 }
 
 export interface HomeReport {
@@ -345,10 +356,12 @@ export function homeEpisodeOf(e: Episode, reportVersion: { app?: string; rules?:
     .sort((a, b) => a.at - b.at)
     .slice(-MAX_OVERRIDES)
     .map((o): HomeOverride => {
-      const detail = compactOverrideDetail(o.kind, o.detail);
+      const detail = compactOverrideDetail(o.kind, o.detail, OVERRIDE_DETAIL_FULL_MAX);
       return detail ? { at: o.at, kind: o.kind, detail } : { at: o.at, kind: o.kind };
     });
   if (ov.length) out.overrides = ov;
+  const vas = cleanVas(e.vas);
+  if (vas) out.vas = vas;
   if (e.neuroAlertAck) out.neuroAck = { at: e.neuroAlertAck.at, by: e.neuroAlertAck.by };
   const taps = e.maneuvers.reduce((n, m) => n + m.records.reduce((k, r) => k + (r.vertigoTapCancels ?? 0), 0), 0);
   if (taps > 0) out.vertigoTapCancels = taps;
@@ -375,6 +388,7 @@ export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped
         !!e.simulation ||
         !!e.neuroAck ||
         !!e.vertigoTapCancels ||
+        !!e.vas ||
         (e.redFlags?.length ?? 0) > 0 ||
         (e.overrides?.length ?? 0) > 0 ||
         e.sideTests.some((t) => t.canal === 'HC')
@@ -387,6 +401,16 @@ export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped
 }
 
 const DAY = 24 * 60 * 60 * 1000;
+
+const isVas = (x: unknown): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0 && x <= 10;
+/** Geçerli (0–10 tam sayı) VAS değerleri; hiçbiri yoksa undefined. */
+function cleanVas(v: Episode['vas']): HomeEpisode['vas'] {
+  if (!v) return undefined;
+  const out: NonNullable<HomeEpisode['vas']> = {};
+  if (isVas(v.before)) out.before = v.before;
+  if (isVas(v.after)) out.after = v.after;
+  return out.before !== undefined || out.after !== undefined ? out : undefined;
+}
 
 /**
  * Raporlanacak dönem ve ataklar. Reçete varsa ve odaktaki atak (yoksa şu an) reçete döneminin içindeyse reçete dönemindeki
@@ -581,6 +605,8 @@ interface WireEpisode {
   a?: [number, 'o' | 'c'];
   /** v3: çift dokunuşla geri alınan baş dönmesi işareti sayısı. */
   c?: number;
+  /** v3: belirti şiddeti [önce | null, sonra | null] (0–10). */
+  v?: [number | null, number | null];
 }
 interface Wire {
   v: number;
@@ -667,6 +693,7 @@ function wireEpisode(e: HomeEpisode, withSteps: boolean, v3: boolean): WireEpiso
     if (e.simulation) w.S = 1;
     if (e.neuroAck) w.a = [off(e.neuroAck.at, b), e.neuroAck.by === 'called112' ? 'c' : 'o'];
     if (e.vertigoTapCancels) w.c = e.vertigoTapCancels;
+    if (e.vas) w.v = [e.vas.before ?? null, e.vas.after ?? null];
     if (e.redFlags?.length) w.f = e.redFlags.map((r) => [off(r.at, b), r.ids.join(','), r.continued ? 1 : 0]);
     if (e.overrides?.length) {
       w.o = e.overrides.map((o) => {
@@ -743,7 +770,7 @@ function withOverrideDetails(r: HomeReport, max: number): HomeReport {
 }
 
 /**
- * Raporu bütçeye sığdırarak kodlar. Sıra: (1) adım ayrıntısı çıkarılır, (2) araştırma kaydı açıklamaları kısaltılır, sonra
+ * Raporu bütçeye sığdırarak kodlar. Sıra: (1) adım ayrıntısı çıkarılır, (2) araştırma kaydı açıklamaları kısaltılır (90, 40), sonra
  * çıkarılır (kodlar, yani hangi uyarının aşıldığı, kalır), (3) en eski ataklar çıkarılır (en az biri kalır), (4) kalan
  * ataklarda en eski manevralar çıkarılır, (5) en eski taraf/tekrar testleri çıkarılır. Dönen `report` gerçekte kodlanan
  * (kısaltılmış) rapordur; ekranda ne gönderildiği ondan gösterilir.
@@ -760,6 +787,8 @@ export function encodeHomeReport(r: HomeReport, budget: number = REPORT_TOKEN_BU
     retry({ ...cur, stepsDropped: true, episodes: cur.episodes.map((e) => ({ ...e, maneuvers: e.maneuvers.map((m) => ({ ...m, steps: null })) })) });
   }
   const hasDetails = () => cur.episodes.some((e) => e.overrides?.some((o) => o.detail));
+  const longDetails = () => cur.episodes.some((e) => e.overrides?.some((o) => (o.detail?.length ?? 0) > OVERRIDE_DETAIL_MAX));
+  if (!fits() && longDetails()) retry(withOverrideDetails(cur, OVERRIDE_DETAIL_MAX));
   if (!fits() && hasDetails()) retry(withOverrideDetails(cur, 40));
   if (!fits() && hasDetails()) retry(withOverrideDetails(cur, 0));
   while (!fits() && cur.episodes.length > 1) {
@@ -993,6 +1022,14 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
       out.neuroAck = { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, by: a[1] === 'c' ? 'called112' : 'ok' };
     }
     if (o.c !== undefined) out.vertigoTapCancels = int(o.c, 1, 999);
+    if (o.v !== undefined) {
+      if (!Array.isArray(o.v) || o.v.length !== 2) fail();
+      const a = o.v as unknown[];
+      const before = optInt(a[0], 0, 10);
+      const after = optInt(a[1], 0, 10);
+      if (before === null && after === null) fail();
+      out.vas = { ...(before !== null ? { before } : {}), ...(after !== null ? { after } : {}) };
+    }
     const flags = arr(o.f, MAX_RED_FLAGS).map((f): HomeRedFlag => {
       if (!Array.isArray(f) || f.length !== 3 || typeof f[1] !== 'string') fail();
       const a = f as unknown[];
@@ -1009,7 +1046,7 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
       const at = startedAt + int(a[0], 0, OFF_MAX) * MIN;
       if (a.length === 3) {
         if (typeof a[2] !== 'string') fail();
-        const detail = cleanText(a[2] as string, OVERRIDE_DETAIL_MAX);
+        const detail = cleanText(a[2] as string, OVERRIDE_DETAIL_FULL_MAX);
         if (detail) return { at, kind, detail };
       }
       return { at, kind };

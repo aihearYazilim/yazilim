@@ -15,7 +15,7 @@ import {
 } from '../../../core/diagnosis';
 import { decodePrescription, type Prescription, rxCanalOf, rxManeuverName, rxValidUntil as rxValidUntilMs } from '../../../core/prescription';
 import { type Canal, type FindingKey, PROTOCOLS, type ProtocolId, type Side, sideName } from '../../../core/protocols';
-import { recordStats, STOP_REASON_TEXT, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
+import { recordStats, type StepRecord, STOP_REASON_TEXT, vertigoSummary, stopReasonTextFor } from '../../../core/runner';
 import {
   decodeHomeReport,
   type HomeEpisode,
@@ -45,6 +45,64 @@ import {
   sideTestName,
   STATUS_LABEL
 } from '../patient/reportText';
+
+// ---- Test sonrası bulgu formu ve muayene başı kontrol ------------------------------------------------------
+
+/**
+ * Telefonla yapılan testin adım kaydından bulgu formunun başlangıç değerleri: gecikme ve süre işaretlerden; işaret konduysa
+ * "Hasta baş dönmesi bildirdi" işaretli gelir (hekim kaldırabilir; yeni kullanıcı turu 2, y08 #2). Nistagmus tipi her zaman
+ * bilinçli seçilir ("Yok" önceden seçili gelmez: tek dokunuşla yanlış negatif olmasın).
+ */
+export function testFindingInitial(rec: StepRecord | undefined): Finding & { nystagmusUnset: true } {
+  const v = rec ? vertigoSummary(rec) : null;
+  return {
+    nystagmus: 'none',
+    latencySec: v?.latencySec ?? null,
+    durationSec: v?.durationSec ?? null,
+    intensity: 0,
+    vertigo: v !== null,
+    nystagmusUnset: true
+  };
+}
+
+export type SafetyItem = 'spontaneous' | 'neuro' | 'neck';
+export const SAFETY_ITEMS: SafetyItem[] = ['spontaneous', 'neuro', 'neck'];
+
+/**
+ * Teste başlamadan 3 maddelik kontrol (yeni kullanıcı turu 2, y08 #3, y05 #4): soru, kısa ad ve "var" yanıtında gösterilen
+ * uyarı. Uyarıdır, testleri engellemez.
+ */
+export const SAFETY_CHECK: Record<SafetyItem, { q: string; name: string; warn: string }> = {
+  spontaneous: {
+    q: 'Spontan nistagmus (oturur, düz bakarken)',
+    name: 'spontan nistagmus',
+    warn: 'Spontan nistagmus: pozisyonel bulguyu yorumlamak güçleşir; vestibüler nörit ve santral nedenleri (HINTS) değerlendirin.'
+  },
+  neuro: {
+    q: 'Nörolojik bulgu (çift görme, konuşma bozukluğu, güçsüzlük, ataksi)',
+    name: 'nörolojik bulgu',
+    warn: 'Nörolojik bulgu: santral neden düşünün; acil nörolojik değerlendirme önerilir. Pozisyon testlerini ertelemeyi düşünün.'
+  },
+  neck: {
+    q: 'Boyun sorunu (fıtık, travma, ileri hareket kısıtlılığı)',
+    name: 'boyun sorunu',
+    warn: 'Boyun sorunu: Dix-Hallpike\'ta başı geriye sarkıtmayın; yan yatış testi ya da sırtüstü baş çevirme ile değiştirin.'
+  }
+};
+
+/** Kontrolde "var" denen maddelerin uyarıları (yoksa boş). */
+export function safetyWarnings(c: ClinicExam['safetyCheck']): string[] {
+  return SAFETY_ITEMS.filter((k) => c?.[k] === true).map((k) => SAFETY_CHECK[k].warn);
+}
+
+/**
+ * Rapor ve HBYS satırı: "spontan nistagmus yok, nörolojik bulgu VAR, boyun sorunu yok"; yanıtlanmayan madde
+ * "değerlendirilmedi". Kontrol hiç yapılmadıysa null.
+ */
+export function safetyCheckText(c: ClinicExam['safetyCheck']): string | null {
+  if (!c || SAFETY_ITEMS.every((k) => c[k] === undefined)) return null;
+  return SAFETY_ITEMS.map((k) => `${SAFETY_CHECK[k].name} ${c[k] === undefined ? 'değerlendirilmedi' : c[k] ? 'VAR' : 'yok'}`).join(', ');
+}
 
 // ---- Tanı geçerliliği ------------------------------------------------------------------------------
 
@@ -474,16 +532,28 @@ export function shortDate(d: Date): string {
   return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-/** "Geçerlilik: 14 gün, 12.11.2026 dahil" (HBYS notunun reçete satırı). */
+/**
+ * "Reçete 12.11.2026 tarihine kadar (dahil) geçerli" (HBYS notunun reçete satırı). Gün sayısıyla karışmasın diye geçerlilik
+ * gün sayısı değil son geçerli gün olarak yazılır (yeni kullanıcı turu 2, y08 #6).
+ */
 export function rxValidityShort(dateKey: string): string {
   const last = rxLastValidDay(dateKey);
-  return `Geçerlilik: ${RX_VALID_DAYS} gün${last ? `, ${shortDate(last)} dahil` : ''}`;
+  return last ? `Reçete ${shortDate(last)} tarihine kadar (dahil) geçerli` : `Reçete ${RX_VALID_DAYS} gün geçerli`;
 }
 
-/** Geçerlilik cümlesi (reçete ekranı, basılı rapor). */
+/** Geçerlilik cümlesi (reçete ekranı, basılı rapor). Testsiz kısa yolun açıklaması ayrı ve katlanır: RX_SHORTCUT_HELP. */
 export function rxValidityText(dateKey: string): string {
-  return `${rxValidityShort(dateKey)}. Testsiz kısa yol yalnız muayene edilen baş dönmesi sürerken; süre dolunca uygulama her atakta iki tarafı test eder.`;
+  return `${rxValidityShort(dateKey)}.`;
 }
+
+/** Reçete formunun tek süre satırı: "5 gün, günde en çok 3 manevra. Reçete 12.11.2026 tarihine kadar (dahil) geçerli." */
+export function rxDoseText(perDay: number, days: number, dateKey: string): string {
+  return `${days} gün, günde en çok ${perDay} manevra. ${rxValidityText(dateKey)}`;
+}
+
+/** Testsiz kısa yolun açıklaması (reçete ekranında katlanır bölümde; y05 #6, y08 #6). */
+export const RX_SHORTCUT_HELP =
+  'Reçete geçerliyken hasta, muayene edilen baş dönmesi hiç geçmediyse taraf testi yapmadan reçetedeki tarafa manevra yapar. Baş dönmesi geçip yeniden başlarsa ya da reçetenin süresi dolunca uygulama her atakta önce iki tarafı test eder.';
 
 /** Reçete kodu: bağlantıdaki sağlama toplamı (hasta raporundaki kodla karşılaştırmak için). */
 export function rxCode(token: string): string {
@@ -506,6 +576,8 @@ export function examNoteText(exam: ClinicExam, code: string | undefined, clinici
   const header = methodHeader(exam.findings, exam.retestFindings);
   const base = primaryMethod(exam.findings, exam.retestFindings);
   if (header) lines.push(header);
+  const safety = safetyCheckText(exam.safetyCheck);
+  if (safety) lines.push(`Teste başlamadan kontrol: ${safety}.`);
   const keys = Object.keys(exam.findings) as FindingKey[];
   if (keys.length) {
     lines.push('Testler:');
@@ -782,16 +854,86 @@ function leadCoversRetest(r: HomeReport, rt: HomeRetest): boolean {
  * (02.11) sabah, sağ: baş dönmesi gelmedi". Açık atakta baştaki sonuç son tekrar testini zaten söylüyorsa test bir daha
  * yazılmaz (kullanıcı turu 6, k08 #4); pozitif testte yalnız söylenmeyen kısım (taraf, gecikme, süre) eklenir.
  */
-export function homeReportHeadline(r: HomeReport): string {
+export function homeReportHeadline(r: HomeReport, opts: { alert?: boolean } = {}): string {
   const c = homeCounts(r);
   const lead = homeLastOutcomeText(r);
-  const parts = [...(lead ? [cap(lead)] : []), `${c.episodes} atak`, `${c.maneuvers} manevra (${c.completed} tamamlandı)`];
+  // Kırmızı bayrak aşıldıysa ya da yeni nörolojik belirti bildirildiyse ilk söz bu (yeni kullanıcı turu 2, y05 #3). Ekran
+  // uyarıyı ayrı kırmızı satırda gösterir (`alert: false`); HBYS satırı başta yazar.
+  const alert = opts.alert === false ? null : homeReportAlert(r);
+  const parts = [...(alert ? [alert] : []), ...(lead ? [cap(lead)] : []), `${c.episodes} atak`, `${c.maneuvers} manevra (${c.completed} tamamlandı)`];
   const referred = r.episodes.filter((e) => e.status === 'referred' || e.status === 'emergency').length;
   if (referred) parts.push(`${referred} atakta hekime/acile yönlendirildi`);
   const rt = lastRetest(r);
   if (rt && !leadCoversRetest(r, rt)) parts.push(`son tekrar test (${dayMonth(rt.at)}) ${homeRetestText(rt)}`);
   else if (rt?.vertigo) parts.push(`son tekrar test ${sideName(rt.side)}: gecikme ${rt.latencySec ?? '?'} s, süre ${rt.durationSec ?? '?'} s`);
   return parts.join(' · ');
+}
+
+const flagLabels = (ids: string[]) => ids.map((id) => RED_FLAGS.find((q) => q.id === id)?.label ?? 'güvenlik sorusu');
+const isEmergencyFlag = (id: string) => RED_FLAGS.find((q) => q.id === id)?.action === 'emergency';
+
+/**
+ * Ev raporunun ilk satırı olacak alarm (yeni kullanıcı turu 2, y05 #3, y08): manevra sonrası yeni nörolojik belirti (112
+ * şeridine yanıtıyla) ve aşılan kırmızı bayrak (güvenlik sorusunda işaretlenip uyarıya rağmen devam edilen) ya da acil
+ * belirtiyle durdurulan atak. Yoksa null. Demo atağında "(demo kaydı)" eklenir.
+ */
+export function homeReportAlert(r: Pick<HomeReport, 'episodes'>): string | null {
+  const parts: string[] = [];
+  const eps = [...r.episodes].sort((a, b) => a.startedAt - b.startedAt);
+  const demo = (e: HomeEpisode) => (e.simulation ? ' (demo kaydı)' : '');
+  const neuro = eps.flatMap((e) => e.maneuvers.filter((m) => m.afterSymptoms === 'neuro').map((m) => ({ e, m }))).sort((a, b) => a.m.at - b.m.at);
+  const lastNeuro = neuro[neuro.length - 1];
+  if (lastNeuro) {
+    const { e, m } = lastNeuro;
+    const ack = e.neuroAck && e.neuroAck.at >= m.at ? e.neuroAck : null;
+    const resp = !ack ? '112 uyarısına yanıt yok' : ack.by === 'called112' ? 'kişi "112\'yi aradım" dedi' : 'kişi "belirtiler geçti, iyiyim" dedi';
+    parts.push(`Manevra sonrası yeni nörolojik belirti bildirildi (${dayMonth(m.at)}${neuro.length > 1 ? `, ${neuro.length} kez` : ''}); ${resp}${demo(e)}`);
+  }
+  const flags = eps.flatMap((e) => (e.redFlags ?? []).map((f) => ({ e, f })));
+  const passed = flags.filter((x) => x.f.continued);
+  if (passed.length) {
+    const labels = [...new Set(passed.flatMap((x) => flagLabels(x.f.ids)))];
+    const last = passed[passed.length - 1]!;
+    parts.push(`Kırmızı bayrak aşıldı: ${labels.join(', ')} işaretlendi, uyarıya rağmen devam edildi (${dayMonth(last.f.at)})${demo(last.e)}`);
+  }
+  const stopped = flags.filter((x) => !x.f.continued && x.f.ids.some(isEmergencyFlag));
+  if (stopped.length) {
+    const labels = [...new Set(stopped.flatMap((x) => flagLabels(x.f.ids.filter(isEmergencyFlag))))];
+    const last = stopped[stopped.length - 1]!;
+    parts.push(`Acil belirti işaretlendi: ${labels.join(', ')}; atak durduruldu (${dayMonth(last.f.at)})${demo(last.e)}`);
+  }
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/**
+ * Muayene listesinin ev dönemi özeti (yeni kullanıcı turu 2, y04 #5): eklenen ev raporlarındaki manevra ve aşılan uyarı
+ * sayısı, "ev: 2 manevra, 3 aşma" (aşma yalnız araştırma kaydı taşıyan raporda). Ev raporu yoksa ya da hiçbiri okunamıyorsa null.
+ */
+export function homeListSummary(exam: Pick<ClinicExam, 'homeReports'>): string | null {
+  let maneuvers = 0;
+  let overrides = 0;
+  let any = false;
+  let research = false;
+  for (const h of exam.homeReports ?? []) {
+    const r = decodeHomeReport(h.token);
+    if (!r.ok) continue;
+    any = true;
+    maneuvers += homeCounts(r.value).maneuvers;
+    if (homeReportHasResearch(r.value)) {
+      research = true;
+      overrides += homeOverrideCount(r.value);
+    }
+  }
+  // Araştırma kaydı taşımayan (eski uygulamanın) raporunda aşma sayısı bilinmez: yazılmaz.
+  return any ? `ev: ${maneuvers} manevra${research ? `, ${overrides} aşma` : ''}` : null;
+}
+
+/** Atağın belirti şiddeti (VAS 0–10; biçim v3): "başta 7, manevradan sonra 3"; girilmediyse null. */
+export function homeVasText(e: Pick<HomeEpisode, 'vas'>): string | null {
+  const v = e.vas;
+  if (!v || (v.before === undefined && v.after === undefined)) return null;
+  const parts = [...(v.before !== undefined ? [`başta ${v.before}`] : []), ...(v.after !== undefined ? [`manevradan sonra ${v.after}`] : [])];
+  return parts.join(', ');
 }
 
 /** Boyut nedeniyle kısaltma uyarısı (yoksa null). */
@@ -933,12 +1075,20 @@ const isAtypicalCell = (c: HomeSideTest['R']) => !!c && (c.safetyStopped || (c.v
 
 /**
  * Ev raporu açılınca gösterilen tek cümlelik klinik öneri (yeni kullanıcı turu 1, y08 #3). Karar desteğidir, hasta beyanına
- * dayanır; öncelik sırası: demo kaydı, acil belirti, hekime yönlendiren yanıt, atipik süre, manevraya yanıt, test tetiklenmemesi.
+ * dayanır; öncelik sırası (demo kaydında başta demo notu): acil belirti, hekime yönlendiren yanıt, atipik süre, manevraya yanıt, test tetiklenmemesi.
  */
 export function homeReportAdvice(r: HomeReport): string {
   const eps = r.episodes;
   if (eps.length === 0) return 'Raporda atak yok: muayene bulgusuna göre ilerleyin.';
-  if (eps.every((e) => e.simulation)) return 'Bu rapor demo modunda (sanal sensörle) üretildi; gerçek tedavi kaydı değildir.';
+  // Demo kaydında da öneri gösterilir (uygulamayı deneyen hekim öneriyi görsün), demo notuyla (yeni kullanıcı turu 2, y08 #5).
+  if (eps.every((e) => e.simulation)) return `${DEMO_ADVICE_NOTE} ${clinicalAdvice(eps)}`;
+  return clinicalAdvice(eps);
+}
+
+/** Bütünüyle demo modunda üretilen raporun öneri satırının başı. */
+export const DEMO_ADVICE_NOTE = 'Bu rapor demo modunda (sanal sensörle) üretildi; gerçek tedavi kaydı değildir. Kayıt gerçek olsaydı öneri:';
+
+function clinicalAdvice(eps: HomeEpisode[]): string {
   const flags = eps.flatMap((e) => e.redFlags ?? []);
   const emergencyFlag = flags.some((f) => f.ids.some((id) => RED_FLAGS.find((q) => q.id === id)?.action === 'emergency'));
   const neuroAfter = eps.some((e) => e.maneuvers.some((m) => m.afterSymptoms === 'neuro'));

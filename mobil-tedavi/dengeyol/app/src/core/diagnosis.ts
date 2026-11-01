@@ -324,10 +324,13 @@ export function suggestDiagnosis(findings: Findings): DiagnosisResult {
       side,
       mechanism: 'unknown',
       confidence: 'belirsiz',
-      label: 'Nistagmussuz pozisyonel vertigo ("subjektif BPPV" olasılığı)',
+      label: 'Nistagmussuz pozisyonel baş dönmesi (olası BPPV)',
+      // Türkçe ve tek öneri (yeni kullanıcı turu 2, y08 #7): belirti tarafına deneme manevrası.
       rationale: [
         `Nistagmus gözlenmedi; baş dönmesi: ${vertigoKeys.map(keyLabel).join(', ')}.`,
-        'Bárány 2015 ölçütleri bu durum için öyküye göre iki ayrı kategori tanımlar ("probable BPPV, spontaneously resolved" ve "possible BPPV"); kategoriyi öyküyle siz belirleyin. Klinik karara göre semptomatik tarafa manevra düşünülebilir.'
+        side
+          ? `Öneri: baş dönmesinin olduğu ${side === 'R' ? 'sağ' : 'sol'} tarafa deneme manevrası; yanıt yoksa testi gözlemle (mümkünse Frenzel/VNG) tekrarlayın.`
+          : 'Öneri: baş dönmesinin daha belirgin olduğu tarafa deneme manevrası; taraf belirsizse testi gözlemle (mümkünse Frenzel/VNG) tekrarlayın.'
       ],
       maneuvers: side ? maneuversFor('PC', 'unknown') : []
     });

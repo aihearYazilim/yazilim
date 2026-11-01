@@ -233,7 +233,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     'von Brevern M ve ark. BPPV: Diagnostic criteria (Bárány Society ICVD). J Vestib Res 2015;25:105–117.'
   ],
   cautions: [
-    'Boyun hareket kısıtlılığı ya da boyun hastalığı varsa test hekim gözetiminde ve değiştirilmiş biçimde (yan yatış testi) yapılmalıdır.'
+    'Boyun hareket kısıtlılığı ya da boyun hastalığı varsa başı geriye sarkıtmayın; testi değiştirilmiş biçimde (yan yatış testi) yapın.'
   ],
   evidenceNote: 'Kılavuz tanımı.'
 };
@@ -339,7 +339,7 @@ const SUPINE_ROLL: ProtocolDef = {
     'von Brevern M ve ark. J Vestib Res 2015 (yatay kanal tanı ölçütleri).'
   ],
   cautions: [
-    'Hasta modunda nistagmus gözlenemez; yalnız baş dönmesinin şiddeti karşılaştırılır ve daha şiddetli taraf etkilenen taraf kabul edilir (geotropik varsayım).'
+    'Nistagmusu iki yana karşılaştırın: yönü (yere ya da tavana) kanalolitiazis/kupulolitiazisi, şiddeti tarafı gösterir. Göremediyseniz hastanın baş dönmesinin şiddetini puanlayın.'
   ],
   evidenceNote: 'Kılavuz tanımı.'
 };
