@@ -1022,9 +1022,87 @@ await step('Klinisyen (L4-2): saf aşağı vuran nistagmus → Tedavi ve Reçete
     await page.goto(url);
     const line = await page.getByTestId('rx-override-line').innerText();
     if (!line.startsWith('Hekim uyarıya rağmen verdi: muayene bulgusu beyin kaynaklı')) throw new Error('reçete kartında uyarı satırı: ' + line);
+    // Santral uyarılı reçetede tanı "olası" (yeni kullanıcı turu 3, y05 #2).
+    const dxLine = await page.getByTestId('rx-dx').innerText();
+    if (dxLine !== 'Olası BPPV (hekim uyarısıyla) — SAĞ kulak, arka kanal kristal oynaması') throw new Error('santral uyarılı kartın tanı satırı: ' + dxLine);
     await snap(page, 'hasta-recete-uyariya-ragmen');
     await acceptRx(page, url);
     if (!(await page.getByTestId('home-rx-ov').innerText()).includes('Hekim uyarıya rağmen verdi')) throw new Error('ana ekranda uyarı satırı yok');
+    noErrors(errors);
+    await ctx.close();
+  }
+});
+
+await step('Klinisyen (tur 3, y05 #1): muayene başı kontrolde "nörolojik bulgu VAR" → Tanı ve Tedavi kırmızı satır, Reçete RX_SAFETY_CHECK + ≥10 karakter gerekçe; hasta kartında "Olası BPPV (hekim uyarısıyla)" ve "muayenede nörolojik bulgu"; tek süre cümlesi', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'clinician' }, data: { clinician: { name: 'Dr. Test' } } }));
+  await newExam(page, 'G-1');
+  await page.getByTestId('exam-safety-spontaneous').getByRole('button', { name: 'Yok' }).click();
+  await page.getByTestId('exam-safety-neuro').getByRole('button', { name: 'Var' }).click();
+  await page.getByTestId('exam-safety-neck').getByRole('button', { name: 'Yok' }).click();
+  await page.getByTestId('exam-safety-close').click();
+  // Tipik sağ arka kanal bulgusu (elle).
+  await page.getByRole('button', { name: 'Elle gir' }).nth(0).click();
+  await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).click();
+  await page.locator('#lat').fill('3');
+  await page.locator('#dur').fill('20');
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Elle gir' }).nth(1).click();
+  await page.getByRole('radio', { name: 'Yok' }).click();
+  await page.getByTestId('finding-save').click();
+  await page.getByRole('button', { name: 'Tanı', exact: true }).click();
+  const dxs = await page.getByTestId('dx-safety').innerText();
+  if (!dxs.includes('Teste başlamadan kontrolde VAR: nörolojik bulgu')) throw new Error('Tanı sekmesinde kontrol uyarısı yok: ' + dxs);
+  const sug = await page.getByTestId('dx-suggestion').first().innerText();
+  if (!sug.includes('olası') || /\btipik\b/.test(sug.split('\n')[0] ?? '')) throw new Error('kontrol uyarısında öneri "tipik" gösterildi: ' + sug);
+  if (!(await page.getByTestId('dx-confirm').first().innerText()).includes('Uyarıları okudum')) throw new Error('onay düğmesi uyarıyı söylemiyor');
+  await page.getByTestId('dx-confirm').first().click();
+  await snap(page, 'odyolog-kontrol-var-tani');
+  await page.getByRole('button', { name: 'Tedavi', exact: true }).click();
+  if (!(await page.getByTestId('treat-safety').innerText()).includes('nörolojik bulgu')) throw new Error('Tedavi sekmesinde kontrol uyarısı yok');
+  if (!(await page.getByTestId('treat-run-epley').getAttribute('class')).includes('secondary')) throw new Error('kontrol uyarısında manevra düğmesi birincil');
+  await page.getByRole('button', { name: 'Reçete', exact: true }).click();
+  const warn = page.getByTestId('rx-warning');
+  await warn.waitFor();
+  if ((await warn.getAttribute('data-kind')) !== 'RX_SAFETY_CHECK') throw new Error('uyarı türü: ' + (await warn.getAttribute('data-kind')));
+  if (!(await warn.innerText()).includes('nörolojik bulgu VAR — ev reçetesi önerilmiyor')) throw new Error('reçete uyarısı: ' + (await warn.innerText()));
+  if (await page.getByTestId('rx-make').count()) throw new Error('uyarı aşılmadan reçete formu açıldı');
+  await page.getByTestId('rx-override').click();
+  await page.getByTestId('rx-override-reason').fill('kısa');
+  if (await page.getByTestId('rx-make').isEnabled()) throw new Error('kısa gerekçeyle reçete düğmesi etkin');
+  if (!(await page.getByTestId('rx-override-patient').innerText()).includes('muayenede nörolojik bulgu vardı')) throw new Error('hasta kartı önizlemesi');
+  await page.getByTestId('rx-override-reason').fill('Nöroloji konsültasyonu normal, MR temiz');
+  if (await page.getByTestId('rx-ack').count()) await page.getByTestId('rx-ack').check();
+  await page.getByTestId('rx-make').click();
+  await page.getByTestId('rx-output').waitFor();
+  const ovNote = await page.getByTestId('rx-override-note').innerText();
+  if (ovNote !== 'Uyarıya rağmen reçete: Nöroloji konsültasyonu normal, MR temiz (uyarı: muayene başı kontrolde nörolojik bulgu).') throw new Error('aşma notu: ' + ovNote);
+  const url = await page.getByTestId('rx-url').inputValue();
+  const body = rxBody(url);
+  if (body.v !== 3 || body.ovk !== 'SAFETY_CHECK' || !String(body.ov).startsWith('muayenede nörolojik bulgu')) throw new Error('reçete gövdesi: ' + JSON.stringify(body));
+  const ex = (await storeOf(page)).clinicExams[0];
+  if (ex.rxOverride?.kind !== 'RX_SAFETY_CHECK') throw new Error('muayeneye aşma kaydı: ' + JSON.stringify(ex.rxOverride));
+  if (!ex.diagnosis?.warnings?.some((w) => w.includes('nörolojik bulgu'))) throw new Error('tanı uyarısı kaydedilmedi: ' + JSON.stringify(ex.diagnosis));
+  const note = await hbysNote(page);
+  if (!note.includes('Uyarıya rağmen reçete: Nöroloji konsültasyonu normal, MR temiz (uyarı: muayene başı kontrolde nörolojik bulgu).')) throw new Error('HBYS notunda gerekçe yok: ' + note);
+  if (note.includes('ICD-10')) throw new Error('kontrol uyarılı tanıda ICD önerisi yazıldı');
+  if (note.includes('testsiz kısa yol')) throw new Error('HBYS notunda eski kısa yol cümlesi');
+  noErrors(errors);
+  await ctx.close();
+  {
+    const { ctx, page, errors } = await newPage(seed());
+    await page.goto(url);
+    await page.getByTestId('rx-card').waitFor();
+    const dxLine = await page.getByTestId('rx-dx').innerText();
+    if (dxLine !== 'Olası BPPV (hekim uyarısıyla) — SAĞ kulak, arka kanal kristal oynaması') throw new Error('kartın tanı satırı: ' + dxLine);
+    const line = await page.getByTestId('rx-override-line').innerText();
+    if (!line.startsWith('Hekim uyarıya rağmen verdi: muayenede nörolojik bulgu vardı; nörolojik değerlendirme önerildi.')) throw new Error('kart uyarı satırı: ' + line);
+    // Tek süre cümlesi: tedavi günü ve son geçerli gün; "(14 gün)" yan yana yazılmaz (y04 #5).
+    const dose = await page.getByTestId('rx-dose').innerText();
+    if (!/^3 gün, günde en çok 3 manevra\. Reçete .+ tarihine kadar \(dahil\) geçerli\.$/.test(dose.trim())) throw new Error('kartın süre satırı: ' + dose);
+    if ((await page.getByTestId('rx-card').innerText()).includes('14 gün')) throw new Error('kartta ikinci süre (14 gün) kaldı');
+    await snap(page, 'hasta-recete-kontrol-uyarili');
+    await acceptRx(page, url);
+    if (!(await page.getByTestId('home-rx-ov').innerText()).includes('muayenede nörolojik bulgu')) throw new Error('ana ekranda uyarı satırı yok');
     noErrors(errors);
     await ctx.close();
   }
@@ -1055,6 +1133,15 @@ await step('Klinisyen (L4-3/L4-4/L4-6): tipik arka kanal bulgusundan sonra "Sır
   if ((await page.locator('#lat').inputValue()) !== latBefore || (await page.locator('#dur').inputValue()) !== '17') throw new Error('yenilemede ölçüm/taslak kayboldu');
   if (!(await page.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).isChecked())) throw new Error('yenilemede nistagmus seçimi kayboldu');
   if (!(await page.getByRole('checkbox', { name: 'Hasta baş dönmesi bildirdi' }).isChecked())) throw new Error('yenilemede baş dönmesi işareti kayboldu');
+  // Uygulama kapanıp açılınca da (yeni sekme: sekme ömrüne bağlı depo boş) biten testin ölçümü ve taslak korunur (tur 3, y08 #1).
+  {
+    const page2 = await ctx.newPage();
+    await page2.goto(page.url());
+    await page2.getByTestId('finding-form').waitFor();
+    if ((await page2.locator('#lat').inputValue()) !== latBefore || (await page2.locator('#dur').inputValue()) !== '17') throw new Error('yeni sekmede ölçüm/taslak kayboldu');
+    if (!(await page2.getByRole('radio', { name: 'Yukarı vuran + torsiyonel' }).isChecked())) throw new Error('yeni sekmede nistagmus seçimi kayboldu');
+    await page2.close();
+  }
   // Çıplak göz: "Emin değilim" kısa yolu ve "Nasıl görünür?" yardımı (L4-4).
   await page.getByTestId('finding-unsure').waitFor();
   await page.getByTestId('finding-help').locator('summary').click();
@@ -1289,8 +1376,28 @@ await step('Klinisyen: hastanın ev dönemi raporu QR bağlantısıyla aynı has
     throw new Error('ev dönemi yeni kontrol muayenesine eklenmedi');
   }
   await snap(page, 'ev-raporu-muayenede');
+  // Kontrol muayenesi özet kartı Testler'in üstünde: önceki reçete (bu telefonda dolu muayene yok: rapordan), ev dönemi, öneri;
+  // isteğe bağlı DHI (yeni kullanıcı turu 3, y08 #2, y04 #3).
+  await page.getByRole('button', { name: 'Testler', exact: true }).click();
+  await page.getByTestId('exam-control').waitFor();
+  const prevTxt = await page.getByTestId('exam-control-prev').innerText();
+  if (!prevTxt.startsWith('Reçete (hastanın raporundan') || !prevTxt.includes('sağ Epley, 5 gün, günde en fazla 3')) throw new Error('kontrol kartı önceki reçete: ' + prevTxt);
+  if (!(await page.getByTestId('exam-control-home').innerText()).includes('2 manevra (2 tamamlandı)')) throw new Error('kontrol kartı ev dönemi');
+  if (!(await page.getByTestId('exam-control-advice').innerText()).startsWith('Öneri:')) throw new Error('kontrol kartında öneri yok');
+  await page.getByTestId('exam-dhi').fill('42');
+  await snap(page, 'odyolog-kontrol-ozeti');
+  if ((await storeOf(page)).clinicExams.find((e) => e.homeReports?.length)?.dhi !== 42) throw new Error('DHI kaydedilmedi');
+  const ctrlNote = await hbysNote(page);
+  if (!ctrlNote.includes('DHI toplam puanı: 42/100.')) throw new Error('HBYS notunda DHI yok: ' + ctrlNote);
+  await page.getByTestId('report-dhi').waitFor();
   // "Son muayeneler": ev dönemindeki manevra ve aşma sayısı (yeni kullanıcı turu 2, y04 #5).
   await page.goto(BASE + '#/odyolog');
+  const dxCells = await page.getByTestId('clin-exam-dx').allInnerTexts();
+  if (!dxCells.includes('kontrol · önceki tanı: Sağ arka kanal (reçeteden)')) throw new Error('listede kontrol satırı yok: ' + dxCells.join(' | '));
+  // Araştırma (CSV) bloğu katlı (y08 #3).
+  if (await page.getByTestId('clin-study-csv').isVisible()) throw new Error('CSV bloğu katlı değil');
+  await page.getByTestId('clin-study-export').locator('summary').click();
+  await page.getByTestId('clin-study-csv').waitFor();
   const homeSum = await page.getByTestId('clin-exam-home').innerText();
   // Eski (v1, araştırma kaydı yok) raporda aşma sayısı bilinmez, yazılmaz.
   if (homeSum.trim() !== '· ev: 2 manevra') throw new Error('listede ev dönemi özeti yok: ' + homeSum);

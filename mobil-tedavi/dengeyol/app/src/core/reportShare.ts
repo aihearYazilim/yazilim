@@ -35,6 +35,13 @@
  * v3 eki (yeni kullanıcı turu 2; y04 #1–#4): atağa belirti şiddeti (VAS 0–10, önce/sonra; `v` anahtarı) eklendi ve araştırma
  * kaydı açıklamaları kısaltılmadan (en çok OVERRIDE_DETAIL_FULL_MAX) yazılır; bağlantı bütçeyi aşarsa önce OVERRIDE_DETAIL_MAX'a
  * kısaltılır. İkisi de sürümü değiştirmez: önceki v3 çözücü `v`yi yok sayar ve uzun açıklamayı kendi sınırında keser.
+ *
+ * Ek (yeni kullanıcı turu 3; y04 #1–#2): (1) olayların saniyesi (`ss` anahtarı: her olay dizisi için dakika içi saniye 0–59;
+ * yalnız sıfırdan farklı saniye varsa yazılır). Böylece aynı dakikadaki olayların (test, karar, manevra, aşma) sırası
+ * korunur; çalışma CSV'si saniyeli zaman ve atak içi sıra numarası yazar. (2) Manevra başına belirti şiddeti (`mv`:
+ * manevralarla aynı sırada VAS 0–10 ya da null; ManeuverLog.vasAfter), yalnız v3'te. İkisi de isteğe bağlıdır ve sürümü
+ * değiştirmez: önceki çözücüler tanımadıkları anahtarı yok sayar (zamanlar dakikada, VAS atak düzeyinde kalır); eski
+ * bağlantılar okunmaya devam eder. Bağlantı bütçeyi aşarsa saniyeler (dakikaya yuvarlanarak) çıkarılır.
  */
 import { fnv1a, PID_MAX_LEN, type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxManeuverFromWire, rxManeuverWire, rxValidUntil } from './prescription';
 import { PROTOCOLS, type ProtocolId, resolveProtocol, type Side } from './protocols';
@@ -119,6 +126,8 @@ export interface HomeManeuver {
   assisted?: boolean;
   manual: boolean;
   afterSymptoms?: AfterSymptoms;
+  /** v3 eki: bu manevradan sonraki belirti şiddeti (VAS 0–10; ManeuverLog.vasAfter). */
+  vasAfter?: number;
   /** Kayıtlı adım sayısı (adım ayrıntısı çıkarılsa da korunur). */
   stepCount: number;
   /** Adım ayrıntısı; boyut nedeniyle çıkarıldıysa null. */
@@ -273,6 +282,7 @@ export function homeManeuverOf(m: ManeuverLog): HomeManeuver {
   };
   if (m.assisted !== undefined) out.assisted = m.assisted;
   if (m.afterSymptoms) out.afterSymptoms = m.afterSymptoms;
+  if (isVas(m.vasAfter)) out.vasAfter = m.vasAfter;
   return out;
 }
 
@@ -389,6 +399,7 @@ export function homeReportVersion(r: Pick<HomeReport, 'episodes' | 'stepsDropped
         !!e.neuroAck ||
         !!e.vertigoTapCancels ||
         !!e.vas ||
+        e.maneuvers.some((m) => m.vasAfter !== undefined) ||
         (e.redFlags?.length ?? 0) > 0 ||
         (e.overrides?.length ?? 0) > 0 ||
         e.sideTests.some((t) => t.canal === 'HC')
@@ -564,6 +575,39 @@ const OVERRIDE_CODE: Record<string, string> = {
 const OVERRIDE_OF = invert(OVERRIDE_CODE);
 const OVERRIDE_KIND = /^[A-Z][A-Z0-9_]{2,40}$/;
 const off = (t: number, base: number) => Math.max(0, toMin(t) - toMin(base));
+/** Dakika içi saniye (0–59). */
+const secOf = (t: number) => Math.floor((((t % MIN) + MIN) % MIN) / 1000);
+/** Olay saniyeleri; hepsi sıfırsa yazılmaz. */
+function wireSeconds(e: HomeEpisode): WireSeconds | undefined {
+  const w: WireSeconds = {};
+  let any = false;
+  const one = (k: 's' | 'z' | 'a', t: number | undefined) => {
+    if (t === undefined) return;
+    const x = secOf(t);
+    if (x) {
+      w[k] = x;
+      any = true;
+    }
+  };
+  const list = (k: 't' | 'm' | 'q' | 'y' | 'f' | 'o', xs: { at: number }[] | undefined) => {
+    if (!xs?.length) return;
+    const v = xs.map((x) => secOf(x.at));
+    if (v.some((x) => x)) {
+      w[k] = v;
+      any = true;
+    }
+  };
+  one('s', e.startedAt);
+  one('z', e.endedAt);
+  one('a', e.neuroAck?.at);
+  list('t', e.sideTests);
+  list('m', e.maneuvers);
+  list('q', e.retests);
+  list('y', e.testStops);
+  list('f', e.redFlags);
+  list('o', e.overrides);
+  return any ? w : undefined;
+}
 
 function cleanNote(s: unknown): string | undefined {
   if (typeof s !== 'string') return undefined;
@@ -607,6 +651,22 @@ interface WireEpisode {
   c?: number;
   /** v3: belirti şiddeti [önce | null, sonra | null] (0–10). */
   v?: [number | null, number | null];
+  /** v3 eki: manevra başına belirti şiddeti (m ile aynı sırada; 0–10 ya da null). */
+  mv?: (number | null)[];
+  /** Ek: olayların dakika içi saniyesi (0–59); her dizi ilgili olay dizisiyle aynı uzunlukta. */
+  ss?: WireSeconds;
+}
+/** Olay saniyeleri: s başlangıç, z bitiş, a 112 yanıtı; diziler t/m/q/y/f/o ile aynı sırada. */
+interface WireSeconds {
+  s?: number;
+  z?: number;
+  a?: number;
+  t?: number[];
+  m?: number[];
+  q?: number[];
+  y?: number[];
+  f?: number[];
+  o?: number[];
 }
 interface Wire {
   v: number;
@@ -702,7 +762,10 @@ function wireEpisode(e: HomeEpisode, withSteps: boolean, v3: boolean): WireEpiso
       });
     }
   }
+  if (v3 && e.maneuvers.some((m) => m.vasAfter !== undefined)) w.mv = e.maneuvers.map((m) => m.vasAfter ?? null);
   if (e.appVersion || e.rulesVersion) w.w = [e.appVersion ?? '', e.rulesVersion ?? ''];
+  const ss = wireSeconds(e);
+  if (ss) w.ss = ss;
   return w;
 }
 
@@ -769,8 +832,34 @@ function withOverrideDetails(r: HomeReport, max: number): HomeReport {
   };
 }
 
+/** Bütün olay zamanları dakikaya yuvarlanmış rapor (bütçe aşılınca saniyeler çıkarılır). */
+function withoutSeconds(r: HomeReport): HomeReport {
+  const f = (t: number) => toMin(t) * MIN;
+  const at = <T extends { at: number }>(x: T): T => ({ ...x, at: f(x.at) });
+  return {
+    ...r,
+    episodes: r.episodes.map((e) => {
+      const out: HomeEpisode = {
+        ...e,
+        startedAt: f(e.startedAt),
+        sideTests: e.sideTests.map(at),
+        maneuvers: e.maneuvers.map(at),
+        retests: e.retests.map(at)
+      };
+      if (e.endedAt !== undefined) out.endedAt = f(e.endedAt);
+      if (e.testStops) out.testStops = e.testStops.map(at);
+      if (e.redFlags) out.redFlags = e.redFlags.map(at);
+      if (e.overrides) out.overrides = e.overrides.map(at);
+      if (e.neuroAck) out.neuroAck = at(e.neuroAck);
+      return out;
+    })
+  };
+}
+const hasSeconds = (r: HomeReport) => r.episodes.some((e) => wireSeconds(e) !== undefined);
+
 /**
- * Raporu bütçeye sığdırarak kodlar. Sıra: (1) adım ayrıntısı çıkarılır, (2) araştırma kaydı açıklamaları kısaltılır (90, 40), sonra
+ * Raporu bütçeye sığdırarak kodlar. Sıra: (1) adım ayrıntısı çıkarılır, (2) araştırma kaydı açıklamaları 90 karaktere kısaltılır,
+ * olay saniyeleri çıkarılır (zamanlar dakikaya yuvarlanır), açıklamalar 40 karaktere kısaltılır, sonra
  * çıkarılır (kodlar, yani hangi uyarının aşıldığı, kalır), (3) en eski ataklar çıkarılır (en az biri kalır), (4) kalan
  * ataklarda en eski manevralar çıkarılır, (5) en eski taraf/tekrar testleri çıkarılır. Dönen `report` gerçekte kodlanan
  * (kısaltılmış) rapordur; ekranda ne gönderildiği ondan gösterilir.
@@ -789,6 +878,7 @@ export function encodeHomeReport(r: HomeReport, budget: number = REPORT_TOKEN_BU
   const hasDetails = () => cur.episodes.some((e) => e.overrides?.some((o) => o.detail));
   const longDetails = () => cur.episodes.some((e) => e.overrides?.some((o) => (o.detail?.length ?? 0) > OVERRIDE_DETAIL_MAX));
   if (!fits() && longDetails()) retry(withOverrideDetails(cur, OVERRIDE_DETAIL_MAX));
+  if (!fits() && hasSeconds(cur)) retry(withoutSeconds(cur));
   if (!fits() && hasDetails()) retry(withOverrideDetails(cur, 40));
   if (!fits() && hasDetails()) retry(withOverrideDetails(cur, 0));
   while (!fits() && cur.episodes.length > 1) {
@@ -959,31 +1049,63 @@ function readManeuver(x: unknown, base: number, v: number): HomeManeuver {
   return out;
 }
 
+/** Olay saniyeleri (`ss`): bilinmeyen anahtar yok sayılır; dizi uzunluğu olay sayısıyla aynı olmalı. */
+function readSeconds(x: unknown): WireSeconds {
+  if (x === undefined) return {};
+  if (!isObj(x)) fail();
+  const o = x as Record<string, unknown>;
+  const out: WireSeconds = {};
+  for (const k of ['s', 'z', 'a'] as const) if (o[k] !== undefined) out[k] = int(o[k], 0, 59);
+  for (const k of ['t', 'm', 'q', 'y', 'f', 'o'] as const) {
+    if (o[k] !== undefined) out[k] = arr(o[k], MAX_OVERRIDES + MAX_MANEUVERS).map((n) => int(n, 0, 59));
+  }
+  return out;
+}
+
+/** `ss` dizisinden i. olayın saniyesi (ms); dizi yoksa 0, uzunluk tutmuyorsa geçersiz. */
+function secAt(list: number[] | undefined, count: number, i: number): number {
+  if (!list) return 0;
+  if (list.length !== count) fail();
+  return list[i]! * 1000;
+}
+
 function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode {
   if (!isObj(x)) fail();
   const o = x as Record<string, unknown>;
-  const startedAt = int(o.s, MIN_LO, MIN_HI) * MIN;
+  const ss = readSeconds(o.ss);
+  // Olay zamanları atağın başladığı dakikaya göredir; başlangıcın saniyesi ayrıca eklenir.
+  const baseMin = int(o.s, MIN_LO, MIN_HI) * MIN;
+  const startedAt = baseMin + (ss.s ?? 0) * 1000;
+  const tList = arr(o.t, MAX_SIDE_TESTS);
+  const mList = arr(o.m, MAX_MANEUVERS);
+  const qList = arr(o.q, MAX_RETESTS);
   const out: HomeEpisode = {
     startedAt,
     status: code(STATUS_OF, o.u),
     side: o.d === undefined ? null : side(o.d),
-    sideTests: arr(o.t, MAX_SIDE_TESTS).map((t) => {
+    sideTests: tList.map((t, i) => {
       // v3: 5. öğe 'H' (sırtüstü baş çevirme testi); v1/v2'de yalnız 4 öğe.
       if (!Array.isArray(t) || !(t.length === 4 || (v >= 3 && t.length === 5 && t[4] === 'H'))) fail();
       const a = t as unknown[];
-      const st: HomeSideTest = { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, R: readCell(a[1]), L: readCell(a[2]), decision: readDecision(a[3]) };
+      const st: HomeSideTest = {
+        at: baseMin + int(a[0], 0, OFF_MAX) * MIN + secAt(ss.t, tList.length, i),
+        R: readCell(a[1]),
+        L: readCell(a[2]),
+        decision: readDecision(a[3])
+      };
       if (a.length === 5) st.canal = 'HC';
       return st;
     }),
-    maneuvers: arr(o.m, MAX_MANEUVERS).map((m) => {
-      const hm = readManeuver(m, startedAt, v);
+    maneuvers: mList.map((m, i) => {
+      const hm = readManeuver(m, baseMin, v);
+      hm.at += secAt(ss.m, mList.length, i);
       return stepsDropped ? { ...hm, steps: null } : hm;
     }),
-    retests: arr(o.q, MAX_RETESTS).map((r) => {
+    retests: qList.map((r, i) => {
       if (!Array.isArray(r) || r.length !== 6) fail();
       const a = r as unknown[];
       return {
-        at: startedAt + int(a[0], 0, OFF_MAX) * MIN,
+        at: baseMin + int(a[0], 0, OFF_MAX) * MIN + secAt(ss.q, qList.length, i),
         kind: code(KIND_OF, a[1]),
         side: side(a[2]),
         vertigo: int(a[3], 0, 1) === 1,
@@ -992,7 +1114,7 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
       };
     })
   };
-  if (o.z !== undefined) out.endedAt = startedAt + int(o.z, 0, OFF_MAX) * MIN;
+  if (o.z !== undefined) out.endedAt = baseMin + int(o.z, 0, OFF_MAX) * MIN + (ss.z ?? 0) * 1000;
   if (o.n !== undefined) {
     const n = cleanNote(o.n);
     if (n) out.endNote = n;
@@ -1003,10 +1125,11 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
   }
   // v1 çözücü "y"yi tanımaz ve yok sayar; burada da yalnız v2'de okunur.
   if (v >= 2 && o.y !== undefined) {
-    const stops = arr(o.y, MAX_TEST_STOPS).map((t): HomeTestStop => {
+    const yList = arr(o.y, MAX_TEST_STOPS);
+    const stops = yList.map((t, i): HomeTestStop => {
       if (!Array.isArray(t) || t.length !== 4) fail();
       const a = t as unknown[];
-      return { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, test: code(TEST_OF, a[1]), side: side(a[2]), reason: code(TEST_STOP_OF, a[3]) };
+      return { at: baseMin + int(a[0], 0, OFF_MAX) * MIN + secAt(ss.y, yList.length, i), test: code(TEST_OF, a[1]), side: side(a[2]), reason: code(TEST_STOP_OF, a[3]) };
     });
     if (stops.length) out.testStops = stops;
   }
@@ -1019,7 +1142,7 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
     if (o.a !== undefined) {
       if (!Array.isArray(o.a) || o.a.length !== 2 || (o.a[1] !== 'o' && o.a[1] !== 'c')) fail();
       const a = o.a as unknown[];
-      out.neuroAck = { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, by: a[1] === 'c' ? 'called112' : 'ok' };
+      out.neuroAck = { at: baseMin + int(a[0], 0, OFF_MAX) * MIN + (ss.a ?? 0) * 1000, by: a[1] === 'c' ? 'called112' : 'ok' };
     }
     if (o.c !== undefined) out.vertigoTapCancels = int(o.c, 1, 999);
     if (o.v !== undefined) {
@@ -1030,20 +1153,30 @@ function readEpisode(x: unknown, stepsDropped: boolean, v: number): HomeEpisode 
       if (before === null && after === null) fail();
       out.vas = { ...(before !== null ? { before } : {}), ...(after !== null ? { after } : {}) };
     }
-    const flags = arr(o.f, MAX_RED_FLAGS).map((f): HomeRedFlag => {
+    if (o.mv !== undefined) {
+      const mv = arr(o.mv, MAX_MANEUVERS);
+      if (mv.length !== out.maneuvers.length) fail();
+      mv.forEach((x, i) => {
+        const n = optInt(x, 0, 10);
+        if (n !== null) out.maneuvers[i]!.vasAfter = n;
+      });
+    }
+    const fList = arr(o.f, MAX_RED_FLAGS);
+    const flags = fList.map((f, i): HomeRedFlag => {
       if (!Array.isArray(f) || f.length !== 3 || typeof f[1] !== 'string') fail();
       const a = f as unknown[];
       const ids = (a[1] as string).split(',');
       if (!ids.length || ids.length > RED_FLAGS.length + 4 || !ids.every((x) => FLAG_ID.test(x))) fail();
-      return { at: startedAt + int(a[0], 0, OFF_MAX) * MIN, ids, continued: int(a[2], 0, 1) === 1 };
+      return { at: baseMin + int(a[0], 0, OFF_MAX) * MIN + secAt(ss.f, fList.length, i), ids, continued: int(a[2], 0, 1) === 1 };
     });
     if (flags.length) out.redFlags = flags;
-    const ov = arr(o.o, MAX_OVERRIDES).map((x): HomeOverride => {
+    const oList = arr(o.o, MAX_OVERRIDES);
+    const ov = oList.map((x, i): HomeOverride => {
       if (!Array.isArray(x) || x.length < 2 || x.length > 3 || typeof x[1] !== 'string') fail();
       const a = x as unknown[];
       const k = a[1] as string;
       const kind = own(OVERRIDE_OF, k) ? OVERRIDE_OF[k]! : OVERRIDE_KIND.test(k) && !own(OVERRIDE_CODE, k) ? k : fail();
-      const at = startedAt + int(a[0], 0, OFF_MAX) * MIN;
+      const at = baseMin + int(a[0], 0, OFF_MAX) * MIN + secAt(ss.o, oList.length, i);
       if (a.length === 3) {
         if (typeof a[2] !== 'string') fail();
         const detail = cleanText(a[2] as string, OVERRIDE_DETAIL_FULL_MAX);

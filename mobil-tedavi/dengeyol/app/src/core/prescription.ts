@@ -60,6 +60,24 @@ export interface Prescription {
    * baş dönmesini düşündürüyor"). Hastanın reçete kartında "Hekim uyarıya rağmen verdi: …" satırı olarak görünür.
    */
   ov?: string;
+  /**
+   * Uyarının türü (v3, yalnız `ov` ile birlikte): klinisyen uyarı kodu ('CENTRAL', 'SAFETY_CHECK', 'NO_DIAGNOSIS', …). Santral
+   * örüntü ya da muayene başı güvenlik kontrolü uyarısıyla verilen reçetede hastanın kartındaki tanı satırı "Olası BPPV
+   * (hekim uyarısıyla)" olur (yeni kullanıcı turu 3, y05 #2). Bu alanı tanımayan eski v3 uygulama yok sayar.
+   */
+  ovk?: string;
+}
+
+/** Hasta kartında tanının "olası" yazıldığı uyarı türleri: beyin kaynaklı baş dönmesini dışlamayan uyarılar. */
+const POSSIBLE_DX_KINDS = ['CENTRAL', 'SAFETY_CHECK'];
+
+/**
+ * Reçetenin tanısı hekim uyarısıyla "olası" mı: santral örüntü ya da muayene başı güvenlik kontrolü uyarısına rağmen verildi.
+ * `ovk` alanından önce üretilen reçetelerde santral uyarının hasta metni ("beyin kaynaklı") tanınır.
+ */
+export function rxPossibleDx(p: Pick<Prescription, 'ov' | 'ovk'>): boolean {
+  if (!p.ov) return false;
+  return p.ovk ? POSSIBLE_DX_KINDS.includes(p.ovk) : /beyin kaynaklı/.test(p.ov);
 }
 
 /** Hasta kodunun en çok uzunluğu (klinisyen hasta kodu alanıyla aynı). */
@@ -143,6 +161,7 @@ export function normalizePrescription(p: Prescription): Prescription {
   const dose: DoseLimits = clampDose({ maxPerDay: p.perDay, maxDays: p.days });
   const pid = cleanText(p.pid, PID_MAX_LEN);
   const ov = cleanText(p.ov, OV_MAX_LEN);
+  const ovk = ov && typeof p.ovk === 'string' && /^[A-Z][A-Z_]{1,23}$/.test(p.ovk) ? p.ovk : undefined;
   const canal = rxCanalOf(p);
   const out: Prescription = {
     v: canal === 'HC' || ov ? 3 : pid ? 2 : 1,
@@ -158,6 +177,7 @@ export function normalizePrescription(p: Prescription): Prescription {
   };
   if (pid) out.pid = pid;
   if (ov) out.ov = ov;
+  if (ovk) out.ovk = ovk;
   return out;
 }
 
@@ -211,7 +231,8 @@ export function decodePrescription(token: string): { ok: true; value: Prescripti
       // v1 bağlantısında hasta kodu yoktur; olsa da (elle üretilmiş) yok sayılır.
       pid: o.v >= 2 ? (o.pid as string | undefined) : undefined,
       // Uyarı notu yalnız v3'te.
-      ov: o.v === 3 ? (o.ov as string | undefined) : undefined
+      ov: o.v === 3 ? (o.ov as string | undefined) : undefined,
+      ovk: o.v === 3 ? (o.ovk as string | undefined) : undefined
     })
   };
 }
@@ -277,6 +298,16 @@ export function rxValidityLabel(p: RxDate, style: 'long' | 'short' = 'long', val
   // Uzun biçimde gün başında sıfır yok ("8 Kasım 2026"; kullanıcı turu 5, k03); kısa biçim "08.11.2026" kalır.
   const txt = last.toLocaleDateString('tr-TR', style === 'short' ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: 'numeric', month: 'long', year: 'numeric' });
   return `${txt} tarihine kadar (dahil)`;
+}
+
+/**
+ * Reçetenin tek süre cümlesi (klinisyenin reçete ekranındakiyle aynı; yeni kullanıcı turu 3, y04 #5): "3 gün, günde en çok 3
+ * manevra. Reçete 14 Kasım 2026 tarihine kadar (dahil) geçerli." Hastanın reçete kartında tedavi gün sayısı ile geçerlilik
+ * süresi yan yana iki ayrı gün sayısı olarak yazılmaz.
+ */
+export function rxDoseLine(p: Pick<Prescription, 'perDay' | 'days' | 'date'>, style: 'long' | 'short' = 'long'): string {
+  const label = rxValidityLabel(p, style);
+  return `${p.days} gün, günde en çok ${p.perDay} manevra.${label ? ` Reçete ${label} geçerli.` : ''}`;
 }
 
 /**

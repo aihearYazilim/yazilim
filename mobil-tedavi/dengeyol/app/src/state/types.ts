@@ -95,6 +95,8 @@ export interface ManeuverLog {
    * (yeni kullanıcı turu 1, y01 #6). stopReason 'INTERRUPTED'; `records.length` yarıda kalınan adımdır.
    */
   recovered?: boolean;
+  /** Bu manevradan sonraki belirti şiddeti (VAS 0–10; manevra başına). Sorulmadıysa ya da geçildiyse yok. */
+  vasAfter?: number;
 }
 
 export interface SideTestLog {
@@ -269,6 +271,11 @@ export interface ClinicExam {
    * sorunu. Uyarıdır, testleri engellemez; rapora ve HBYS notuna yazılır. Yanıtlanmayan maddenin alanı yoktur. Eski kayıtlarda yok.
    */
   safetyCheck?: { at: number; spontaneous?: boolean; neuro?: boolean; neck?: boolean };
+  /**
+   * İsteğe bağlı DHI (Dizziness Handicap Inventory) toplam puanı, 0–100 (yeni kullanıcı turu 3, y04 #3): kontrol muayenesinde
+   * girilir; rapora, HBYS notuna ve çalışma CSV'sinin muayene satırına yazılır. Eski kayıtlarda yok.
+   */
+  dhi?: number;
 }
 
 /** Muayeneye eklenmiş ev dönemi raporu. */

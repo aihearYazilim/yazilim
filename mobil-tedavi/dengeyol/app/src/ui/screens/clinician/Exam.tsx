@@ -46,12 +46,16 @@ import { Screen } from '../../components/Screen';
 import { Calibrate } from '../Calibrate';
 import { RunnerView, type RunnerOutcome } from '../RunnerView';
 import {
+  controlSummary,
   defaultObservationMethod,
+  dhiText,
   dxText,
+  dxWarningsOf,
   dxValid,
   examNoteText,
   findingsKeyOf,
   findingSummary,
+  isDhi,
   manualDxLabel,
   maneuverStatus,
   methodsOf,
@@ -65,18 +69,18 @@ import {
   rxOverrideLine,
   RX_REASON_MIN,
   RX_SHORTCUT_HELP,
-  RX_WARN_PATIENT_LABEL,
   rxDoseText,
   rxValidityText,
   rxWarning,
   SAFETY_CHECK,
   SAFETY_ITEMS,
   safetyCheckText,
+  safetyRedLine,
   safetyWarnings,
   stepLines,
   testFindingInitial
 } from './examReport';
-import { emptyFinding, FindingForm, findingDraftKey, removeFindingDraft } from './FindingForm';
+import { emptyFinding, FindingForm, findingDraftKey, pruneDrafts, readDraft, removeDraft, removeFindingDraft, writeDraft } from './FindingForm';
 import { HomeReportView } from './HomeReportView';
 
 type Tab = 'tests' | 'dx' | 'treat' | 'rx' | 'report';
@@ -125,32 +129,24 @@ const calTime = (c: Calibration) => {
 type QueueItem = { key: FindingKey; initial: Finding & { nystagmusUnset?: boolean }; target: 'findings' | 'retestFindings' };
 
 /**
- * Test sonrası bulgu formu kuyruğunun taslağı (yeni kullanıcı turu 2, y08 #1): biten testin ölçümü (gecikme/süre) bulgu
- * kaydedilmeden sayfa yenilenirse kaybolmasın; muayene yeniden açılınca form aynı ölçümle gelir. sessionStorage'da (sekme
- * kapanınca biter; kalıcı kayda yazılmaz). Formda girilenler ayrı taslakta (FindingForm `draftKey`).
+ * Test sonrası bulgu formu kuyruğunun taslağı (yeni kullanıcı turu 2, y08 #1; tur 3, y08 #1): biten testin ölçümü
+ * (gecikme/süre) bulgu kaydedilmeden sayfa yenilenir ya da uygulama kapanıp açılırsa kaybolmasın; muayene yeniden açılınca
+ * form aynı ölçümle gelir. Muayeneye bağlı kalıcı taslak (FindingForm `readDraft`; 24 saat); kuyruk boşalınca silinir.
+ * Formda girilenler ayrı taslakta (FindingForm `draftKey`).
  */
 const queueKey = (examId: string) => `dengeyol:examQueue:${examId}`;
 function loadQueue(examId: string | undefined): QueueItem[] {
   if (!examId) return [];
-  try {
-    const raw = window.sessionStorage.getItem(queueKey(examId));
-    const q = raw ? (JSON.parse(raw) as unknown) : null;
-    if (!Array.isArray(q)) return [];
-    return q.filter(
-      (x): x is QueueItem =>
-        !!x && typeof x === 'object' && typeof x.key === 'string' && (x.target === 'findings' || x.target === 'retestFindings') && !!x.initial && typeof x.initial === 'object'
-    );
-  } catch {
-    return [];
-  }
+  const q = readDraft(queueKey(examId));
+  if (!Array.isArray(q)) return [];
+  return q.filter(
+    (x): x is QueueItem =>
+      !!x && typeof x === 'object' && typeof x.key === 'string' && (x.target === 'findings' || x.target === 'retestFindings') && !!x.initial && typeof x.initial === 'object'
+  );
 }
 function saveQueue(examId: string, q: QueueItem[]) {
-  try {
-    if (q.length) window.sessionStorage.setItem(queueKey(examId), JSON.stringify(q));
-    else window.sessionStorage.removeItem(queueKey(examId));
-  } catch {
-    /* yazılamadı: yalnız bellekte */
-  }
+  if (q.length) writeDraft(queueKey(examId), q);
+  else removeDraft(queueKey(examId));
 }
 
 const TESTS: { id: string; label: string; protocolId: ProtocolId; side: Side | null; keys: FindingKey[] }[] = [
@@ -200,7 +196,10 @@ export function Exam() {
   const [pendingRun, setPendingRun] = useState<RunReq | null>(null);
   const [run, setRun] = useState<RunReq | null>(null);
   const [needCal, setNeedCal] = useState(false);
-  const [editQueue, setEditQueue] = useState<QueueItem[]>(() => loadQueue(id));
+  const [editQueue, setEditQueue] = useState<QueueItem[]>(() => {
+    pruneDrafts();
+    return loadQueue(id);
+  });
   useEffect(() => {
     if (id) saveQueue(id, editQueue);
   }, [id, editQueue]);
@@ -477,6 +476,7 @@ function TestsTab({
   const typical = useMemo(() => suggestDiagnosis(exam.findings).suggestions.some((x) => x.confidence === 'tipik'), [exam.findings]);
   return (
     <div className="stack">
+      <ControlCard exam={exam} />
       <SafetyCheckCard exam={exam} />
       {anyDone && (typical || !next) && (
         <button className="btn primary block" onClick={onGoDx} data-testid="test-next-dx">
@@ -519,6 +519,63 @@ function TestsTab({
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Kontrol muayenesinin özet kartı (yeni kullanıcı turu 3, y08 #2): önceki tanı ve reçete, ev dönemi özeti ve öneri cümlesi
+ * Testler sekmesinin üstünde; kontrolde isteğe bağlı DHI toplam puanı (y04 #3). İlk muayenede görünmez.
+ */
+function ControlCard({ exam }: { exam: ClinicExam }) {
+  const d = useData();
+  const c = useMemo(() => controlSummary(exam, d.clinicExams), [exam, d.clinicExams]);
+  const [dhi, setDhi] = useState(exam.dhi !== undefined ? String(exam.dhi) : '');
+  if (!c) return null;
+  const n = dhi.trim() === '' ? undefined : Number(dhi);
+  const bad = n !== undefined && !isDhi(n);
+  const saveDhi = (v: string) => {
+    setDhi(v);
+    const x = v.trim() === '' ? undefined : Number(v);
+    if (x === undefined || isDhi(x)) updateExam(exam.id, (e) => ({ ...e, dhi: x }));
+  };
+  return (
+    <div className="card tint-primary stack" data-testid="exam-control">
+      <div className="card-title">
+        <Icon name="info" />
+        <h3>Kontrol muayenesi</h3>
+      </div>
+      {c.previous && (
+        <p className="small" style={{ margin: 0 }} data-testid="exam-control-prev">
+          {c.previous}
+        </p>
+      )}
+      {c.home && (
+        <p className="small" style={{ margin: 0 }} data-testid="exam-control-home">
+          {c.home}
+        </p>
+      )}
+      <p className="small" style={{ margin: 0 }} data-testid="exam-control-advice">
+        <strong>Öneri:</strong> {c.advice}
+      </p>
+      <div className="field" style={{ marginBottom: 0 }}>
+        <label htmlFor="exam-dhi">DHI toplam puanı (isteğe bağlı, 0–100)</label>
+        <input
+          id="exam-dhi"
+          className="input"
+          inputMode="numeric"
+          value={dhi}
+          maxLength={3}
+          onChange={(e) => saveDhi(e.target.value.replace(/\D/g, '').slice(0, 3))}
+          placeholder="Ör. 42"
+          data-testid="exam-dhi"
+        />
+        {bad && (
+          <span className="small" style={{ color: 'var(--danger)' }} role="alert">
+            DHI 0 ile 100 arasında olmalı.
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -632,6 +689,9 @@ function SafetyCheckCard({ exam }: { exam: ClinicExam }) {
 
 function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void }) {
   const result = useMemo(() => suggestDiagnosis(exam.findings), [exam.findings]);
+  // Muayene başı kontrolde "var" yanıtı: santral örüntüdeki gibi kırmızı satır, onayda tanının uyarısı (y05 #1).
+  const safetyLine = safetyRedLine(exam.safetyCheck);
+  const warnings = useMemo(() => dxWarningsOf(exam), [exam]);
   const [manual, setManual] = useState(false);
   const [canal, setCanal] = useState<Canal | null>(null);
   const [side, setSide] = useState<Side | 'none' | null>(null);
@@ -640,12 +700,14 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
   const confirm = (dx: ConfirmedDiagnosis) => {
     updateExam(exam.id, (e) => ({
       ...e,
-      diagnosis: { ...dx, warnings: result.warnings.length ? result.warnings : undefined, findingsKey: findingsKeyOf(e.findings) }
+      diagnosis: { ...dx, warnings: warnings.length ? warnings : undefined, findingsKey: findingsKeyOf(e.findings) }
     }));
   };
   // Bulguya dayanan reçete uyarısı (≥1 dk yanıt / çok kanallı): elle tanı bunu kaldırmaz; formda önceden söylenir.
   const findingLock = rxFindingWarning(exam.findings, exam.retestFindings);
-  const hasWarnings = result.warnings.length > 0;
+  const hasWarnings = warnings.length > 0;
+  // Güvenlik kontrolünde "var" iken öneri "tipik" gösterilmez (tipik: hiçbir uyarı yok).
+  const shownConfidence = (c: (typeof result.suggestions)[number]['confidence']) => (safetyLine && c === 'tipik' ? 'olası' : c);
   const valid = dxValid(exam);
 
   return (
@@ -669,6 +731,14 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
           <span>{w}</span>
         </div>
       ))}
+      {safetyLine && (
+        <div className="notice danger" role="alert" data-testid="dx-safety">
+          <Icon name="alert" />
+          <span>
+            <strong>{safetyLine}</strong> Öneri yalnız pozisyon testlerine dayanır; tanıyı yine de onaylayabilirsiniz, uyarı rapora yazılır.
+          </span>
+        </div>
+      )}
       {result.negative && (
         <div className="card soft">
           <p>Pozisyon testleri negatif. BPPV dışı nedenleri ve öyküyü değerlendirin.</p>
@@ -678,7 +748,9 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
         <div key={i} className={`card stack ${valid && exam.diagnosis?.label === s.label ? 'tint-ok' : ''}`} data-testid="dx-suggestion">
           <div className="row">
             <h3 className="grow">{s.label}</h3>
-            <span className={`chip ${s.confidence === 'tipik' ? 'ok' : s.confidence === 'olası' ? 'warn' : ''}`}>{s.confidence}</span>
+            <span className={`chip ${shownConfidence(s.confidence) === 'tipik' ? 'ok' : shownConfidence(s.confidence) === 'olası' ? 'warn' : ''}`}>
+              {shownConfidence(s.confidence)}
+            </span>
           </div>
           <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>
             {s.rationale.map((r, j) => (
@@ -700,7 +772,7 @@ function DxTab({ exam, onGoTreat }: { exam: ClinicExam; onGoTreat: () => void })
             <button
               className={`btn ${hasWarnings ? 'warn' : 'secondary'}`}
               onClick={() =>
-                confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true, confidence: s.confidence })
+                confirm({ canal: s.canal, side: s.side, mechanism: s.mechanism, label: s.label, fromSuggestion: true, confidence: shownConfidence(s.confidence) })
               }
               data-testid="dx-confirm"
             >
@@ -818,9 +890,20 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
   // Santral örüntü (saf aşağı vuran, atipik, ≥1 dk): uyarı bulguyu adıyla söyler; manevra yine yapılabilir ama önerilen yol
   // nörolojik değerlendirmedir, manevra düğmeleri ikincil görünür (kullanıcı turu yeni-1, L4-2).
   const central = centralWarningText(centralFindings(exam.findings, exam.retestFindings));
+  // Muayene başı kontrolde "var": santral örüntüdeki gibi kırmızı satır, manevra düğmeleri ikincil (y05 #1).
+  const safetyLine = safetyRedLine(exam.safetyCheck);
+  const caution = !!central || !!safetyLine;
 
   return (
     <div className="stack">
+      {safetyLine && (
+        <div className="notice danger" role="alert" data-testid="treat-safety">
+          <Icon name="alert" />
+          <span>
+            <strong>{safetyLine}</strong> Manevrayı yine de yapabilirsiniz; kararınızı muayene notuna yazın.
+          </span>
+        </div>
+      )}
       {central && (
         <div className="notice danger" role="alert" data-testid="treat-central">
           <Icon name="alert" />
@@ -874,7 +957,7 @@ function TreatTab({ exam, onRun }: { exam: ClinicExam; onRun: (r: RunReq) => voi
               ))}
             </details>
             <button
-              className={`btn ${!central && (suggested[0] === id || suggested.length === 0) ? 'primary' : 'secondary'}`}
+              className={`btn ${!caution && (suggested[0] === id || suggested.length === 0) ? 'primary' : 'secondary'}`}
               disabled={p.sided && !side}
               onClick={() => onRun({ protocolId: id, side: p.sided ? side : null, purpose: 'maneuver' })}
               data-testid={`treat-run-${id}`}
@@ -964,7 +1047,8 @@ function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
   // klinisyen seçer.
   const [pickedSide, setPickedSide] = useState<Side | null>(dx?.side ? null : (issued?.side ?? null));
   const side: Side | null = dx?.side ?? pickedSide;
-  const ov = warn ? RX_WARN_PATIENT_LABEL[warn.code] : undefined;
+  const ov = warn?.patient;
+  const ovk = warn?.code;
   const stale =
     !!issued &&
     (issued.side !== side ||
@@ -973,6 +1057,7 @@ function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
       issued.days !== days ||
       (issued.note ?? '') !== note.trim() ||
       issued.ov !== ov ||
+      (!!ov && issued.ovk !== ovk) ||
       (!!warn && covered && exam.rxOverride!.reason.trim() !== reason.trim()));
   const [ack, setAck] = useState(false);
   // Reçete oluşturulunca QR görünür alana kaydırılır (hastaya göstermek için aşağı kaydırmak gerekmesin).
@@ -1005,7 +1090,7 @@ function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
     const reconfirm = () =>
       updateExam(exam.id, (e) => {
         if (!e.diagnosis) return e;
-        const ws = suggestDiagnosis(e.findings).warnings;
+        const ws = dxWarningsOf(e);
         return { ...e, diagnosis: { ...e.diagnosis, warnings: ws.length ? ws : undefined, findingsKey: findingsKeyOf(e.findings) } };
       });
     return (
@@ -1047,7 +1132,7 @@ function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
   // Onaydaki ya da şu anki bulgulardan çıkan uyarı varsa reçete için ek onay istenir.
   // Uyarı (onay anında ya da şimdi) ya da "belirsiz" güvenli öneri (ör. nistagmussuz pozisyonel vertigo) varsa ek onay istenir.
   // Tanısız (uyarıya rağmen) reçetede onay kutusu yok: gerekçe metni onun yerine geçer.
-  const needAck = !!dx && (!!dx.warnings?.length || suggestDiagnosis(exam.findings).warnings.length > 0 || dx.confidence === 'belirsiz');
+  const needAck = !!dx && (!!dx.warnings?.length || dxWarningsOf(exam).length > 0 || dx.confidence === 'belirsiz');
 
   const make = () => {
     if (!side) return;
@@ -1066,7 +1151,8 @@ function RxTab({ exam, onGoDx }: { exam: ClinicExam; onGoDx: () => void }) {
       days,
       note: note.trim() || undefined,
       pid,
-      ov
+      ov,
+      ovk
     };
     const token = encodePrescription(p);
     updateExam(exam.id, (e) => ({
@@ -1354,6 +1440,12 @@ function ExamReport({ exam }: { exam: ClinicExam }) {
             <>
               <dt>Gözlem yöntemi</dt>
               <dd>{methods.join(', ')}</dd>
+            </>
+          )}
+          {dhiText(exam.dhi) && (
+            <>
+              <dt>DHI</dt>
+              <dd data-testid="report-dhi">{exam.dhi}/100</dd>
             </>
           )}
           {safetyCheckText(exam.safetyCheck) && (
