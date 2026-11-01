@@ -381,14 +381,20 @@ await step('Hasta: tek ekran kurulum → isteğe bağlı tanı → güvenlik lis
   await page.getByTestId('redflags').waitFor();
   await snap(page, 'guvenlik-listesi');
   await answerRedFlags(page);
-  // Hekim tanısı arka kanal: alt tip sorulmaz. Taraf sorusu yok: önce sol (şüpheli olmayan), sonra sağ test.
+  // Hekim tanısı arka kanal, son 2 hafta: alt tip sorulmaz; yalnız hekimin dediği sağ taraf test edilir (L5-7, y02).
   await page.getByTestId('prep').waitFor();
   await snap(page, 'hazirlik');
-  await sideTest(page, 2);
+  await calibrate(page);
+  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  if (await page.getByTestId('rest-continue').count()) throw new Error('hekim tanısı varken ikinci taraf da test edildi');
   const gate = page.getByTestId('chain-continue');
   await gate.waitFor({ timeout: 15000 });
   if (!/sağ/i.test(await gate.innerText())) throw new Error('sağ taraf kararı beklenirdi: ' + (await gate.innerText()));
   await snap(page, 'karar-gecis');
+  {
+    const r = (await storeOf(page)).episodes[0].sideTests.at(-1)?.results ?? [];
+    if (r.length !== 1 || r[0].side !== 'R') throw new Error('yalnız sağ taraf test edilmeliydi: ' + JSON.stringify(r));
+  }
   await gate.click();
   let shotDone = false;
   const phase = await driveRunner(page, {
@@ -1042,6 +1048,9 @@ await step('Odyolog: muayene → Dix-Hallpike (sensörlü) → tanı → Epley �
   const { ctx, page, errors } = await newPage(seed());
   await page.goto(BASE);
   await page.getByTestId('role-clinician').click();
+  // Yanlış dokunuşa karşı onay (L5-5, y02).
+  await unlocked(page);
+  await page.getByTestId('role-clinician-yes').click();
   await page.locator('#cn').fill('Odyolog Test Kullanıcı');
   await page.locator('#cc').fill('Örnek Kliniği');
   // Profildeki gözlem yöntemi bulgu formunda hazır gelir (k08 tur 2).
@@ -1929,6 +1938,15 @@ await step('Yeni kullanıcı turu 1 (y01 #6): manevra sürerken sayfa yenileninc
   await page.goto(BASE + '#/hasta/rapor/' + ep.id);
   const rep = await page.getByTestId('episode-report').innerText();
   if (!/yarıda kaldı \(\d+\. adımda uygulama kapandı ya da yenilendi\)/.test(rep)) throw new Error('raporda yarım manevra yok: ' + rep.slice(0, 800));
+  // L5-3 (y07, y01): "Başım dönüyor" hazırlığı yeniden göstermez; manevra kaldığınız yerden (baştan) "Başlat" ekranında.
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('run-note').waitFor({ timeout: 15000 });
+  if (!/Kaldığınız yerden: yarıda kalan sağ taraf manevrasını baştan/.test(await page.getByTestId('run-note').innerText())) throw new Error('kaldığınız yerden notu yok');
+  if (await page.getByTestId('prep').count()) throw new Error('hazırlık yeniden geldi');
+  await page.getByTestId('runner-start').waitFor();
+  const n = (await storeOf(page)).episodes[0].maneuvers.length;
+  if (n !== 1) throw new Error('yarım manevra çift kaydedildi: ' + n);
   noErrors(errors);
   await ctx.close();
 });
@@ -2013,6 +2031,17 @@ await step('Yürütücü: uzun baş dönmesinde uyarı (112 ile) bekler; "Devam 
   const m = ep.maneuvers.at(-1);
   if (!m || m.completed || m.stopReason !== 'VERTIGO_TOO_LONG') throw new Error('durdurulan manevra kaydı: ' + JSON.stringify(m && { c: m.completed, r: m.stopReason }));
   if (kindsOf(ep).filter((k) => k === 'VERTIGO_TOO_LONG').length !== 1) throw new Error('"Durdur" aşma kaydı yazdı');
+  // L5-2 (y07): "Yeniden dene" uyarılı; ana ekran durdurmayı hatırlatır; yeniden başlarken "Geçti mi?".
+  if (!/tamamen geçmesini bekleyin/.test(await page.getByTestId('end-retry-note').innerText())) throw new Error('"Yeniden dene" uyarısı yok');
+  await page.getByTestId('go-home').click();
+  await page.getByTestId('home-long-stop').waitFor();
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('feel-check').waitFor();
+  if (await page.getByTestId('prep').count()) throw new Error('"Geçti mi?" sorulmadan hazırlık geldi');
+  await unlocked(page);
+  await page.getByTestId('feel-ok').click();
+  await page.getByTestId('prep').waitFor();
+  if (!(await storeOf(page)).episodes[0].feelBetterAt) throw new Error('"Geçti" yanıtı kaydedilmedi');
   noErrors(errors);
   await ctx.close();
 });
@@ -2059,6 +2088,171 @@ await step('Tur 6 kilidi: konuşma sürerken ileri ya da geri geçilince ses sus
   await page.waitForTimeout(150);
   if (await page.evaluate(() => window.speechSynthesis.__busy())) throw new Error('sayfa değişince konuşma sürdü');
   if (errors.length) throw new Error('konsol hatası: ' + errors.join(' | '));
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (L5-1, y07): kusma bildirilince ana ekran doğru ("manevra yok, sabah test", gerçek sayı); yeniden denemede gerekçe kusma, tek sabah saati, kayıt VOMITING', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await startManeuver(page);
+  const phase = await driveRunner(page);
+  if (phase !== 'done') throw new Error('manevra tamamlanmadı: ' + phase);
+  await clickChoice(page, 'Kusma ya da şiddetli bulantı var');
+  await unlocked(page);
+  await page.getByTestId('after-confirm-yes').click();
+  await page.getByTestId('end-severe').waitFor();
+  await page.getByTestId('go-home').click();
+  const card = page.getByTestId('home-vomit');
+  await card.waitFor();
+  const home = await page.getByTestId('active-episode').innerText();
+  if (/Son testte baş dönmesi gelmedi/.test(home)) throw new Error('ana ekran "son testte baş dönmesi gelmedi" diyor');
+  if (!/1 \/ 3 manevra/.test(home) || /sınır doldu/.test(home)) throw new Error('bugünkü manevra sayısı yanlış: ' + home.slice(0, 300));
+  const when = (await card.innerText()).match(/\d{1,2} \S+ \d\d:\d\d/)?.[0];
+  if (!when) throw new Error('ana ekranda sabah testi zamanı yok');
+  await snap(page, 'kusma-ana-ekran');
+  await page.getByTestId('start-episode').click();
+  const warn = page.getByTestId('vomit-warn');
+  await warn.waitFor();
+  const wt = await warn.innerText();
+  if (!wt.includes(when)) throw new Error(`uyarıdaki sabah saati ana ekrandakiyle aynı değil: ${when} / ${wt}`);
+  if (/manevra sayısı/.test(wt)) throw new Error('uyarı gerekçesi sayı: ' + wt);
+  if (await page.getByTestId('plan-warn').count()) throw new Error('kusma uyarısıyla birlikte sabah testi uyarısı da geldi');
+  await unlocked(page);
+  await page.getByTestId('vomit-override').click();
+  await page.getByTestId('prep').waitFor();
+  const kinds = kindsOf((await storeOf(page)).episodes[0]);
+  if (!kinds.includes('VOMITING') || kinds.includes('DOSE')) throw new Error('kayıt türü: ' + kinds.join(', '));
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (L5-2, y07): manevrada "Kendimi kötü hissediyorum"dan sonra ana ekranda not; yeniden başlarken "Geçti mi?", "Hâlâ kötüyüm" dinlenme ekranı', async () => {
+  // Manevrada durdurma kaydı: duraklatma sayfasından "Kendimi kötü hissediyorum" (iki adımlı; ayrı senaryoda sınanır) yerine
+  // kayıt tohumlanır.
+  const ep0 = { ...readyEpisode(), maneuvers: [{ ...maneuverAgo('m', 1), completed: false, stopReason: 'USER_FEELS_UNWELL', afterSymptoms: undefined }] };
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [ep0] } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('home-unwell-stop').waitFor();
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('feel-check').waitFor();
+  await unlocked(page);
+  await page.getByTestId('feel-not').click();
+  await page.getByTestId('end-still-unwell').waitFor();
+  if (!(await page.getByTestId('go-home').evaluate((b) => b.classList.contains('primary')))) throw new Error('"Ana ekran" önerilen yol değil');
+  await unlocked(page);
+  await page.getByTestId('still-unwell-override').click();
+  await page.getByTestId('prep').waitFor();
+  if (!kindsOf((await storeOf(page)).episodes[0]).includes('STILL_UNWELL')) throw new Error('STILL_UNWELL kaydı yok');
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (L5-3, y07): testler arasında uygulama kapanıp açılınca yapılmış taraf testi kaybolmaz; ikinci testle, hazırlıksız sürer', async () => {
+  const { ctx, page } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, side: 'unknown' } } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page);
+  await page.getByTestId('prep').waitFor();
+  await calibrate(page);
+  await driveRunner(page, { markVertigoAtStep: 1, vertigoSec: 0.8 });
+  await page.getByTestId('rest-continue').waitFor();
+  // Sekme kapandı (kusmaya gitti); aynı tarayıcıda yeniden açıldı.
+  const page2 = await ctx.newPage();
+  const errors2 = [];
+  page2.on('pageerror', (e) => errors2.push(String(e)));
+  await page.close();
+  await page2.goto(BASE + '#/hasta');
+  await page2.getByTestId('start-episode').click();
+  await page2.getByTestId('run-note').waitFor({ timeout: 15000 });
+  const note = await page2.getByTestId('run-note').innerText();
+  if (!/sağ taraf testi yapılmıştı; sol taraf testiyle sürüyoruz/.test(note)) throw new Error('kaldığınız yerden notu: ' + note);
+  if (await page2.getByTestId('prep').count()) throw new Error('hazırlık yeniden geldi');
+  if (!/Test 2 \/ 2/.test(await page2.locator('body').innerText())) throw new Error('ikinci test değil');
+  await driveRunner(page2);
+  const gate = page2.getByTestId('chain-continue');
+  await gate.waitFor({ timeout: 15000 });
+  if (!/sağ/i.test(await gate.innerText())) throw new Error('birinci testin sonucu kayboldu: ' + (await gate.innerText()));
+  const ep = (await storeOf(page2)).episodes[0];
+  if (ep.sideProgress || ep.sideTests.at(-1)?.results.length !== 2) throw new Error('taraf testi kaydı: ' + JSON.stringify(ep.sideTests.at(-1)?.results));
+  if (errors2.length) throw new Error('konsol hataları: ' + errors2.join(' | '));
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (L5-4, y07): telefon alındayken hazırlıkta ve tanıtma girişinde ekranın her yeri yeter; elde okurken boş yere dokunuş geçmez', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: PATIENT_OK, episodes: [readyEpisode()] } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('start-episode').click();
+  await page.getByTestId('prep').waitFor();
+  // Elde okurken: listeye dokunmak hazırlığı geçmez, şerit yok.
+  await page.waitForTimeout(2000);
+  if (await page.getByTestId('prep-forehead').count()) throw new Error('elde okurken "alında" sanıldı');
+  await page.getByTestId('prep').click();
+  await page.waitForTimeout(300);
+  if (!(await page.getByTestId('prep').count())) throw new Error('boş yere dokunuş hazırlığı geçti');
+  // Telefon alında (sanal baş dik ve sabit): şerit ve ekranın her yeri "Hazırım".
+  await page.evaluate(() => window.__dengeyolSim.upright());
+  await page.getByTestId('prep-forehead').waitFor({ timeout: 5000 });
+  await page.waitForTimeout(800);
+  await snap(page, 'hazirlik-alinda');
+  await page.getByTestId('prep').click();
+  await page.getByTestId('calibrate').waitFor();
+  await page.getByTestId('cal-forehead').waitFor({ timeout: 5000 });
+  await page.waitForTimeout(800);
+  await page.locator('[data-testid="calibrate"] .lead').first().click();
+  await page.getByTestId('cal-ok').waitFor({ timeout: 40000 });
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (L5-5, L5-6, y02): "Klinisyenim"e yanlış dokunuş onay ister; "Hayır, hastayım" kuruluma; klinisyende en üstte "Hasta moduna dön"; karşılama ve kurulum konuşur', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { speech: true } }), { speechMs: 400 });
+  await page.goto(BASE);
+  await page.getByTestId('role-clinician').waitFor();
+  await page.waitForFunction(() => window.speechSynthesis.__busy(), null, { timeout: 3000 });
+  await page.getByTestId('role-clinician').click();
+  await page.getByTestId('role-clinician-confirm').waitFor();
+  if ((await storeOf(page)).settings.role !== null) throw new Error('onaysız rol değişti');
+  await snap(page, 'klinisyen-onayi');
+  await unlocked(page);
+  await page.getByTestId('role-clinician-no').click();
+  await page.getByTestId('ob-consent').waitFor();
+  await page.waitForFunction(() => window.speechSynthesis.__busy(), null, { timeout: 3000 });
+  if ((await storeOf(page)).settings.role !== 'patient') throw new Error('hasta moduna geçilmedi');
+  // Klinisyen modundan tek dokunuşla hasta moduna.
+  await page.evaluate(() => {
+    const d = JSON.parse(localStorage.getItem('dengeyol:v1'));
+    d.settings.role = 'clinician';
+    localStorage.setItem('dengeyol:v1', JSON.stringify(d));
+  });
+  await page.goto(BASE + '#/odyolog');
+  await page.reload();
+  const back = page.getByTestId('clin-to-patient');
+  await back.waitFor();
+  const first = await page.locator('main button').first().getAttribute('data-testid');
+  if (first !== 'clin-to-patient') throw new Error('"Hasta moduna dön" en üstte değil: ' + first);
+  await back.click();
+  await page.getByTestId('ob-consent').waitFor();
+  noErrors(errors);
+  await ctx.close();
+});
+
+await step('Yeni kullanıcı turu 1 (L5-7, y02): hekim tanısı tarafı ana ekrandan tek dokunuşla girilir; yalnız o taraf test edilir', async () => {
+  const { ctx, page, errors } = await newPage(seed({ settings: { role: 'patient' }, data: { patient: { ...PATIENT_OK, diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' } } }));
+  await page.goto(BASE + '#/hasta');
+  await page.getByTestId('home-dx-R').click();
+  await page.getByTestId('home-dx-side').waitFor();
+  await page.getByTestId('start-episode').click();
+  await answerRedFlags(page);
+  await answerSubtype(page);
+  await page.getByTestId('prep').waitFor();
+  await calibrate(page);
+  await driveRunner(page);
+  // Tetiklemedi: önerilen sağ taraf manevrası, "Sol tarafı da test et" seçeneği; ikinci test yapılmadı.
+  await page.getByTestId('decision').waitFor({ timeout: 15000 });
+  await page.getByTestId('decision-test-other').waitFor();
+  if (await page.getByTestId('rest-continue').count()) throw new Error('ikinci taraf da test edildi');
+  const ep = (await storeOf(page)).episodes[0];
+  if (ep.sideTests[0].results.length !== 1 || ep.sideTests[0].results[0].side !== 'R') throw new Error('tek taraf testi kaydı: ' + JSON.stringify(ep.sideTests[0].results));
+  noErrors(errors);
   await ctx.close();
 });
 

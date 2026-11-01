@@ -325,3 +325,89 @@ describe('yeniden tasarım: kilit yok (kurulum tek ekran, ana ekranda her zaman 
     expect(store.get().patient!.diagnosedByDoctor).toBe(false);
   });
 });
+
+describe('ana ekran: kötü an sonrası durum (yeni kullanıcı turu 1, L5)', () => {
+  const base = (over: Partial<Episode> = {}): Episode => ({
+    id: 'a',
+    startedAt: Date.now() - 3600_000,
+    side: 'R',
+    protocolId: 'epley',
+    redFlags: [],
+    sideTests: [],
+    maneuvers: [],
+    retests: [],
+    status: 'active',
+    ...over
+  });
+  const seedHome = (patient: Partial<NonNullable<ReturnType<typeof emptyData>['patient']>> = {}, episodes: Episode[] = []) => {
+    const d = emptyData();
+    d.settings = { ...d.settings, role: 'patient', speech: false };
+    d.patient = { consentAt: '2026-01-01T00:00:00.000Z', contraindications: [], diagnosedByDoctor: true, canal: 'PC', side: 'R', ...patient };
+    d.episodes = episodes;
+    store.update(() => d);
+  };
+
+  it('kusma bildirildikten sonra: "bugün manevra yok, sabah test"; gerçek manevra sayısı (1/3); yanlış "baş dönmesi gelmedi" yok (L5-1)', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const now = Date.now();
+    seedHome({}, [
+      base({ maneuvers: [{ id: 'm', at: now - 30 * 60_000, protocolId: 'epley', side: 'R', completed: true, stopReason: null, records: [], manual: false, afterSymptoms: 'severe' }] })
+    ]);
+    mount('/hasta');
+    const card = byTestId('home-vomit')!;
+    expect(card.textContent).toMatch(/Bugün kusma bildirdiniz: bugün manevra yok/);
+    expect(card.textContent).toMatch(/1 Kasım 06:00/);
+    expect(host!.textContent).not.toMatch(/Son testte baş dönmesi gelmedi/);
+    expect(host!.textContent).toMatch(/1 \/ 3 manevra/);
+    expect(host!.textContent).not.toMatch(/önerilen sınır doldu/);
+    expect(byTestId('home-dose-limit')).toBeNull();
+  });
+
+  it('atak kapatılmış olsa da kusma bilgi satırı sabaha dek görünür (L5-1)', () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const now = Date.now();
+    seedHome({}, [
+      base({
+        status: 'closed',
+        endedAt: now - 10 * 60_000,
+        maneuvers: [{ id: 'm', at: now - 30 * 60_000, protocolId: 'epley', side: 'R', completed: true, stopReason: null, records: [], manual: false, afterSymptoms: 'severe' }]
+      })
+    ]);
+    mount('/hasta');
+    expect(byTestId('home-vomit-line')!.textContent).toMatch(/kusma bildirdiniz.*1 Kasım 06:00/);
+  });
+
+  it('uzun baş dönmesiyle "Durdur"dan sonra not ve "Başım dönüyor" önce durumu soracağını söyler (L5-2)', () => {
+    const now = Date.now();
+    seedHome({}, [base({ maneuvers: [{ id: 'm', at: now - 60_000, protocolId: 'epley', side: 'R', completed: false, stopReason: 'VERTIGO_TOO_LONG', records: [], manual: false }] })]);
+    mount('/hasta');
+    expect(byTestId('home-long-stop')!.textContent).toMatch(/2 dakikayı aşan baş dönmesi.*Hekiminize danışmanız önerilir/);
+    expect(byTestId('start-episode')!.textContent).toMatch(/Önce nasıl olduğunuzu soracağız/);
+  });
+
+  it('"Kendimi kötü hissediyorum" ile duran manevradan sonra not (L5-2)', () => {
+    const now = Date.now();
+    seedHome({}, [base({ maneuvers: [{ id: 'm', at: now - 60_000, protocolId: 'epley', side: 'R', completed: false, stopReason: 'USER_FEELS_UNWELL', records: [], manual: false }] })]);
+    mount('/hasta');
+    expect(byTestId('home-unwell-stop')!.textContent).toMatch(/^Son manevra, siz kötü hissettiğiniz için durdu/);
+  });
+
+  it('hekim tanısı tarafı ana ekrandan tek dokunuşla girilir; sonra "yalnız sağ taraf test edilecek" (L5-7)', () => {
+    seedHome({ diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    mount('/hasta');
+    expect(byTestId('home-no-dx')!.textContent).toMatch(/Doktorunuz hangi kulak dedi\?/);
+    expect(byTestId('home-dx-side')).toBeNull();
+    click(byTestId('home-dx-R'));
+    const p = store.get().patient!;
+    expect(p.diagnosedByDoctor).toBe(true);
+    expect(p.side).toBe('R');
+    expect(byTestId('home-no-dx')).toBeNull();
+    expect(byTestId('home-dx-side')!.textContent).toMatch(/Yalnız sağ taraf test edilecek/);
+  });
+});
