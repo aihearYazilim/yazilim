@@ -45,7 +45,19 @@ import {
   overrideCountdownLabel,
   RED_FLAG_ICON,
   redFlagIcon,
-  redFlagToggleSpoken
+  redFlagToggleSpoken,
+  feelCheckLead,
+  feelCheckSpoken,
+  feelCheckTitle,
+  FOREHEAD_TAP_SPOKEN,
+  HOME_VOMIT_TEXT,
+  resumeManeuverNote,
+  resumeSideNote,
+  RETRY_AFTER_LONG_NOTE,
+  singleSideNote,
+  VOMIT_WARN_TITLE,
+  vomitWarnSpoken,
+  vomitWarnText
 } from './flowText';
 
 describe('seçenekli ekranın sesli biçimi (kullanıcı turu 3, k01, k04, k05)', () => {
@@ -432,5 +444,42 @@ describe('yeniden tasarım: uyarı ekranları kilitlemez', () => {
     expect(items[0]).toMatch(/başınızın altına/);
     expect(items[0]).toMatch(/yüzüstü/);
     expect(prepSpokenShort({ helper: true, semontOnly: false, semontAfterTests: false, hc: true })).toMatch(/Hastayı yatağın ortasına/);
+  });
+});
+
+describe('yeni kullanıcı turu 1, L5: kötü an sonrası metinler', () => {
+  it('kusma uyarısı kusmayı söyler (doz/sayı değil); sabah saati verilen saattir; ana ekran metni "manevra yok, sabah test" (L5-1)', () => {
+    const t = vomitWarnText('2 Kasım 06:00');
+    expect(VOMIT_WARN_TITLE).toMatch(/kusma/);
+    expect(t).toMatch(/Kusmadan sonra aynı gün manevra önerilmez/);
+    expect(t).toContain('2 Kasım 06:00');
+    expect(t).not.toMatch(/manevra sayısı|sınır/);
+    expect(vomitWarnSpoken('2 Kasım 06:00', true)).toMatch(/^Telefonu alnınızdan alın.*kusma/);
+    expect(HOME_VOMIT_TEXT).toMatch(/kusma bildirdiniz: bugün manevra yok.*Sabah kısa bir test/);
+    expect(HOME_VOMIT_TEXT).not.toMatch(/baş dönmesi gelmedi/);
+  });
+  it('"Geçti mi?" sorusu kötü anın türüne göre; uzun baş dönmesinden sonra "Yeniden dene" uyarısı (L5-2)', () => {
+    expect(feelCheckTitle('unwell')).toBe('Kusma ya da kötü hissetme geçti mi?');
+    expect(feelCheckTitle('vertigoLong')).toMatch(/baş dönmesi geçti mi/);
+    expect(feelCheckLead('unwell', 'maneuver')).toMatch(/^Son manevra, siz kötü hissettiğiniz için/);
+    expect(feelCheckLead('unwell', 'side')).toMatch(/^Son test/);
+    expect(feelCheckSpoken('unwell')).toMatch(/büyük düğmeye/);
+    expect(RETRY_AFTER_LONG_NOTE).toMatch(/tamamen geçmesini bekleyin/);
+  });
+  it('kaldığınız yerden ve tek taraf notları (L5-3, L5-7)', () => {
+    expect(resumeSideNote('L', 'R')).toBe('Kaldığınız yerden: sol taraf testi yapılmıştı; sağ taraf testiyle sürüyoruz.');
+    expect(resumeManeuverNote('R')).toMatch(/yarıda kalan sağ taraf manevrasını baştan/);
+    expect(singleSideNote('R')).toMatch(/sağ tarafı test/);
+  });
+  it('güvenlik listesinde kusma maddesi gündelik dille (L5-4)', () => {
+    expect(RED_FLAG_CHECK_TEXT.fever).toBe('Ateşim var ya da kusmaktan su bile içemiyorum');
+    expect(FOREHEAD_TAP_SPOKEN).toMatch(/ekranın herhangi bir yerine dokunun/);
+  });
+  it('tek taraf testi tetiklemediyse karar ekranında "öbür tarafı da test et"; iki taraflı testte yok (L5-7)', () => {
+    const d = { canal: 'PC' as const, side: 'R' as const, warn: 'NOT_TRIGGERED' as const, reason: 'Testte baş dönmesi başlamadı; bilinen taraf sağ.' };
+    const one = decisionScreen(d, { otherSide: 'L' });
+    expect(one.options[0]).toMatchObject({ value: 'go:R', primary: true });
+    expect(one.options.find((o) => o.value === 'test:other')).toMatchObject({ label: 'Sol tarafı da test et', testid: 'decision-test-other' });
+    expect(decisionScreen(d).options.find((o) => o.value === 'test:other')).toBeUndefined();
   });
 });

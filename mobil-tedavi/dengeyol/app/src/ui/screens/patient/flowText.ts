@@ -337,7 +337,8 @@ export const RED_FLAG_CHECK_TEXT: Record<string, string> = {
   headTrauma: 'Son haftalarda başı bir yere çarpma ya da kaza',
   ear: 'Bir kulakta yeni: az duyma, tıkanma, çınlama, ağrı ya da kulaktan sıvı gelmesi',
   neck: 'Son bir ayda boynu incitme ya da boyna darbe (kaza, düşme, boynu çıtlatma)',
-  fever: 'Ateş ya da su bile içilemeyecek kadar kusma',
+  // L5-4 (y07): "su bile içilemeyecek kadar kusma"nın ölçüsü belirsizdi; gündelik, birinci ağızdan.
+  fever: 'Ateşim var ya da kusmaktan su bile içemiyorum',
   same: 'Hekiminizin daha önce "kristal oynaması" dediğinden farklı bir baş dönmesi'
 };
 
@@ -477,6 +478,68 @@ export function doseWarnSpoken(lookFirst: boolean): string {
   return `${lookFirst ? `${LOOK_AT_SCREEN} ` : ''}Önerilen manevra sayısı doldu. Devam etmeden önce ekrandaki açıklamayı okuyun.`;
 }
 
+// ---- Kötü an sonrası (yeni kullanıcı turu 1, L5; y07) ------------------------------------------------------------------
+
+/** Kusma bildirilen günde yeniden "Başım dönüyor": uyarı başlığı (doz uyarısı değil; aşma `VOMITING`). */
+export const VOMIT_WARN_TITLE = 'Bugün kusma bildirdiniz';
+
+/** Kusma uyarısının metni; until: sabah testi zamanı ("2 Kasım 06:00"), ana ekrandakiyle aynı. */
+export function vomitWarnText(until: string): string {
+  return `Kusmadan sonra aynı gün manevra önerilmez: baş dönmesi ve kusma artabilir. Oturun, küçük yudumlarla su için. Kısa test: ${until}. Kusmaktan su bile içemiyorsanız bugün hekiminize ya da acile başvurun; acil belirtilerde 112'yi arayın.`;
+}
+
+/** Kusma uyarısının sesi. */
+export function vomitWarnSpoken(until: string, lookFirst = false): string {
+  return `${lookFirst ? `${LOOK_AT_SCREEN} ` : ''}Bugün kusma bildirdiniz. Bugün manevra önerilmez; kısa test ${until}. Oturun, küçük yudumlarla su için.`;
+}
+
+/** Ana ekranda kusmadan sonraki sabah testi kartının metni (y07: "son testte baş dönmesi gelmedi" yanlıştı). */
+export const HOME_VOMIT_TEXT = 'Bugün kusma bildirdiniz: bugün manevra yok. Oturun, küçük yudumlarla su için. Sabah kısa bir test yapacağız.';
+
+/** "Geçti mi?" sorusu (kötü andan sonra yeniden başlarken; L5-2). */
+export function feelCheckTitle(kind: 'unwell' | 'vertigoLong'): string {
+  return kind === 'vertigoLong' ? 'Uzun süren baş dönmesi geçti mi?' : 'Kusma ya da kötü hissetme geçti mi?';
+}
+
+/** "Geçti mi?" ekranının açıklaması: neden sorulduğu. */
+export function feelCheckLead(kind: 'unwell' | 'vertigoLong', what: 'maneuver' | 'side' | 'retest'): string {
+  if (kind === 'vertigoLong') return 'Son manevra, 2 dakikayı aşan baş dönmesi yüzünden durmuştu. Baş dönmesi geçmediyse manevra yapmayın ve hekiminize danışın.';
+  return `Son ${what === 'maneuver' ? 'manevra' : 'test'}, siz kötü hissettiğiniz için durmuştu. Kendinizi iyi hissetmiyorsanız önce dinlenin.`;
+}
+
+export function feelCheckSpoken(kind: 'unwell' | 'vertigoLong'): string {
+  return `${feelCheckTitle(kind)} Geçtiyse üstteki büyük düğmeye, geçmediyse alttakine dokunun.`;
+}
+
+/** "Hâlâ kötüyüm" yanıtından sonraki bitiş ekranı. */
+export const STILL_UNWELL_TITLE = 'Önce dinlenin';
+export const STILL_UNWELL_TEXT =
+  "Kendinizi iyi hissedene dek test ve manevra yapmayın. Oturun, dinlenin, küçük yudumlarla su için. Geçmiyorsa ya da kötüleşiyorsa hekiminize başvurun; acil belirtilerde 112'yi arayın.";
+export const STILL_UNWELL_SPOKEN = "Önce dinlenin. Kendinizi iyi hissedene dek manevra yapmayın. Geçmiyorsa hekiminize başvurun; acil belirtide 112'yi arayın.";
+
+/** Uzun baş dönmesiyle durdurmadan sonra "Yeniden dene"nin üstündeki kısa uyarı (y07: uyarısızdı). */
+export const RETRY_AFTER_LONG_NOTE =
+  'Yeniden denemeden önce baş dönmesinin tamamen geçmesini bekleyin. Geçmiyorsa ya da yine uzun sürerse yeniden denemeyin; hekiminize başvurun.';
+
+/** Kaldığınız yerden (L5-3): birinci taraf testi yapılmıştı, ikinci testle sürülüyor. */
+export function resumeSideNote(done: Side, next: Side): string {
+  return `Kaldığınız yerden: ${SIDE_NAME[done]} taraf testi yapılmıştı; ${SIDE_NAME[next]} taraf testiyle sürüyoruz.`;
+}
+
+/** Kaldığınız yerden (L5-3): yarıda kalan manevra baştan yapılır (hazırlık yeniden gösterilmez). */
+export function resumeManeuverNote(side: Side): string {
+  return `Kaldığınız yerden: yarıda kalan ${SIDE_NAME[side]} taraf manevrasını baştan yapıyoruz.`;
+}
+
+/** Bilinen hekim tanısında yalnız o tarafın testi (L5-7). */
+export function singleSideNote(side: Side): string {
+  return `Hekiminizin dediği ${SIDE_NAME[side]} tarafı test ediyoruz.`;
+}
+
+/** Telefon alnındayken hazırlıkta ve tanıtma girişinde: ekranın her yeri "Hazırım"/"Başla" (L5-4). */
+export const FOREHEAD_TAP_SPOKEN = 'Telefon alnınızda. Hazırsanız ekranın herhangi bir yerine dokunun.';
+export const FOREHEAD_TAP_TEXT = 'Telefon alnınızda: hazırsanız ekranın herhangi bir yerine dokunun';
+
 export interface PlanWarn {
   title: string;
   text: string;
@@ -532,7 +595,8 @@ export const SUBTYPE_OPTIONS: ({ value: SubtypeAnswer; testid: string } & Spoken
 // ---- Cesur karar ekranları -------------------------------------------------------------------------------------------
 
 /** Karar ekranının seçenek değerleri: manevra tarafı, iki tarafa sırayla, öbür kanalın testi, durdur. */
-export type DecisionChoice = 'go:R' | 'go:L' | 'both' | 'test:PC' | 'test:HC' | 'end';
+/** 'test:other': yalnız hekimin dediği taraf test edildiyse öbür tarafı da test et (L5-7). */
+export type DecisionChoice = 'go:R' | 'go:L' | 'both' | 'test:PC' | 'test:HC' | 'test:other' | 'end';
 
 export interface DecisionScreen {
   title: string;
@@ -556,7 +620,7 @@ const withPrimary = (o: DecisionScreen['options']): DecisionScreen['options'] =>
  * Uyarılı kararın ekranı (BRIEF §2b): başlık uyarıyı, açıklama uygulamanın kararını ve gerekçesini söyler; ilk seçenek
  * uygulamanın önerisi ("Yine de devam et: … taraf"), sonra başka taraf/manevra/test ve "Durdur".
  */
-export function decisionScreen(d: BoldDecision): DecisionScreen {
+export function decisionScreen(d: BoldDecision, opts: { otherSide?: Side } = {}): DecisionScreen {
   const hc = d.canal === 'HC';
   const man = hc ? 'yatakta dönme manevrası' : 'manevra';
   /** "sağ taraf manevrası" kalıbı. */
@@ -611,6 +675,8 @@ export function decisionScreen(d: BoldDecision): DecisionScreen {
     case 'NOT_TRIGGERED': {
       // Önerilen yol tek büyük düğme (y01): bilinen taraf varsa o tarafa, yoksa (arka kanalda) iki tarafa sırayla manevra.
       const end = { value: 'end' as const, label: 'Bugünlük bitir (sabah yeniden test)', testid: 'decision-stop' };
+      // Yalnız hekimin dediği taraf test edildi (L5-7): öbür tarafın testi de seçenek.
+      const testOther = opts.otherSide && !hc ? [{ value: 'test:other' as const, label: `${cap(SIDE_NAME[opts.otherSide])} tarafı da test et`, testid: 'decision-test-other' }] : [];
       if (!d.side && !hc) {
         return {
           title: 'Testte baş dönmesi başlamadı',
@@ -634,6 +700,7 @@ export function decisionScreen(d: BoldDecision): DecisionScreen {
           : 'Test baş dönmesi yapmadı; kristal oynaması olmayabilir. Hangi yanda oluyorsa o tarafa manevra yapabiliriz.',
         options: [
           ...sideOptions(d.side, (s) => `${cap(SIDE_NAME[s])} tarafa ${man} yap`).map((o, i) => (d.side && i === 0 ? { ...o, primary: true } : o)),
+          ...testOther,
           ...(hc ? [] : [both]),
           otherTest,
           end

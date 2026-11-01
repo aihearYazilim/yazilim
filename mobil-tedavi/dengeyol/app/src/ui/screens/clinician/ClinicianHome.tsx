@@ -73,6 +73,18 @@ export function ClinicianHome() {
         </button>
       }
     >
+      {/* Yanlışlıkla klinisyen moduna giren hasta için en üstte büyük çıkış (yeni kullanıcı turu 1, L5-5; y02). Profili boş
+          (ilk açılış) klinisyende dolu düğme. */}
+      <button
+        className={`btn ${!d.clinician.name && d.clinicExams.length === 0 ? 'primary' : 'secondary'} block xl`}
+        onClick={() => {
+          store.update((x) => ({ ...x, settings: { ...x.settings, role: 'patient' } }));
+          nav('/hasta', { replace: true });
+        }}
+        data-testid="clin-to-patient"
+      >
+        <Icon name="user" /> Hasta moduna dön
+      </button>
       <div className="brand">
         <Logo size={40} />
         <div>

@@ -21,6 +21,19 @@ export function MotionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (settings.simulation) void sim.start();
     else sim.stop();
+    // Yalnız demo modunda: uçtan uca testler sanal telefonu panel açılmadan alına koyabilsin (L5-4).
+    const w = window as unknown as { __dengeyolSim?: { upright: () => void; reading: () => void } };
+    if (settings.simulation) {
+      w.__dengeyolSim = {
+        upright: () => {
+          sim.reading = false;
+          sim.setHeadUp({ x: 0, y: 1, z: 0 });
+        },
+        reading: () => {
+          sim.reading = true;
+        }
+      };
+    } else delete w.__dengeyolSim;
   }, [settings.simulation]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

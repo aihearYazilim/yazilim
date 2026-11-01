@@ -29,6 +29,10 @@ import { isIos } from '../../platform/reminders';
 import { Icon } from '../components/Icon';
 import { useSimAuto } from '../components/SimPanel';
 import { PhoneOnForehead } from './Illustrations';
+import { ForeheadTap } from '../components/ForeheadTap';
+
+/** Hasta modunda tanıtma girişi açılınca okunan kısa ses (L5-6). */
+export const CAL_INTRO_SPOKEN = 'Telefonu başınıza tanıtalım. Telefonu elinizde tutun ve Başla düğmesine dokunun; sonra nereye koyacağınızı sesle söyleyeceğim.';
 
 type Stage = 'intro' | 'place' | 'upright' | 'lookup' | 'done' | 'error' | 'nosensor';
 
@@ -38,13 +42,19 @@ export function Calibrate({
   audience,
   onDone,
   onCancel,
-  onNoSensor
+  onNoSensor,
+  foreheadTap = false
 }: {
   audience: 'patient' | 'clinician';
   onDone: (c: Calibration) => void;
   onCancel: () => void;
   /** Sensör kullanılamıyorsa (klinisyen modunda sensörsüz devam seçeneği). */
   onNoSensor?: () => void;
+  /**
+   * Hasta akışı (L5-4; y07): telefon alındayken (sensör dik ve sabit görürse) giriş ekranında ekranın her yeri "Başla".
+   * Telefon elde, okuma duruşundayken olağan "Başla" düğmesi.
+   */
+  foreheadTap?: boolean;
 }) {
   const { source } = useMotion();
   const sim = useSimAuto();
@@ -70,6 +80,12 @@ export function Calibrate({
   }, []);
 
   const P = audience === 'patient';
+
+  // Giriş ekranı açılınca kısa ses (L5-6; y02: "telefonu tanıtma girişi sessiz"). Ekran değişince SpeechHush susturur.
+  useEffect(() => {
+    if (P && stage === 'intro' && !exitAsk) speech.speak(CAL_INTRO_SPOKEN, 'normal');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage === 'intro']);
 
   // Geri tuşu koruması (yürütücüdeki gibi): geçmişe bir girdi eklenir; geri gelince ölçüm durur ve çıkış onayı sorulur.
   useEffect(() => {
@@ -261,6 +277,7 @@ export function Calibrate({
 
   return (
     <div className="stack" data-testid="calibrate">
+      {P && <ForeheadTap enabled={foreheadTap && stage === 'intro' && !exitAsk} onTap={() => void run()} testid="cal-forehead" />}
       {exitCard}
       {wrap(
         <>

@@ -163,11 +163,8 @@ export function episodeDose(
   const times = [...countedTimes(eps), ...extraTimes].filter((t) => now - t < windowMs && t <= now);
   const st = doseStatus(times, e.startedAt, now, limits);
   if (!st.allowed) return st;
-  // Bugün manevradan sonra kusma/şiddetli bulantı bildirildiyse bugün başka manevra yok.
-  const today = localDayKey(now);
-  if (eps.some((x) => x.maneuvers.some((m) => m.afterSymptoms === 'severe' && localDayKey(m.at) === today))) {
-    return { allowed: false, reason: 'DAILY_LIMIT', day: st.day };
-  }
+  // Manevradan sonra kusma bildirildiyse ertesi sabaha dek manevra önerilmez; bu doz sınırı değildir (yeni kullanıcı turu 1,
+  // L5-1; y07: uyarı "sayı doldu" diyor, kayda DOSE:DAILY_LIMIT yazılıyordu): `vomitPause`.
   // Tedavi döneminde manevra yapılan farklı gün sayısı (bugün yeni bir gün olacaksa o da sayılır).
   const days = new Set(times.map(localDayKey));
   const daysUsed = days.size + (days.has(localDayKey(now)) ? 0 : 1);
@@ -387,7 +384,8 @@ export function needsRedFlags(e: Episode | null, now: number): boolean {
 
 export type NextAction =
   | { kind: 'early-retest'; at: number; ready: boolean }
-  | { kind: 'morning-retest'; at: number; ready: boolean; needsSideTest: boolean }
+  /** afterVomit: son manevradan sonra kusma bildirildi (o gün test ve manevra yok; L5-1). */
+  | { kind: 'morning-retest'; at: number; ready: boolean; needsSideTest: boolean; afterVomit?: boolean }
   | { kind: 'treat-again' }
   | { kind: 'retry-side-test' }
   | { kind: 'resolved-suggest' }
@@ -419,7 +417,7 @@ export function nextAction(e: Episode, now: number): NextAction {
   // Kusma/şiddetli bulantı bildirildiyse o gün test ve manevra yok: ertesi sabah.
   if (retestsAfter.length === 0 && lastMan.afterSymptoms === 'severe') {
     const at = nextMorning(lastMan.at);
-    return { kind: 'morning-retest', at, ready: now >= at, needsSideTest: false };
+    return { kind: 'morning-retest', at, ready: now >= at, needsSideTest: false, afterVomit: true };
   }
   if (retestsAfter.length === 0) {
     const at = lastMan.at + EARLY_RETEST_MS;
@@ -449,6 +447,108 @@ export function lastUnwellTestStop(e: Episode): NonNullable<Episode['testStops']
 /** Testte "kötü hissediyorum" durdurmasından sonra ana ekrandaki atak kartında gösterilen satır (kullanıcı turu 6, k01). */
 export const UNWELL_STOP_HOME_TEXT =
   'Son test, siz kötü hissettiğiniz için durdu. Kendinizi iyi hissettiğinizde yapın; geçmiyorsa hekiminize başvurun.';
+
+// ---- Kötü an sonrası durum (yeni kullanıcı turu 1, L5; y07) -------------------------------------------------------------
+
+/**
+ * Manevradan sonra kusma ("Kusma ya da şiddetli bulantı") bildirildiyse manevra önerilmeyen dönem: ertesi sabah 06:00'ya
+ * dek (`nextMorning`; gece yarısından sonra 06:00'dan önceyse aynı günün 06:00'sı). Ana ekrandaki sabah testi saati
+ * (`nextAction`) ile aynı saat (y07: ana ekran 1 Kasım, uyarı 2 Kasım diyordu). Doz sınırı değildir: uyarı kusmayı söyler,
+ * aşma `VOMITING` olarak yazılır (`DOSE:DAILY_LIMIT` değil). Bütün ataklar taranır (atak kapatılsa da geçerli).
+ */
+export function vomitPause(d: Pick<AppData, 'episodes'>, now: number): { at: number; until: number; episodeId: string } | null {
+  let best: { at: number; until: number; episodeId: string } | null = null;
+  for (const e of d.episodes) {
+    for (const m of e.maneuvers) {
+      if (m.afterSymptoms !== 'severe' || m.at > now) continue;
+      const until = nextMorning(m.at);
+      if (now < until && (!best || m.at > best.at)) best = { at: m.at, until, episodeId: e.id };
+    }
+  }
+  return best;
+}
+
+/** Araştırma kaydı kodu: kusma bildirilen günde manevra uyarısı aşıldı. */
+export const VOMITING_OVERRIDE_KIND = 'VOMITING';
+
+/**
+ * Atağın son "kötü anı" (L5-2; y07): "Kendimi kötü hissediyorum" ile durdurulan manevra ya da test, ya da uzun baş dönmesi
+ * uyarısında "Durdur" ile biten manevra. Sonrasında taraf testi, manevra ya da tekrar testi yapıldıysa ya da kullanıcı
+ * yeniden başlarken "Geçti" dediyse (`feelBetterAt`) null. Ana ekran not gösterir; akış yeniden başlarken "Geçti mi?" sorar.
+ * Kusma burada değildir: onun ertesi sabaha dek kendi uyarısı var (`vomitPause`).
+ */
+export interface BadMoment {
+  at: number;
+  kind: 'unwell' | 'vertigoLong';
+  what: 'maneuver' | 'side' | 'retest';
+}
+
+export function lastBadMoment(e: Episode): BadMoment | null {
+  const cands: BadMoment[] = [
+    ...(e.testStops ?? []).map((s) => ({ at: s.at, kind: 'unwell' as const, what: s.test })),
+    ...e.maneuvers.flatMap((m): BadMoment[] =>
+      m.completed
+        ? []
+        : m.stopReason === 'USER_FEELS_UNWELL'
+          ? [{ at: m.at, kind: 'unwell', what: 'maneuver' }]
+          : m.stopReason === 'VERTIGO_TOO_LONG'
+            ? [{ at: m.at, kind: 'vertigoLong', what: 'maneuver' }]
+            : []
+    )
+  ];
+  const last = cands.sort((a, b) => a.at - b.at)[cands.length - 1];
+  if (!last) return null;
+  if ((e.feelBetterAt ?? 0) >= last.at) return null;
+  const later = [...e.sideTests, ...e.maneuvers, ...e.retests].some((x) => x.at > last.at);
+  return later ? null : last;
+}
+
+/** Kötü andan sonra ana ekrandaki atak kartında gösterilen not (L5-2). */
+export function badMomentHomeText(b: BadMoment): string {
+  if (b.kind === 'vertigoLong') {
+    return "Son manevra, 2 dakikayı aşan baş dönmesi yüzünden durdu. Hekiminize danışmanız önerilir. Yeniden başlarken baş dönmesinin geçip geçmediğini soracağız. Acil belirtide 112'yi arayın.";
+  }
+  if (b.what !== 'maneuver') return UNWELL_STOP_HOME_TEXT;
+  return 'Son manevra, siz kötü hissettiğiniz için durdu. Kendinizi iyi hissettiğinizde yeniden başlayın; geçmiyorsa hekiminize başvurun.';
+}
+
+/**
+ * Bilinen hekim tanısı tarafı tek taraf testine yetiyor mu (L5-7; y02: "doktor sağ kulak dedi")? Yakın tarihli (ya da
+ * tarihi girilmemiş; `dxIsRecent` ile aynı kural) arka kanal ya da kanalı bilinmeyen tanıda yalnız o taraf test edilir.
+ * Eski tanıda (2 haftadan eski) nükste taraf değişebildiği için iki taraf test edilir; yatay kanal testi zaten iki yanı
+ * tek koşuda dener.
+ */
+export function singleSideTestSide(profile: PatientProfile | undefined, now: number = Date.now()): Side | null {
+  if (!profile?.diagnosedByDoctor || profile.side === 'unknown' || profile.canal === 'HC') return null;
+  if (!dxIsRecent(profile, now, DX_SIDE_RECENT_DAYS)) return null;
+  return profile.side;
+}
+
+/** Yarıda kalan test/manevraya bu süre içinde dönülürse kaldığı yerden sürer (L5-3; ms). */
+export const RESUME_VALID_MS = 30 * 60 * 1000;
+
+/**
+ * Uygulamadan çıkılıp dönülünce kaldığı yer (L5-3; y07, y01): tamamlanmış birinci taraf testi (ikinci test kalır) ya da
+ * yarıda kalan manevra (baştan yapılır; hazırlık ekranı yeniden gösterilmez). 30 dakikadan eskiyse ya da sonrasında
+ * tamamlanmış bir iş varsa null.
+ */
+export type ResumeTarget =
+  | { kind: 'side'; at: number; order: Side[]; results: NonNullable<Episode['sideProgress']>['results'] }
+  | { kind: 'maneuver'; at: number; side: Side; protocolId: NonNullable<Episode['resumeRun']>['protocolId']; then?: Side };
+
+export function resumeTarget(e: Episode | null | undefined, now: number): ResumeTarget | null {
+  if (!e) return null;
+  const fresh = (t: number) => t <= now && now - t <= RESUME_VALID_MS;
+  const r = e.resumeRun;
+  if (r && fresh(r.at) && !e.maneuvers.some((m) => m.completed && m.at >= r.at)) {
+    return { kind: 'maneuver', at: r.at, side: r.side, protocolId: r.protocolId, ...(r.then ? { then: r.then } : {}) };
+  }
+  const p = e.sideProgress;
+  if (p && fresh(p.at) && p.results.length > 0 && p.results.length < p.order.length && !e.sideTests.some((t) => t.at >= p.at)) {
+    return { kind: 'side', at: p.at, order: p.order, results: p.results };
+  }
+  return null;
+}
 
 /**
  * Yeni atağı başlatmak yerine söylenecek bekleme durumu: aktif atakta manevra yapılmışsa "Baş dönmem başladı"/devam yeni

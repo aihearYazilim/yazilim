@@ -340,3 +340,142 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     expect(byTestId('report-probe')!.textContent).toBe('donem');
   });
 });
+
+describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
+  const fixedNoon = () =>
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date'], now: new Date(2026, 9, 31, 14, 0, 0) });
+  const activeEp = (over: Partial<NonNullable<AppData['episodes']>[number]> = {}) => {
+    const now = Date.now();
+    return {
+      id: 'a',
+      startedAt: now - 40 * 60_000,
+      side: 'R' as const,
+      protocolId: 'epley' as const,
+      redFlags: [{ at: now - 40 * 60_000, answers: {}, stopped: false }],
+      sideTests: [],
+      maneuvers: [],
+      retests: [],
+      status: 'active' as const,
+      ...over
+    };
+  };
+  const manAt = (at: number, extra: Record<string, unknown> = {}) => ({
+    id: 'm' + at,
+    at,
+    protocolId: 'epley' as const,
+    side: 'R' as const,
+    completed: true,
+    stopReason: null,
+    records: [],
+    manual: false,
+    ...extra
+  });
+
+  it('kusmadan sonra "Başım dönüyor": gerekçesi kusma olan tek uyarı (sabah saatiyle); aşma VOMITING, DOSE yok (L5-1)', async () => {
+    fixedNoon();
+    seed();
+    const now = Date.now();
+    store.update((d) => ({ ...d, episodes: [activeEp({ maneuvers: [manAt(now - 30 * 60_000, { afterSymptoms: 'severe' })] })] }));
+    mount();
+    const w = byTestId('vomit-warn')!;
+    expect(w.textContent).toMatch(/Bugün kusma bildirdiniz/);
+    expect(w.textContent).toMatch(/1 Kasım 06:00/);
+    expect(byTestId('plan-warn')).toBeNull();
+    expect(byTestId('dose-warn')).toBeNull();
+    expect(byTestId('go-home')!.className).toMatch(/\bprimary\b/);
+    expect(byTestId('vomit-override')!.className).toMatch(/\boverride\b/);
+    await click('vomit-override');
+    expect(kinds()).toEqual(['VOMITING']);
+    expect(ep()!.overrides![0]!.detail).toMatch(/1 Kasım 06:00/);
+    // Ardından ne sabah testi ne doz uyarısı: doğrudan hazırlık.
+    expect(byTestId('plan-warn')).toBeNull();
+    expect(byTestId('dose-warn')).toBeNull();
+    expect(byTestId('prep-ready')).not.toBeNull();
+  });
+
+  it('"Kendimi kötü hissediyorum" ile duran manevradan sonra yeniden başlarken "Geçti mi?"; "Hâlâ kötüyüm" dinlenme ekranı, "Yine de devam et" kayda geçer (L5-2)', async () => {
+    seed();
+    const now = Date.now();
+    store.update((d) => ({ ...d, episodes: [activeEp({ maneuvers: [manAt(now - 60_000, { completed: false, stopReason: 'USER_FEELS_UNWELL' })] })] }));
+    mount();
+    expect(byTestId('feel-check')!.textContent).toMatch(/Kusma ya da kötü hissetme geçti mi\?/);
+    expect(byTestId('feel-ok')!.className).toMatch(/\bprimary\b/);
+    expect(byTestId('prep')).toBeNull();
+    await click('feel-not');
+    expect(byTestId('end-still-unwell')).not.toBeNull();
+    expect(byTestId('go-home')!.className).toMatch(/\bprimary\b/);
+    await click('still-unwell-override');
+    expect(kinds()).toContain('STILL_UNWELL');
+    expect(byTestId('prep-ready')).not.toBeNull();
+  });
+
+  it('uzun baş dönmesiyle "Durdur"dan sonra "Geçti" yanıtı kaydedilir ve akış sürer (L5-2)', async () => {
+    seed();
+    const now = Date.now();
+    store.update((d) => ({ ...d, episodes: [activeEp({ maneuvers: [manAt(now - 60_000, { completed: false, stopReason: 'VERTIGO_TOO_LONG' })] })] }));
+    mount();
+    expect(byTestId('feel-check')!.getAttribute('data-kind')).toBe('vertigoLong');
+    await click('feel-ok');
+    expect(ep()!.feelBetterAt).toBeGreaterThan(now - 1000);
+    expect(byTestId('prep-ready')).not.toBeNull();
+  });
+
+  it('kaldığınız yerden: yapılmış birinci taraf testi kaybolmaz; hazırlık yeniden gösterilmez (L5-3)', async () => {
+    seed('self', { diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    const now = Date.now();
+    const res = { side: 'R' as const, vertigo: true, latencySec: 2, durationSec: 15, safetyStopped: false };
+    store.update((d) => ({ ...d, episodes: [activeEp({ side: null, sideProgress: { at: now - 3 * 60_000, order: ['R', 'L'], results: [res] } })] }));
+    mount();
+    // Kayıtlı tanıtma yok: yalnız tanıtma ekranı (hazırlık yok).
+    expect(byTestId('prep')).toBeNull();
+    expect(byTestId('calibrate')).not.toBeNull();
+  });
+
+  it('kaldığınız yerden: kayıtlı tanıtmayla yarıda kalan manevra "Başlat" ekranında, notuyla (L5-3)', async () => {
+    seed('self', { calibration: { sign: 1, facing: 'outward', matrix: [1, 0, 0, 0, 1, 0, 0, 0, 1], mountTiltDeg: 0, createdAt: '2026-01-01T00:00:00.000Z' } });
+    const now = Date.now();
+    store.update((d) => ({ ...d, episodes: [activeEp({ resumeRun: { at: now - 2 * 60_000, side: 'R', protocolId: 'epley' } })] }));
+    mount();
+    expect(byTestId('prep')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(byTestId('run-note')!.textContent).toMatch(/Kaldığınız yerden: yarıda kalan sağ taraf manevrasını baştan/);
+    expect(byTestId('runner-start')).not.toBeNull();
+  });
+
+  it('bilinen hekim tanısı (tarihsiz, sağ): hazırlıkta tek test süresi; tanısızda iki test (L5-7)', async () => {
+    seed('self', { canal: 'unknown' });
+    mount();
+    await click('redflags-none');
+    await click('subtype-liedown');
+    expect(host!.textContent).toMatch(/9–11 dakika \(kısa test ve manevra\)/);
+  });
+
+  it('telefon alındayken (sensör dik ve sabit) hazırlıkta ekranın her yeri "Hazırım"; elde okurken boş yere dokunuş geçmez (L5-4)', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'performance'] });
+    seed();
+    store.update((d) => ({ ...d, settings: { ...d.settings, simulation: true } }));
+    mount();
+    await click('redflags-none');
+    expect(byTestId('prep')).not.toBeNull();
+    // Elde okuma duruşu: dokunuş hazırlığı geçmez.
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(byTestId('prep-forehead')).toBeNull();
+    act(() => byTestId('prep')!.click());
+    expect(byTestId('prep')).not.toBeNull();
+    // Telefon alında: kısa süre sonra şerit; boş yere dokunuş "Hazırım".
+    const w = window as unknown as { __dengeyolSim: { upright: () => void; reading: () => void } };
+    act(() => w.__dengeyolSim.upright());
+    act(() => {
+      vi.advanceTimersByTime(2500);
+    });
+    expect(byTestId('prep-forehead')).not.toBeNull();
+    act(() => byTestId('prep')!.click());
+    expect(byTestId('prep')).toBeNull();
+    expect(byTestId('calibrate')).not.toBeNull();
+    act(() => w.__dengeyolSim.reading());
+  });
+});

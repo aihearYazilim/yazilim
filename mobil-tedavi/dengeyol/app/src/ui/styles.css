@@ -1580,3 +1580,19 @@ summary {
   color: var(--danger);
   font-weight: 700;
 }
+
+/* Telefon alındayken ekranın her yeri "Hazırım"/"Başla" (yeni kullanıcı turu 1, L5-4): dokunuşu engellemeyen şerit. */
+.forehead-tap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  background: var(--primary);
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+}

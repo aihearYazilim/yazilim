@@ -8,7 +8,8 @@ import {
   episodeSide,
   formatDateTime,
   formatTime,
-  lastUnwellTestStop,
+  badMomentHomeText,
+  lastBadMoment,
   nextAction,
   nightNote,
   doseLimitsFor,
@@ -21,9 +22,11 @@ import {
   rxPeriodEpisodes,
   rxPeriodSummary,
   sameDayReopenable,
+  singleSideTestSide,
   startDose,
-  UNWELL_STOP_HOME_TEXT
+  vomitPause
 } from '../../../state/episodes';
+import { HOME_VOMIT_TEXT } from './flowText';
 import type { AppData, Episode } from '../../../state/types';
 import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
@@ -107,6 +110,12 @@ export function PatientHome() {
   // Manevra sonrası yeni nörolojik belirti (24 saat ya da yanıtlanana dek): en üstte kırmızı 112 şeridi; tekrar testi ve
   // hatırlatıcı gösterilmez (L2-1; y05). Kilit yok: "Başım dönüyor" çalışır.
   const neuro = neuroAlertFor(d, now);
+  // Kusmadan sonra ertesi sabaha dek (L5-1): atak kapatılmış olsa da bilgi satırı.
+  const vomit = vomitPause(d, now);
+  const bad = ep ? lastBadMoment(ep) : null;
+  // Hekim tanısındaki taraf ana ekrandan tek dokunuşla girilebilir (L5-7; y02): taraf henüz bilinmiyorsa ve test başlamadıysa.
+  const askDxSide = !p.prescription && (!p.diagnosedByDoctor || p.side === 'unknown') && (!ep || (!ep.side && ep.sideTests.length === 0));
+  const singleSide = !askDxSide && (!ep || (!ep.side && ep.sideTests.length === 0)) ? singleSideTestSide(p, now) : null;
 
   /** "Başım dönüyor": hekime yönlendirmeden sonraysa bu aşma, yönlendirilen atağa araştırma kaydı olarak yazılır. */
   const start = () => {
@@ -121,7 +130,9 @@ export function PatientHome() {
         <Icon name="sparkle" size={34} />
         Başım dönüyor
         <span className="sub">
-          {reopenable
+          {bad
+            ? 'Önce nasıl olduğunuzu soracağız'
+            : reopenable
             ? 'Bugünkü atağınıza devam edilir'
             : ep
               ? na?.kind === 'retry-side-test'
@@ -138,10 +149,16 @@ export function PatientHome() {
           {GATE_TEXT.HORIZONTAL_CANAL}
         </InfoLine>
       )}
-      {warnings.includes('NO_DIAGNOSIS') && !ep && (
-        <InfoLine testid="home-no-dx">
-          Hekim tanısı girilmedi; uygulama önce iki tarafı kısa bir testle dener. İlk kez yaşıyorsanız hekime görünmeniz önerilir.{' '}
-          <Link to="/ayarlar#tani">Tanımı gir</Link>
+      {askDxSide && <DxSideQuick testid={ep ? 'home-dx-ask' : 'home-no-dx'} noDx={warnings.includes('NO_DIAGNOSIS')} />}
+      {singleSide && (
+        <InfoLine testid="home-dx-side">
+          Hekim tanısı: {singleSide === 'R' ? 'sağ' : 'sol'} kulak. Yalnız {singleSide === 'R' ? 'sağ' : 'sol'} taraf test edilecek.{' '}
+<Link to="/hasta/kurulum?adim=tani">Değiştir</Link>
+        </InfoLine>
+      )}
+      {vomit && !(ep && na?.kind === 'morning-retest' && na.afterVomit) && (
+        <InfoLine testid="home-vomit-line" tone="warn">
+          {HOME_VOMIT_TEXT} Test zamanı: {formatDateTime(vomit.until)}.
         </InfoLine>
       )}
       {referralEp && (
@@ -223,6 +240,7 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
   // Doz sayımı (yarıda kalan manevralar ve diğer ataklar dahil).
   const today = dose.allowed ? limits.maxPerDay - dose.remainingToday : dose.reason === 'DAILY_LIMIT' ? limits.maxPerDay : null;
   const [confirmClose, setConfirmClose] = useState(false);
+  const bad = lastBadMoment(ep);
 
   const close = (status: 'resolved' | 'closed', note: string) =>
     store.update((x) => ({
@@ -260,11 +278,12 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
         </dl>
       </div>
 
-      {/* Testte "kötü hissediyorum" ile durduktan sonra (kullanıcı turu 6, k01): düğme kalır, önce bu not. */}
-      {lastUnwellTestStop(ep) && (
-        <div className="notice" data-testid="home-unwell-stop">
+      {/* "Kendimi kötü hissediyorum" ya da uzun baş dönmesinde "Durdur"dan sonra (kullanıcı turu 6, k01; L5-2): düğme
+          kalır, önce bu not; yeniden başlarken akış "Geçti mi?" sorar. */}
+      {bad && (
+        <div className="notice" data-testid={bad.kind === 'vertigoLong' ? 'home-long-stop' : 'home-unwell-stop'}>
           <Icon name="alert" />
-          <span>{UNWELL_STOP_HOME_TEXT}</span>
+          <span>{badMomentHomeText(bad)}</span>
         </div>
       )}
 
@@ -297,12 +316,15 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
       )}
 
       {!neuro && na.kind === 'morning-retest' && (
-        <div className="card stack">
-          <h2>Sabah testi</h2>
+        <div className={`card stack${na.afterVomit ? ' tint-warn' : ''}`} data-testid={na.afterVomit ? 'home-vomit' : undefined}>
+          <h2>{na.afterVomit ? 'Bugün kusma bildirdiniz' : 'Sabah testi'}</h2>
           <p>
-            {na.needsSideTest
-              ? 'Pozisyon testlerinde baş dönmesi başlamadı; manevra yapılmadı. Sabah iki tarafı yeniden test edeceğiz.'
-              : 'Son testte baş dönmesi gelmedi. Kristallerin yerinde kaldığını görmek için yarın sabah bir kez daha bakalım.'}
+            {/* Kusmadan sonra test yapılmadı: "son testte baş dönmesi gelmedi" denmez (L5-1; y07). */}
+            {na.afterVomit
+              ? HOME_VOMIT_TEXT
+              : na.needsSideTest
+                ? 'Pozisyon testlerinde baş dönmesi başlamadı; manevra yapılmadı. Sabah iki tarafı yeniden test edeceğiz.'
+                : 'Son testte baş dönmesi gelmedi. Kristallerin yerinde kaldığını görmek için yarın sabah bir kez daha bakalım.'}
           </p>
           {na.ready ? (
             <button
@@ -472,6 +494,38 @@ export function RxPaste() {
         </button>
       </div>
       {err && <span className="small" style={{ color: 'var(--danger)' }}>Bu bir reçete bağlantısına benzemiyor.</span>}
+    </div>
+  );
+}
+
+/**
+ * Hekim tanısındaki tarafın ana ekrandan tek dokunuşla girilmesi (L5-7; y02: "Tanımı gir" bağlantısını anlamadı,
+ * "doktor sağ kulak dedi"yi söylemenin yolunu bulamadı). Girilince yalnız o taraf test edilir (state/episodes.ts
+ * `singleSideTestSide`). Tanı zamanı ve kanal isteğe bağlı; Bilgilerim'den değiştirilir.
+ */
+function DxSideQuick({ testid, noDx }: { testid: string; noDx: boolean }) {
+  const set = (side: 'R' | 'L') =>
+    store.update((x) =>
+      x.patient ? { ...x, patient: { ...x.patient, diagnosedByDoctor: true, side, canal: x.patient.canal ?? 'unknown' } } : x
+    );
+  return (
+    <div className="notice small info" data-testid={testid}>
+      <Icon name="info" />
+      <div className="stack" style={{ gap: 8 }}>
+        <span>
+          {noDx ? 'Hekim tanısı girilmedi; uygulama önce iki tarafı kısa bir testle dener. İlk kez yaşıyorsanız hekime görünmeniz önerilir. ' : ''}
+          <strong>Doktorunuz hangi kulak dedi?</strong> Biliyorsanız seçin: yalnız o taraf test edilir.
+        </span>
+        <div className="row wrap" style={{ gap: 8 }}>
+          <button type="button" className="btn secondary grow" onClick={() => set('R')} data-testid="home-dx-R">
+            Sağ kulak
+          </button>
+          <button type="button" className="btn secondary grow" onClick={() => set('L')} data-testid="home-dx-L">
+            Sol kulak
+          </button>
+        </div>
+        <Link to="/ayarlar#tani">Bilmiyorum / diğer tanı bilgileri</Link>
+      </div>
     </div>
   );
 }

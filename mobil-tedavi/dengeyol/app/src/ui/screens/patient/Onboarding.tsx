@@ -34,6 +34,7 @@ import { CONSENT_OPTIONS, CONSENT_OPTIONS_GIST, CONSENT_RISKS, CONSENT_RISKS_GIS
 import {
   CONSENT_FIRST_SPOKEN,
   consentCheckLabel,
+  consentSpoken,
   CONTRA_LISTEN_LABEL,
   contraHearingText,
   contraSpeech,
@@ -71,6 +72,9 @@ function ConsentScreen() {
   const [flash, setFlash] = useState(0);
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Kısa sesli özet (L5-6; y02, y07: kurulum sessizdi). Onamı yeniden okuyan (önceden onaylamış) kişiye okunmaz.
+    if (!consented) speech.speak(consentSpoken(helperSetup), 'normal');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     if (!flash) return;

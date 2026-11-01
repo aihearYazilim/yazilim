@@ -37,7 +37,13 @@ import {
   SUBTYPE_VALID_MS,
   subtypeRemembered,
   totalPauses,
-  UNWELL_STOP_HOME_TEXT
+  UNWELL_STOP_HOME_TEXT,
+  vomitPause,
+  lastBadMoment,
+  badMomentHomeText,
+  singleSideTestSide,
+  resumeTarget,
+  RESUME_VALID_MS
 } from './episodes';
 import type { StepRecord } from '../core/runner';
 import { RED_FLAGS } from '../core/safety';
@@ -266,11 +272,79 @@ describe('reçeteli kısa yol yalnız reçetenin atağı için', () => {
 });
 
 describe('manevra sonrası kusma', () => {
-  it('aynı gün yeni manevra yok ve erken tekrar testi yerine sabah testi', () => {
+  it('ertesi sabaha dek manevra önerilmez (kusma, doz sınırı değil) ve erken tekrar testi yerine sabah testi', () => {
     const m = { ...man(base), afterSymptoms: 'severe' as const };
     const e = ep({ maneuvers: [m] });
-    expect(episodeDose(e, undefined, base + 3600e3, [e])).toMatchObject({ allowed: false, reason: 'DAILY_LIMIT' });
-    expect(nextAction(e, base + 2 * 3600e3)).toMatchObject({ kind: 'morning-retest' });
+    // L5-1 (y07): kusma doz sınırı sayılmaz; gerçek sayı (1/3) kalır, uyarı ayrı (`vomitPause`).
+    expect(episodeDose(e, undefined, base + 3600e3, [e])).toMatchObject({ allowed: true, remainingToday: 2 });
+    expect(vomitPause({ episodes: [e] }, base + 3600e3)).toMatchObject({ at: base, episodeId: 'e' });
+    expect(nextAction(e, base + 2 * 3600e3)).toMatchObject({ kind: 'morning-retest', afterVomit: true });
+  });
+  it('tek tutarlı sabah saati: gece yarısından sonra kusmada uyarının bittiği an ana ekrandaki sabah testiyle aynı (L5-1)', () => {
+    const night = new Date(2026, 10, 1, 0, 30).getTime();
+    const e = ep({ startedAt: night - 600e3, maneuvers: [{ ...man(night), afterSymptoms: 'severe' as const }] });
+    const na = nextAction(e, night + 600e3);
+    const vp = vomitPause({ episodes: [e] }, night + 600e3);
+    expect(na.kind).toBe('morning-retest');
+    expect(vp?.until).toBe(new Date(2026, 10, 1, 6, 0).getTime());
+    if (na.kind === 'morning-retest') expect(na.at).toBe(vp?.until);
+    // Sabah 06:00'dan sonra uyarı yok.
+    expect(vomitPause({ episodes: [e] }, new Date(2026, 10, 1, 6, 1).getTime())).toBeNull();
+    // Kusma bildirilmeyen manevra uyarı doğurmaz.
+    expect(vomitPause({ episodes: [ep({ maneuvers: [man(night)] })] }, night + 600e3)).toBeNull();
+  });
+});
+
+describe('kötü an sonrası (L5-2, y07): ana ekran notu ve "Geçti mi?"', () => {
+  const stopped = (at: number, stopReason: ManeuverLog['stopReason']): ManeuverLog => ({ ...man(at, false), stopReason, records: [] });
+  it('"Kendimi kötü hissediyorum" ve uzun baş dönmesinde "Durdur" kötü an sayılır; "Geçti" ya da sonraki iş notu kaldırır', () => {
+    expect(lastBadMoment(ep({}))).toBeNull();
+    const unwell = ep({ maneuvers: [stopped(base + 1000, 'USER_FEELS_UNWELL')] });
+    expect(lastBadMoment(unwell)).toMatchObject({ kind: 'unwell', what: 'maneuver' });
+    expect(badMomentHomeText(lastBadMoment(unwell)!)).toMatch(/kötü hissettiğiniz için durdu/);
+    const long = ep({ maneuvers: [stopped(base + 1000, 'VERTIGO_TOO_LONG')] });
+    expect(lastBadMoment(long)).toMatchObject({ kind: 'vertigoLong' });
+    expect(badMomentHomeText(lastBadMoment(long)!)).toMatch(/2 dakikayı aşan baş dönmesi.*Hekiminize danışmanız/);
+    // Kullanıcı yeniden başlarken "Geçti" dedi.
+    expect(lastBadMoment({ ...long, feelBetterAt: base + 2000 })).toBeNull();
+    // Sonra tamamlanan manevra ya da tekrar testi notu kaldırır; yarıda bırakma (USER_ABORT) kötü an değildir.
+    expect(lastBadMoment(ep({ maneuvers: [stopped(base + 1000, 'USER_FEELS_UNWELL'), man(base + 5000)] }))).toBeNull();
+    expect(lastBadMoment(ep({ maneuvers: [stopped(base + 1000, 'USER_ABORT')] }))).toBeNull();
+    // Testte durdurma (eski metin korunur).
+    const test = ep({ testStops: [{ at: base + 1000, test: 'side', side: 'R', reason: 'USER_FEELS_UNWELL' }] });
+    expect(badMomentHomeText(lastBadMoment(test)!)).toBe(UNWELL_STOP_HOME_TEXT);
+  });
+});
+
+describe('bilinen hekim tanısı tarafı (L5-7, y02): yalnız o taraf test edilir', () => {
+  const now = new Date('2026-10-20T10:00:00').getTime();
+  const prof = (p: Record<string, unknown> = {}) => ({ contraindications: [], diagnosedByDoctor: true, canal: 'unknown' as const, side: 'R' as const, ...p });
+  it('yakın tarihli ya da tarihsiz tanıda tek taraf; eski tanıda, yatay kanalda ve tanısızda iki taraf', () => {
+    expect(singleSideTestSide(prof(), now)).toBe('R');
+    expect(singleSideTestSide(prof({ canal: 'PC', dxDate: '2026-10-15' }), now)).toBe('R');
+    expect(singleSideTestSide(prof({ dxWhen: 'older' }), now)).toBeNull();
+    expect(singleSideTestSide(prof({ dxDate: '2026-06-01' }), now)).toBeNull();
+    expect(singleSideTestSide(prof({ canal: 'HC' }), now)).toBeNull();
+    expect(singleSideTestSide(prof({ side: 'unknown' }), now)).toBeNull();
+    expect(singleSideTestSide(prof({ diagnosedByDoctor: false }), now)).toBeNull();
+    expect(singleSideTestSide(undefined, now)).toBeNull();
+  });
+});
+
+describe('kaldığınız yerden (L5-3, y07, y01)', () => {
+  const res = (side: 'R' | 'L', vertigo: boolean) => ({ side, vertigo, latencySec: vertigo ? 2 : null, durationSec: vertigo ? 15 : null, safetyStopped: false });
+  it('tamamlanmış birinci taraf testi 30 dakika korunur; son taraf testi yazılınca ya da süre geçince yok', () => {
+    const e = ep({ sideProgress: { at: base, order: ['R', 'L'], results: [res('R', true)] } });
+    expect(resumeTarget(e, base + 3 * 60e3)).toMatchObject({ kind: 'side', order: ['R', 'L'], results: [{ side: 'R', vertigo: true }] });
+    expect(resumeTarget(e, base + RESUME_VALID_MS + 1)).toBeNull();
+    const done = { ...e, sideTests: [{ at: base + 60e3, results: [], stronger: null, decision: { kind: 'NOT_TRIGGERED' as const } }] };
+    expect(resumeTarget(done, base + 2 * 60e3)).toBeNull();
+  });
+  it('yarıda kalan manevra baştan sürer; tamamlanınca yok', () => {
+    const e = ep({ side: 'R', resumeRun: { at: base, side: 'R', protocolId: 'epley' } });
+    expect(resumeTarget(e, base + 60e3)).toMatchObject({ kind: 'maneuver', side: 'R', protocolId: 'epley' });
+    expect(resumeTarget({ ...e, maneuvers: [man(base + 30e3)] }, base + 60e3)).toBeNull();
+    expect(resumeTarget(null, base)).toBeNull();
   });
 });
 

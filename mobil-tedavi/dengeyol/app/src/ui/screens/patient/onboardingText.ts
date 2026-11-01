@@ -20,8 +20,34 @@ export function consentCheckLabel(helper: boolean): string {
   return helper ? 'Hasta adına yukarıdaki metni okudum, kabul ediyorum' : 'Yukarıdaki metni okudum, kabul ediyorum';
 }
 
-/** Onaysız (soluk) "Başla"ya dokunulunca kısa ses. */
-export const CONSENT_FIRST_SPOKEN = 'Önce Başla düğmesinin hemen üstündeki onay kutusunu işaretleyin.';
+/**
+ * Onaysız (soluk) "Başla"ya dokunulunca kısa ses. "Onay kutusu" denmez (L5-6; y02: "onay kutusu ne, bilmiyorum"): satırın
+ * kendisi söylenir.
+ */
+export const CONSENT_FIRST_SPOKEN = 'Önce Başla düğmesinin hemen üstündeki "Okudum, kabul ediyorum" yazısına dokunun.';
+
+/**
+ * Kurulum (onam) ekranı açılınca okunan kısa özet (L5-6; y02, y07: kurulum tamamen sessizdi). Tam metin ekranda; ekran
+ * değişince SpeechHush susturur.
+ */
+export function consentSpoken(helper: boolean): string {
+  return [
+    'Kurulum. DengeYol, yatarken, kalkarken ya da yatakta dönerken gelen kısa baş dönmesinde testi ve manevrayı sesle adım adım yaptırır.',
+    "Durmadan süren baş dönmesi, çift görme, konuşma bozukluğu ya da güçsüzlük varsa uygulamayı bırakıp 112'yi arayın.",
+    helper
+      ? 'Hasta adına kabul ediyorsanız ekranın altındaki "Okudum, kabul ediyorum" yazısına, sonra Başla düğmesine dokunun.'
+      : 'Kabul ediyorsanız ekranın altındaki "Okudum, kabul ediyorum" yazısına, sonra Başla düğmesine dokunun.'
+  ].join(' ');
+}
+
+/** Karşılama ekranı açılınca okunan kısa ses (L5-6). */
+export const WELCOME_SPOKEN =
+  'DengeYol. Baş dönmesi yaşıyorsanız üstteki büyük düğmeye dokunun: Baş dönmesi yaşıyorum. Alttaki düğme yalnız hekim ve odyologlar içindir.';
+
+/** "Klinisyenim"e dokununca sorulan onay (L5-5; y02: yanlış dokunuş klinisyen modunu kalıcı açıyordu). */
+export const CLINICIAN_CONFIRM_TITLE = 'Hekim ya da odyolog musunuz?';
+export const CLINICIAN_CONFIRM_TEXT = 'Klinisyen modu muayene ve reçete içindir. Baş dönmesi yaşıyorsanız "Hayır, hastayım"a dokunun.';
+export const CLINICIAN_CONFIRM_SPOKEN = 'Hekim ya da odyolog musunuz? Baş dönmesi yaşıyorsanız üstteki büyük düğmeye dokunun: Hayır, hastayım.';
 
 /** Uygunluk listesinin "Tekrar dinle" düğmesinin etiketi (kısa girişten sonra bütün maddeleri okur). */
 export const CONTRA_LISTEN_LABEL = 'Tekrar dinle (bütün maddeler)';

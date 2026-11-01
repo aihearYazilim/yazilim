@@ -156,6 +156,21 @@ export interface Episode {
    */
   testStops?: { at: number; test: 'side' | 'retest'; side: Side; reason: 'USER_FEELS_UNWELL' }[];
   /**
+   * Kötü andan (kötü hissetme ya da uzun baş dönmesiyle durdurma) sonra yeniden başlarken "Geçti mi?" sorusuna "Geçti"
+   * yanıtının zamanı (yeni kullanıcı turu 1, L5-2; state/episodes.ts `lastBadMoment`). Eski kayıtlarda yok.
+   */
+  feelBetterAt?: number;
+  /**
+   * İki taraflı testte tamamlanan birinci taraf (L5-3): uygulamadan çıkılıp dönülünce yapılmış test kaybolmaz, ikinci
+   * testle sürer (`resumeTarget`). Son taraf testi kaydı yazılınca silinir. Eski kayıtlarda yok.
+   */
+  sideProgress?: { at: number; order: Side[]; results: SideTestResult[] };
+  /**
+   * Başlamış ama sonu kaydedilmemiş (ya da uygulamadan çıkılınca kesilmiş) manevra (L5-3): dönülünce hazırlık yeniden
+   * gösterilmez, manevra baştan yapılır. Manevra bitince/durdurulunca silinir. Eski kayıtlarda yok.
+   */
+  resumeRun?: { at: number; side: Side; protocolId: ProtocolId; then?: Side };
+  /**
    * Araştırma kaydı: kullanıcının "Yine de devam et" ile aştığı uyarılar (klinik çalışmada hangi uyarının ne sıklıkla
    * aşıldığı ölçülür). kind: aşılan uyarının kodu (ör. 'NO_DIAGNOSIS', 'RED_FLAG', 'DOSE', 'REFERRAL', 'SIDE_CONFLICT',
    * 'CONTRAINDICATION', 'VERTIGO_TOO_LONG', 'POSITION_UNREACHABLE'); detail: kısa açıklama.

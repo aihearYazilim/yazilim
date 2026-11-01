@@ -1,7 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { CONTRA_NOT_BLOCKING_TEXT, CONTRA_NOT_BLOCKING_TEXT_HELPER, CONTRAINDICATIONS } from '../../../core/safety';
 import { dxIsRecent } from '../../../state/dxTiming';
-import { contraHearingText, contraSpeech, contraSpeechShort, dxRecentAnsweredText, dxRecentLastDay, noneLabel } from './onboardingText';
+import {
+  CLINICIAN_CONFIRM_SPOKEN,
+  CLINICIAN_CONFIRM_TEXT,
+  CLINICIAN_CONFIRM_TITLE,
+  CONSENT_FIRST_SPOKEN,
+  consentSpoken,
+  contraHearingText,
+  contraSpeech,
+  contraSpeechShort,
+  dxRecentAnsweredText,
+  dxRecentLastDay,
+  noneLabel,
+  WELCOME_SPOKEN
+} from './onboardingText';
 
 describe('uygunluk listesinin sesli okunuşu (kullanıcı turu 4, k01, k05)', () => {
   it('açılışta kısa giriş: madde okunmaz, "hiçbiri" ve "Tekrar dinle" söylenir', () => {
@@ -68,5 +81,27 @@ describe('tarihte gün başında sıfır yok (kullanıcı turu 5, k03)', () => {
     const t = dxRecentAnsweredText(at, at + 7 * 24 * 3600_000);
     expect(t).toMatch(/^24 Ekim 2026 tarihinde seçildi; 8 Kasım 2026 tarihine kadar/);
     expect(t).not.toMatch(/\b08 /);
+  });
+});
+
+describe('yeni kullanıcı turu 1, L5-5 ve L5-6: karşılama ve kurulum sesi', () => {
+  it('kurulum kısa sesli özet: ne yaptığı, 112, nereye dokunulacağı; "onay kutusu" denmez', () => {
+    for (const helper of [false, true]) {
+      const s = consentSpoken(helper);
+      expect(s).toMatch(/testi ve manevrayı sesle/);
+      expect(s).toMatch(/112/);
+      expect(s).toMatch(/"Okudum, kabul ediyorum" yazısına, sonra Başla/);
+      expect(s).not.toMatch(/onay kutusu/);
+      expect(s.length).toBeLessThan(420);
+    }
+    expect(consentSpoken(true)).toMatch(/Hasta adına/);
+    expect(CONSENT_FIRST_SPOKEN).not.toMatch(/onay kutusu/);
+    expect(CONSENT_FIRST_SPOKEN).toMatch(/Okudum, kabul ediyorum/);
+  });
+  it('karşılama sesi büyük düğmeyi söyler; klinisyen onayı "Hayır, hastayım"ı önerir', () => {
+    expect(WELCOME_SPOKEN).toMatch(/Baş dönmesi yaşıyorum/);
+    expect(CLINICIAN_CONFIRM_TITLE).toBe('Hekim ya da odyolog musunuz?');
+    expect(CLINICIAN_CONFIRM_SPOKEN).toMatch(/Hayır, hastayım/);
+    expect(CLINICIAN_CONFIRM_TEXT).toMatch(/Hayır, hastayım/);
   });
 });
