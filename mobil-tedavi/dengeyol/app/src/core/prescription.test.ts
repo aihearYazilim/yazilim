@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DECODE_ERROR_TEXT,
   decodePrescription,
   encodePrescription,
   fnv1a,
+  normalizePrescription,
+  OV_MAX_LEN,
   PID_MAX_LEN,
   type Prescription,
   prescriptionUrl,
+  rxCanalName,
+  rxCanalOf,
+  rxManeuverFromWire,
+  rxManeuverName,
+  rxManeuverWire,
+  rxPcManeuver,
+  rxProtocolId,
   RX_VALID_DAYS,
   rxCode,
   rxLastValidDay,
@@ -99,7 +109,55 @@ describe('reçete', () => {
     const d = decodePrescription(mk({ v: 1, ...base, pid: 'X-1' }));
     expect(d.ok && d.value.pid).toBeUndefined();
     expect(d.ok && d.value.v).toBe(1);
-    expect(decodePrescription(mk({ v: 3, ...base }))).toMatchObject({ ok: false, error: 'VERSION' });
+    expect(decodePrescription(mk({ v: 4, ...base }))).toMatchObject({ ok: false, error: 'VERSION' });
+    // Yatay kanal yalnız v3'te; kanal ile manevra tutarlı olmalı.
+    expect(decodePrescription(mk({ v: 2, ...base, canal: 'HC', maneuver: 'bbq-roll' }))).toMatchObject({ ok: false, error: 'FIELDS' });
+    expect(decodePrescription(mk({ v: 3, ...base, canal: 'HC', maneuver: 'epley' }))).toMatchObject({ ok: false, error: 'FIELDS' });
+    expect(decodePrescription(mk({ v: 3, ...base, canal: 'PC', maneuver: 'bbq-roll' }))).toMatchObject({ ok: false, error: 'FIELDS' });
+    expect(decodePrescription(mk({ v: 3, ...base, canal: 'HC', maneuver: 'gufoni-geo' }))).toMatchObject({ ok: false, error: 'FIELDS' });
+  });
+
+  // --- Yatay kanal ve uyarı notu (v3; kullanıcı turu yeni-1, L4-1/L4-2) ---
+  it('yatay kanal reçetesi v3 olarak üretilir ve gidiş-dönüş yapar (BBQ roll)', () => {
+    const hc: Prescription = { ...p, canal: 'HC', maneuver: 'bbq-roll' };
+    const tok = encodePrescription(hc);
+    expect(JSON.parse(unb64u(tok.split('.')[0]!)).v).toBe(3);
+    const d = decodePrescription(tok);
+    expect(d).toEqual({ ok: true, value: { ...hc, v: 3 } });
+    expect(d.ok && rxCanalOf(d.value)).toBe('HC');
+    expect(d.ok && rxManeuverName(d.value)).toBe('BBQ roll');
+    expect(d.ok && rxCanalName(d.value)).toBe('yatay kanal');
+    expect(d.ok && rxProtocolId(d.value)).toBe('bbq-roll');
+    expect(d.ok && rxPcManeuver(d.value)).toBe('epley');
+  });
+  it('kanal manevradan çıkarılır (tutarsız giriş normalleştirilir)', () => {
+    const d = decodePrescription(encodePrescription({ ...p, canal: 'PC', maneuver: 'bbq-roll' }));
+    expect(d.ok && d.value.canal).toBe('HC');
+    expect(normalizePrescription({ ...p, canal: 'HC', maneuver: 'semont' }).canal).toBe('PC');
+  });
+  it('uyarıya rağmen verilen arka kanal reçetesi v3 (eski uygulama notu sessizce düşürmesin); not temizlenir ve kısaltılır', () => {
+    const tok = encodePrescription({ ...p, pid: 'K-7', ov: '  beyin kaynaklı\nşüphe  ' });
+    expect(JSON.parse(unb64u(tok.split('.')[0]!)).v).toBe(3);
+    const d = decodePrescription(tok);
+    expect(d.ok && d.value).toMatchObject({ v: 3, canal: 'PC', maneuver: 'epley', pid: 'K-7', ov: 'beyin kaynaklı şüphe' });
+    const long = decodePrescription(encodePrescription({ ...p, ov: 'x'.repeat(OV_MAX_LEN + 20) }));
+    expect(long.ok && long.value.ov).toBe('x'.repeat(OV_MAX_LEN));
+    // Uyarısız arka kanal reçetesi v1/v2 kalır.
+    expect(JSON.parse(unb64u(encodePrescription({ ...p, ov: '   ' }).split('.')[0]!)).v).toBe(1);
+  });
+  it('v1/v2 gövdesindeki ov yok sayılır', () => {
+    const body = b64u(JSON.stringify({ v: 2, side: 'L', canal: 'PC', maneuver: 'epley', date: '2026-10-27', perDay: 3, days: 5, pid: 'A', ov: 'x' }));
+    const d = decodePrescription(`${body}.${fnv1a(body)}`);
+    expect(d.ok && d.value.ov).toBeUndefined();
+    expect(d.ok && d.value.v).toBe(2);
+  });
+  it('eski uygulama yeni biçimi görünce anlaşılır mesaj: güncelleme ve yeniden açma', () => {
+    expect(DECODE_ERROR_TEXT.VERSION).toMatch(/daha yeni bir sürümüyle/);
+    expect(DECODE_ERROR_TEXT.VERSION).toMatch(/Uygulamayı güncelleyin/);
+  });
+  it('ev raporu manevra kodu: e/s/b gidiş-dönüş; bilinmeyen harf Semont (eski davranış)', () => {
+    for (const m of ['epley', 'semont', 'bbq-roll'] as const) expect(rxManeuverFromWire(rxManeuverWire(m))).toBe(m);
+    expect(rxManeuverFromWire('z')).toBe('semont');
   });
   it('geçerlilik bitişi: muayene günü + gün sayısı (dışlayıcı an)', () => {
     const until = rxValidUntil({ date: '2026-10-30' }, 14);

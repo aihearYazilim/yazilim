@@ -195,7 +195,7 @@ const DIX_HALLPIKE: ProtocolDef = {
     {
       id: 'dh-lie',
       title: 'Sırtüstü, baş {Aya} 45° ve sarkık',
-      say: 'Başınız {Aya} dönük kalsın; hızla sırtüstü yatın. Başınız yastıktan geriye hafifçe sarksın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun. Şimdi başınız {Aya} dönük kalsın; hızla sırtüstü yatın. Başınız yastıktan geriye hafifçe sarksın.',
       clinician:
         'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar. Nistagmusu gözleyin; başlangıç ve bitişi işaretleyin.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
@@ -208,7 +208,7 @@ const DIX_HALLPIKE: ProtocolDef = {
       short: 'Hızla sırtüstü yatın; baş {Aya} dönük, geriye sarkık.',
       helperTitle: 'Sırtüstü, baş hastanın {Aına} 45° ve sarkık',
       helperSay:
-        'Baş hastanın {Aına} dönük kalsın; hastayı hızla sırtüstü yatırın. Baş yastıktan geriye hafifçe sarksın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun. Şimdi baş hastanın {Aına} dönük kalsın; hastayı hızla sırtüstü yatırın. Baş yastıktan geriye hafifçe sarksın.',
       helperShort: 'Hızla sırtüstü yatırın; baş hastanın {Aına} dönük, geriye sarkık.'
     },
     {
@@ -272,7 +272,7 @@ const SUPINE_ROLL: ProtocolDef = {
     {
       id: 'roll-right',
       title: 'Baş sağa 90°',
-      say: 'Başınızı hızla sağa çevirin; sağ kulağınız yastığa değsin. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun. Şimdi başınızı hızla sağa çevirin; sağ kulağınız yastığa değsin.',
       clinician: 'Başı hızla sağa 90° çevirin. Yatay nistagmusun yönünü (yere doğru = geotropik, tavana = apogeotropik), şiddetini ve süresini kaydedin.',
       target: lie(90, 15, -42, 15),
       minHoldSec: 45,
@@ -283,7 +283,7 @@ const SUPINE_ROLL: ProtocolDef = {
       short: 'Başınızı hızla sağa çevirin; sağ kulak yastıkta.',
       helperTitle: 'Baş hastanın sağına 90°',
       helperSay:
-        'Hastanın başını iki elinizle hızla hastanın sağına çevirin; sağ kulağı yastığa değsin. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun. Şimdi hastanın başını iki elinizle hızla hastanın sağına çevirin; sağ kulağı yastığa değsin.',
       helperShort: 'Başı hızla hastanın sağına çevirin; sağ kulak yastıkta.'
     },
     {
@@ -304,7 +304,7 @@ const SUPINE_ROLL: ProtocolDef = {
     {
       id: 'roll-left',
       title: 'Baş sola 90°',
-      say: 'Başınızı hızla sola çevirin; sol kulağınız yastığa değsin. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun. Şimdi başınızı hızla sola çevirin; sol kulağınız yastığa değsin.',
       clinician: 'Başı hızla sola 90° çevirin. Nistagmusun yönünü, şiddetini ve süresini kaydedin.',
       target: lie(-90, 15, -42, 15),
       minHoldSec: 45,
@@ -315,7 +315,7 @@ const SUPINE_ROLL: ProtocolDef = {
       short: 'Başınızı hızla sola çevirin; sol kulak yastıkta.',
       helperTitle: 'Baş hastanın soluna 90°',
       helperSay:
-        'Hastanın başını iki elinizle hızla hastanın soluna çevirin; sol kulağı yastığa değsin. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun. Şimdi hastanın başını iki elinizle hızla hastanın soluna çevirin; sol kulağı yastığa değsin.',
       helperShort: 'Başı hızla hastanın soluna çevirin; sol kulak yastıkta.'
     },
     {
@@ -385,7 +385,7 @@ const EPLEY: ProtocolDef = {
       id: 'ep-1',
       title: 'Sırtüstü, baş {Aya} 45° ve sarkık',
       // Önce kısa eylem cümlesi, ayrıntı sonra; ~11 s (k05, k04; tur 2). Ayrıntı ekranda ve kısa satırda.
-      say: 'Başınız {Aya} dönük kalsın; hızla sırtüstü yatın. Başınız yastıktan geriye hafifçe sarksın. Baş dönmesi olabilir; başlarsa ekrana dokunun.',
+      say: 'Baş dönmesi olabilir; başlarsa ekrana dokunun. Şimdi başınız {Aya} dönük kalsın; hızla sırtüstü yatın. Başınız yastıktan geriye hafifçe sarksın.',
       clinician: 'Baş {Aya} 45° çevrili kalarak hasta hızla sırtüstü yatırılır; baş yatak düzleminin 20–30° altına sarkar.',
       target: lie(45, LIMITS.thetaTol, LIMITS.hangPhiMin, LIMITS.hangPhiMax),
       minHoldSec: 45,
@@ -396,7 +396,7 @@ const EPLEY: ProtocolDef = {
       short: 'Hızla sırtüstü yatın; baş {Aya} dönük, geriye sarkık.',
       helperTitle: 'Sırtüstü, baş hastanın {Aına} 45° ve sarkık',
       helperSay:
-        'Baş hastanın {Aına} dönük kalsın; hastayı hızla sırtüstü yatırın. Baş yastıktan geriye hafifçe sarksın. Baş dönmesi olabilir; hasta "dönüyor" derse ekrana siz dokunun.',
+        'Baş dönmesi olabilir; hasta "dönüyor" derse ekrana siz dokunun. Şimdi baş hastanın {Aına} dönük kalsın; hastayı hızla sırtüstü yatırın. Baş yastıktan geriye hafifçe sarksın.',
       helperShort: 'Hızla sırtüstü yatırın; baş hastanın {Aına} dönük, geriye sarkık.'
     },
     {
@@ -499,7 +499,7 @@ const SEMONT: ProtocolDef = {
     {
       id: 'se-1',
       title: '{A} yan, burun yukarı',
-      say: 'Başınızın yönü değişmesin; hızla {A} yanınıza yatın. Burnunuz yarıya kadar tavana baksın. Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun.',
+      say: 'Baş dönmesi başlarsa ekrana dokunun, geçince yeniden dokunun. Şimdi başınızın yönü değişmesin; hızla {A} yanınıza yatın. Burnunuz yarıya kadar tavana baksın.',
       clinician: 'Hasta hızla {A} yanına (etkilenen taraf) yatırılır; baş sağlam tarafa 45° çevrili kalır, burun yukarı 45°.',
       target: lie(45, 12, -30, 30),
       minHoldSec: 60,
@@ -509,7 +509,7 @@ const SEMONT: ProtocolDef = {
       short: 'Hızla {A} yanınıza yatın; burun yukarı.',
       helperTitle: 'Hastanın {A} yanı, burun yukarı',
       helperSay:
-        'Başın yönü değişmesin; hastayı hızla {A} yanına yatırın. Burnu yarıya kadar tavana baksın. Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun.',
+        'Hasta "dönüyor" derse ekrana siz dokunun; geçince yeniden dokunun. Şimdi başın yönü değişmesin; hastayı hızla {A} yanına yatırın. Burnu yarıya kadar tavana baksın.',
       helperShort: 'Hızla {A} yanına yatırın; burun yukarı.'
     },
     {
@@ -580,7 +580,7 @@ const BBQ_ROLL: ProtocolDef = {
     {
       id: 'bbq-0',
       title: 'Sırtüstü, baş {Aya} 90°',
-      say: 'Sırtüstü yatın ve başınızı {Aya} 90 derece çevirin; {A} kulağınız yastığa değsin. Baş dönmesi olabilir; başlarsa ekrana dokunun.',
+      say: 'Baş dönmesi olabilir; başlarsa ekrana dokunun. Şimdi sırtüstü yatın ve başınızı {Aya} 90 derece çevirin; {A} kulağınız yastığa değsin.',
       clinician: 'Hasta sırtüstü; baş {Aya} 90° çevrili ({A} kulak altta).',
       target: lie(90, 15, -42, 20),
       minHoldSec: 45,
@@ -590,7 +590,7 @@ const BBQ_ROLL: ProtocolDef = {
       observe: true,
       short: 'Sırtüstü; baş {Aya} 90°, {A} kulak yastıkta.',
       helperTitle: 'Sırtüstü, baş hastanın {Aına} 90°',
-      helperSay: 'Hastayı sırtüstü yatırın ve başını hastanın {Aına} çevirin; {A} kulağı yastığa değsin. Hasta "dönüyor" derse ekrana siz dokunun.',
+      helperSay: 'Hasta "dönüyor" derse ekrana siz dokunun. Şimdi hastayı sırtüstü yatırın ve başını hastanın {Aına} çevirin; {A} kulağı yastığa değsin.',
       helperShort: 'Sırtüstü; baş hastanın {Aına} 90°.'
     },
     {

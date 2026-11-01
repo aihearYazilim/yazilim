@@ -18,7 +18,7 @@ import { emptyData, type Episode } from '../../../state/types';
 import { PeriodReport } from './History';
 import { PatientHome } from './PatientHome';
 import { Onboarding } from './Onboarding';
-import { PrescriptionImport } from './PrescriptionImport';
+import { PrescriptionImport, rxCardSpeech } from './PrescriptionImport';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -128,6 +128,32 @@ describe('reçete kartı (kullanıcı turu 4, k05)', () => {
     const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 7 });
     mount(`/recete/${token}`);
     expect(byTestId('rx-dx')!.textContent).toBe('SAĞ kulak — arka kanal kristal oynaması (BPPV)');
+    expect(byTestId('rx-override-line')).toBeNull();
+  });
+
+  it('yatay kanal + uyarıya rağmen: kartta "yatay kanal", BBQ roll ve "Hekim uyarıya rağmen verdi"; kabul edince profil yatay kanal (kullanıcı turu yeni-1, L4-1/L4-2)', () => {
+    const d = emptyData();
+    d.settings = { ...d.settings, speech: false };
+    store.update(() => d);
+    const token = encodePrescription({ v: 1, side: 'L', canal: 'HC', maneuver: 'bbq-roll', date: '2026-10-30', perDay: 2, days: 3, ov: 'muayenede göz titremesi 1 dakikadan uzun sürdü' });
+    mount(`/recete/${token}`);
+    expect(byTestId('rx-dx')!.textContent).toBe('SOL kulak — yatay kanal kristal oynaması (BPPV)');
+    expect(byTestId('rx-maneuver')!.textContent).toBe('BBQ roll');
+    expect(byTestId('rx-override-line')!.textContent).toMatch(/^Hekim uyarıya rağmen verdi: muayenede göz titremesi 1 dakikadan uzun sürdü\./);
+    act(() => byTestId('rx-accept')!.click());
+    const p = store.get().patient!;
+    expect(p).toMatchObject({ canal: 'HC', side: 'L', diagnosedByDoctor: true });
+    expect(p.prescription).toMatchObject({ canal: 'HC', maneuver: 'bbq-roll', ov: 'muayenede göz titremesi 1 dakikadan uzun sürdü' });
+  });
+
+  it('sesli metin de kanalı, manevrayı ve uyarıyı söyler', () => {
+    const say = rxCardSpeech(
+      { v: 3, side: 'R', canal: 'HC', maneuver: 'bbq-roll', date: '2026-10-30', perDay: 2, days: 3, ov: 'tanı uygulamada onaylanmadan verildi' },
+      { expired: false, future: false, contraLabels: [] }
+    );
+    expect(say).toMatch(/Tanı: sağ kulak, yatay kanal kristal oynaması\./);
+    expect(say).toMatch(/Manevra: BBQ roll\./);
+    expect(say).toMatch(/Hekim uyarıya rağmen verdi: tanı uygulamada onaylanmadan verildi\./);
   });
 });
 

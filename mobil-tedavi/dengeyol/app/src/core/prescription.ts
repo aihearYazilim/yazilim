@@ -3,26 +3,45 @@
  *
  * Biçim: <base64url(JSON)>.<FNV-1a 32 bit sağlama toplamı (hex)>
  * Sağlama toplamı yazım/kopyalama hatalarını yakalar; güvenlik imzası DEĞİLDİR (bağlantıyı elinde tutan herkes
- * benzerini üretebilir). Reçete yalnızca arka kanal manevralarını (Epley/Semont) ve sınırlı dozu açabilir;
- * hasta yine her seansta kırmızı bayrak sorularını yanıtlar.
+ * benzerini üretebilir). Reçete arka kanal (Epley/Semont) ya da yatay kanal (BBQ roll) manevrasını ve sınırlı dozu
+ * açabilir; hasta yine her seansta kırmızı bayrak sorularını yanıtlar.
  *
  * Sürümler (eski bağlantılar çözülmeye devam eder):
  *   v1  ilk biçim.
  *   v2  v1 + isteğe bağlı hasta kodu (`pid`). Hasta kodu yoksa reçete yine v1 olarak üretilir (eski uygulamalar da okur);
  *       hasta kodu varsa v2 üretilir (v1'i bilen eski bir uygulama "güncelleyin" der, kodu sessizce düşürmez).
+ *   v3  v2 + yatay kanal (`canal: 'HC'`, `maneuver: 'bbq-roll'`) ve hekimin uyarıya rağmen verdiği reçetenin notu (`ov`).
+ *       Yalnız bunlardan biri varsa v3 üretilir; arka kanal reçetesi uyarısızsa v1/v2 kalır (eski uygulamalar okur). v3'ü
+ *       bilmeyen eski uygulama "farklı bir sürüm, uygulamayı güncelleyin" der: yatay kanalı arka kanal sanmaz, uyarı
+ *       notunu sessizce düşürmez (kullanıcı turu yeni-1, L4-1/L4-2).
  */
-import type { Side } from './protocols';
+import type { ProtocolId, Side } from './protocols';
 import { clampDose, type DoseLimits } from './safety';
 
-export type PrescriptionVersion = 1 | 2;
+export type PrescriptionVersion = 1 | 2 | 3;
+
+/** Reçetenin kanalı: arka (Dix-Hallpike → Epley/Semont) ya da yatay (sırtüstü baş çevirme → BBQ roll). */
+export type RxCanal = 'PC' | 'HC';
+/** Arka kanal reçete manevraları. */
+export type RxPcManeuver = 'epley' | 'semont';
+/**
+ * Yatay kanal reçete manevrası: BBQ roll (hasta modu yatay kanalı geotropik varsayımla BBQ roll ile tedavi eder). Gufoni
+ * hasta modunda yok (protocols.ts `patient: 'no'`); eklenirse buraya ve hasta akışının manevra seçimine birlikte girer.
+ */
+export type RxHcManeuver = 'bbq-roll';
+export type RxManeuver = RxPcManeuver | RxHcManeuver;
+
+export const RX_PC_MANEUVERS: readonly RxPcManeuver[] = ['epley', 'semont'];
+export const RX_HC_MANEUVERS: readonly RxHcManeuver[] = ['bbq-roll'];
 
 export interface Prescription {
-  /** Biçim sürümü; normalizePrescription hasta koduna göre kendisi belirler. */
+  /** Biçim sürümü; normalizePrescription kanal, uyarı notu ve hasta koduna göre kendisi belirler. */
   v: PrescriptionVersion;
   /** Etkilenen taraf. */
   side: Side;
-  canal: 'PC';
-  maneuver: 'epley' | 'semont';
+  /** Kanal (v1/v2'de yalnız 'PC'). Manevrayla tutarlı olmalı (normalizePrescription manevradan çıkarır). */
+  canal: RxCanal;
+  maneuver: RxManeuver;
   /** Muayene tarihi (YYYY-AA-GG). */
   date: string;
   /** Reçeteyi yazan (isteğe bağlı). */
@@ -36,6 +55,11 @@ export interface Prescription {
    * yazılır; hekim WhatsApp'tan gelen raporu kendi kaydıyla eşleştirir. En çok PID_MAX_LEN karakter.
    */
   pid?: string;
+  /**
+   * Hekim reçeteyi bir uyarıya rağmen verdiyse uyarının hastaya yönelik kısa adı (v3; ör. "muayene bulgusu beyin kaynaklı
+   * baş dönmesini düşündürüyor"). Hastanın reçete kartında "Hekim uyarıya rağmen verdi: …" satırı olarak görünür.
+   */
+  ov?: string;
 }
 
 /** Hasta kodunun en çok uzunluğu (klinisyen hasta kodu alanıyla aynı). */
@@ -74,13 +98,56 @@ function cleanText(s: unknown, max: number = MAX_TEXT): string | undefined {
   return t.length ? t : undefined;
 }
 
+const isHcManeuver = (m: unknown): m is RxHcManeuver => (RX_HC_MANEUVERS as readonly unknown[]).includes(m);
+const isPcManeuver = (m: unknown): m is RxPcManeuver => (RX_PC_MANEUVERS as readonly unknown[]).includes(m);
+
+/** Reçetenin kanalı (manevradan; eski kayıtlarda alan hep 'PC'). */
+export function rxCanalOf(p: Pick<Prescription, 'maneuver'>): RxCanal {
+  return isHcManeuver(p.maneuver) ? 'HC' : 'PC';
+}
+
+/** Reçete manevrasının görünen adı: "Epley", "Semont", "BBQ roll". */
+export function rxManeuverName(p: Pick<Prescription, 'maneuver'>): string {
+  return p.maneuver === 'epley' ? 'Epley' : p.maneuver === 'semont' ? 'Semont' : 'BBQ roll';
+}
+
+/** Reçete kanalının adı: "arka kanal" / "yatay kanal". */
+export function rxCanalName(p: Pick<Prescription, 'maneuver'>): string {
+  return rxCanalOf(p) === 'HC' ? 'yatay kanal' : 'arka kanal';
+}
+
+/** Reçetenin yürütücüdeki protokolü (ProtocolId). */
+export function rxProtocolId(p: Pick<Prescription, 'maneuver'>): ProtocolId {
+  return p.maneuver;
+}
+
+/**
+ * Arka kanal manevrası (hasta akışında arka kanal yolu için): reçete arka kanalsa onun manevrası, yatay kanalsa ya da reçete
+ * yoksa Epley (arka kanal varsayılanı).
+ */
+export function rxPcManeuver(p: Pick<Prescription, 'maneuver'> | undefined | null): RxPcManeuver {
+  return p && isPcManeuver(p.maneuver) ? p.maneuver : 'epley';
+}
+
+/** Ev raporu bağlantısındaki (core/reportShare.ts) tek harfli manevra kodu: e/s (eski), b (BBQ roll). */
+export function rxManeuverWire(m: RxManeuver): 'e' | 's' | 'b' {
+  return m === 'epley' ? 'e' : m === 'semont' ? 's' : 'b';
+}
+
+/** Tek harfli manevra kodundan manevra (bilinmeyen harf eski davranışla Semont sayılır). */
+export function rxManeuverFromWire(c: unknown): RxManeuver {
+  return c === 'e' ? 'epley' : c === 'b' ? 'bbq-roll' : 'semont';
+}
+
 export function normalizePrescription(p: Prescription): Prescription {
   const dose: DoseLimits = clampDose({ maxPerDay: p.perDay, maxDays: p.days });
   const pid = cleanText(p.pid, PID_MAX_LEN);
+  const ov = cleanText(p.ov, OV_MAX_LEN);
+  const canal = rxCanalOf(p);
   const out: Prescription = {
-    v: pid ? 2 : 1,
+    v: canal === 'HC' || ov ? 3 : pid ? 2 : 1,
     side: p.side,
-    canal: 'PC',
+    canal,
     maneuver: p.maneuver,
     date: p.date,
     by: cleanText(p.by),
@@ -90,8 +157,12 @@ export function normalizePrescription(p: Prescription): Prescription {
     note: cleanText(p.note)
   };
   if (pid) out.pid = pid;
+  if (ov) out.ov = ov;
   return out;
 }
+
+/** Uyarı notunun en çok uzunluğu. */
+export const OV_MAX_LEN = 120;
 
 export function encodePrescription(p: Prescription): string {
   const json = JSON.stringify(normalizePrescription(p));
@@ -114,10 +185,14 @@ export function decodePrescription(token: string): { ok: true; value: Prescripti
   }
   if (!obj || typeof obj !== 'object') return { ok: false, error: 'FORMAT' };
   const o = obj as Record<string, unknown>;
-  if (o.v !== 1 && o.v !== 2) return { ok: false, error: 'VERSION' };
+  if (o.v !== 1 && o.v !== 2 && o.v !== 3) return { ok: false, error: 'VERSION' };
   if (o.side !== 'R' && o.side !== 'L') return { ok: false, error: 'FIELDS' };
-  if (o.canal !== 'PC') return { ok: false, error: 'FIELDS' };
-  if (o.maneuver !== 'epley' && o.maneuver !== 'semont') return { ok: false, error: 'FIELDS' };
+  // Kanal ve manevra tutarlı olmalı; yatay kanal yalnız v3'te.
+  if (o.canal === 'PC') {
+    if (!isPcManeuver(o.maneuver)) return { ok: false, error: 'FIELDS' };
+  } else if (o.canal === 'HC' && o.v === 3) {
+    if (!isHcManeuver(o.maneuver)) return { ok: false, error: 'FIELDS' };
+  } else return { ok: false, error: 'FIELDS' };
   if (typeof o.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(o.date)) return { ok: false, error: 'FIELDS' };
   if (typeof o.perDay !== 'number' || typeof o.days !== 'number') return { ok: false, error: 'FIELDS' };
   return {
@@ -125,8 +200,8 @@ export function decodePrescription(token: string): { ok: true; value: Prescripti
     value: normalizePrescription({
       v: o.v,
       side: o.side,
-      canal: 'PC',
-      maneuver: o.maneuver,
+      canal: o.canal,
+      maneuver: o.maneuver as RxManeuver,
       date: o.date,
       by: o.by as string | undefined,
       clinic: o.clinic as string | undefined,
@@ -134,7 +209,9 @@ export function decodePrescription(token: string): { ok: true; value: Prescripti
       days: o.days,
       note: o.note as string | undefined,
       // v1 bağlantısında hasta kodu yoktur; olsa da (elle üretilmiş) yok sayılır.
-      pid: o.v === 2 ? (o.pid as string | undefined) : undefined
+      pid: o.v >= 2 ? (o.pid as string | undefined) : undefined,
+      // Uyarı notu yalnız v3'te.
+      ov: o.v === 3 ? (o.ov as string | undefined) : undefined
     })
   };
 }
@@ -222,6 +299,7 @@ export function prescriptionUrl(baseUrl: string, p: Prescription): string {
 export const DECODE_ERROR_TEXT: Record<DecodeError, string> = {
   FORMAT: 'Reçete bağlantısı okunamadı. Bağlantının tamamını kopyaladığınızdan emin olun.',
   CHECKSUM: 'Reçete bağlantısı bozulmuş ya da eksik. Hekiminizden ya da odyoloğunuzdan yeni bağlantı isteyin.',
-  VERSION: 'Bu reçete, uygulamanın farklı bir sürümüyle oluşturulmuş. Uygulamayı güncelleyin.',
+  VERSION:
+    'Bu reçete, uygulamanın daha yeni bir sürümüyle oluşturulmuş. Uygulamayı güncelleyin (kapatıp yeniden açın), sonra bağlantıyı yeniden açın ya da QR kodu yeniden okutun.',
   FIELDS: 'Reçetede eksik ya da geçersiz bilgi var. Hekiminizden ya da odyoloğunuzdan yeni bağlantı isteyin.'
 };

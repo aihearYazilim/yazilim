@@ -2,7 +2,7 @@
  * Hasta atak raporunun metinleri (ekran raporu ve hekime gönderilen düz metin aynı kaynaktan).
  * İç kodlar (endNote, StopReason, kırmızı bayrak kimliği) burada Türkçe cümleye çevrilir; ham kod rapora yazılmaz.
  */
-import { type Prescription, rxCode, rxIssuedAt, rxLastValidDay, rxValidAt, rxValidityLabel, rxValidUntil } from '../../../core/prescription';
+import { type Prescription, rxCanalName, rxCode, rxIssuedAt, rxLastValidDay, rxValidAt, rxValidityLabel, rxValidUntil } from '../../../core/prescription';
 import { wrapDeg } from '../../../core/geometry';
 import { capitalizeTr, type ProtocolId, PROTOCOLS, resolveProtocol, type Side, sideName, type StepDef } from '../../../core/protocols';
 import { recordStats, STOP_REASON_TEXT, type StepRecord, type StopReason, vertigoSummary, stopReasonTextFor, PRONE_ARRIVAL_TEXT, REACH_TOUCHED_ONLY_TEXT } from '../../../core/runner';
@@ -323,7 +323,7 @@ const DX_WHEN_TEXT: Record<NonNullable<PatientProfile['dxWhen']>, string> = {
 export function priorDiagnosisText(p: PatientProfile | undefined): string {
   if (p?.prescription) {
     const rx = p.prescription;
-    return `Reçete: ${sideName(rx.side)} arka kanal, ${PROTOCOLS[rx.maneuver].shortName}, günde en çok ${rx.perDay}, ${rx.days} gün`;
+    return `Reçete: ${sideName(rx.side)} ${rxCanalName(rx)}, ${PROTOCOLS[rx.maneuver].shortName}, günde en çok ${rx.perDay}, ${rx.days} gün${rx.ov ? ` (hekim uyarıya rağmen verdi: ${rx.ov})` : ''}`;
   }
   if (p?.diagnosedByDoctor) {
     const canal = p.canal === 'PC' ? 'arka kanal' : p.canal === 'HC' ? 'yatay kanal' : 'kanal bilinmiyor';

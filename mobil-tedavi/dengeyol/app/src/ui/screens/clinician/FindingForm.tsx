@@ -17,6 +17,23 @@ export const emptyFinding = (): Finding => ({ nystagmus: 'none', latencySec: nul
 
 const NOTE_MAX = 200;
 
+/**
+ * Her nistagmus tipinin kısa "nasıl görünür" açıklaması (çıplak gözle muayene eden, uzman olmayan hekim için; kullanıcı turu
+ * yeni-1, L4-4 / y08). Yön, hastanın gözünün hareketinin hızlı evresidir.
+ */
+export const NYSTAGMUS_HELP: Record<NystagmusType, string> = {
+  none: 'Gözler sabit; ritmik vuruş yok.',
+  'upbeat-torsional': 'Göz alına doğru hızlı vurur ve aynı anda döner (üst kutup alttaki kulağa). Gecikmeyle başlar, 1 dakikadan kısa sürer.',
+  'downbeat-torsional': 'Göz çeneye doğru vurur ve hafifçe döner.',
+  'horizontal-geotropic': 'Göz yana vurur; baş hangi yana dönükse o yana, yere doğru.',
+  'horizontal-apogeotropic': 'Göz yana vurur; baş hangi yana dönükse ters yöne, tavana doğru.',
+  'downbeat-pure': 'Göz yalnız çeneye doğru vurur, dönme bileşeni yok. Santral nedenleri düşündürür.',
+  other: 'Yukarıdakilere uymayan desen: yön değiştiren, saf dönme, pozisyondan bağımsız ya da emin olamadığınız yön.'
+};
+
+/** "Emin değilim" kısa yolu nota bu cümleyi yazar (rapor ve HBYS notunda görünür). */
+export const UNSURE_NOTE = 'Nistagmus emin değil; hasta baş dönmesi bildirdi.';
+
 type TriState = 'yes' | 'no' | 'unset';
 const toTri = (b: boolean | undefined): TriState => (b === undefined ? 'unset' : b ? 'yes' : 'no');
 const fromTri = (t: TriState): boolean | undefined => (t === 'unset' ? undefined : t === 'yes');
@@ -51,6 +68,13 @@ export function FindingForm({
   const [reversal, setReversal] = useState<TriState>(toTri(initial.reversalOnSitting));
   const [method, setMethod] = useState<ObservationMethod | null>(initial.method ?? defaultMethod ?? null);
   const [note, setNote] = useState(initial.note ?? '');
+  const naked = (initial.method ?? defaultMethod) === 'çıplak göz';
+  /** "Emin değilim, baş dönmesi var": nistagmus yok + baş dönmesi var + not (y08: çıplak gözle torsiyon/tip seçilemedi). */
+  const markUnsure = () => {
+    setNys('none');
+    setVertigo(true);
+    if (!note.includes(UNSURE_NOTE)) setNote((n) => (n.trim() ? `${UNSURE_NOTE} ${n.trim()}` : UNSURE_NOTE).slice(0, NOTE_MAX));
+  };
   const num = (s: string) => (s.trim() === '' ? null : Math.max(0, Math.round(Number(s))));
   const needIntensity = showIntensity && nys !== null && nys !== 'none';
   const torsional = nys === 'upbeat-torsional' || nys === 'downbeat-torsional';
@@ -61,6 +85,20 @@ export function FindingForm({
     (dur === '' || Number.isFinite(Number(dur))) &&
     (!needIntensity || intensity !== null);
   const hasExtra = initial.fatigue !== undefined || initial.reversalOnSitting !== undefined || !!initial.note;
+  // Kaydet kapalıysa nedeni (y08: roll formunda "Şiddet" fark edilmedi).
+  const whyDisabled =
+    nys === null
+      ? 'nistagmus yanıtını seçin'
+      : needIntensity && intensity === null
+        ? 'şiddeti seçin'
+        : !(lat === '' || Number.isFinite(Number(lat))) || !(dur === '' || Number.isFinite(Number(dur)))
+          ? 'gecikme ve süreyi sayı olarak yazın'
+          : null;
+  const unsureBtn = (
+    <button type="button" className={`btn ${naked ? 'secondary' : 'ghost'} block`} onClick={markUnsure} data-testid="finding-unsure">
+      Emin değilim, hasta baş dönmesi bildirdi
+    </button>
+  );
 
   const save = () => {
     const f: Finding = {
@@ -87,12 +125,25 @@ export function FindingForm({
       <h2>{title}</h2>
       <div className="field">
         <label>Nistagmus</label>
+        {/* Çıplak gözle muayenede "emin değilim" kısa yolu listenin önünde (y08). */}
+        {naked && unsureBtn}
         <Choice
           name="Nistagmus"
           value={nys}
           onChange={setNys}
           options={ORDER.map((t) => ({ value: t, label: NYSTAGMUS_LABEL[t] }))}
         />
+        <details className="small" data-testid="finding-help">
+          <summary>Nasıl görünür?</summary>
+          <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            {ORDER.map((t) => (
+              <li key={t}>
+                <strong>{NYSTAGMUS_LABEL[t]}:</strong> {NYSTAGMUS_HELP[t]}
+              </li>
+            ))}
+          </ul>
+        </details>
+        {!naked && unsureBtn}
       </div>
       {nys !== 'none' && (
         <div className="row">
@@ -108,7 +159,11 @@ export function FindingForm({
       )}
       {showIntensity && nys !== 'none' && (
         <div className="field">
-          <label>Şiddet (zorunlu: yatay kanalda taraf iki tarafın şiddeti karşılaştırılarak belirlenir)</label>
+          <label>Şiddet (zorunlu)</label>
+          <p className="small muted" style={{ margin: 0 }} data-testid="finding-intensity-help">
+            Nistagmusun (göremediyseniz hastanın baş dönmesinin) yoğunluğu. İki yanı birbirine göre puanlayın: yatay kanalda taraf iki yanın şiddeti
+            karşılaştırılarak belirlenir.
+          </p>
           <Segmented
             label="Şiddet"
             value={intensity}
@@ -205,14 +260,23 @@ export function FindingForm({
           </div>
         </div>
       </details>
-      <div className="row sticky-actions">
-        <button className="btn primary grow" disabled={!valid} onClick={save} data-testid="finding-save">
-          Kaydet
-        </button>
-        {onCancel && (
-          <button className="btn secondary" onClick={onCancel}>
-            Vazgeç
+      {/* Sabit "Kaydet" çubuğu son seçeneği ve alan başlıklarını örtmesin (y08). */}
+      <div aria-hidden="true" style={{ height: 24 }} />
+      <div className="sticky-actions stack" style={{ gap: 4 }}>
+        <div className="row">
+          <button className="btn primary grow" disabled={!valid} onClick={save} data-testid="finding-save">
+            Kaydet
           </button>
+          {onCancel && (
+            <button className="btn secondary" onClick={onCancel}>
+              Vazgeç
+            </button>
+          )}
+        </div>
+        {whyDisabled && (
+          <p className="small muted" style={{ margin: 0 }} data-testid="finding-save-why">
+            Kaydetmek için {whyDisabled}.
+          </p>
         )}
       </div>
     </div>

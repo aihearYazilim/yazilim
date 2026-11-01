@@ -71,12 +71,14 @@ export function SimPanel() {
   return (
     <>
       <div className="sim-badge" role="status">DEMO MODU · sanal sensör · tedavi amaçlı değildir</div>
+      {/* Demo paneline dokunmak süren yönergeyi susturmaz (data-keep-speech): incelemelerde panelin kestiği cümle
+          uygulamanın kesmesi sanılıyordu (yeni kullanıcı turu 1, y03/y07). */}
       {!target ? null : !open ? (
-        <button className="btn secondary sim-toggle" onClick={() => setOpen(true)} data-testid="sim-open" aria-label="Demo panelini aç">
+        <button className="btn secondary sim-toggle" onClick={() => setOpen(true)} data-testid="sim-open" aria-label="Demo panelini aç" data-keep-speech>
           <Icon name="head" /> Sanal baş
         </button>
       ) : (
-        <div className="sim-panel" data-testid="sim-panel">
+        <div className="sim-panel" data-testid="sim-panel" data-keep-speech>
           <div className="row">
             <strong className="grow">Sanal baş (demo)</strong>
             <button className="btn icon" onClick={() => setOpen(false)} aria-label="Kapat">

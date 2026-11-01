@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type Finding, RX_OVERRIDE_HINT, rxFindingWarning, suggestDiagnosis, torsionSide } from './diagnosis';
+import { centralFindings, centralWarningText, type Finding, RX_OVERRIDE_HINT, rxFindingWarning, suggestDiagnosis, torsionSide } from './diagnosis';
 
 const f = (p: Partial<Finding>): Finding => ({
   nystagmus: 'none',
@@ -8,6 +8,24 @@ const f = (p: Partial<Finding>): Finding => ({
   intensity: 0,
   vertigo: false,
   ...p
+});
+
+describe('santral örüntü (kullanıcı turu yeni-1, L4-2)', () => {
+  const g = (p: Partial<Finding>): Finding => ({ nystagmus: 'none', latencySec: null, durationSec: null, intensity: 0, vertigo: false, ...p });
+  it('saf aşağı vuran, atipik ve ≥1 dk bulguları adıyla sayar (önce güçlü olanlar); tipik bulguda boş', () => {
+    const list = centralFindings(
+      { dhR: g({ nystagmus: 'upbeat-torsional', latencySec: 1, durationSec: 70 }), dhL: g({ nystagmus: 'downbeat-pure', durationSec: 20 }) },
+      { rollR: g({ nystagmus: 'other' }) }
+    );
+    expect(list.map((c) => c.name)).toEqual([
+      'Sol Dix-Hallpike: saf aşağı vuran nistagmus',
+      'Tekrar test · Sırtüstü baş sağa (roll): atipik nistagmus deseni',
+      'Sağ Dix-Hallpike: nistagmus 70 s sürdü (≥1 dk)'
+    ]);
+    expect(centralWarningText(list)).toMatch(/^Santral örüntü — Sol Dix-Hallpike: saf aşağı vuran nistagmus; .*nörolojik değerlendirme, gerekirse MR\.$/);
+    expect(centralFindings({ dhR: g({ nystagmus: 'upbeat-torsional', latencySec: 3, durationSec: 20 }), dhL: g({}) })).toEqual([]);
+    expect(centralWarningText([])).toBeNull();
+  });
 });
 
 describe('tanı önerisi', () => {

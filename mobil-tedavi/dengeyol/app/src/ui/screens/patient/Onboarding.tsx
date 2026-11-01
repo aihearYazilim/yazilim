@@ -21,6 +21,7 @@ import {
 import { unlockAudio } from '../../../platform/feedback';
 import { speech } from '../../../platform/speech';
 import { localDayKey } from '../../../core/safety';
+import { rxCanalName, rxManeuverName } from '../../../core/prescription';
 import { dxIsRecent, dxRecentAnswerExpired } from '../../../state/dxTiming';
 import { formatDate } from '../../../state/episodes';
 import { store, useData } from '../../../state/store';
@@ -330,7 +331,7 @@ function PatientInfo({ focus }: { focus: 'dx' | 'contra' | null }) {
           <div className="notice ok">
             <Icon name="check" />
             <span>
-              Reçeteniz yüklü: <strong>{rx.side === 'R' ? 'sağ' : 'sol'} arka kanal</strong>, {rx.maneuver === 'epley' ? 'Epley' : 'Semont'} manevrası.
+              Reçeteniz yüklü: <strong>{rx.side === 'R' ? 'sağ' : 'sol'} {rxCanalName(rx)}</strong>, {rxManeuverName(rx)} manevrası.
             </span>
           </div>
         )}

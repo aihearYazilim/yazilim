@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { contraindicationsFor } from '../../core/safety';
+import { rxCanalName } from '../../core/prescription';
 import { speech, Speech, SPEECH_RATES, SPEECH_SAMPLE } from '../../platform/speech';
 import { tones } from '../../platform/tones';
 import { haptics } from '../../platform/haptics';
@@ -21,7 +22,7 @@ export function patientInfoSummary(p: PatientProfile | undefined): { dx: string;
   const sideTxt = (s: string | undefined) => (s === 'R' ? 'sağ kulak' : s === 'L' ? 'sol kulak' : 'kulak bilinmiyor');
   const canalTxt = (c: string | undefined) => (c === 'PC' ? 'arka kanal' : c === 'HC' ? 'yatay kanal' : 'kanal bilinmiyor');
   const dx = rx
-    ? `Reçete: ${sideTxt(rx.side)}, arka kanal`
+    ? `Reçete: ${sideTxt(rx.side)}, ${rxCanalName(rx)}`
     : p?.diagnosedByDoctor
       ? `Hekim tanısı: ${canalTxt(p.canal)}, ${sideTxt(p.side)}`
       : 'Girilmedi (her atakta iki taraf test edilir)';
