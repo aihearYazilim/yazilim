@@ -73,6 +73,8 @@ import {
   type NextAction
 } from '../../../state/episodes';
 import { logOverride } from '../../../state/overrides';
+import { ackNeuroAlert, emergencyOverridden, neuroAlertFor } from '../../../state/neuroAlert';
+import { NeuroAlertStrip } from './NeuroAlert';
 import { activeEpisode, store, uid, useData } from '../../../state/store';
 import type { Episode, ManeuverLog } from '../../../state/types';
 import { CheckList, Choice, choiceSpeech, ListenAgain, Segmented, takeTapRect, useTapLock } from '../../components/Controls';
@@ -102,6 +104,15 @@ import {
   CONTRA_WARN_TITLE,
   contraWarnText,
   decisionScreen,
+  EMERGENCY_REMINDER_SPOKEN,
+  EMERGENCY_REMINDER_TEXT,
+  NEURO_END_SPOKEN,
+  NEURO_END_TEXT,
+  NEURO_END_TITLE,
+  NOT_TRIGGERED_NOTE,
+  overrideCountdownLabel,
+  RED_FLAG_OVERRIDE_MIN_MS,
+  redFlagIcon,
   DOSE_WARN_TITLE,
   doseWarnSpoken,
   LONG_IN_MANEUVER_NOTE,
@@ -115,8 +126,10 @@ import {
   prepSpokenShort,
   RED_FLAG_WARN_TITLE,
   redFlagAnswers,
+  RED_FLAG_CONFIRM_CONSEQUENCE,
   redFlagCheckSub,
   redFlagCheckText,
+  redFlagToggleSpoken,
   RED_FLAGS_SPOKEN,
   RED_FLAGS_TITLE,
   redFlagsSpokenFull,
@@ -199,6 +212,8 @@ type Stage =
       note?: string;
       /** Güvenlik durdurmasından sonra "Yeniden dene": aynı test/manevra; aşma kaydı `kind`. */
       retry?: { run: RunStage; kind: string };
+      /** Büyük "112'yi ara" düğmesi (manevra sonrası yeni belirti uyarısı aşıldı; L2-1). */
+      call112?: boolean;
     };
 
 function updateEpisode(id: string, fn: (e: Episode) => Episode) {
@@ -580,7 +595,7 @@ export function EpisodeFlow() {
       if (phoneOn) {
         setEpisodeSide(dec.side!);
         setStage({ k: 'chainGate', d: dec, dxWarn });
-      } else startManeuver(dec.side!, maneuverFor(canal, pcManeuver));
+      } else startManeuver(dec.side!, maneuverFor(canal, pcManeuver), undefined, { auto: true });
       return;
     }
     setStage({ k: 'decision', d: dec, look: phoneOn });
@@ -599,14 +614,15 @@ export function EpisodeFlow() {
           : `${sideName(s)} taraf${differs ? ` (uygulamanın önerisi: ${sideName(dec.side!)})` : ''}`;
       if (warnKind) note(warnKind, detail);
       else if (differs || !dec.side) note('USER_CHOICE', detail);
-      startManeuver(s, protocolId);
+      // Seçimden sonra manevra doğrudan başlar (ayrı "Başlat" ekranı ve ikinci "Kim yapıyor" sorusu yok; y01).
+      startManeuver(s, protocolId, undefined, { auto: true });
       return;
     }
     if (v === 'both') {
       const first: Side = dec.side ?? 'R';
       const second: Side = first === 'R' ? 'L' : 'R';
       note(warnKind ?? 'USER_CHOICE', `İki tarafa sırayla: önce ${sideName(first)}, sonra ${sideName(second)}`);
-      startManeuver(first, protocolId, second);
+      startManeuver(first, protocolId, second, { auto: true });
       return;
     }
     if (v === 'test:PC' || v === 'test:HC') {
@@ -623,7 +639,7 @@ export function EpisodeFlow() {
         title: 'Bugün baş dönmesi başlamadı',
         remindAt: nextMorning(Date.now()),
         remindTitle: 'DengeYol: sabah testi',
-        text: 'Kristaller kendiliğinden yerine oturmuş olabilir. Yarın sabah yeniden test edelim. Baş dönmesi sürerse ana ekrandan yeniden başlayın ya da hekiminize başvurun.',
+        text: `${NOT_TRIGGERED_NOTE} Kristaller kendiliğinden yerine oturmuş da olabilir: yarın sabah yeniden test edelim.`,
         testid: 'end-not-triggered'
       });
       return;
@@ -814,6 +830,15 @@ export function EpisodeFlow() {
     };
   };
 
+  /**
+   * Manevra sonrası "Yeni belirti" uyarısı aşıldı (L2-1; y05): olağan "Manevra tamamlandı" (rahatlatıcı metin, dinlenme
+   * sayacı, tekrar testi saati, hatırlatıcı) gösterilmez; kırmızı 112 ekranı. Kilit yok: ana ekrana dönülebilir.
+   */
+  const neuroEndStage = (): Stage => {
+    longVertigoRef.current = false;
+    return { k: 'end', tone: 'danger', title: NEURO_END_TITLE, text: NEURO_END_TEXT, testid: 'end-neuro', spoken: NEURO_END_SPOKEN, call112: true };
+  };
+
   const onRetestExit = (o: RunnerOutcome, side: Side, protocolId: ProtocolId) => {
     if (notStarted(o)) return;
     if (o.phase === 'aborted' && o.state.stopReason === 'USER_FEELS_UNWELL') return stopUnwell('retest', side);
@@ -889,6 +914,30 @@ export function EpisodeFlow() {
   };
 
   // ---- Görünüm ------------------------------------------------------------------------------------
+  // Manevra sonrası yeni belirti (24 saat ya da yanıtlanana dek): akışın ekranlarında kırmızı 112 şeridi (L2-1).
+  const neuroAlert = mode === 'practice' ? null : neuroAlertFor(d, Date.now());
+  // Acil uyarısı aşıldıysa yürütücüde ve karar ekranında kısa kırmızı hatırlatma (L2-2).
+  const emergencyReminder = mode !== 'practice' && (!!neuroAlert || emergencyOverridden(activeEpisode(d)));
+  const reminderNotice = emergencyReminder ? (
+    <div className="notice danger" data-testid="emergency-reminder">
+      <Icon name="alert" />
+      <span>{EMERGENCY_REMINDER_TEXT}</span>
+    </div>
+  ) : null;
+  /** Yürütücünün giriş notu: varsa kırmızı hatırlatma önce. */
+  const withReminder = (intro: React.ReactNode) =>
+    reminderNotice ? (
+      <>
+        {reminderNotice}
+        {intro}
+      </>
+    ) : (
+      intro
+    );
+  /** Yürütücü başında okunan not: varsa kırmızı hatırlatma önce. */
+  const reminderNote = (note?: string) => (emergencyReminder ? [EMERGENCY_REMINDER_SPOKEN, note].filter(Boolean).join(' ') : note);
+  const showStrip = !!neuroAlert && !isRun(stage) && stage.k !== 'stop' && !(stage.k === 'end' && stage.call112) && stage.k !== 'chainGate' && stage.k !== 'nextSideGate' && stage.k !== 'sideRest';
+  const renderStage = (): React.ReactElement | null => {
   switch (stage.k) {
     case 'practiceLimit':
       return (
@@ -898,6 +947,7 @@ export function EpisodeFlow() {
             <h2>Bugünlük deneme yeterli</h2>
             <p>Deneme manevrası günde en fazla {PRACTICE_PER_DAY} kez önerilir. İsterseniz yine de deneyebilirsiniz.</p>
           </div>
+          <HomeButton primary onClick={() => nav('/hasta', { replace: true })} />
           <OverrideButton
             testid="practice-override"
             onClick={() => {
@@ -907,7 +957,6 @@ export function EpisodeFlow() {
           >
             Yine de dene
           </OverrideButton>
-          <HomeButton onClick={() => nav('/hasta', { replace: true })} />
         </Screen>
       );
 
@@ -936,14 +985,16 @@ export function EpisodeFlow() {
             <h1>{w.title}</h1>
             <p className="lead">{w.text}</p>
           </div>
-          {w.retestReady && (
+          {/* Önerilen yol büyük dolu düğme (tekrar testi ya da ana ekran); "Yine de manevra yap" çerçeveli ikincil (y06). */}
+          {w.retestReady ? (
             <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest', { replace: true })} data-testid="plan-retest">
               Tekrar testini yap
             </button>
+          ) : (
+            <HomeButton primary onClick={() => nav('/hasta', { replace: true })} />
           )}
           <OverrideButton
             testid="plan-override"
-            primary={!w.retestReady}
             onClick={() => {
               planOkRef.current = true;
               note('EARLY_REPEAT', `Sıradaki adım: ${na.kind}${at ? ` (${formatDateTime(at)})` : ''}`);
@@ -952,7 +1003,7 @@ export function EpisodeFlow() {
           >
             Yine de manevra yap
           </OverrideButton>
-          <HomeButton onClick={() => nav('/hasta', { replace: true })} />
+          {w.retestReady && <HomeButton onClick={() => nav('/hasta', { replace: true })} />}
         </Screen>
       );
     }
@@ -971,10 +1022,10 @@ export function EpisodeFlow() {
             </div>
             <p>{text}</p>
           </div>
-          <ListenAgain text={text} label="Ayrıntıyı dinle" />
+          <ListenAgain text={text} label="Ayrıntıyı dinle" slower />
+          <HomeButton primary label="Durdur, ana ekrana dön" onClick={() => nav('/hasta', { replace: true })} />
           <OverrideButton
             testid="contra-override"
-            primary
             onClick={() => {
               contraOkRef.current = true;
               note('CONTRAINDICATION', (labels.length ? labels : ids).join(', '));
@@ -983,7 +1034,6 @@ export function EpisodeFlow() {
           >
             Yine de devam et
           </OverrideButton>
-          <HomeButton onClick={() => nav('/hasta', { replace: true })} />
         </Screen>
       );
     }
@@ -999,10 +1049,10 @@ export function EpisodeFlow() {
             </div>
             <p>{stage.text}</p>
           </div>
-          <ListenAgain text={`${DOSE_WARN_TITLE}. ${stage.text}`} label="Ayrıntıyı dinle" />
+          <ListenAgain text={`${DOSE_WARN_TITLE}. ${stage.text}`} label="Ayrıntıyı dinle" slower />
+          <HomeButton primary label="Durdur, ana ekrana dön" onClick={() => nav('/hasta', { replace: true })} />
           <OverrideButton
             testid="dose-override"
-            primary
             onClick={() => {
               doseOkRef.current = true;
               note('DOSE', stage.reason);
@@ -1011,7 +1061,6 @@ export function EpisodeFlow() {
           >
             Yine de devam et
           </OverrideButton>
-          <HomeButton onClick={() => nav('/hasta', { replace: true })} />
         </Screen>
       );
 
@@ -1026,9 +1075,11 @@ export function EpisodeFlow() {
       const spokenStop = redFlagWarnSpoken(stage.action, stage.triggered, AFTER_NEURO_SPOKEN);
       const fullStop = withoutBppv(`${title}. ${whys.join(' ')} ${todo}`);
       const hasReport = !!episodeId && mode !== 'practice';
+      const st = store.get().settings;
+      const minWait = RED_FLAG_OVERRIDE_MIN_MS / (st.simulation ? st.timeScale : 1);
       return (
         <Screen title={emergency ? 'Acil uyarı' : 'Uyarı'} back="/hasta">
-          <SpeakOnce text={spokenStop} priority="high" />
+          {/* 112/hekim cümlesi açılışta okunur; bitene dek (en az 5 s) "Yine de devam et" basılamaz (RedFlagOverride). */}
           <div className={`card ${emergency ? 'tint-danger' : 'tint-warn'} stack`} data-testid={`stop-${stage.action}`}>
             <div className="card-title">
               <Icon name="alert" />
@@ -1047,9 +1098,10 @@ export function EpisodeFlow() {
               <p>{todo}</p>
             </div>
           )}
-          <ListenAgain text={fullStop} label="Ayrıntıyı dinle" />
+          <ListenAgain text={fullStop} label="Ayrıntıyı dinle" slower />
+          {/* Güvenli yol: acilde 112 (yukarıda, kırmızı); hekim uyarısında "Durdur" dolu birincil. "Yine de" çerçeveli ikincil. */}
           <button
-            className="btn secondary block"
+            className={`btn ${emergency ? 'secondary' : 'primary xl'} block`}
             data-testid="redflag-stop"
             onClick={() => {
               // Kullanıcı durmayı seçti: atak yönlendirmeyle kapanır (ana ekranda bilgi satırı; kilit yok).
@@ -1067,15 +1119,16 @@ export function EpisodeFlow() {
           >
             Durdur{hasReport ? ' ve raporu göster' : ''}
           </button>
-          <OverrideButton
-            testid="redflag-override"
+          <RedFlagOverride
+            key={`${stage.action}-${stage.after ? 'after' : stage.triggered.map((q) => q.id).join(',')}`}
+            spoken={spokenStop}
+            minMs={minWait}
             onClick={() => {
               note('RED_FLAG', stage.after ? 'Manevra sonrası yeni belirti' : stage.triggered.map((q) => q.id).join(', '));
-              setStage(stage.after ? maneuverDoneStage('mild') : afterSafetyStage());
+              // Manevra sonrası yeni belirti: olağan "tamamlandı" ekranı yerine kırmızı 112 ekranı (L2-1).
+              setStage(stage.after ? neuroEndStage() : afterSafetyStage());
             }}
-          >
-            Yine de devam et
-          </OverrideButton>
+          />
         </Screen>
       );
     }
@@ -1173,7 +1226,7 @@ export function EpisodeFlow() {
           calibration={ch.calibration}
           chained={ch.chained}
           autoStart={ch.autoStart}
-          startNote={stage.results.length === 0 ? `Önce ${sideName(side)}, sonra ${sideName(other)} tarafı test ediyoruz.` : undefined}
+          startNote={reminderNote(stage.results.length === 0 ? `Önce ${sideName(side)}, sonra ${sideName(other)} tarafı test ediyoruz.` : undefined)}
           onPlaced={onPlaced}
           onSensorless={() => {
             setCal(null);
@@ -1181,7 +1234,7 @@ export function EpisodeFlow() {
           }}
           onRecalibrate={recalibrate}
           onExit={(o) => onSideRunExit(o, stage.order, stage.results)}
-          intro={
+          intro={withReminder(
             <div className="notice info">
               <Icon name="info" />
               <span>
@@ -1189,7 +1242,7 @@ export function EpisodeFlow() {
                 {stage.results.length === 0 ? ` Önce ${sideName(side)}, sonra ${sideName(other)} tarafı deniyoruz; telefon iki test boyunca alnınızda kalacak.` : ''}
               </span>
             </div>
-          }
+          )}
         />
       );
     }
@@ -1205,7 +1258,7 @@ export function EpisodeFlow() {
           calibration={ch.calibration}
           chained={ch.chained}
           autoStart={ch.autoStart}
-          startNote="Sırtüstü yatıp başınızı önce sağa, sonra sola çevireceğiz."
+          startNote={reminderNote('Sırtüstü yatıp başınızı önce sağa, sonra sola çevireceğiz.')}
           onPlaced={onPlaced}
           onSensorless={() => {
             setCal(null);
@@ -1213,12 +1266,12 @@ export function EpisodeFlow() {
           }}
           onRecalibrate={recalibrate}
           onExit={onRollExit}
-          intro={
+          intro={withReminder(
             <div className="notice info" data-testid="roll-intro">
               <Icon name="info" />
               <span>Yatay kanal testi: sırtüstü yatıp başınızı hızla önce sağa, sonra sola çevireceksiniz. Baş dönmesi başlarsa ekrana dokunun.</span>
             </div>
-          }
+          )}
         />
       );
     }
@@ -1240,6 +1293,7 @@ export function EpisodeFlow() {
           testid="chain-continue"
           title={t.title}
           text={t.text}
+          alert={emergencyReminder ? EMERGENCY_REMINDER_TEXT : undefined}
           onTap={() => {
             const run: Stage = { k: 'maneuver', side: s, protocolId: maneuverFor(stage.d.canal, pcManeuver), chained: true };
             if (doseGate(run, true)) setStage(run);
@@ -1270,6 +1324,7 @@ export function EpisodeFlow() {
       return (
         <Screen title="Uygulamanın kararı" back="/hasta">
           <div className="stack" data-testid="decision" data-warn={stage.d.warn ?? 'none'}>
+            {reminderNotice}
             <ChoiceQuestion
               title={sc.title}
               lead={sc.lead}
@@ -1345,7 +1400,8 @@ export function EpisodeFlow() {
           }}
           onRecalibrate={recalibrate}
           onExit={(o) => onManeuverExit(o, stage)}
-          intro={
+          startNote={reminderNote()}
+          intro={withReminder(
             mode === 'practice' ? (
               <div className="notice info">
                 <Icon name="info" />
@@ -1354,10 +1410,10 @@ export function EpisodeFlow() {
             ) : hc ? (
               <div className="notice info" data-testid="bbq-intro">
                 <Icon name="info" />
-                <span>Barbekü manevrası: sırtüstünden başlayıp aynı yöne adım adım tam bir tur döneceksiniz; bir adımda yüzüstü, dirsekleriniz üzerinde kalacaksınız.</span>
+                <span>Yatakta dönme manevrası (BBQ roll): sırtüstünden başlayıp aynı yöne adım adım tam bir tur döneceksiniz; bir adımda yüzüstü, dirsekleriniz üzerinde kalacaksınız.</span>
               </div>
             ) : undefined
-          }
+          )}
         />
       );
     }
@@ -1412,14 +1468,15 @@ export function EpisodeFlow() {
           }}
           onRecalibrate={recalibrate}
           onExit={(o) => onRetestExit(o, stage.side, stage.protocolId)}
-          intro={
+          startNote={reminderNote()}
+          intro={withReminder(
             <div className="notice info">
               <Icon name="info" />
               <span>
                 {hc ? 'Tekrar testi: başınızı sağa ve sola çevireceğiz.' : <>Tekrar testi: tedavi edilen <strong>{sideName(stage.side)}</strong> taraf.</>} Baş dönmesi başlarsa ekrana dokunun.
               </span>
             </div>
-          }
+          )}
         />
       );
     }
@@ -1437,6 +1494,8 @@ export function EpisodeFlow() {
         [stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`, stage.note, night, recurEnd?.text].filter(Boolean).join(' ')
       );
       const endSpoken = stage.spoken ? withoutBppv([stage.spoken, stage.note ? 'Ekranda bir uyarı notu var.' : '', recurEnd?.text].filter(Boolean).join(' ')) : endFull;
+      // "Yine de" tekrar / yeniden deneme varsa önerilen yol "Ana ekran" dolu düğmedir (L2-2).
+      const risky = !!stage.treatOverride || !!doseText || !!stage.retry;
       return (
         <Screen title="DengeYol" back="/hasta">
           <SpeakOnce text={endSpoken} />
@@ -1444,6 +1503,16 @@ export function EpisodeFlow() {
             <h1>{stage.title}</h1>
             <p className="lead">{stage.text}</p>
           </div>
+          {stage.call112 && (
+            <a className="btn danger block xl" href="tel:112" data-testid="end-call-112">
+              <Icon name="phone" /> 112'yi ara
+            </a>
+          )}
+          {stage.call112 && neuroAlert && (
+            <div className="row wrap" data-testid="end-neuro-ack">
+              <NeuroAckButtons episodeId={neuroAlert.episodeId} />
+            </div>
+          )}
           {stage.note && (
             <div className="notice danger" data-testid="end-note">
               <Icon name="alert" />
@@ -1463,7 +1532,7 @@ export function EpisodeFlow() {
               <span>{recurEnd.text}</span>
             </div>
           )}
-          <ListenAgain text={endFull} label={stage.spoken ? 'Ayrıntıyı dinle' : undefined} />
+          <ListenAgain text={endFull} label={stage.spoken ? 'Ayrıntıyı dinle' : undefined} slower />
           {stage.extra === 'treat' && doseText && (
             <div className="notice danger" data-testid="end-dose-note">
               <Icon name="alert" />
@@ -1472,7 +1541,8 @@ export function EpisodeFlow() {
           )}
           {stage.extra === 'treat' && side && (
             <button
-              className="btn primary block xl"
+              // Uyarılı tekrar ("yine de"): çerçeveli ikincil; önerilen yol (ana ekran) aşağıda dolu düğme.
+              className={risky ? 'btn override block' : 'btn primary block xl'}
               onClick={() => {
                 if (stage.treatOverride) note(stage.treatOverride, 'Tekrar testinden sonra manevra');
                 if (doseNow && !doseNow.allowed) {
@@ -1511,11 +1581,15 @@ export function EpisodeFlow() {
           {stage.remindAt && (
             <p className="small muted center">Takvim açılmazsa telefonunuzun saat uygulamasında {formatTime(stage.remindAt)} için alarm kurun.</p>
           )}
-          <button className="btn secondary block" onClick={() => nav('/hasta', { replace: true })} data-testid="go-home">
+          <button
+            className={`btn ${risky || stage.call112 ? 'primary xl' : 'secondary'} block`}
+            onClick={() => nav('/hasta', { replace: true })}
+            data-testid="go-home"
+          >
             Ana ekran
           </button>
           {/* Rapor uyarılı sonuçlarda öne çıkar (hekime götürülebilir); diğer durumlarda ana ekran/geçmişten açılır. */}
-          {episodeId && mode !== 'practice' && stage.tone === 'warn' && (
+          {episodeId && mode !== 'practice' && (stage.tone === 'warn' || stage.tone === 'danger') && (
             <button className="btn ghost" onClick={() => nav(`/hasta/rapor/${episodeId}`)}>
               <Icon name="print" /> Hekime götürülecek rapor
             </button>
@@ -1524,14 +1598,28 @@ export function EpisodeFlow() {
       );
     }
   }
+  };
+
+  const view = renderStage();
+  return showStrip ? (
+    <>
+      <NeuroAlertStrip alert={neuroAlert!} standalone />
+      {view}
+    </>
+  ) : (
+    view
+  );
 }
 
-/** "Yine de devam et" düğmesi: açılışta kısa dokunuş kilidi (önceki ekranın çift dokunuşu uyarıyı aşmasın). */
-function OverrideButton({ testid, onClick, children, primary }: { testid: string; onClick: () => void; children: React.ReactNode; primary?: boolean }) {
+/**
+ * "Yine de …" düğmesi: her zaman çerçeveli ikincil (önerilen yol büyük dolu düğmedir; yeni kullanıcı turu 1, L2-2: y03,
+ * y05, y06 dolu renkli "Yine de"ye basıyordu). Açılışta kısa dokunuş kilidi (önceki ekranın çift dokunuşu uyarıyı aşmasın).
+ */
+function OverrideButton({ testid, onClick, children }: { testid: string; onClick: () => void; children: React.ReactNode }) {
   const locked = useTapLock(testid, 800);
   return (
     <button
-      className={`btn ${primary ? 'primary' : 'warn'} block`}
+      className="btn override block"
       style={locked ? { opacity: 0.55 } : undefined}
       aria-disabled={locked || undefined}
       data-locked={locked || undefined}
@@ -1543,18 +1631,79 @@ function OverrideButton({ testid, onClick, children, primary }: { testid: string
   );
 }
 
-function HomeButton({ onClick }: { onClick: () => void }) {
+/** "Ana ekran": uyarı ekranlarında önerilen yol olduğunda büyük dolu düğme (primary). */
+function HomeButton({ onClick, primary, label = 'Ana ekran' }: { onClick: () => void; primary?: boolean; label?: string }) {
   return (
-    <button className="btn ghost" onClick={onClick} data-testid="go-home">
-      Ana ekran
+    <button className={primary ? 'btn primary block xl' : 'btn ghost'} onClick={onClick} data-testid="go-home">
+      {label}
     </button>
+  );
+}
+
+/**
+ * Kırmızı bayrak uyarısında "Yine de devam et" (L2-2; y05): kilit değil, yavaşlatma. Uyarı cümlesi (112/hekim) açılışta
+ * okunur; cümle bitene ve en az `minMs` geçene dek düğme görünür ama basılamaz, üzerinde geri sayım vardır. Pasif düğmeye
+ * dokunuş konuşmayı kesmez (SpeechHush pasif düğmeyi yok sayar). Geri sayım zamanlayıcıyla ilerler (sahte saatle sınanır).
+ */
+function RedFlagOverride({ spoken, minMs, onClick }: { spoken: string; minMs: number; onClick: () => void }) {
+  const TICK = 250;
+  const [left, setLeft] = useState(minMs);
+  const [said, setSaid] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    speech.speak(spoken, 'high', () => {
+      if (alive) setSaid(true);
+    });
+    const id = setInterval(() => setLeft((l) => Math.max(0, l - TICK)), TICK);
+    // Ses motorunun bitiş olayı hiç gelmezse düğme kilit olmasın: en geç bu sürede basılabilir.
+    const fallback = setTimeout(() => alive && setSaid(true), SPOKEN_WAIT_MAX_MS);
+    return () => {
+      alive = false;
+      clearInterval(id);
+      clearTimeout(fallback);
+    };
+  }, [spoken]);
+  const waiting = left > 0 || !said;
+  const secs = Math.ceil(left / 1000);
+  return (
+    <button
+      className="btn override block"
+      disabled={waiting}
+      aria-disabled={waiting || undefined}
+      data-locked={waiting || undefined}
+      onClick={() => !waiting && onClick()}
+      data-testid="redflag-override"
+    >
+      {overrideCountdownLabel('Yine de devam et', waiting ? Math.max(1, secs) : 0)}
+    </button>
+  );
+}
+
+/** Kırmızı bayrak uyarı cümlesinin bitişi gelmezse "Yine de devam et" en geç bu sürede basılabilir (ms). */
+const SPOKEN_WAIT_MAX_MS = 15000;
+
+/** Kırmızı 112 ekranında "112'yi aradım" / "Belirtiler geçti, iyiyim" (şerit kapanır). */
+function NeuroAckButtons({ episodeId }: { episodeId: string }) {
+  const ack = (by: 'ok' | 'called112') => store.update((x) => ackNeuroAlert(x, episodeId, by));
+  return (
+    <>
+      <button type="button" className="btn ghost grow" onClick={() => ack('called112')} data-testid="end-neuro-called">
+        112'yi aradım
+      </button>
+      <button type="button" className="btn ghost grow" onClick={() => ack('ok')} data-testid="end-neuro-ok">
+        Belirtiler geçti, iyiyim
+      </button>
+    </>
   );
 }
 
 /**
  * Güvenlik soruları tek ekranda (BRIEF §2): bütün belirtiler işaret listesinde; büyük "Hiçbiri yok, devam" ekranın altında
  * hep görünür. Bir belirti işaretlenince düğme "İşaretlediklerimle devam" olur (uyarı ekranı gelir; orada da devam edilebilir).
- * Açılışta kısa ses (liste ekranda ve "Listeyi dinle"de); işaretlemek okunuşu kesmez.
+ * Açılışta kısa ses (liste ekranda ve "Listeyi dinle"de).
+ * Yeni kullanıcı turu 1 (y02, titreyen el; y03): "Listeyi dinle" listenin üstünde; her işaret sesle söylenir ("İşaretlendi:
+ * …"); düğmenin "İşaretlediklerimle devam"a dönüşü renk, simge ve sesle fark edilir; acil (112) uyarısından önce tek bir
+ * "doğru mu?" onayı (kilit değil, yanlış dokunuş koruması). Maddelerin başında simge (L2-6).
  */
 function RedFlagsScreen({
   flags,
@@ -1566,23 +1715,62 @@ function RedFlagsScreen({
   onDone: (checked: string[]) => void;
 }) {
   const [checked, setChecked] = useState<string[]>([]);
-  // Ana ekrandaki dokunuşun ikincisi "Hiçbiri yok"a düşmesin.
+  /** Acil belirti işaretlendi: uyarıdan önce "doğru mu?" onayı. */
+  const [confirm, setConfirm] = useState(false);
+  /** Onaydan listeye dönüldü: açılış cümlesi yeniden okunmaz. */
+  const [returned, setReturned] = useState(false);
+  // Ana ekrandaki dokunuşun ikincisi "Hiçbiri yok"a düşmesin. Kilit görünmez (L2-6; y03: gri düğmeyi kapalı sandı).
   const locked = useTapLock('redflags', 800);
   const full = redFlagsSpokenFull(flags);
   const any = checked.length > 0;
+  const toggle = (v: string) => {
+    const q = flags.find((x) => x.id === v);
+    const on = !checked.includes(v);
+    const next = on ? [...checked, v] : checked.filter((x) => x !== v);
+    setChecked(next);
+    if (q) speech.speak(redFlagToggleSpoken(redFlagCheckText(q), on, next.length), 'high');
+  };
+  const proceed = () => {
+    if (locked) return;
+    const emergency = evaluateRedFlags(redFlagAnswers(flags, checked)).triggered.filter((q) => q.action === 'emergency');
+    if (emergency.length > 0) setConfirm(true);
+    else onDone(checked);
+  };
+  if (confirm) {
+    const items = flags.filter((q) => checked.includes(q.id) && q.action === 'emergency').map((q) => redFlagCheckText(q));
+    const headline = items.join('; ');
+    return (
+      <ConfirmAnswer
+        title="Güvenlik soruları"
+        headline={headline}
+        question={RED_FLAGS_TITLE}
+        answer={headline}
+        consequence={RED_FLAG_CONFIRM_CONSEQUENCE}
+        danger
+        testid="redflags-confirm"
+        onConfirm={() => onDone(checked)}
+        onBack={() => {
+          setReturned(true);
+          setConfirm(false);
+        }}
+      />
+    );
+  }
   return (
     <Screen title="Güvenlik soruları" back="/hasta">
-      <SpeakOnce text={RED_FLAGS_SPOKEN} priority="high" />
+      {!returned && <SpeakOnce text={RED_FLAGS_SPOKEN} priority="high" />}
       <h1 data-testid="redflags-title">{RED_FLAGS_TITLE}</h1>
       <p className="small muted">Yalnız şu anda ya da bu atakta olanları işaretleyin.</p>
+      {/* "Listeyi dinle" listenin üstünde: kaydırmadan görünür (y02). */}
+      <ListenAgain text={full} label="Listeyi dinle" slower />
       <div data-testid="redflags">
         <CheckList
           label="Güvenlik belirtileri"
           testidPrefix="rf"
           keepSpeech
           values={checked}
-          onToggle={(v) => setChecked((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]))}
-          options={flags.map((q) => ({ value: q.id, label: redFlagCheckText(q), sub: redFlagCheckSub(q) }))}
+          onToggle={toggle}
+          options={flags.map((q) => ({ value: q.id, label: redFlagCheckText(q), sub: redFlagCheckSub(q), icon: redFlagIcon(q) }))}
         />
       </div>
       {recur && (
@@ -1590,15 +1778,16 @@ function RedFlagsScreen({
           <Icon name="alert" size={16} /> {recurShort(recur)}
         </p>
       )}
-      <ListenAgain text={full} label="Listeyi dinle" />
       <div className="sticky-actions" data-locked={locked || undefined}>
         <button
-          className={`btn ${any ? 'warn' : 'primary'} block xl`}
-          style={locked ? { opacity: 0.55 } : undefined}
+          // Biçim değişince (Hiçbiri yok ↔ İşaretlediklerimle devam) düğme bir kez belirgince yanıp söner (y02).
+          key={any ? 'any' : 'none'}
+          className={`btn ${any ? 'warn changed' : 'primary'} block xl`}
           aria-disabled={locked || undefined}
-          onClick={() => !locked && onDone(checked)}
+          onClick={proceed}
           data-testid={any ? 'redflags-continue' : 'redflags-none'}
         >
+          {any && <Icon name="alert" />}
           {any ? `İşaretlediklerimle devam (${checked.length})` : 'Hiçbiri yok, devam'}
         </button>
       </div>
@@ -1674,10 +1863,13 @@ function TapGate({
   onTap,
   onExit,
   onChoose,
-  testid
+  testid,
+  alert
 }: {
   title: string;
   text: string;
+  /** Kısa kırmızı hatırlatma (acil uyarısı aşıldıysa; yalnız ekranda). */
+  alert?: string;
   onTap: () => void;
   onExit: () => void;
   /** Uygulamanın kararı yerine başka taraf/manevra seçmek (köşede basılı tutulur). */
@@ -1692,6 +1884,11 @@ function TapGate({
   }, [title, text]);
   return (
     <TapSurface testid={testid} enabled onTap={onTap} onExit={onExit} onChoose={onChoose}>
+      {alert && (
+        <span className="tap-gate-alert" data-testid="emergency-reminder">
+          {alert}
+        </span>
+      )}
       <span className="tap-gate-title">{title}</span>
       <span className="tap-gate-text">{text}</span>
       <span className="tap-gate-count">Dokunun</span>
@@ -2060,7 +2257,7 @@ function ChoiceQuestion<T extends string>({
   deferPrompt?: string;
   priority?: 'high' | 'normal';
   name: string;
-  options: ({ value: T; testid?: string } & SpokenOption)[];
+  options: ({ value: T; testid?: string; primary?: boolean } & SpokenOption)[];
   onChange: (v: T) => void;
   lockKey: string;
   lockMs?: number;
@@ -2072,7 +2269,7 @@ function ChoiceQuestion<T extends string>({
       <h1>{title}</h1>
       {lead && <p className="lead">{lead}</p>}
       <Choice name={name} value={null} onChange={onChange} options={options} lockKey={lockKey} lockMs={lockMs} hushOnAnswer />
-      <ListenAgain text={full} />
+      <ListenAgain text={full} slower />
     </>
   );
 }
@@ -2160,6 +2357,8 @@ function PrepScreen({ kind, hc, maneuverId, onReady }: { kind: PrepKind; hc: boo
   const spoken = prepSpokenFull(prepInput);
   // Ekran açılınca kısa hâli bir kez okunur; tam hâl "Tekrar dinle"de. "Kim yapıyor" değişince yeniden okunmaz.
   const spokenOnOpen = useRef(prepSpokenShort(prepInput));
+  /** Ayrıntılar yakını modu seçiliyse açık gelir (yalnız ilk açılışta; sonra kişinin açıp kapatması korunur). */
+  const [detailsOpen] = useState(helper);
   useEffect(() => {
     speech.speak(spokenOnOpen.current, 'normal');
   }, []);
@@ -2168,7 +2367,7 @@ function PrepScreen({ kind, hc, maneuverId, onReady }: { kind: PrepKind; hc: boo
       {hc && (
         <div className="notice info" data-testid="prep-hc">
           <Icon name="info" />
-          <span>Yatay kanal: sırtüstü baş çevirme testi ve barbekü manevrası yapacağız.</span>
+          <span>Yatay kanal: sırtüstü baş çevirme testi ve yatakta dönme manevrası (BBQ roll) yapacağız.</span>
         </div>
       )}
       {!semontOnly && !hc && <BedSetup />}
@@ -2177,75 +2376,90 @@ function PrepScreen({ kind, hc, maneuverId, onReady }: { kind: PrepKind; hc: boo
           <li key={t}>{t}</li>
         ))}
       </ol>
-      <ListenAgain text={spoken} />
-      <div className="stack" data-testid="prep-hearing">
-        <p className="small muted" style={{ margin: 0 }}>
-          {/* Yakını modunda yardımcıya göre (kullanıcı turu 4, k02). */}
-          {prepHearingText(helper)}
-        </p>
-        {/* "Titreşimleri tanı" burada açılır (k04): Ayarlar'a gitmek akışı (taraf sırası, hazırlık) sıfırlardı. Aynı
-            tanıtım Ayarlar > "Titreşimleri tanı"da da var (/ayarlar, #titresimler). */}
-        <details data-testid="prep-haptic-legend">
-          <summary>
-            <strong>Titreşimleri tanı</strong>
-          </summary>
-          <HapticLegend />
-        </details>
-      </div>
       {!speech.usable() && (
         <div className="notice" data-testid="prep-no-voice">
           <Icon name="alert" />
           <span>Bu telefonda Türkçe sesli okuma bulunamadı. Manevrayı bir yakınınızla yapın; yönergeleri ekrandan okusun.</span>
         </div>
       )}
-      {!haptics.supported() && (
-        <p className="small muted">Bu telefonda titreşim yok; uyarılar ses ve bip ile verilir. iPhone'da sessiz anahtarı kapalı ve sesi yüksek tutun.</p>
-      )}
-      <div className="card stack">
-        <strong>Kim yapıyor?</strong>
-        <Segmented
-          label="Kim yapıyor"
-          value={helper ? 'helper' : 'self'}
-          onChange={setAssist}
-          options={[
-            { value: 'self', label: 'Kendim' },
-            { value: 'helper', label: 'Bir yakınımla' }
-          ]}
-        />
-        {helper && (
-          // Yalnız listede olmayanlar (kullanıcı turu 5, k02): yastık ve telefonu tutuş yukarıdaki maddelerde yazılı.
-          <ol className="small stack" style={{ margin: 0, paddingLeft: 20, gap: 6 }} data-testid="helper-card">
-            {PREP_HELPER_ITEMS.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ol>
-        )}
-        {helper && (
-          <label className="row">
-            <input
-              type="checkbox"
-              checked={!!d.settings.screenFlip}
-              onChange={(e) => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: e.target.checked } }))}
-              data-testid="prep-flip"
-            />
-            <span>Hastanın başucunda duracağım (ekranı bana göre çevir)</span>
-          </label>
-        )}
-      </div>
+      <ListenAgain text={spoken} slower />
       <p className="small muted">Süre: {duration}.</p>
-      <button
-        className="btn primary block xl"
-        onClick={() => {
-          // Bu dokunuş içinde: ses kilidi (iOS), hareket izni (iOS) ve ekranı açık tutma; sonraki akış dokunuşsuz ilerler.
-          unlockAudio();
-          void source.start();
-          void keepAwake();
-          onReady();
-        }}
-        data-testid="prep-ready"
-      >
-        Hazırım
-      </button>
+      {/* İşitme cihazı, titreşimler ve "Kim yapıyor" katlanır (y01, y06: "Hazırım" ilk ekranda görünmüyordu). Yakını modu
+          seçiliyse açık gelir. */}
+      <details className="card soft" data-testid="prep-details" open={detailsOpen}>
+        <summary>
+          <strong>Ayrıntılar</strong>
+          <span className="small muted" style={{ display: 'block' }}>
+            İşitme cihazı, titreşimler, kim yapıyor ({helper ? 'bir yakınım' : 'kendim'})
+          </span>
+        </summary>
+        <div className="stack" style={{ marginTop: 10 }}>
+          <div className="stack" data-testid="prep-hearing">
+            <p className="small muted" style={{ margin: 0 }}>
+              {/* Yakını modunda yardımcıya göre (kullanıcı turu 4, k02). */}
+              {prepHearingText(helper)}
+            </p>
+            {/* "Titreşimleri tanı" burada açılır (k04): Ayarlar'a gitmek akışı (taraf sırası, hazırlık) sıfırlardı. Aynı
+                tanıtım Ayarlar > "Titreşimleri tanı"da da var (/ayarlar, #titresimler). */}
+            <details data-testid="prep-haptic-legend">
+              <summary>
+                <strong>Titreşimleri tanı</strong>
+              </summary>
+              <HapticLegend />
+            </details>
+          </div>
+          {!haptics.supported() && (
+            <p className="small muted">Bu telefonda titreşim yok; uyarılar ses ve bip ile verilir. iPhone'da sessiz anahtarı kapalı ve sesi yüksek tutun.</p>
+          )}
+          <div className="stack">
+            <strong>Kim yapıyor?</strong>
+            <Segmented
+              label="Kim yapıyor"
+              value={helper ? 'helper' : 'self'}
+              onChange={setAssist}
+              options={[
+                { value: 'self', label: 'Kendim' },
+                { value: 'helper', label: 'Bir yakınımla' }
+              ]}
+            />
+            {helper && (
+              // Yalnız listede olmayanlar (kullanıcı turu 5, k02): yastık ve telefonu tutuş yukarıdaki maddelerde yazılı.
+              <ol className="small stack" style={{ margin: 0, paddingLeft: 20, gap: 6 }} data-testid="helper-card">
+                {PREP_HELPER_ITEMS.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ol>
+            )}
+            {helper && (
+              <label className="row">
+                <input
+                  type="checkbox"
+                  checked={!!d.settings.screenFlip}
+                  onChange={(e) => store.update((x) => ({ ...x, settings: { ...x.settings, screenFlip: e.target.checked } }))}
+                  data-testid="prep-flip"
+                />
+                <span>Hastanın başucunda duracağım (ekranı bana göre çevir)</span>
+              </label>
+            )}
+          </div>
+        </div>
+      </details>
+      {/* "Hazırım" ekranın altında hep görünür (güvenlik listesindeki gibi; y01, y06). */}
+      <div className="sticky-actions">
+        <button
+          className="btn primary block xl"
+          onClick={() => {
+            // Bu dokunuş içinde: ses kilidi (iOS), hareket izni (iOS) ve ekranı açık tutma; sonraki akış dokunuşsuz ilerler.
+            unlockAudio();
+            void source.start();
+            void keepAwake();
+            onReady();
+          }}
+          data-testid="prep-ready"
+        >
+          Hazırım
+        </button>
+      </div>
     </Screen>
   );
 }

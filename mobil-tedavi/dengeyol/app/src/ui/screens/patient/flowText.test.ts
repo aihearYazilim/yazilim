@@ -37,7 +37,15 @@ import {
   redFlagCheckText,
   RED_FLAGS_SPOKEN,
   redFlagsSpokenFull,
-  redFlagWarnSpoken
+  redFlagWarnSpoken,
+  EMERGENCY_REMINDER_SPOKEN,
+  NEURO_END_SPOKEN,
+  NEURO_END_TEXT,
+  NOT_TRIGGERED_NOTE,
+  overrideCountdownLabel,
+  RED_FLAG_ICON,
+  redFlagIcon,
+  redFlagToggleSpoken
 } from './flowText';
 
 describe('seçenekli ekranın sesli biçimi (kullanıcı turu 3, k01, k04, k05)', () => {
@@ -289,6 +297,30 @@ describe('yeniden tasarım: tek ekran güvenlik listesi', () => {
     expect(RED_FLAGS_SPOKEN.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
   });
 
+  it('her maddenin simgesi var (L2-6); işaretleme sesi maddeyi ve düğmenin değiştiğini söyler (y02)', () => {
+    for (const q of RED_FLAGS) expect(RED_FLAG_ICON[q.id], q.id).toBeTruthy();
+    expect(redFlagIcon({ id: 'yeni' })).toBe('⚠️');
+    expect(redFlagToggleSpoken('Çift görme', true, 1)).toBe('İşaretlendi: Çift görme. Alttaki düğme şimdi: İşaretlediklerimle devam.');
+    expect(redFlagToggleSpoken('Kulak', true, 2)).toBe('İşaretlendi: Kulak.');
+    expect(redFlagToggleSpoken('Kulak', false, 1)).toBe('İşaret kaldırıldı: Kulak.');
+    expect(redFlagToggleSpoken('Kulak', false, 0)).toBe('İşaret kaldırıldı: Kulak. Alttaki düğme yine: Hiçbiri yok.');
+    expect(redFlagToggleSpoken(RED_FLAG_CHECK_TEXT.same!, true, 1)).not.toMatch(/BPPV|"/);
+  });
+
+  it('gündelik dil (L2-6; y03): anlaşılmayan sözcükler madde metinlerinde yok', () => {
+    const all = Object.values(RED_FLAG_CHECK_TEXT).join(' ');
+    for (const w of ['Kıpırdamadan', 'kıpırdamadan', 'yutma bozukluğu', 'Kan sulandırıcı', 'kendiliğinden', 'akıntı', 'travması', 'göz kararması']) expect(all).not.toContain(w);
+  });
+
+  it('kırmızı bayrak aşma geri sayımı, manevra sonrası yeni belirti ekranı (L2-1, L2-2)', () => {
+    expect(overrideCountdownLabel('Yine de devam et', 3)).toBe('Yine de devam et (3)');
+    expect(overrideCountdownLabel('Yine de devam et', 0)).toBe('Yine de devam et');
+    expect(NEURO_END_TEXT).toMatch(/112/);
+    expect(NEURO_END_TEXT).not.toMatch(/normal|beklenen|tekrar testi/i);
+    expect(NEURO_END_SPOKEN).toMatch(/112/);
+    expect(EMERGENCY_REMINDER_SPOKEN.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
+  });
+
   it('işaret listesinden yanıt kaydı: işaretli = durduran yanıt, diğerleri güvenli yanıt', () => {
     const a = redFlagAnswers(RED_FLAGS, ['neuro', 'same']);
     expect(a.neuro).toBe('yes');
@@ -340,12 +372,40 @@ describe('yeniden tasarım: uyarı ekranları kilitlemez', () => {
     expect(sc.options[1]!.label).toBe('Hekimin dediği tarafa devam (sol)');
   });
 
-  it('tetiklenmedi: bilinen tarafa "Yine de manevra yap"; yoksa taraf seçimi; iki tarafa sırayla ve öbür kanalın testi', () => {
+  it('tetiklenmedi: bilinen tarafa manevra önerilen (dolu) düğme; taraf yoksa önerilen "iki tarafa sırayla"; öbür kanalın testi', () => {
+    const known = decisionScreen({ ...base, side: 'L', warn: 'NOT_TRIGGERED' });
     expect(ids({ ...base, side: 'L', warn: 'NOT_TRIGGERED' })).toEqual(['decision-continue', 'decision-other', 'decision-both', 'decision-test-hc', 'decision-stop']);
-    expect(decisionScreen({ ...base, side: 'L', warn: 'NOT_TRIGGERED' }).options[0]!.label).toBe('Yine de manevra yap: sol taraf');
-    expect(ids({ ...base, side: null, warn: 'NOT_TRIGGERED' })).toEqual(['decision-R', 'decision-L', 'decision-both', 'decision-test-hc', 'decision-stop']);
+    expect(known.options[0]).toMatchObject({ label: 'Sol tarafa manevra yap', primary: true });
+    expect(known.options.filter((o) => o.primary)).toHaveLength(1);
+    // y01: hangi yan bilinmiyorsa tek büyük önerilen düğme "iki tarafa sırayla"; ses önce bunu söyler.
+    const unknown = decisionScreen({ ...base, side: null, warn: 'NOT_TRIGGERED' });
+    expect(ids({ ...base, side: null, warn: 'NOT_TRIGGERED' })).toEqual(['decision-both', 'decision-R', 'decision-L', 'decision-test-hc', 'decision-stop']);
+    expect(unknown.options[0]).toMatchObject({ value: 'both', primary: true, label: 'Hangi yan bilmiyorum: iki tarafa sırayla manevra' });
+    expect(unknown.options.filter((o) => o.primary)).toHaveLength(1);
+    expect(unknown.spokenLead).toMatch(/Önerimiz: iki tarafa sırayla manevra\.$/);
     // Yatay kanalda iki yöne BBQ önerilmez; öbür test arka kanal testi.
     expect(values({ ...base, canal: 'HC', side: null, warn: 'NOT_TRIGGERED' })).toEqual(['go:R', 'go:L', 'test:PC', 'end']);
+  });
+
+  it('tetiklenmedi (L2-7; y05): "kristal oynamasından olmayabilir" ve sürekli baş dönmesinde hekim/112 tek cümle; seste de', () => {
+    expect(NOT_TRIGGERED_NOTE).toMatch(/^Test baş dönmesi yapmadı; baş dönmeniz kristal oynamasından olmayabilir\./);
+    expect(NOT_TRIGGERED_NOTE).toMatch(/sürekliyse ya da yürüyemiyorsanız hekime/);
+    expect(NOT_TRIGGERED_NOTE).toMatch(/112/);
+    for (const side of ['R', null] as const) {
+      const sc = decisionScreen({ ...base, side, warn: 'NOT_TRIGGERED' });
+      expect(sc.lead.startsWith(NOT_TRIGGERED_NOTE)).toBe(true);
+      expect(sc.lead).not.toMatch(/Kristaller yerine oturmuş/);
+      expect(sc.spokenLead).toMatch(/kristal oynaması olmayabilir/);
+    }
+  });
+
+  it('önerilen yol işareti: temiz kararda "Öneriyle devam", iki tarafta "Devam et"; atipik süre ve taraf çelişkisinde önerilen yok', () => {
+    const primaryOf = (d: Parameters<typeof decisionScreen>[0]) => decisionScreen(d).options.filter((o) => o.primary).map((o) => o.testid);
+    expect(primaryOf({ ...base, side: 'R', warn: null })).toEqual(['decision-continue']);
+    expect(primaryOf({ ...base, side: 'R', both: true, warn: 'BOTH_SIDES' })).toEqual(['decision-continue']);
+    expect(primaryOf({ ...base, side: 'L', warn: 'BOTH_SIDES' })).toEqual(['decision-continue']);
+    expect(primaryOf({ ...base, side: 'R', warn: 'ATYPICAL_LONG' })).toEqual([]);
+    expect(primaryOf({ ...base, side: 'R', doctorSide: 'L', warn: 'SIDE_CONFLICT' })).toEqual([]);
   });
 
   it('atipik süre: "Yine de devam et" uygulamanın tarafına; ekranda 112 bilgisi', () => {

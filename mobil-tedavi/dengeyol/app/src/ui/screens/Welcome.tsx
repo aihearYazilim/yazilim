@@ -32,7 +32,7 @@ export function Welcome() {
           </span>
           <span className="grow">
             <h2>Baş dönmesi yaşıyorum</h2>
-            <span className="muted">Hekim/odyolog tanısı aldığım BPPV tekrarladığında evde güvenle manevra yapmak istiyorum.</span>
+            <span className="muted">Yatarken, kalkarken ya da yatakta dönerken gelen baş dönmesi için test ve manevra. Tanınız olmasa da kullanabilirsiniz.</span>
           </span>
           <Icon name="chevron" />
         </button>

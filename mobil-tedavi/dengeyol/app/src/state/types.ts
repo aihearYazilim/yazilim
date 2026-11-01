@@ -161,6 +161,12 @@ export interface Episode {
    * 'CONTRAINDICATION', 'VERTIGO_TOO_LONG', 'POSITION_UNREACHABLE'); detail: kısa açıklama.
    */
   overrides?: { at: number; kind: string; detail?: string }[];
+  /**
+   * Manevra sonrası "Yeni belirti" (inme belirtisi) bildirildikten sonra ana ekrandaki ve akıştaki kırmızı 112 şeridini
+   * kapatan yanıt (yeni kullanıcı turu 1, L2-1): 'ok' "Belirtiler geçti, iyiyim", 'called112' "112'yi aradım". Şerit bu
+   * yanıta ya da 24 saate dek görünür (state/neuroAlert.ts). Eski kayıtlarda yok.
+   */
+  neuroAlertAck?: { at: number; by: 'ok' | 'called112' };
 }
 
 export interface ClinicPatient {

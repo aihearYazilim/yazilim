@@ -100,6 +100,11 @@ export interface ProtocolDef {
   id: ProtocolId;
   name: string;
   shortName: string;
+  /**
+   * Hasta modunda (yürütücü başlığı) gösterilen Türkçe kısa ad (yeni kullanıcı turu 1, L2-5; y06: "Supine roll", "BBQ roll"
+   * İngilizce görünüyordu). Yoksa shortName. Klinisyen ve raporlar shortName kullanır.
+   */
+  patientShortName?: string;
   kind: 'test' | 'maneuver';
   canal: Canal | 'ANY';
   /** Etkilenen tarafa göre aynalanır mı? */
@@ -237,6 +242,7 @@ const SUPINE_ROLL: ProtocolDef = {
   id: 'supine-roll',
   name: 'Sırtüstü baş çevirme (supine roll) testi',
   shortName: 'Supine roll',
+  patientShortName: 'Sırtüstü baş çevirme testi',
   kind: 'test',
   canal: 'HC',
   sided: false,
@@ -559,6 +565,7 @@ const BBQ_ROLL: ProtocolDef = {
   id: 'bbq-roll',
   name: 'Barbekü (Lempert) roll manevrası',
   shortName: 'BBQ roll',
+  patientShortName: 'Yatakta dönme manevrası (BBQ roll)',
   kind: 'maneuver',
   canal: 'HC',
   sided: true,
@@ -971,7 +978,8 @@ export function resolveProtocol(id: ProtocolId, side: Side | null): ResolvedProt
 
 /** Yürütme kipine göre protokol: klinisyende varsa `clinicianMinHoldSec` en az bekleme olur (hasta modu değişmez). */
 export function protocolForMode(p: ResolvedProtocol, mode: 'patient' | 'clinician'): ResolvedProtocol {
-  if (mode !== 'clinician') return p;
+  // Hasta modunda başlıkta Türkçe kısa ad (L2-5).
+  if (mode !== 'clinician') return p.patientShortName ? { ...p, shortName: p.patientShortName } : p;
   return { ...p, steps: p.steps.map((st) => (st.clinicianMinHoldSec !== undefined ? { ...st, minHoldSec: st.clinicianMinHoldSec } : st)) };
 }
 
