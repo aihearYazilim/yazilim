@@ -6,11 +6,12 @@ import {
   type Prescription,
   rxCanalName,
   rxCanalOf,
+  rxDoseLine,
   rxIssuedAt,
   rxManeuverName,
+  rxPossibleDx,
   rxValidityLabel,
-  rxValidUntil,
-  RX_VALID_DAYS
+  rxValidUntil
 } from '../../../core/prescription';
 import { sideName } from '../../../core/protocols';
 import { contraindicationsFor } from '../../../core/safety';
@@ -27,9 +28,18 @@ import { Screen } from '../../components/Screen';
 const RX_TRUST_TEXT =
   'Bu reçeteyi yalnız hekiminiz ya da odyoloğunuz size ya da yakınınıza kendisi verdiyse (QR kod ya da bağlantı) kabul edin. Uygulama reçeteyi kimin hazırladığını denetleyemez; başka yerden gelen bir reçeteyi kabul etmeyin.';
 
-/** Reçete kartındaki tanı satırı; sesli metinle aynı sözcükler ("kristal oynaması"), taraf büyük harfle. */
-export function rxDiagnosisText(p: Pick<Prescription, 'side'> & Partial<Pick<Prescription, 'maneuver'>>): string {
-  return `${sideName(p.side).toLocaleUpperCase('tr-TR')} kulak — ${p.maneuver ? rxCanalName({ maneuver: p.maneuver }) : 'arka kanal'} kristal oynaması (BPPV)`;
+/** Santral ya da muayene başı güvenlik uyarısıyla verilen reçetede tanının adı (yeni kullanıcı turu 3, y05 #2). */
+export const RX_POSSIBLE_DX = 'Olası BPPV (hekim uyarısıyla)';
+
+/**
+ * Reçete kartındaki tanı satırı; sesli metinle aynı sözcükler ("kristal oynaması"), taraf büyük harfle. Santral ya da muayene
+ * başı güvenlik uyarısına rağmen verilen reçetede "Olası BPPV (hekim uyarısıyla) — SAĞ kulak, arka kanal kristal oynaması".
+ */
+export function rxDiagnosisText(p: Pick<Prescription, 'side'> & Partial<Pick<Prescription, 'maneuver' | 'ov' | 'ovk'>>): string {
+  const side = sideName(p.side).toLocaleUpperCase('tr-TR');
+  const canal = p.maneuver ? rxCanalName({ maneuver: p.maneuver }) : 'arka kanal';
+  if (rxPossibleDx(p)) return `${RX_POSSIBLE_DX} — ${side} kulak, ${canal} kristal oynaması`;
+  return `${side} kulak — ${canal} kristal oynaması (BPPV)`;
 }
 
 /**
@@ -47,7 +57,9 @@ export const RX_OVERRIDE_ADVICE =
 export function rxCardSpeech(p: Prescription, o: { expired: boolean; future: boolean; contraLabels: string[] }): string {
   const parts = [
     'Ev manevrası reçetesi.',
-    `Tanı: ${sideName(p.side)} kulak, ${rxCanalName(p)} kristal oynaması.`,
+    rxPossibleDx(p)
+      ? `Tanı: olası kristal oynaması, hekim uyarısıyla; ${sideName(p.side)} kulak, ${rxCanalName(p)}.`
+      : `Tanı: ${sideName(p.side)} kulak, ${rxCanalName(p)} kristal oynaması.`,
     `Manevra: ${rxManeuverName(p)}. Günde en çok ${p.perDay} kez, en çok ${p.days} gün.`
   ];
   const ov = rxOverrideText(p);
@@ -122,7 +134,6 @@ export function PrescriptionImport() {
     const consented = !!store.get().patient?.consentAt;
     nav(consented ? '/hasta' : '/hasta/kurulum', { replace: true });
   };
-  const validity = rxValidityLabel(p);
   const ios = isIos() && !isStandalone();
 
   return (
@@ -144,20 +155,15 @@ export function PrescriptionImport() {
           <dd data-testid="rx-dx">{rxDiagnosisText(p)}</dd>
           <dt>Manevra</dt>
           <dd data-testid="rx-maneuver">{rxManeuverName(p)}</dd>
-          <dt>Doz</dt>
-          <dd>
-            Günde en fazla {p.perDay} kez, en fazla {p.days} gün
+          {/* Tek süre cümlesi, klinisyenin reçete ekranındakiyle aynı: tedavi gün sayısı ve son geçerli gün (geçerlilik gün sayısı
+              ayrıca yazılmaz; yeni kullanıcı turu 3, y04 #5). */}
+          <dt>Süre</dt>
+          <dd data-testid="rx-dose">
+            <span data-testid="rx-valid-until">{rxDoseLine(p)}</span>
+            {expired ? ' SÜRESİ DOLDU.' : future ? ' TARİHİ İLERİDE.' : ''}
           </dd>
           <dt>Muayene tarihi</dt>
           <dd>{issued !== null ? formatDate(issued) : p.date}</dd>
-          {validity && (
-            <>
-              <dt>Geçerlilik</dt>
-              <dd data-testid="rx-valid-until">
-                {validity} ({RX_VALID_DAYS} gün){expired ? ' · SÜRESİ DOLDU' : future ? ' · TARİHİ İLERİDE' : ''}
-              </dd>
-            </>
-          )}
           {p.by && (
             <>
               <dt>Yazan</dt>

@@ -14,7 +14,9 @@ import {
   rxManeuverFromWire,
   rxManeuverName,
   rxManeuverWire,
+  rxDoseLine,
   rxPcManeuver,
+  rxPossibleDx,
   rxProtocolId,
   RX_VALID_DAYS,
   rxCode,
@@ -144,6 +146,24 @@ describe('reçete', () => {
     expect(long.ok && long.value.ov).toBe('x'.repeat(OV_MAX_LEN));
     // Uyarısız arka kanal reçetesi v1/v2 kalır.
     expect(JSON.parse(unb64u(encodePrescription({ ...p, ov: '   ' }).split('.')[0]!)).v).toBe(1);
+  });
+  it('uyarı türü (ovk) yalnız notla birlikte taşınır; santral/güvenlik kontrolü uyarısında tanı "olası" (yeni kullanıcı turu 3, y05 #2)', () => {
+    const d = decodePrescription(encodePrescription({ ...p, ov: 'muayenede nörolojik bulgu vardı', ovk: 'SAFETY_CHECK' }));
+    expect(d.ok && d.value).toMatchObject({ v: 3, ov: 'muayenede nörolojik bulgu vardı', ovk: 'SAFETY_CHECK' });
+    expect(d.ok && rxPossibleDx(d.value)).toBe(true);
+    expect(rxPossibleDx({ ov: 'x', ovk: 'CENTRAL' })).toBe(true);
+    expect(rxPossibleDx({ ov: 'tanı uygulamada onaylanmadan verildi', ovk: 'NO_DIAGNOSIS' })).toBe(false);
+    // Uyarı türü alanından önceki santral reçetesi hasta metninden tanınır.
+    expect(rxPossibleDx({ ov: 'muayene bulgusu beyin kaynaklı baş dönmesini de düşündürüyor' })).toBe(true);
+    expect(rxPossibleDx({ ovk: 'CENTRAL' })).toBe(false);
+    // Notsuz ya da biçimsiz tür atılır.
+    expect(normalizePrescription({ ...p, ovk: 'CENTRAL' }).ovk).toBeUndefined();
+    expect(normalizePrescription({ ...p, ov: 'x', ovk: 'kötü tür' }).ovk).toBeUndefined();
+  });
+  it('tek süre cümlesi: tedavi gün sayısı ve son geçerli gün (yeni kullanıcı turu 3, y04 #5)', () => {
+    expect(rxDoseLine({ perDay: 3, days: 5, date: '2026-11-01' }, 'short')).toBe('5 gün, günde en çok 3 manevra. Reçete 14.11.2026 tarihine kadar (dahil) geçerli.');
+    expect(rxDoseLine({ perDay: 2, days: 3, date: '2026-11-01' })).toBe('3 gün, günde en çok 2 manevra. Reçete 14 Kasım 2026 tarihine kadar (dahil) geçerli.');
+    expect(rxDoseLine({ perDay: 2, days: 3, date: 'bozuk' })).toBe('3 gün, günde en çok 2 manevra.');
   });
   it('v1/v2 gövdesindeki ov yok sayılır', () => {
     const body = b64u(JSON.stringify({ v: 2, side: 'L', canal: 'PC', maneuver: 'epley', date: '2026-10-27', perDay: 3, days: 5, pid: 'A', ov: 'x' }));

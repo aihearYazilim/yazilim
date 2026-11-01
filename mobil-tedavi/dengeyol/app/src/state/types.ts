@@ -98,7 +98,7 @@ export interface ManeuverLog {
   /**
    * Bu manevradan sonra sorulan belirti şiddeti 0–10 (yeni kullanıcı turu 3, N1-8; y04: iki manevralı atakta atak başına
    * tek `Episode.vas.after` ikinci yanıtla eziliyordu). settings.askVas açıkken "Şu an nasılsınız?"dan sonra sorulur; "Geç"
-   * denirse yazılmaz. Eski kayıtlarda yok (o kayıtlarda `Episode.vas.after` okunur).
+   * denirse yazılmaz. Eski kayıtlarda yok (o kayıtlarda `Episode.vas.after` okunur). Ev raporunda `mv`, CSV'de `vas_sonra`.
    */
   vasAfter?: number;
 }
@@ -282,6 +282,11 @@ export interface ClinicExam {
    * sorunu. Uyarıdır, testleri engellemez; rapora ve HBYS notuna yazılır. Yanıtlanmayan maddenin alanı yoktur. Eski kayıtlarda yok.
    */
   safetyCheck?: { at: number; spontaneous?: boolean; neuro?: boolean; neck?: boolean };
+  /**
+   * İsteğe bağlı DHI (Dizziness Handicap Inventory) toplam puanı, 0–100 (yeni kullanıcı turu 3, y04 #3): kontrol muayenesinde
+   * girilir; rapora, HBYS notuna ve çalışma CSV'sinin muayene satırına yazılır. Eski kayıtlarda yok.
+   */
+  dhi?: number;
 }
 
 /** Muayeneye eklenmiş ev dönemi raporu. */

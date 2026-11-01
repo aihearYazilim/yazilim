@@ -8,7 +8,7 @@ import type { ClinicExam, ClinicPatient } from '../../../state/types';
 import { Segmented } from '../../components/Controls';
 import { Icon, Logo } from '../../components/Icon';
 import { Screen } from '../../components/Screen';
-import { homeListSummary } from './examReport';
+import { examListDx, homeListSummary } from './examReport';
 import { ReportPaste } from './ReportImport';
 import { studyCsv, studyRows } from './studyCsv';
 
@@ -272,18 +272,24 @@ export function ClinicianHome() {
         </div>
       </details>
 
+      {/* Araştırma bloğu katlı: her hekime gürültü olmasın (yeni kullanıcı turu 3, y08 #3). */}
       {homeReportCount > 0 && (
-        <div className="card stack" data-testid="clin-study-export">
-          <strong>Çalışma verisi</strong>
-          <span className="small muted">
-            Eklenen {homeReportCount} ev raporundan katılımcı başına satır satır olaylar (atak, güvenlik sorusu, test, manevra, tekrar testi, aşılan
-            uyarı, uygulama kararı). Gecikme, süre, adım, tamamlanma, durma nedeni ve VAS ayrı sütunlarda; zaman ISO 8601 (saat dilimiyle).{' '}
-            {studyRowCount} satır; ayırıcı noktalı virgül (Excel).
-          </span>
-          <button className="btn secondary" onClick={() => downloadStudyCsv(d)} data-testid="clin-study-csv">
-            <Icon name="share" /> Çalışma verisini dışa aktar (CSV)
-          </button>
-        </div>
+        <details className="card" data-testid="clin-study-export">
+          <summary>
+            <strong>Çalışma verisi (araştırma, CSV)</strong>
+          </summary>
+          <div className="stack" style={{ marginTop: 12 }}>
+            <span className="small muted">
+              Eklenen {homeReportCount} ev raporundan katılımcı başına satır satır olaylar (atak, güvenlik sorusu, test, manevra, tekrar testi, aşılan
+              uyarı, uygulama kararı) ve muayene satırları (DHI). Atak içi sıra no; gecikme, süre, adım, tamamlanma, durma nedeni ve VAS ayrı sütunlarda; zaman ISO 8601
+              (saniyeli, saat dilimiyle).{' '}
+              {studyRowCount} satır; ayırıcı noktalı virgül (Excel).
+            </span>
+            <button className="btn secondary" onClick={() => downloadStudyCsv(d)} data-testid="clin-study-csv">
+              <Icon name="share" /> Çalışma verisini dışa aktar (CSV)
+            </button>
+          </div>
+        </details>
       )}
 
       <h3>Son muayeneler</h3>
@@ -311,7 +317,8 @@ export function ClinicianHome() {
                 <div className="grow">
                   <strong>{p?.code ?? '—'}</strong>
                   <div className="sub">
-                    {formatDateTime(e.at)} · {e.diagnosis?.label ?? 'tanı girilmedi'} · {e.maneuvers.filter((m) => m.completed).length} manevra
+                    {formatDateTime(e.at)} · <span data-testid="clin-exam-dx">{examListDx(e, d.clinicExams)}</span> · {e.maneuvers.filter((m) => m.completed).length}{' '}
+                    manevra
                     {home ? <span data-testid="clin-exam-home"> · {home}</span> : null}
                   </div>
                 </div>

@@ -7,13 +7,18 @@
  * durma nedeni, sonrası, en uzun baş dönmesi, VAS önce/sonra, test kararı); taraf testi her taraf için ayrı satırdır (taraf =
  * test edilen taraf). Zamanlar ISO 8601, yerel saat ve saat dilimi farkıyla ("2026-10-31T14:05:00+03:00"). `ayrinti` okunur
  * metindir; araştırma kaydı açıklaması kısaltılmadan yazılır (bağlantıda kısaltıldıysa o kadarı).
+ *
+ * Yeni kullanıcı turu 3 (y04 #1–#3): `sira` atak içinde olayın sıra numarasıdır (1'den; zaman sırası, aynı anda eklenme
+ * sırası). Zaman saniyelidir (ev raporu biçimi saniyeyi taşır; eski raporda saniye :00). Manevra satırında `vas_sonra`
+ * o manevradan sonraki belirti şiddetidir (ManeuverLog.vasAfter); atak satırında `vas_once` (ve eski kayıtlarda atak düzeyindeki
+ * `vas_sonra`). Her muayene için bir `muayene` satırı (ev raporu ya da DHI taşıyorsa): tanı, kontrol/ilk ve DHI (0–100).
  */
 import { PROTOCOLS, sideName, type Side } from '../../../core/protocols';
 import { decodeHomeReport, type HomeEpisode, type HomeReport, type HomeSideTest } from '../../../core/reportShare';
 import { RED_FLAGS, type SideDecision } from '../../../core/safety';
-import type { AppData } from '../../../state/types';
+import type { AppData, ClinicExam } from '../../../state/types';
 import { researchEntries } from '../patient/reportText';
-import { homeManeuverText, homeNeuroAckText, homeRetestText, homeSideTestText, homeTestStopText } from './examReport';
+import { controlSummary, dxText, dxValid, homeManeuverText, homeNeuroAckText, homeRetestText, homeSideTestText, homeTestStopText, isDhi } from './examReport';
 
 export const STUDY_CSV_COLUMNS = [
   'katilimci_no',
@@ -21,6 +26,7 @@ export const STUDY_CSV_COLUMNS = [
   'muayene',
   'rapor',
   'atak_baslangic',
+  'sira',
   'zaman',
   'olay',
   'kod',
@@ -36,6 +42,7 @@ export const STUDY_CSV_COLUMNS = [
   'en_uzun_bas_donmesi_s',
   'vas_once',
   'vas_sonra',
+  'dhi',
   'karar',
   'ayrinti',
   'demo',
@@ -133,7 +140,8 @@ function episodeRows(base: Base, r: HomeReport, e: HomeEpisode): Row[] {
       tamamlandi: yesNo(m.completed),
       durma_nedeni: m.stopReason ?? '',
       sonrasi: m.afterSymptoms ?? '',
-      en_uzun_bas_donmesi_s: num(longestVertigoSec(m.steps))
+      en_uzun_bas_donmesi_s: num(longestVertigoSec(m.steps)),
+      vas_sonra: num(m.vasAfter)
     });
   }
   for (const x of e.retests) {
@@ -149,7 +157,20 @@ function episodeRows(base: Base, r: HomeReport, e: HomeEpisode): Row[] {
     const olay = x.group === 'override' ? 'asma' : x.group === 'decision' ? 'uygulama_karari' : 'bilgi';
     for (let i = 0; i < x.count; i++) add(x.at, olay, x.kind, '', x.text);
   }
-  return rows.sort((a, b) => a.at - b.at || a.seq - b.seq).map((x) => x.row);
+  return rows.sort((a, b) => a.at - b.at || a.seq - b.seq).map((x, i) => ({ ...x.row, sira: String(i + 1) }));
+}
+
+/** Muayene satırı: tanı (onaylıysa), kontrol/ilk muayene ve DHI. */
+function examRow(base: Base, ex: ClinicExam, all: readonly ClinicExam[]): Row {
+  const row = Object.fromEntries(STUDY_CSV_COLUMNS.map((c) => [c, ''])) as Row;
+  const dx = ex.diagnosis && dxValid(ex) ? dxText(ex.diagnosis) : 'tanı girilmedi';
+  return Object.assign(row, base, {
+    zaman: csvTime(ex.at),
+    olay: 'muayene',
+    kod: controlSummary(ex, all) ? 'kontrol' : 'ilk',
+    ayrinti: dx,
+    dhi: isDhi(ex.dhi) ? String(ex.dhi) : ''
+  });
 }
 
 /** Bütün muayenelerdeki ev raporlarından CSV satırları (başlık dahil değil). Çözülemeyen rapor atlanır. */
@@ -158,6 +179,14 @@ export function studyRows(d: Pick<AppData, 'clinicExams' | 'clinicPatients'>): R
   const exams = [...d.clinicExams].sort((a, b) => a.at - b.at);
   for (const ex of exams) {
     const patient = d.clinicPatients.find((p) => p.id === ex.patientId);
+    const reports = (ex.homeReports ?? []).map((h) => ({ h, dec: decodeHomeReport(h.token) }));
+    if (reports.some((x) => x.dec.ok) || isDhi(ex.dhi)) {
+      const first = reports.find((x) => x.dec.ok)?.dec;
+      const r0 = first?.ok ? first.value : null;
+      rows.push(
+        examRow({ katilimci_no: r0?.studyId ?? r0?.pid ?? patient?.code ?? '', hasta_kodu: patient?.code ?? '', muayene: csvTime(ex.at), rapor: '' }, ex, d.clinicExams)
+      );
+    }
     for (const h of ex.homeReports ?? []) {
       const dec = decodeHomeReport(h.token);
       if (!dec.ok) continue;

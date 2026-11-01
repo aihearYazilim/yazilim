@@ -12,14 +12,20 @@ import { afterEach, beforeAll, describe, expect, it, onTestFinished, vi } from '
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { encodePrescription } from '../../../core/prescription';
+import { decodePrescription, encodePrescription } from '../../../core/prescription';
 import { store } from '../../../state/store';
 import { speech } from '../../../platform/speech';
 import { emptyData, type Episode } from '../../../state/types';
 import { PeriodReport } from './History';
 import { PatientHome, resetHomeIntro } from './PatientHome';
 import { Onboarding } from './Onboarding';
-import { PrescriptionImport, rxCardSpeech } from './PrescriptionImport';
+import { PrescriptionImport, rxCardSpeech, rxDiagnosisText } from './PrescriptionImport';
+
+const decodePrescriptionValue = (t: string) => {
+  const r = decodePrescription(t);
+  if (!r.ok) throw new Error('reçete çözülemedi');
+  return r.value;
+};
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -163,6 +169,33 @@ describe('reçete kartı (kullanıcı turu 4, k05)', () => {
     const p = store.get().patient!;
     expect(p).toMatchObject({ canal: 'HC', side: 'L', diagnosedByDoctor: true });
     expect(p.prescription).toMatchObject({ canal: 'HC', maneuver: 'bbq-roll', ov: 'muayenede göz titremesi 1 dakikadan uzun sürdü' });
+  });
+
+  it('tek süre cümlesi: "en fazla N gün" ile "(14 gün)" yan yana değil (yeni kullanıcı turu 3, y04 #5)', () => {
+    const d = emptyData();
+    d.settings = { ...d.settings, speech: false };
+    store.update(() => d);
+    const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-11-01', perDay: 3, days: 5 });
+    mount(`/recete/${token}`);
+    const dose = byTestId('rx-dose')!.textContent!;
+    expect(dose).toMatch(/^5 gün, günde en çok 3 manevra\. Reçete 14 Kasım 2026 tarihine kadar \(dahil\) geçerli\./);
+    expect(byTestId('rx-card')!.textContent).not.toMatch(/14 gün/);
+  });
+
+  it('santral ya da muayene başı güvenlik uyarısıyla verilen reçete: tanı "Olası BPPV (hekim uyarısıyla)", uyarı satırı "muayenede …" (yeni kullanıcı turu 3, y05 #1–#2)', () => {
+    const d = emptyData();
+    d.settings = { ...d.settings, speech: false };
+    store.update(() => d);
+    const ov = 'muayenede nörolojik bulgu vardı; nörolojik değerlendirme önerildi';
+    const token = encodePrescription({ v: 1, side: 'R', canal: 'PC', maneuver: 'epley', date: '2026-10-30', perDay: 3, days: 3, ov, ovk: 'SAFETY_CHECK' });
+    mount(`/recete/${token}`);
+    expect(byTestId('rx-dx')!.textContent).toBe('Olası BPPV (hekim uyarısıyla) — SAĞ kulak, arka kanal kristal oynaması');
+    expect(byTestId('rx-override-line')!.textContent).toMatch(/^Hekim uyarıya rağmen verdi: muayenede nörolojik bulgu vardı; nörolojik değerlendirme önerildi\./);
+    const say = rxCardSpeech(decodePrescriptionValue(token), { expired: false, future: false, contraLabels: [] });
+    expect(say).toMatch(/Tanı: olası kristal oynaması, hekim uyarısıyla; sağ kulak, arka kanal\./);
+    // Başka uyarı türünde (tanı onaysız) tanı satırı düz kalır.
+    expect(rxDiagnosisText({ side: 'L', maneuver: 'epley', ov: 'tanı uygulamada onaylanmadan verildi', ovk: 'NO_DIAGNOSIS' })).toBe('SOL kulak — arka kanal kristal oynaması (BPPV)');
+    expect(rxDiagnosisText({ side: 'L', maneuver: 'epley', ov: 'x', ovk: 'CENTRAL' })).toBe('Olası BPPV (hekim uyarısıyla) — SOL kulak, arka kanal kristal oynaması');
   });
 
   it('sesli metin de kanalı, manevrayı ve uyarıyı söyler', () => {

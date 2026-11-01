@@ -39,9 +39,66 @@ const toTri = (b: boolean | undefined): TriState => (b === undefined ? 'unset' :
 const fromTri = (t: TriState): boolean | undefined => (t === 'unset' ? undefined : t === 'yes');
 
 /**
- * Formun kaydedilmemiş taslağı (yeni kullanıcı turu 2, y08 #1): test sonrası form açıkken sayfa yenilenirse girilenler
- * kaybolmasın. sessionStorage'da tutulur (sekme kapanınca biter); "Kaydet"te silinir.
+ * Kaydedilmemiş muayene taslakları (test sonrası bulgu formu kuyruğu ve formda girilenler; yeni kullanıcı turu 2, y08 #1):
+ * uygulama kapanıp açılınca da korunur (yeni kullanıcı turu 3, y08 #1: iPhone arka plandaki uygulamayı kapatınca biten testin
+ * ölçümü kayboluyordu). localStorage'da muayene kimliğiyle saklanır; bulgu kaydedilince silinir, DRAFT_TTL_MS sonra
+ * kendiliğinden geçersiz sayılır. Kalıcı muayene kaydına (dengeyol:v1) yazılmaz. localStorage yoksa ya da yazılamazsa taslak
+ * tutulmaz (form yine çalışır).
  */
+export const DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
+const DRAFT_PREFIXES = ['dengeyol:findingDraft:', 'dengeyol:examQueue:'];
+
+/** Taslak oku: { at, d } zarfı; süresi geçmişse silinir ve null döner. */
+export function readDraft(key: string, now: number = Date.now()): unknown {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const env = JSON.parse(raw) as { at?: unknown; d?: unknown } | null;
+    if (!env || typeof env !== 'object' || typeof env.at !== 'number' || !('d' in env)) {
+      window.localStorage.removeItem(key);
+      return null;
+    }
+    if (now - env.at > DRAFT_TTL_MS || env.at > now + 60_000) {
+      window.localStorage.removeItem(key);
+      return null;
+    }
+    return env.d ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeDraft(key: string, d: unknown, now: number = Date.now()) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify({ at: now, d }));
+  } catch {
+    /* yazılamadı: taslak yok */
+  }
+}
+
+export function removeDraft(key: string) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    /* yok say */
+  }
+}
+
+/** Süresi geçmiş muayene taslaklarını temizler (muayene ekranı açılınca). */
+export function pruneDrafts(now: number = Date.now()) {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (k && DRAFT_PREFIXES.some((x) => k.startsWith(x))) keys.push(k);
+    }
+    for (const k of keys) readDraft(k, now);
+  } catch {
+    /* yok say */
+  }
+}
+
+/** Formun kaydedilmemiş taslağı; "Kaydet"te silinir. */
 export interface FindingDraft {
   nys: NystagmusType | null;
   lat: string;
@@ -58,32 +115,19 @@ export interface FindingDraft {
 export const findingDraftKey = (examId: string, target: string, key: string) => `dengeyol:findingDraft:${examId}:${target}:${key}`;
 
 export function readFindingDraft(key: string): FindingDraft | null {
-  try {
-    const raw = window.sessionStorage.getItem(key);
-    const d = raw ? (JSON.parse(raw) as Partial<FindingDraft>) : null;
-    if (!d || typeof d !== 'object') return null;
-    if (d.nys !== null && !ORDER.includes(d.nys as NystagmusType)) return null;
-    if (typeof d.lat !== 'string' || typeof d.dur !== 'string' || typeof d.vertigo !== 'boolean' || typeof d.note !== 'string') return null;
-    return d as FindingDraft;
-  } catch {
-    return null;
-  }
+  const d = readDraft(key) as Partial<FindingDraft> | null;
+  if (!d || typeof d !== 'object') return null;
+  if (d.nys !== null && !ORDER.includes(d.nys as NystagmusType)) return null;
+  if (typeof d.lat !== 'string' || typeof d.dur !== 'string' || typeof d.vertigo !== 'boolean' || typeof d.note !== 'string') return null;
+  return d as FindingDraft;
 }
 
 function writeFindingDraft(key: string, d: FindingDraft) {
-  try {
-    window.sessionStorage.setItem(key, JSON.stringify(d));
-  } catch {
-    /* yazılamadı: taslak yok */
-  }
+  writeDraft(key, d);
 }
 
 export function removeFindingDraft(key: string) {
-  try {
-    window.sessionStorage.removeItem(key);
-  } catch {
-    /* yok say */
-  }
+  removeDraft(key);
 }
 
 export function FindingForm({
