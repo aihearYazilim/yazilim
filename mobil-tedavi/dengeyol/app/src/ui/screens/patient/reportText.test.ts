@@ -508,6 +508,30 @@ describe('araştırma kaydı (yeniden tasarım; yeni kullanıcı turu 1: aşmala
     expect(plain).toContain('Uygulamanın kararları:');
     expect(plain).toContain('Seçimler ve bilgi kayıtları:');
   });
+  it('önerilen (büyük dolu) düğmenin seçimi aşma sayılmaz; yanlış dokunuşla geri alınan güvenlik yanıtı "düzeltildi" (M1-3, M1-4)', () => {
+    const x: Episode = {
+      ...e,
+      overrides: [
+        { at: at('2026-10-31T09:03:00'), kind: 'APP_DECISION', detail: 'Uygulamanın kararı: iki tarafa sırayla, arka kanal manevrası. Testte baş dönmesi başlamadı.' },
+        { at: at('2026-10-31T09:04:00'), kind: 'USER_CHOICE', detail: 'Uygulamanın önerisi seçildi — İki tarafa sırayla: önce sağ, sonra sol' },
+        { at: at('2026-10-31T09:00:00'), kind: 'RED_FLAG_UNDO', detail: 'Son bir ayda boynu incitme ya da boyna darbe' }
+      ]
+    };
+    const all = researchEntries(x);
+    expect(overrideCount(x)).toBe(0);
+    expect(all.find((y) => y.kind === 'USER_CHOICE')).toMatchObject({ group: 'info', text: 'kullanıcının seçimi: Uygulamanın önerisi seçildi — İki tarafa sırayla: önce sağ, sonra sol' });
+    expect(all.find((y) => y.kind === 'RED_FLAG_UNDO')).toMatchObject({ group: 'info' });
+    expect(all.find((y) => y.kind === 'RED_FLAG_UNDO')!.text).toMatch(/^güvenlik sorusundaki işaret "yanlış dokundum" ile düzeltildi: Son bir ayda boynu/);
+    for (const y of all) expect(y.text).not.toMatch(/rağmen/);
+  });
+  it('yeni nörolojik belirtiden sonra "Yine de manevra yap": manevra yapıldıysa aşma, yapılmadıysa sayılmaz (M1-5)', () => {
+    const x: Episode = { ...e, maneuvers: [], overrides: [{ at: at('2026-10-31T10:00:00'), kind: 'NEURO_ALERT', detail: 'Manevra sonrası yeni nörolojik belirti bildirildikten sonra yeniden başlatıldı' }] };
+    expect(researchEntries(x)[0]!.group).toBe('info');
+    expect(overrideCount(x)).toBe(0);
+    const y = { ...x, maneuvers: [man('2026-10-31T10:12:00')] };
+    expect(researchEntries(y)[0]).toMatchObject({ group: 'override' });
+    expect(researchEntries(y)[0]!.text).toMatch(/^yeni nörolojik belirti bildirildikten sonra yeniden manevraya geçildi/);
+  });
   it('manevraya girilmeden vazgeçilen erken tekrar aşma sayılmaz; iç adım adı Türkçe (y06 #7, y04 #4)', () => {
     const x: Episode = { ...e, maneuvers: [], overrides: [{ at: at('2026-10-31T10:00:00'), kind: 'EARLY_REPEAT', detail: 'Sıradaki adım: early-retest (31 Ekim 10:15)' }] };
     const [only] = researchEntries(x);

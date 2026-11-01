@@ -110,6 +110,16 @@ export function Settings() {
             />
             <span className="small muted">Çalışmaya katılıyorsanız araştırma ekibinin verdiği numarayı yazın. Raporunuzda ve hekime gösterdiğiniz QR kodda yer alır.</span>
           </div>
+          {/* Yeni kullanıcı turu 2 (M1-11; y04): isteğe bağlı belirti şiddeti (0–10); kapalıyken akışta hiç görünmez. */}
+          <label className="row">
+            <input type="checkbox" checked={!!s.askVas} onChange={(e) => set({ askVas: e.target.checked })} data-testid="settings-ask-vas" />
+            <span className="grow">
+              Araştırma: belirti şiddetini sor
+              <span className="small muted" style={{ display: 'block' }}>
+                Atak başında ve manevradan sonra baş dönmesinin şiddeti 0–10 arası tek satırla sorulur.
+              </span>
+            </span>
+          </label>
         </section>
       )}
 

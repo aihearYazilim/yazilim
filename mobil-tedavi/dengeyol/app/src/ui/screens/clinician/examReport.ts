@@ -991,7 +991,8 @@ export function overrideShortName(kind: string): string {
     REFERRAL: 'yönlendirmeden sonra yeni atak',
     REFER_NOT_TRIGGERED: 'test tetiklemeden manevra',
     VOMITING: 'kusmaya rağmen yeniden deneme',
-    STILL_UNWELL: 'hâlâ kötü hissederken devam'
+    STILL_UNWELL: 'hâlâ kötü hissederken devam',
+    NEURO_ALERT: 'yeni nörolojik belirtiden sonra manevra'
   };
   if (known[kind]) return known[kind]!;
   if (/^REFER_/.test(kind)) return 'yönlendirme önerisi';

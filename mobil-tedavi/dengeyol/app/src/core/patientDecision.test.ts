@@ -58,6 +58,18 @@ describe('arka kanal: cesur karar (BRIEF §2b)', () => {
     expect(decidePosterior([res('R', false), res('L', false)])).toMatchObject({ side: null, warn: 'NOT_TRIGGERED' });
   });
 
+  it('tek taraf testi (hekimin dediği taraf) tetiklemedi → önerilen yol öbür tarafın testi; bilinen tarafa testsiz manevra önerilmez (M1-2)', () => {
+    const d = decidePosterior([res('L', false)], { suggested: 'L' });
+    expect(d).toMatchObject({ side: 'L', warn: 'NOT_TRIGGERED', testOther: 'R' });
+    expect(isClean(d)).toBe(false);
+    expect(d.reason).toBe('Sol tarafta baş dönmesi başlamadı; sağ taraf henüz test edilmedi.');
+    expect(decisionLogDetail(d)).toMatch(/^Uygulamanın kararı: önce sağ taraf da test edilsin/);
+    // İki taraf da test edilip tetiklemediyse öbür taraf önerilmez.
+    expect(decidePosterior([res('R', false), res('L', false)], { suggested: 'L' }).testOther).toBeUndefined();
+    // Tek tarafta uzun baş dönmesiyle durdurma (pozitif) öbür tarafın testi değildir.
+    expect(decidePosterior([res('R', null, { safetyStopped: true })]).testOther).toBeUndefined();
+  });
+
   it('atipik süre (≥ 60 s, bitişi işaretlenmemiş ya da durdurulmuş) → uyarı ama karar yine verilir', () => {
     expect(decidePosterior([res('R', false), res('L', 75)])).toMatchObject({ side: 'L', warn: 'ATYPICAL_LONG' });
     expect(decidePosterior([res('R', null), res('L', false)])).toMatchObject({ side: 'R', warn: 'ATYPICAL_LONG' });

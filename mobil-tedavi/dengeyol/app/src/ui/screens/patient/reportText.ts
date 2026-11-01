@@ -50,7 +50,8 @@ export const OVERRIDE_KIND_TEXT: Record<string, string> = {
   EARLY_REPEAT: 'önerilen tekrar testi beklenmeden yeniden manevraya geçildi',
   REFER_NOT_TRIGGERED: 'test baş dönmesi başlatmadığı hâlde manevraya geçildi',
   VOMITING: 'kusmaya rağmen yeniden denendi',
-  STILL_UNWELL: 'hâlâ kötü hissettiğini söylediği hâlde devam edildi'
+  STILL_UNWELL: 'hâlâ kötü hissettiğini söylediği hâlde devam edildi',
+  NEURO_ALERT: 'yeni nörolojik belirti bildirildikten sonra yeniden manevraya geçildi'
 };
 
 /** Uyarı gösterilmeden yazılan bilgi kayıtları ve kullanıcının seçimleri (aşma sayılmaz). */
@@ -58,7 +59,10 @@ export const RESEARCH_INFO_TEXT: Record<string, string> = {
   NO_DIAGNOSIS: 'hekim tanısı girilmeden kullanıldı',
   GATE_HORIZONTAL_CANAL: 'hekim tanısı yatay kanal (bilgi kaydı)',
   SUBTYPE: 'alt tip yanıtı',
-  USER_CHOICE: 'kullanıcının seçimi'
+  // Önerilen (büyük dolu) düğmenin seçimi de buradadır: açıklaması "Uygulamanın önerisi seçildi — …" (M1-3; y01).
+  USER_CHOICE: 'kullanıcının seçimi',
+  // 112 dışı güvenlik sorusunda yanlış dokunuş geri alındı (M1-4; y02): yanıt kaydı silinir, aşma sayılmaz.
+  RED_FLAG_UNDO: 'güvenlik sorusundaki işaret "yanlış dokundum" ile düzeltildi'
 };
 
 /** Uygulamanın kendi kararı (aşma değildir). */
@@ -88,7 +92,7 @@ export function researchGroupOf(kind: string): ResearchGroup {
 }
 
 /** Manevra öncesi aşılan uyarılar: ardından manevraya girilmediyse aşma sayılmaz (y06 #7: vazgeçilen tekrar). */
-const PRE_MANEUVER_KINDS = new Set(['EARLY_REPEAT', 'DOSE']);
+const PRE_MANEUVER_KINDS = new Set(['EARLY_REPEAT', 'DOSE', 'NEURO_ALERT']);
 /** Ön uyarı ile manevra kaydı arasındaki en uzun süre (hazırlık + tanıtma + manevra; manevra kaydı bitişte yazılır). */
 const PRE_MANEUVER_WINDOW_MS = 45 * 60 * 1000;
 

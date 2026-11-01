@@ -37,6 +37,15 @@ import {
   redFlagCheckText,
   RED_FLAGS_SPOKEN,
   redFlagsSpokenFull,
+  redFlagsSpokenShort,
+  RED_FLAG_SHORT,
+  RED_FLAGS_SHORT_MAX_CHARS,
+  nextStepLine,
+  endSentence,
+  resumeAskText,
+  NEURO_START_TITLE,
+  NEURO_START_TEXT,
+  vasText,
   redFlagWarnSpoken,
   EMERGENCY_REMINDER_SPOKEN,
   NEURO_END_SPOKEN,
@@ -309,6 +318,35 @@ describe('yeniden tasarım: tek ekran güvenlik listesi', () => {
     expect(RED_FLAGS_SPOKEN.length).toBeLessThanOrEqual(STOP_SPOKEN_MAX_CHARS);
   });
 
+  it('açılış sesi maddelerin kısa adlarını sayar (~20 s); kusma uyarısı listedeki gündelik cümleyle (M1-9; y07, y01)', () => {
+    const short = redFlagsSpokenShort(RED_FLAGS);
+    for (const q of RED_FLAGS) expect(RED_FLAG_SHORT[q.id], q.id).toBeTruthy();
+    for (const q of RED_FLAGS) expect(short).toContain(RED_FLAG_SHORT[q.id]!);
+    expect(short.length).toBeLessThanOrEqual(RED_FLAGS_SHORT_MAX_CHARS);
+    expect(short).toMatch(/Hiçbiri yok düğmesine dokunun\.$/);
+    expect(short).not.toMatch(/BPPV/);
+    const fever = RED_FLAGS.find((q) => q.id === 'fever')!;
+    expect(fever.why).toMatch(/^Ateşiniz var ya da kusmaktan su bile içemiyorsunuz/);
+    expect(fever.why).not.toMatch(/su bile içilemeyecek kadar/);
+  });
+
+  it('sonraki adım tek satır, saat bir kez; seste cümleler noktayla ayrılır (M1-8; y01, y02)', () => {
+    expect(nextStepLine('early-retest', '05:55', true)).toBe('Tekrar testi 05:55 — uyanınca "Başım dönüyor"a basın');
+    expect(nextStepLine('early-retest', '15:03', false)).toBe('Tekrar testi 15:03 — saati gelince "Başım dönüyor"a basın');
+    expect(nextStepLine('morning-retest', '1 Kasım 06:00', false)).toMatch(/^Sabah testi 1 Kasım 06:00 — uyanınca/);
+    const { short } = choiceSpeechParts({ title: 'Testte baş dönmesi başlamadı', spokenLead: 'Test baş dönmesi yapmadı' }, [{ label: 'Durdur' }]);
+    expect(short).toBe('Testte baş dönmesi başlamadı. Test baş dönmesi yapmadı. Birinci: Durdur.');
+    expect(endSentence('Bitti?')).toBe('Bitti?');
+  });
+
+  it('yarıda kalan manevra sorusu adımı ve tarafı söyler; yeni belirtiden sonra manevra önerilmez metni; şiddet sorusu (M1-7, M1-5, M1-11)', () => {
+    expect(resumeAskText(3, 'L').title).toBe('Manevra 3. adımda yarıda kaldı');
+    expect(resumeAskText(3, 'L').text).toMatch(/^Sol taraf manevrasını baştan yapalım mı\?/);
+    expect(NEURO_START_TITLE).toBe('Yeni belirti bildirdiniz: manevra önerilmiyor');
+    expect(NEURO_START_TEXT).toMatch(/Önce 112'yi arayın ya da hekime başvurun/);
+    expect(vasText('before').spoken).toMatch(/Sıfır yok, on en kötü/);
+  });
+
   it('her maddenin simgesi var (L2-6); işaretleme sesi maddeyi ve düğmenin değiştiğini söyler (y02)', () => {
     for (const q of RED_FLAGS) expect(RED_FLAG_ICON[q.id], q.id).toBeTruthy();
     expect(redFlagIcon({ id: 'yeni' })).toBe('⚠️');
@@ -394,7 +432,10 @@ describe('yeniden tasarım: uyarı ekranları kilitlemez', () => {
     expect(ids({ ...base, side: null, warn: 'NOT_TRIGGERED' })).toEqual(['decision-both', 'decision-R', 'decision-L', 'decision-test-hc', 'decision-stop']);
     expect(unknown.options[0]).toMatchObject({ value: 'both', primary: true, label: 'Hangi yan bilmiyorum: iki tarafa sırayla manevra' });
     expect(unknown.options.filter((o) => o.primary)).toHaveLength(1);
-    expect(unknown.spokenLead).toMatch(/Önerimiz: iki tarafa sırayla manevra\.$/);
+    // M1-3 (y01): ilk ses "Önerim: …"; seçenekler tek tek okunmaz, diğerleri katlı (M1-6).
+    expect(unknown.spoken).toMatch(/^Önerim: iki tarafa sırayla manevra\. Test baş dönmesi yapmadı; kristal oynaması olmayabilir\. Büyük düğmeye/);
+    expect(unknown.fold).toBe(true);
+    expect(known.spoken).toMatch(/^Önerim: sol tarafa manevra\./);
     // Yatay kanalda iki yöne BBQ önerilmez; öbür test arka kanal testi.
     expect(values({ ...base, canal: 'HC', side: null, warn: 'NOT_TRIGGERED' })).toEqual(['go:R', 'go:L', 'test:PC', 'end']);
   });
@@ -478,8 +519,15 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası metinler', () => {
   it('tek taraf testi tetiklemediyse karar ekranında "öbür tarafı da test et"; iki taraflı testte yok (L5-7)', () => {
     const d = { canal: 'PC' as const, side: 'R' as const, warn: 'NOT_TRIGGERED' as const, reason: 'Testte baş dönmesi başlamadı; bilinen taraf sağ.' };
     const one = decisionScreen(d, { otherSide: 'L' });
-    expect(one.options[0]).toMatchObject({ value: 'go:R', primary: true });
-    expect(one.options.find((o) => o.value === 'test:other')).toMatchObject({ label: 'Sol tarafı da test et', testid: 'decision-test-other' });
+    // Yeni kullanıcı turu 2 (M1-2; y02): önerilen tek büyük düğme öbür tarafın testi; bilinen tarafa manevra ikincil.
+    expect(one.options[0]).toMatchObject({ value: 'test:other', primary: true, label: 'Sol tarafı da test et', testid: 'decision-test-other' });
+    expect(one.options.filter((o) => o.primary)).toHaveLength(1);
+    expect(one.options.find((o) => o.value === 'go:R')).toMatchObject({ label: 'Yine de sağ tarafa manevra yap', testid: 'decision-continue' });
+    expect(one.options.find((o) => o.value === 'go:R')!.primary).toBeFalsy();
+    expect(one.spoken).toMatch(/^Önerim: sol tarafı da test etmek\./);
+    expect(one.fold).toBe(true);
     expect(decisionScreen(d).options.find((o) => o.value === 'test:other')).toBeUndefined();
+    // Karar kendisi öbür tarafın testini taşıyorsa (patientDecision testOther) seçenek de gelir.
+    expect(decisionScreen({ ...d, testOther: 'L' }).options[0]).toMatchObject({ value: 'test:other', primary: true });
   });
 });

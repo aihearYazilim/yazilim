@@ -195,6 +195,64 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     expect(byTestId('redflag-stop')!.className).toMatch(/\bprimary\b/);
   });
 
+  it('112 dışı madde (boyun) uyarısında "Yanlış dokundum, listeye dön": yanıt kaydı geri alınır, "düzeltildi" bilgi kaydı (M1-4; y02)', async () => {
+    seed();
+    mount();
+    act(() => byTestId('rf-neck')!.click());
+    await click('redflags-continue');
+    expect(byTestId('stop-doctor')).not.toBeNull();
+    expect(ep()!.redFlags).toHaveLength(1);
+    // Acil uyarıda yok (orada "doğru mu?" onayı var); hekim uyarısında ikincil düğme.
+    expect(byTestId('redflag-wrong-tap')!.className).not.toMatch(/\bprimary\b/);
+    await click('redflag-wrong-tap');
+    expect(byTestId('redflags')).not.toBeNull();
+    expect(byTestId('rf-neck')!.getAttribute('aria-checked')).toBe('false');
+    expect(ep()!.redFlags).toHaveLength(0);
+    expect(ep()!.status).toBe('active');
+    expect(kinds()).toContain('RED_FLAG_UNDO');
+    expect(kinds()).not.toContain('RED_FLAG');
+    await click('redflags-none');
+    expect(ep()!.redFlags).toHaveLength(1);
+    expect(ep()!.redFlags[0]!.stopped).toBe(false);
+  });
+
+  it('acil uyarısında "Yanlış dokundum, listeye dön" yok (onay zaten soruldu)', async () => {
+    seed();
+    mount();
+    act(() => byTestId('rf-neuro')!.click());
+    await click('redflags-continue');
+    await click('redflags-confirm-yes');
+    expect(byTestId('stop-emergency')).not.toBeNull();
+    expect(byTestId('redflag-wrong-tap')).toBeNull();
+  });
+
+  it('seçeneklerin başında sıra numarası (seste "Birinci, İkinci…"; M1-10)', async () => {
+    seed('self', { diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    mount();
+    await click('redflags-none');
+    const nums = [...host!.querySelectorAll('[role="radio"] .choice-num')].map((x) => x.textContent);
+    expect(nums).toEqual(['1', '2', '3']);
+    expect(byTestId('subtype-liedown')!.querySelector('.choice-num')!.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('araştırma ayarı açıkken atak başında belirti şiddeti (0–10) sorulur ve kaydedilir; kapalıyken hiç görünmez (M1-11)', async () => {
+    seed('self', { diagnosedByDoctor: false, canal: 'unknown', side: 'unknown' });
+    mount();
+    await click('redflags-none');
+    expect(byTestId('vas-before')).toBeNull();
+    expect(byTestId('subtype-liedown')).not.toBeNull();
+    act(() => root?.unmount());
+    host?.remove();
+    store.update((d) => ({ ...d, episodes: [], settings: { ...d.settings, askVas: true } }));
+    mount();
+    await click('redflags-none');
+    expect(byTestId('vas-before')).not.toBeNull();
+    expect(host!.querySelectorAll('[data-testid^="vas-before-"]').length).toBe(12);
+    await click('vas-before-4');
+    expect(ep()!.vas).toEqual({ before: 4 });
+    expect(byTestId('subtype-liedown')).not.toBeNull();
+  });
+
   it('kontrendikasyon: uyarı + "Yine de devam et" → kayıt (atak açılınca yazılır)', async () => {
     seed('self', { contraindications: ['neck'] });
     mount();
@@ -297,10 +355,20 @@ describe('hasta akışı duman testi (yeniden tasarım: kilit yok, tek ekran gü
     expect(byTestId('home-neuro-call')!.getAttribute('href')).toBe('tel:112');
     expect(byTestId('add-reminder')).toBeNull();
     expect(byTestId('home-neuro-retest')).not.toBeNull();
-    // Kilit yok: "Başım dönüyor" akışı açar; akışta da şerit görünür.
+    // Kilit yok: "Başım dönüyor" akışı açar; akışta da şerit görünür. Yeni kullanıcı turu 2 (M1-5; y05): sıradaki adım
+    // ("Tekrar testi …") yerine "Yeni belirti bildirdiniz: manevra önerilmiyor"; önerilen yol ana ekran, manevra ikincil.
     act(() => byTestId('start-episode')!.click());
-    expect(byTestId('plan-warn')).not.toBeNull();
+    expect(byTestId('neuro-warn')!.textContent).toMatch(/Yeni belirti bildirdiniz: manevra önerilmiyor.*112/);
+    expect(byTestId('plan-warn')).toBeNull();
+    expect(host!.textContent).not.toMatch(/Tekrar testi/);
+    expect(byTestId('go-home')!.className).toMatch(/\bprimary\b/);
+    expect(byTestId('neuro-override')!.className).toMatch(/\boverride\b/);
     expect(byTestId('neuro-strip')).not.toBeNull();
+    await click('neuro-override');
+    expect(kinds()).toContain('NEURO_ALERT');
+    // Aşınca sıradaki adım uyarısı ayrıca sorulmaz; giriş denetimleri sürer.
+    expect(byTestId('plan-warn')).toBeNull();
+    expect(byTestId('neuro-warn')).toBeNull();
     act(() => byTestId('neuro-strip-called')!.click());
     expect(byTestId('neuro-strip')).toBeNull();
     expect(store.get().episodes[0]!.neuroAlertAck?.by).toBe('called112');
@@ -442,11 +510,32 @@ describe('yeni kullanıcı turu 1, L5: kötü an sonrası akış', () => {
     }));
     mount();
     expect(byTestId('prep')).toBeNull();
+    // Yeni kullanıcı turu 2 (M1-7; y01): önce sorulur; "Baştan yapalım" büyük, "Bugünlük bitir" ikincil.
+    expect(byTestId('resume-ask')!.textContent).toMatch(/Manevra 1\. adımda yarıda kaldı/);
+    expect(byTestId('resume-restart')!.className).toMatch(/\bprimary\b/);
+    await click('resume-restart');
     act(() => {
       vi.advanceTimersByTime(50);
     });
+    expect(byTestId('prep')).toBeNull();
     expect(byTestId('run-note')!.textContent).toMatch(/Kaldığınız yerden: yarıda kalan sağ taraf manevrasını baştan/);
     expect(byTestId('runner-start')).not.toBeNull();
+  });
+
+  it('yarıda kalan manevra: "Bugünlük bitir" manevra başlatmaz, yeni kayıt yazmaz (M1-7)', async () => {
+    seed();
+    const now = Date.now();
+    const records = [{ stepId: 'a' }, { stepId: 'b' }, { stepId: 'c' }];
+    store.update((d) => ({
+      ...d,
+      episodes: [activeEp({ maneuvers: [manAt(now - 2 * 60_000, { completed: false, stopReason: 'INTERRUPTED', recovered: true, records })] })]
+    }));
+    mount();
+    expect(byTestId('resume-ask')!.textContent).toMatch(/Manevra 3\. adımda yarıda kaldı/);
+    await click('resume-stop');
+    expect(byTestId('end-resume-stop')).not.toBeNull();
+    expect(byTestId('runner-start')).toBeNull();
+    expect(ep()!.maneuvers).toHaveLength(1);
   });
 
   it('bilinen hekim tanısı (tarihsiz, sağ): hazırlıkta tek test süresi; tanısızda iki test (L5-7)', async () => {

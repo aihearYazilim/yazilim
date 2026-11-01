@@ -187,7 +187,8 @@ export const RED_FLAGS: RedFlagQuestion[] = [
     label: 'ateş ya da su bile içilemeyecek kadar kusma',
     stopsOn: 'yes',
     action: 'doctor',
-    why: 'Ateş ya da su bile içilemeyecek kadar kusma, kristal oynaması (BPPV) dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir. Bugün hekiminize ya da acil servise başvurun.',
+    // Uyarı da listedeki gündelik cümleyle (M1-9; y01: liste gündelik, uyarı eski dildeydi).
+    why: 'Ateşiniz var ya da kusmaktan su bile içemiyorsunuz: bu, kristal oynaması (BPPV) dışı bir nedeni ya da tedavi gerektiren bir durumu gösterebilir. Bugün hekiminize ya da acil servise başvurun.',
     stopSpoken: 'Bugün hekiminize ya da acil servise başvurun.',
     refer: 'Bugün hekiminize ya da acil servise başvurun ve ateşinizi ya da kusmanızı söyleyin.'
   },

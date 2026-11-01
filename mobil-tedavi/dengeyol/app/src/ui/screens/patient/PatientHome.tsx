@@ -24,9 +24,12 @@ import {
   sameDayReopenable,
   singleSideTestSide,
   startDose,
+  todayManeuverCounts,
   vomitPause
 } from '../../../state/episodes';
-import { HOME_VOMIT_TEXT } from './flowText';
+import { HOME_VOMIT_TEXT, nextStepLine } from './flowText';
+import { speech } from '../../../platform/speech';
+import { useTapLock } from '../../components/Controls';
 import type { AppData, Episode } from '../../../state/types';
 import { sideName } from '../../../core/protocols';
 import { downloadReminder, extractRxToken, isIos, isStandalone } from '../../../platform/reminders';
@@ -107,6 +110,8 @@ export function PatientHome() {
   const overDose = startDs && !startDs.allowed ? startDs : null;
   const rxReport = !ep ? rxEndReport(d, now) : null;
   const na = ep ? nextAction(ep, now) : null;
+  // Tek satır sonraki adım (M1-8; y01: "Atağınızın sıradaki adımı gösterilir" belirsizdi). Saat ana ekranda yalnız burada.
+  const nextLine = homeNextStepLine(na, !!neuroAlertFor(d, now));
   // Manevra sonrası yeni nörolojik belirti (24 saat ya da yanıtlanana dek): en üstte kırmızı 112 şeridi; tekrar testi ve
   // hatırlatıcı gösterilmez (L2-1; y05). Kilit yok: "Başım dönüyor" çalışır.
   const neuro = neuroAlertFor(d, now);
@@ -137,7 +142,7 @@ export function PatientHome() {
             : ep
               ? na?.kind === 'retry-side-test'
                 ? 'Atağa kaldığınız yerden devam edilir'
-                : 'Atağınızın sıradaki adımı gösterilir'
+                : (nextLine ?? 'Atağa devam edilir')
               : 'Kısa sorular, test ve manevra. Telefon alnınızda, sesle yönlendirilirsiniz.'}
         </span>
       </button>
@@ -149,12 +154,20 @@ export function PatientHome() {
           {GATE_TEXT.HORIZONTAL_CANAL}
         </InfoLine>
       )}
-      {askDxSide && <DxSideQuick testid={ep ? 'home-dx-ask' : 'home-no-dx'} noDx={warnings.includes('NO_DIAGNOSIS')} />}
+      {askDxSide && <DxSideQuick testid={ep ? 'home-dx-ask' : 'home-no-dx'} />}
       {singleSide && (
-        <InfoLine testid="home-dx-side">
-          Hekim tanısı: {singleSide === 'R' ? 'sağ' : 'sol'} kulak. Yalnız {singleSide === 'R' ? 'sağ' : 'sol'} taraf test edilecek.{' '}
-<Link to="/hasta/kurulum?adim=tani">Değiştir</Link>
-        </InfoLine>
+        <div className="notice small info" data-testid="home-dx-side">
+          <Icon name="info" />
+          <div className="stack" style={{ gap: 8 }}>
+            <span>
+              Hekim tanısı: {singleSide === 'R' ? 'sağ' : 'sol'} kulak. Yalnız {singleSide === 'R' ? 'sağ' : 'sol'} taraf test edilecek.
+            </span>
+            {/* "Değiştir" büyük (y02: 76×25 px bağlantıydı). */}
+            <Link className="btn secondary" to="/hasta/kurulum?adim=tani" data-testid="home-dx-change">
+              Değiştir
+            </Link>
+          </div>
+        </div>
       )}
       {vomit && !(ep && na?.kind === 'morning-retest' && na.afterVomit) && (
         <InfoLine testid="home-vomit-line" tone="warn">
@@ -237,8 +250,8 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
   const dose = doseFor(d, ep, now);
   const side = episodeSide(ep, d.patient);
   const limits = doseLimitsFor(d.patient);
-  // Doz sayımı (yarıda kalan manevralar ve diğer ataklar dahil).
-  const today = dose.allowed ? limits.maxPerDay - dose.remainingToday : dose.reason === 'DAILY_LIMIT' ? limits.maxPerDay : null;
+  // Bugünkü manevralar: tamamlanan ve yarıda kalan ayrı (M1-8; y07). Önerilen sınır yarıda kalanları da sayar.
+  const counts = todayManeuverCounts(d.episodes, now);
   const [confirmClose, setConfirmClose] = useState(false);
   const bad = lastBadMoment(ep);
 
@@ -266,11 +279,7 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
                 : 'Henüz belirlenmedi'}
           </dd>
           <dt>Bugün</dt>
-          <dd>
-            {today === null
-              ? 'önerilen manevra süresi/sayısı doldu'
-              : `${today} / ${limits.maxPerDay} manevra${dose.allowed ? '' : ' (önerilen sınır doldu)'}`}
-          </dd>
+          <dd data-testid="home-today-count">{todayCountText(counts, limits.maxPerDay, dose.allowed)}</dd>
           <dt>Gün</dt>
           <dd>
             {dose.day}. gün (önerilen en fazla {limits.maxDays})
@@ -297,19 +306,15 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
       {!neuro && na.kind === 'early-retest' && (
         <div className="card stack">
           <h2>Tekrar testi</h2>
-          <p>{na.ready ? 'Tekrar testinin zamanı geldi (yaklaşık 2 dakika).' : 'Manevranın işe yarayıp yaramadığını görmek için 1 saat sonra kısa bir test yapacağız.'}</p>
-          {na.ready ? (
+          <p>
+            {na.ready
+              ? 'Tekrar testinin zamanı geldi (yaklaşık 2 dakika).'
+              : 'Manevranın işe yarayıp yaramadığını kısa bir testle göreceğiz (saati yukarıda). Bu arada oturun ve dinlenin.'}
+          </p>
+          {na.ready && (
             <button className="btn primary block xl" onClick={() => nav('/hasta/atak/retest')} data-testid="do-retest">
               Tekrar testini yap
             </button>
-          ) : (
-            <div className="notice info">
-              <Icon name="timer" />
-              <span>
-                Test saati: <strong>{formatTime(na.at)}</strong>. Bu arada oturun ve dinlenin.
-                {nightNote(na.at) ? ` ${nightNote(na.at)}` : ''}
-              </span>
-            </div>
           )}
           {!na.ready && <ReminderButton at={na.at} title="DengeYol: tekrar testi zamanı" />}
         </div>
@@ -334,14 +339,14 @@ function ActiveEpisodeCard({ now, neuro }: { now: number; neuro: boolean }) {
             >
               Sabah testini yap
             </button>
-          ) : (
+          ) : na.afterVomit ? (
             <div className="notice info">
               <Icon name="calendar" />
               <span>
                 Test zamanı: <strong>{formatDateTime(na.at)}</strong>
               </span>
             </div>
-          )}
+          ) : null}
           {!na.ready && <ReminderButton at={na.at} title="DengeYol: sabah testi zamanı" />}
         </div>
       )}
@@ -499,35 +504,110 @@ export function RxPaste() {
 }
 
 /**
- * Hekim tanısındaki tarafın ana ekrandan tek dokunuşla girilmesi (L5-7; y02: "Tanımı gir" bağlantısını anlamadı,
- * "doktor sağ kulak dedi"yi söylemenin yolunu bulamadı). Girilince yalnız o taraf test edilir (state/episodes.ts
- * `singleSideTestSide`). Tanı zamanı ve kanal isteğe bağlı; Bilgilerim'den değiştirilir.
+ * Hekim tanısındaki tarafın ana ekrandan girilmesi (L5-7; y02). Yeni kullanıcı turu 2 (M1-1; y02, y06, y03, y01): iki büyük
+ * "Sağ/Sol kulak" düğmesi tanısız kişiye çekiciydi ve tek dokunuş sessizce "hekim tanısı" kaydediyordu; yanlış dokunuş yanlış
+ * tarafa manevraya götürebiliyordu. Artık:
+ * - kapalıyken yalnız tek satır "Doktorum tanı koydu" bağlantısı (tanısız kişiye fazladan metin yok, "Tanı girilmedi" yok);
+ * - açılınca kulak seçimi (aralıklı, alt alta) ve "Doktor söylemedi" (kartı kapatır; Ayarlar'a götürmez);
+ * - seçimden sonra sesli onay "Sol kulak dediniz, doğru mu? Evet / Hayır"; kayıt yalnız "Evet"le (onay düğmeleri kısa süre
+ *   kilitli: titrek elin ikinci dokunuşu onay vermesin).
+ * Girilince yalnız o taraf test edilir (state/episodes.ts `singleSideTestSide`); test tetiklemezse önerilen yol öbür tarafın
+ * testidir (M1-2). Tanı zamanı ve kanal isteğe bağlı; Bilgilerim'den değiştirilir.
  */
-function DxSideQuick({ testid, noDx }: { testid: string; noDx: boolean }) {
-  const set = (side: 'R' | 'L') =>
+function DxSideQuick({ testid }: { testid: string }) {
+  const [open, setOpen] = useState(false);
+  const [pick, setPick] = useState<'R' | 'L' | null>(null);
+  const locked = useTapLock(pick ? `dx-${pick}` : undefined, DX_CONFIRM_LOCK_MS);
+  const choose = (side: 'R' | 'L') => {
+    setPick(side);
+    speech.speak(dxConfirmSpoken(side), 'high');
+  };
+  const save = (side: 'R' | 'L') =>
     store.update((x) =>
       x.patient ? { ...x, patient: { ...x.patient, diagnosedByDoctor: true, side, canal: x.patient.canal ?? 'unknown' } } : x
     );
-  return (
-    <div className="notice small info" data-testid={testid}>
-      <Icon name="info" />
-      <div className="stack" style={{ gap: 8 }}>
-        <span>
-          {noDx ? 'Hekim tanısı girilmedi; uygulama önce iki tarafı kısa bir testle dener. İlk kez yaşıyorsanız hekime görünmeniz önerilir. ' : ''}
-          <strong>Doktorunuz hangi kulak dedi?</strong> Biliyorsanız seçin: yalnız o taraf test edilir.
-        </span>
-        <div className="row wrap" style={{ gap: 8 }}>
-          <button type="button" className="btn secondary grow" onClick={() => set('R')} data-testid="home-dx-R">
-            Sağ kulak
+  if (!open) {
+    return (
+      <div className="small" data-testid={testid}>
+        <button
+          type="button"
+          className="btn ghost block"
+          onClick={() => {
+            setOpen(true);
+            speech.speak(DX_ASK_SPOKEN, 'high');
+          }}
+          data-testid="home-dx-open"
+        >
+          <Icon name="info" /> Doktorum tanı koydu
+        </button>
+      </div>
+    );
+  }
+  if (pick) {
+    const name = pick === 'R' ? 'Sağ' : 'Sol';
+    return (
+      <div className="card tint-accent stack" data-testid={testid}>
+        <div className="stack" data-testid="home-dx-confirm" data-locked={locked || undefined} style={{ gap: 12 }}>
+          <strong className="lead">{name} kulak dediniz, doğru mu?</strong>
+          <span className="small">Doğruysa yalnız {pick === 'R' ? 'sağ' : 'sol'} taraf test edilir.</span>
+          <button
+            type="button"
+            className="btn primary block xl"
+            aria-disabled={locked || undefined}
+            onClick={() => {
+              if (locked) return;
+              save(pick);
+              speech.speak(`${name} kulak kaydedildi.`, 'high');
+            }}
+            data-testid="home-dx-yes"
+          >
+            Evet, doktorum {pick === 'R' ? 'sağ' : 'sol'} kulak dedi
           </button>
-          <button type="button" className="btn secondary grow" onClick={() => set('L')} data-testid="home-dx-L">
-            Sol kulak
+          <button
+            type="button"
+            className="btn secondary block"
+            aria-disabled={locked || undefined}
+            onClick={() => !locked && setPick(null)}
+            data-testid="home-dx-no"
+          >
+            Hayır
           </button>
         </div>
-        <Link to="/ayarlar#tani">Bilmiyorum / diğer tanı bilgileri</Link>
       </div>
+    );
+  }
+  return (
+    <div className="card soft stack" data-testid={testid}>
+      <strong>Doktorunuz hangi kulak dedi?</strong>
+      <span className="small">Biliyorsanız seçin: yalnız o taraf test edilir.</span>
+      {/* Düğmeler alt alta ve aralıklı (y02: yan yana, arada 8 px; titrek el öbürüne değiyordu). */}
+      <div className="stack" style={{ gap: 20 }}>
+        <button type="button" className="btn secondary block" onClick={() => choose('R')} data-testid="home-dx-R">
+          Sağ kulak
+        </button>
+        <button type="button" className="btn secondary block" onClick={() => choose('L')} data-testid="home-dx-L">
+          Sol kulak
+        </button>
+      </div>
+      <button type="button" className="btn ghost block" onClick={() => setOpen(false)} data-testid="home-dx-none">
+        Doktor söylemedi
+      </button>
+      <Link className="small" to="/hasta/kurulum?adim=tani">
+        Diğer tanı bilgileri (kanal, tarih)
+      </Link>
     </div>
   );
+}
+
+/** Kulak seçiminin onayında düğmelerin kilit süresi (ms): seçim dokunuşunun ikincisi onay vermesin. */
+const DX_CONFIRM_LOCK_MS = 900;
+
+/** Kulak sorusu açılınca okunan ses. */
+const DX_ASK_SPOKEN = 'Doktorunuz hangi kulak dedi? Sağ kulak, sol kulak ya da doktor söylemedi.';
+
+/** Kulak seçiminden sonra sesli onay (M1-1). */
+export function dxConfirmSpoken(side: 'R' | 'L'): string {
+  return `${side === 'R' ? 'Sağ' : 'Sol'} kulak dediniz, doğru mu? Doğruysa Evet'e, değilse Hayır'a dokunun.`;
 }
 
 /**
@@ -663,6 +743,23 @@ export function ReferralReason({ episode }: { episode: Episode }) {
       ))}
     </div>
   );
+}
+
+/**
+ * Ana ekrandaki "Bugün" satırı (M1-8; y07: tamamlanmış yokken "2 / 3"): "1 tamamlandı, 2 yarıda kaldı · önerilen en fazla
+ * 3"; sınır doluysa yarıda kalanların da sayıldığı söylenir.
+ */
+export function todayCountText(c: { completed: number; partial: number }, maxPerDay: number, allowed: boolean): string {
+  const done = `${c.completed} manevra tamamlandı${c.partial ? `, ${c.partial} yarıda kaldı` : ''}`;
+  return `${done} · önerilen en fazla ${maxPerDay}${allowed ? '' : ` (sınır doldu${c.partial ? '; yarıda kalanlar da sayılır' : ''})`}`;
+}
+
+/** Büyük düğmenin altındaki tek satır sonraki adım (tekrar ya da sabah testi henüz zamanı gelmediyse); yoksa null. */
+export function homeNextStepLine(na: ReturnType<typeof nextAction> | null, neuro: boolean): string | null {
+  if (!na || neuro) return null;
+  if (na.kind === 'early-retest' && !na.ready) return nextStepLine('early-retest', formatTime(na.at), !!nightNote(na.at));
+  if (na.kind === 'morning-retest' && !na.ready && !na.afterVomit) return nextStepLine('morning-retest', formatDateTime(na.at), false);
+  return null;
 }
 
 /** Reçete dönemi raporunun adresi (görünüm: History.tsx; kullanıcı turu 3, k09). */

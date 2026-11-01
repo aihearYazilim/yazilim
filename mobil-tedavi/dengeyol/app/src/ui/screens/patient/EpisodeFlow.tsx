@@ -78,6 +78,8 @@ import {
   singleSideTestSide,
   vomitPause,
   VOMITING_OVERRIDE_KIND,
+  NEURO_ALERT_OVERRIDE_KIND,
+  RED_FLAG_UNDO_KIND,
   episodeStamp,
   saveManeuverCheckpoint,
   withoutCheckpoint
@@ -140,9 +142,19 @@ import {
   redFlagCheckSub,
   redFlagCheckText,
   redFlagToggleSpoken,
-  RED_FLAGS_SPOKEN,
   RED_FLAGS_TITLE,
   redFlagsSpokenFull,
+  redFlagsSpokenShort,
+  endSentence,
+  NEURO_START_SPOKEN,
+  NEURO_START_TEXT,
+  NEURO_START_TITLE,
+  nextStepLine,
+  RESUME_STOP_TEXT,
+  RESUME_STOP_TITLE,
+  resumeAskText,
+  VAS_SCALE_TEXT,
+  vasText,
   redFlagWarnSpoken,
   RETEST_LONG_SPOKEN,
   RETEST_LONG_TEXT,
@@ -201,8 +213,17 @@ type Stage =
   | { k: 'dose'; text: string; reason: string; next?: Stage; look?: boolean }
   /** Güvenlik soruları: tek ekran işaret listesi. */
   | { k: 'redflags' }
-  /** Kırmızı bayrak uyarısı (112/hekim bilgisi) + "Yine de devam et". after: manevra sonrası yeni belirti. */
-  | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[]; after?: boolean }
+  /**
+   * Kırmızı bayrak uyarısı (112/hekim bilgisi) + "Yine de devam et". after: manevra sonrası yeni belirti. logAt: bu uyarıyı
+   * doğuran güvenlik sorusu kaydının zamanı ("Yanlış dokundum, listeye dön" o kaydı geri alır; M1-4).
+   */
+  | { k: 'stop'; action: StopAction; triggered: RedFlagQuestion[]; after?: boolean; logAt?: number }
+  /** Manevra sonrası yeni nörolojik belirtiden sonra yeniden "Başım dönüyor": manevra önerilmez, önce 112/hekim (M1-5). */
+  | { k: 'neuro' }
+  /** Yarıda kalan manevra: "n. adımda yarıda kaldı. Baştan yapalım mı? / Bugünlük bitir" (M1-7). */
+  | { k: 'resumeAsk'; rt: Extract<ResumeTarget, { kind: 'maneuver' }> }
+  /** Araştırma (isteğe bağlı): belirti şiddeti 0–10, atak başında ve manevradan sonra (M1-11). */
+  | { k: 'vas'; when: 'before' | 'after'; next: Stage }
   /** Tek hazırlık ekranı; ardından telefon alna ve kesintisiz akış. */
   | { k: 'prep' }
   /** saved: kayıtlı tanıtma kullanılacak (sahneye girerken belirlenir). */
@@ -245,6 +266,8 @@ type Stage =
       call112?: boolean;
       /** "Yeniden dene"nin üstündeki kısa uyarı (uzun baş dönmesiyle durdurma; L5-2). */
       retryNote?: string;
+      /** Tek satır sonraki adım ("Tekrar testi 05:55 — uyanınca …"); saat ekranda yalnız burada yazılır (M1-8). */
+      nextStep?: string;
       /** "Yine de devam et" (ör. "Hâlâ kötüyüm"den sonra): giriş denetimleri sürer; aşma `kind` ile yazılır. */
       override?: { label: string; testid: string; kind: string; detail: string };
     };
@@ -309,6 +332,12 @@ export function EpisodeFlow() {
   const vomitOkRef = useRef(false);
   /** "Geçti mi?" yanıtlandı ya da aşıldı (L5-2). */
   const feelOkRef = useRef(false);
+  /** Yeni nörolojik belirti uyarısı aşıldı (M1-5). */
+  const neuroOkRef = useRef(false);
+  /** Yarıda kalan manevra sorusu yanıtlandı (M1-7). */
+  const resumeOkRef = useRef(false);
+  /** Atak başı belirti şiddeti bu akışta soruldu (M1-11). */
+  const vasBeforeRef = useRef(false);
   /** Atak açılmadan önce yazılmak istenen kayıtlar (atak açılınca yazılır). */
   const pendingLogsRef = useRef<{ kind: string; detail?: string }[]>([]);
   const recalibrate = () => {
@@ -438,6 +467,8 @@ export function EpisodeFlow() {
     if (mode === 'start' || mode === 'treat') {
       const re = !ep && mode === 'start' ? sameDayReopenable(cur, now) : null;
       if (re) return { k: 'reopen', id: re.id };
+      // Manevra sonrası yeni nörolojik belirti (şerit sürüyor): manevra önerilmez, önce 112/hekim (M1-5; y05). Kilit yok.
+      if (!neuroOkRef.current && neuroAlertFor(cur, now)) return { k: 'neuro' };
       const plan = startBlockedByPlan(ep, now);
       // Kusmadan sonra: gerekçe kusma, sabah testi saati ana ekrandakiyle aynı (L5-1; y07).
       if (plan && plan.kind === 'morning-retest' && plan.afterVomit && !vomitOkRef.current && !planOkRef.current) return { k: 'vomit', until: plan.at };
@@ -456,7 +487,20 @@ export function EpisodeFlow() {
       if (w) return w;
     }
     if (mode === 'practice' || needsRedFlags(ep, now)) return { k: 'redflags' };
-    return afterSafetyStage();
+    return withVasBefore(afterSafetyStage());
+  };
+
+  /**
+   * Araştırma ayarı açıksa (settings.askVas) atak başında bir kez belirti şiddeti (0–10) sorulur; kapalıysa hiç görünmez
+   * (M1-11; y04). Yalnız yeni atak/atağa devam akışında, değer henüz yoksa.
+   */
+  const withVasBefore = (next: Stage): Stage => {
+    const cur = store.get();
+    if (mode !== 'start' || !cur.settings.askVas || vasBeforeRef.current) return next;
+    const ep = activeEpisode(cur);
+    if (!ep || ep.vas?.before !== undefined) return next;
+    vasBeforeRef.current = true;
+    return { k: 'vas', when: 'before', next };
   };
 
   /** Telefon henüz alna konmadıysa hazırlık; konduysa (bu akışta tanıtıldı) yürütücü kendiliğinden başlar. */
@@ -478,6 +522,8 @@ export function EpisodeFlow() {
    * düğmesiyle açılır (dokunuş: ses ve hareket izni); yoksa yalnız tanıtma, ardından telefon alında kendiliğinden sürer.
    */
   const resumeEntry = (rt: ResumeTarget): Stage => {
+    // Yarıda kalan manevra: önce sorulur ("Baştan yapalım mı? / Bugünlük bitir"; M1-7, y01).
+    if (rt.kind === 'maneuver' && !resumeOkRef.current) return { k: 'resumeAsk', rt };
     const run: RunStage =
       rt.kind === 'maneuver'
         ? { k: 'maneuver', side: rt.side, protocolId: rt.protocolId, note: resumeManeuverNote(rt.side) }
@@ -624,12 +670,13 @@ export function EpisodeFlow() {
     // Bu cihazda bu metinler yanıtlandı (eski "ilk okunuş kilidi" kaydı; rapor ve ayarlarla uyumlu kalsın).
     store.update((x) => flags.reduce((acc, q) => rememberAnswered(acc, q), x));
     const out = evaluateRedFlags(answers);
+    const at = Date.now();
     if (mode !== 'practice') {
       const id = ensureEpisode();
-      updateEpisode(id, (e) => ({ ...e, redFlags: [...e.redFlags, { at: Date.now(), answers, stopped: out.stop }] }));
+      updateEpisode(id, (e) => ({ ...e, redFlags: [...e.redFlags, { at, answers, stopped: out.stop }] }));
     }
-    if (out.stop && out.action) setStage({ k: 'stop', action: out.action, triggered: out.triggered });
-    else setStage(afterSafetyStage());
+    if (out.stop && out.action) setStage({ k: 'stop', action: out.action, triggered: out.triggered, logAt: at });
+    else setStage(withVasBefore(afterSafetyStage()));
   };
 
   const logSideTest = (results: SideTestResult[], stronger: Side | 'equal' | null, dec: BoldDecision) => {
@@ -683,9 +730,15 @@ export function EpisodeFlow() {
     setStage({ k: 'decision', d: dec, look: phoneOn, ...(one ? { single: one } : {}) });
   };
 
-  /** Karar ekranında seçim. Uyarı aşıldıysa REFER_<neden> / SIDE_CONFLICT; öneriden farklı seçim USER_CHOICE. */
+  /**
+   * Karar ekranında seçim. Uygulamanın önerdiği (büyük dolu) düğme aşma sayılmaz: `USER_CHOICE` "önerilen yol seçildi"
+   * (yeni kullanıcı turu 2, M1-3; y01: önerilen "iki tarafa sırayla"ya basınca rapor "uyarıyı aştı" diyordu). Önerilmeyen
+   * seçenek uyarı varsa REFER_<neden> / SIDE_CONFLICT, yoksa (öneriden farklıysa) USER_CHOICE.
+   */
   const onDecision = (v: DecisionChoice, dec: BoldDecision, single?: SideTestResult) => {
-    const warnKind = dec.warn === 'SIDE_CONFLICT' ? 'SIDE_CONFLICT' : dec.warn ? `REFER_${dec.warn}` : null;
+    const sc = decisionScreen(dec, single ? { otherSide: single.side === 'R' ? 'L' : 'R' } : undefined);
+    const recommended = sc.options.find((o) => o.primary)?.value === v;
+    const warnKind = recommended ? null : dec.warn === 'SIDE_CONFLICT' ? 'SIDE_CONFLICT' : dec.warn ? `REFER_${dec.warn}` : null;
     const protocolId = maneuverFor(dec.canal, pcManeuver);
     if (v === 'go:R' || v === 'go:L') {
       const s: Side = v === 'go:R' ? 'R' : 'L';
@@ -693,8 +746,9 @@ export function EpisodeFlow() {
       const detail =
         dec.warn === 'SIDE_CONFLICT'
           ? `${s === dec.side ? 'Test tarafı' : 'Hekimin dediği taraf'}: ${sideName(s)}`
-          : `${sideName(s)} taraf${differs ? ` (uygulamanın önerisi: ${sideName(dec.side!)})` : ''}`;
-      if (warnKind) note(warnKind, detail);
+          : `${sideName(s)} taraf${differs ? ` (uygulamanın önerisi: ${sideName(dec.side!)})` : dec.testOther ? ` (uygulamanın önerisi: önce ${sideName(dec.testOther)} tarafı da test etmek)` : ''}`;
+      if (recommended) note('USER_CHOICE', `${RECOMMENDED_PREFIX}${detail}`);
+      else if (warnKind) note(warnKind, detail);
       else if (differs || !dec.side) note('USER_CHOICE', detail);
       // Seçimden sonra manevra doğrudan başlar (ayrı "Başlat" ekranı ve ikinci "Kim yapıyor" sorusu yok; y01).
       startManeuver(s, protocolId, undefined, { auto: true });
@@ -703,14 +757,15 @@ export function EpisodeFlow() {
     if (v === 'both') {
       const first: Side = dec.side ?? 'R';
       const second: Side = first === 'R' ? 'L' : 'R';
-      note(warnKind ?? 'USER_CHOICE', `İki tarafa sırayla: önce ${sideName(first)}, sonra ${sideName(second)}`);
+      const detail = `İki tarafa sırayla: önce ${sideName(first)}, sonra ${sideName(second)}`;
+      note(warnKind ?? 'USER_CHOICE', recommended ? `${RECOMMENDED_PREFIX}${detail}` : detail);
       startManeuver(first, protocolId, second, { auto: true });
       return;
     }
     if (v === 'test:other' && single) {
       // Tek taraf testi tetiklemedi: öbür taraf da test edilir; karar iki sonuçla verilir (L5-7).
       const other: Side = single.side === 'R' ? 'L' : 'R';
-      note('USER_CHOICE', `Hekimin dediği taraf tetiklemedi; ${sideName(other)} taraf da test edildi`);
+      note('USER_CHOICE', `${recommended ? RECOMMENDED_PREFIX : ''}Hekimin dediği taraf tetiklemedi; ${sideName(other)} taraf da test edildi`);
       setStage(prepFor({ k: 'sideRun', order: [single.side, other], results: [single] }));
       return;
     }
@@ -918,9 +973,11 @@ export function EpisodeFlow() {
       k: 'end',
       tone: long ? 'warn' : sev === 'none' ? 'ok' : 'info',
       title: 'Manevra tamamlandı',
-      text: `${mild}10 dakika oturarak dinlenin: baş dönmesi tamamen sönsün ve dengeniz yerine gelsin. Kalkarken önce yatağın kenarında oturun, bir yere tutunun; gece ise ışığı açın. ${formatTime(retestAt)} civarında ana ekrandan tekrar testini yapın. Uyku pozisyonu kısıtlaması ya da boyunluk gerekmez.`,
+      // Test saati ekranda tek yerde: alttaki "sonraki adım" satırında (M1-8; y01, y03: saat iki-üç kez yazıyordu).
+      text: `${mild}10 dakika oturarak dinlenin: baş dönmesi tamamen sönsün ve dengeniz yerine gelsin. Kalkarken önce yatağın kenarında oturun, bir yere tutunun; gece ise ışığı açın. Uyku pozisyonu kısıtlaması ya da boyunluk gerekmez.`,
       testid: 'end-maneuver-done',
       extra: 'rest',
+      nextStep: nextStepLine('early-retest', formatTime(retestAt), !!nightNote(retestAt)),
       remindAt: retestAt,
       remindTitle: 'DengeYol: tekrar testi',
       spoken: afterManeuverSpoken(sev, formatTime(retestAt), !!nightNote(retestAt)),
@@ -1106,6 +1163,76 @@ export function EpisodeFlow() {
       );
     }
 
+    case 'neuro':
+      return (
+        <Screen title="DengeYol" back="/hasta">
+          <SpeakOnce text={NEURO_START_SPOKEN} priority="high" />
+          <div className="card tint-danger stack" data-testid="neuro-warn">
+            <div className="card-title">
+              <Icon name="alert" />
+              <h2>{NEURO_START_TITLE}</h2>
+            </div>
+            <p>{NEURO_START_TEXT}</p>
+          </div>
+          <HomeButton primary label="Ana ekran (manevra yok)" onClick={() => nav('/hasta', { replace: true })} />
+          <OverrideButton
+            testid="neuro-override"
+            onClick={() => {
+              neuroOkRef.current = true;
+              // Sıradaki adım uyarısı (tekrar testi) ayrıca sorulmaz: kişi manevrayı bilerek seçti.
+              planOkRef.current = true;
+              note(NEURO_ALERT_OVERRIDE_KIND, 'Manevra sonrası yeni nörolojik belirti bildirildikten sonra yeniden başlatıldı');
+              setStage(entryStage());
+            }}
+          >
+            Yine de manevra yap
+          </OverrideButton>
+        </Screen>
+      );
+
+    case 'resumeAsk': {
+      const t = resumeAskText(stage.rt.step, stage.rt.side);
+      return (
+        <Screen title="DengeYol" back="/hasta">
+          <SpeakOnce text={`${t.title}. ${t.text}`} priority="high" />
+          <div className="card tint-accent stack" data-testid="resume-ask">
+            <h1>{t.title}</h1>
+            <p className="lead">{t.text}</p>
+          </div>
+          <button
+            className="btn primary block xl"
+            onClick={() => {
+              resumeOkRef.current = true;
+              setStage(resumeEntry(stage.rt));
+            }}
+            data-testid="resume-restart"
+          >
+            Baştan yapalım
+          </button>
+          <button
+            className="btn secondary block"
+            onClick={() => setStage({ k: 'end', tone: 'info', title: RESUME_STOP_TITLE, text: RESUME_STOP_TEXT, testid: 'end-resume-stop' })}
+            data-testid="resume-stop"
+          >
+            Bugünlük bitir
+          </button>
+        </Screen>
+      );
+    }
+
+    case 'vas':
+      return (
+        <VasQuestion
+          key={stage.when}
+          when={stage.when}
+          onDone={(v) => {
+            const id = activeEpisode(store.get())?.id;
+            if (id && v !== null) updateEpisode(id, (e) => ({ ...e, vas: { ...(e.vas ?? {}), [stage.when]: v } }));
+            setStage(stage.next);
+          }}
+        />
+      );
+
     case 'contra': {
       const ids = profile.contraindications;
       const labels = contraindicationsFor(ids).map((c) => c.label);
@@ -1278,6 +1405,24 @@ export function EpisodeFlow() {
           >
             Durdur{hasReport ? ' ve raporu göster' : ''}
           </button>
+          {/* 112 dışı maddede "doğru mu?" sorusu yok: yanlış dokunuştan listeye dönüş (M1-4; y02). Yanıt kaydı geri alınır,
+              raporda "düzeltildi" bilgi kaydı kalır (aşma sayılmaz). */}
+          {!emergency && !stage.after && (
+            <button
+              className="btn secondary block"
+              data-testid="redflag-wrong-tap"
+              onClick={() => {
+                const id = episodeId ?? activeEpisode(store.get())?.id;
+                if (id && mode !== 'practice' && stage.logAt !== undefined) {
+                  updateEpisode(id, (e) => ({ ...e, redFlags: e.redFlags.filter((r) => r.at !== stage.logAt) }));
+                  note(RED_FLAG_UNDO_KIND, stage.triggered.map((q) => redFlagCheckText(q)).join('; '));
+                }
+                setStage({ k: 'redflags' });
+              }}
+            >
+              Yanlış dokundum, listeye dön
+            </button>
+          )}
           <RedFlagOverride
             key={`${stage.action}-${stage.after ? 'after' : stage.triggered.map((q) => q.id).join(',')}`}
             spoken={spokenStop}
@@ -1285,7 +1430,7 @@ export function EpisodeFlow() {
             onClick={() => {
               note('RED_FLAG', stage.after ? 'Manevra sonrası yeni belirti' : stage.triggered.map((q) => q.id).join(', '));
               // Manevra sonrası yeni belirti: olağan "tamamlandı" ekranı yerine kırmızı 112 ekranı (L2-1).
-              setStage(stage.after ? neuroEndStage() : afterSafetyStage());
+              setStage(stage.after ? neuroEndStage() : withVasBefore(afterSafetyStage()));
             }}
           />
         </Screen>
@@ -1502,7 +1647,10 @@ export function EpisodeFlow() {
               title={sc.title}
               lead={sc.lead}
               spokenLead={sc.spokenLead}
-              deferPrompt={stage.look ? LOOK_AT_SCREEN : undefined}
+              spokenShort={sc.spoken}
+              fold={sc.fold}
+              // Telefon alındayken de ilk cümleden sonra önerinin kendisi söylenir (M1-3; y01).
+              deferPrompt={stage.look ? (sc.recommendation ? `${LOOK_AT_SCREEN} Önerim: ${sc.recommendation}.` : LOOK_AT_SCREEN) : undefined}
               priority="normal"
               name="Karar"
               lockKey={`decision-${stage.d.warn ?? 'none'}`}
@@ -1620,20 +1768,24 @@ export function EpisodeFlow() {
                 });
               }
             }
+            // Araştırma ayarı açıksa manevra sonrası belirti şiddeti (0–10; M1-11). Yeni nörolojik belirtide sorulmaz.
+            const vasAfter = (next: Stage): Stage => (mode === 'start' || mode === 'treat') && store.get().settings.askVas ? { k: 'vas', when: 'after', next } : next;
             if (sev === 'neuro') {
               // Yeni nörolojik belirti: acil uyarısı (112). Kilit yok: "Yine de devam et" kayda geçer.
               setStage({ k: 'stop', action: 'emergency', triggered: [], after: true });
             } else if (sev === 'severe') {
               longVertigoRef.current = false;
-              setStage({
-                k: 'end',
-                tone: 'warn',
-                title: 'Bugün manevrayı tekrarlamayın',
-                text: 'Oturarak dinlenin ve küçük yudumlarla su için. Sıvı alamayacak kadar kusma sürerse hekiminize başvurun. Konuşma bozukluğu, güçsüzlük, çift görme ya da şiddetli baş ağrısı olursa hemen 112\'yi arayın.',
-                testid: 'end-severe',
-                spoken: AFTER_SEVERE_SPOKEN
-              });
-            } else setStage(maneuverDoneStage(sev));
+              setStage(
+                vasAfter({
+                  k: 'end',
+                  tone: 'warn',
+                  title: 'Bugün manevrayı tekrarlamayın',
+                  text: 'Oturarak dinlenin ve küçük yudumlarla su için. Sıvı alamayacak kadar kusma sürerse hekiminize başvurun. Konuşma bozukluğu, güçsüzlük, çift görme ya da şiddetli baş ağrısı olursa hemen 112\'yi arayın.',
+                  testid: 'end-severe',
+                  spoken: AFTER_SEVERE_SPOKEN
+                })
+              );
+            } else setStage(vasAfter(maneuverDoneStage(sev)));
           }}
         />
       );
@@ -1673,12 +1825,12 @@ export function EpisodeFlow() {
       const side = ep ? episodeSide(ep, profile) : null;
       const doseNow = stage.extra === 'treat' && ep ? doseFor(d, ep, Date.now()) : null;
       const doseText = doseNow && !doseNow.allowed ? doseLimitText(doseNow, d, Date.now()) : null;
-      // Test saati geceye düşüyorsa "uyanınca yapın".
-      const night = stage.remindAt ? nightNote(stage.remindAt) : null;
+      // Test saati geceye düşüyorsa "uyanınca yapın" (sonraki adım satırı varsa o zaten söyler; saat bir kez yazılır).
+      const night = stage.remindAt && !stage.nextStep ? nightNote(stage.remindAt) : null;
       const recurEnd = recur && stage.testid !== 'end-dose' ? recur : null;
       // "Manevra tamamlandı" yürütücüde söylendi; burada yalnız öneri okunur.
       const endFull = withoutBppv(
-        [stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`, stage.note, night, recurEnd?.text].filter(Boolean).join(' ')
+        [stage.testid === 'end-maneuver-done' ? stage.text : `${stage.title}. ${stage.text}`, stage.nextStep ? endSentence(stage.nextStep) : null, stage.note, night, recurEnd?.text].filter(Boolean).join(' ')
       );
       const endSpoken = stage.spoken ? withoutBppv([stage.spoken, stage.note ? 'Ekranda bir uyarı notu var.' : '', recurEnd?.text].filter(Boolean).join(' ')) : endFull;
       // "Yine de" tekrar / yeniden deneme varsa önerilen yol "Ana ekran" dolu düğmedir (L2-2).
@@ -1704,6 +1856,12 @@ export function EpisodeFlow() {
             <div className="notice danger" data-testid="end-note">
               <Icon name="alert" />
               <span>{stage.note}</span>
+            </div>
+          )}
+          {stage.nextStep && (
+            <div className="notice info" data-testid="end-next-step">
+              <Icon name="timer" />
+              <strong>{stage.nextStep}</strong>
             </div>
           )}
           {stage.extra === 'rest' && <RestTimer />}
@@ -1781,11 +1939,13 @@ export function EpisodeFlow() {
               onClick={() => downloadReminder(stage.remindAt!, stage.remindTitle ?? 'DengeYol', 'DengeYol uygulamasını açıp ana ekrandaki testi yapın.')}
               data-testid="add-reminder"
             >
-              <Icon name="calendar" /> Takvime hatırlatıcı ekle ({formatTime(stage.remindAt)})
+              <Icon name="calendar" /> Takvime hatırlatıcı ekle{stage.nextStep ? '' : ` (${formatTime(stage.remindAt)})`}
             </button>
           )}
           {stage.remindAt && (
-            <p className="small muted center">Takvim açılmazsa telefonunuzun saat uygulamasında {formatTime(stage.remindAt)} için alarm kurun.</p>
+            <p className="small muted center">
+              Takvim açılmazsa telefonunuzun saat uygulamasında {stage.nextStep ? 'bu saat' : formatTime(stage.remindAt)} için alarm kurun.
+            </p>
           )}
           <button
             className={`btn ${risky || stage.call112 ? 'primary xl' : 'secondary'} block`}
@@ -1964,7 +2124,8 @@ function RedFlagsScreen({
   }
   return (
     <Screen title="Güvenlik soruları" back="/hasta">
-      {!returned && <SpeakOnce text={RED_FLAGS_SPOKEN} priority="high" />}
+      {/* İlk ses maddelerin kısa adlarını da sayar (~20 s; M1-9, y07); tam liste "Listeyi dinle"de. */}
+      {!returned && <SpeakOnce text={redFlagsSpokenShort(flags)} priority="high" />}
       <h1 data-testid="redflags-title">{RED_FLAGS_TITLE}</h1>
       <p className="small muted">Yalnız şu anda ya da bu atakta olanları işaretleyin.</p>
       {/* "Listeyi dinle" listenin üstünde: kaydırmadan görünür (y02). */}
@@ -2185,13 +2346,15 @@ function AfterManeuver({ onDone, practice }: { onDone: (sev: AfterSev) => void; 
   const [confirm, setConfirm] = useState<'severe' | 'neuro' | null>(null);
   /** Onaydan geri dönüldü: kullanıcı ekrana bakıyor, soru hemen okunur. */
   const [looking, setLooking] = useState(false);
-  const options: ({ value: AfterSev } & SpokenOption)[] = [
-    { value: 'none', label: 'İyiyim' },
-    { value: 'mild', label: 'Hafif baş dönmesi ya da bulantı var', spokenLabel: 'Hafif baş dönmesi ya da bulantı', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
-    { value: 'severe', label: 'Kusma ya da şiddetli bulantı var', spokenLabel: 'Kusma ya da şiddetli bulantı' },
+  // Seçeneklerin başında sıra numarası ve yüz simgesi (M1-10; y03, y06): okuması zayıf kişi sese ve simgeye bakar.
+  const options: ({ value: AfterSev; icon: string } & SpokenOption)[] = [
+    { value: 'none', icon: '🙂', label: 'İyiyim' },
+    { value: 'mild', icon: '😐', label: 'Hafif baş dönmesi ya da bulantı var', spokenLabel: 'Hafif baş dönmesi ya da bulantı', sub: 'Manevradan sonra birkaç dakika sürebilir.' },
+    { value: 'severe', icon: '🤢', label: 'Kusma ya da şiddetli bulantı var', spokenLabel: 'Kusma ya da şiddetli bulantı' },
     // "Yeni belirti"nin ne olduğu güvenlik için gerekli: alt açıklaması varsayılan okunuşta da okunur.
     {
       value: 'neuro',
+      icon: '⚠️',
       label: 'Yeni belirti var',
       spokenLabel: 'Yeni belirti',
       sub: 'Konuşma bozukluğu, yüzde/kolda güçsüzlük, çift görme ya da şiddetli baş ağrısı.',
@@ -2445,6 +2608,8 @@ function ChoiceQuestion<T extends string>({
   lead,
   spokenLead,
   spokenPrefix,
+  spokenShort,
+  fold,
   deferPrompt,
   priority = 'high',
   name,
@@ -2453,6 +2618,10 @@ function ChoiceQuestion<T extends string>({
   lockKey,
   lockMs = 800
 }: {
+  /** Varsayılan okunuşun tamamı (ör. karar ekranında "Önerim: …"); yoksa soru ve seçenekler sırayla. */
+  spokenShort?: string;
+  /** Önerilen (primary) seçenek tek büyük düğme; diğerleri "Başka seçenekler" altında katlı (M1-6). */
+  fold?: boolean;
   title: string;
   /** Varsayılan okunuştaki soru (parantezsiz kısa biçim); yoksa title. */
   spokenTitle?: string;
@@ -2463,20 +2632,103 @@ function ChoiceQuestion<T extends string>({
   deferPrompt?: string;
   priority?: 'high' | 'normal';
   name: string;
-  options: ({ value: T; testid?: string; primary?: boolean } & SpokenOption)[];
+  options: ({ value: T; testid?: string; primary?: boolean; icon?: string } & SpokenOption)[];
   onChange: (v: T) => void;
   lockKey: string;
   lockMs?: number;
 }) {
-  const { short, full } = choiceSpeechParts({ title, spokenTitle, lead, spokenLead, prefix: spokenPrefix }, options);
-  useDeferredRead(deferPrompt, short, priority);
+  const parts = choiceSpeechParts({ title, spokenTitle, lead, spokenLead, prefix: spokenPrefix }, options);
+  useDeferredRead(deferPrompt, spokenShort ?? parts.short, priority);
+  // Seste "Birinci, İkinci…" denir: ekranda da her seçeneğin başında sıra numarası (M1-10; y03, y06), varsa simge.
+  const shown = options.map((o, i) => ({
+    ...o,
+    label: (
+      <>
+        <span className="choice-num" aria-hidden="true" style={CHOICE_NUM_STYLE}>
+          {i + 1}
+        </span>
+        {o.icon && (
+          <span className="choice-icon" aria-hidden="true">
+            {o.icon}
+          </span>
+        )}
+        {o.label}
+      </>
+    )
+  }));
+  const primary = fold ? shown.filter((o) => o.primary) : [];
+  const folded = primary.length === 1;
+  const rest = folded ? shown.filter((o) => !o.primary) : shown;
   return (
     <>
       <h1>{title}</h1>
       {lead && <p className="lead">{lead}</p>}
-      <Choice name={name} value={null} onChange={onChange} options={options} lockKey={lockKey} lockMs={lockMs} hushOnAnswer />
-      <ListenAgain text={full} slower />
+      {folded ? (
+        <>
+          <Choice name={name} value={null} onChange={onChange} options={primary} lockKey={lockKey} lockMs={lockMs} hushOnAnswer />
+          <details className="card soft" data-testid="choice-more">
+            <summary>Başka seçenekler ({rest.length})</summary>
+            <div style={{ marginTop: 10 }}>
+              <Choice name={`${name}: başka seçenekler`} value={null} onChange={onChange} options={rest} lockKey={lockKey} lockMs={lockMs} hushOnAnswer />
+            </div>
+          </details>
+        </>
+      ) : (
+        <Choice name={name} value={null} onChange={onChange} options={shown} lockKey={lockKey} lockMs={lockMs} hushOnAnswer />
+      )}
+      <ListenAgain text={parts.full} slower />
     </>
+  );
+}
+
+/** Seçeneklerin sıra numarası rozeti (seste "Birinci, İkinci…"). */
+const CHOICE_NUM_STYLE: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: '1.6em',
+  height: '1.6em',
+  marginRight: 8,
+  borderRadius: '50%',
+  border: '2px solid currentColor',
+  fontWeight: 700,
+  fontSize: '0.9em',
+  flex: '0 0 auto'
+};
+
+/**
+ * Araştırma (isteğe bağlı; settings.askVas): belirti şiddeti 0–10, tek satır düğme (M1-11; y04). "Geç" değeri yazmaz.
+ * Ekran açılınca soru bir kez okunur; dokunuş kilidi önceki ekranın çift dokunuşunu yutar.
+ */
+function VasQuestion({ when, onDone }: { when: 'before' | 'after'; onDone: (v: number | null) => void }) {
+  const locked = useTapLock(`vas-${when}`, 800);
+  const t = vasText(when);
+  return (
+    <Screen title="Belirti şiddeti" back="/hasta">
+      <SpeakOnce text={t.spoken} priority="high" />
+      <div className="stack" data-testid={`vas-${when}`} data-locked={locked || undefined}>
+        <h1>{t.title}</h1>
+        <p className="small muted">{VAS_SCALE_TEXT}</p>
+        <div className="row wrap" role="group" aria-label={t.title} style={{ gap: 6 }}>
+          {Array.from({ length: 11 }, (_, v) => (
+            <button
+              key={v}
+              type="button"
+              className="btn secondary"
+              style={{ minWidth: 44, flex: '1 0 44px', padding: '10px 0' }}
+              aria-disabled={locked || undefined}
+              onClick={() => !locked && onDone(v)}
+              data-testid={`vas-${when}-${v}`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="btn ghost block" onClick={() => !locked && onDone(null)} data-testid={`vas-${when}-skip`}>
+          Geç
+        </button>
+      </div>
+    </Screen>
   );
 }
 
@@ -2513,6 +2765,9 @@ function RunOnce({ run }: { run: () => void }) {
   });
   return null;
 }
+
+/** Önerilen (büyük dolu) düğmenin seçimi: araştırma kaydında `USER_CHOICE` açıklamasının başı (aşma sayılmaz; M1-3). */
+const RECOMMENDED_PREFIX = 'Uygulamanın önerisi seçildi — ';
 
 /** Uyarılı kararın rapordaki adı (taraf testi kaydının notunda). */
 const DECISION_WARN_NOTE: Record<'ATYPICAL_LONG' | 'BOTH_SIDES' | 'SIDE_CONFLICT', string> = {
